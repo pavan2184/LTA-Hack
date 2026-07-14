@@ -1,0 +1,15 @@
+---
+description: Security rules for sensitive features.
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# Security Rules
+
+- Never read or print secrets from `.env`, credentials files, or secret stores.
+- For auth, payments, legal, financial, health, personal data, file uploads, or LLM features, update `docs/SECURITY_REVIEW.md`.
+- Treat all user input as untrusted.
+- Use allowlists over blocklists for risky input.
+- Avoid logging sensitive data.
+- For LLM features, consider prompt injection, data leakage, unsafe output reliance, and auditability.

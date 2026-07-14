@@ -1,0 +1,15 @@
+---
+description: FastAPI backend conventions.
+globs:
+  - "**/*.py"
+alwaysApply: false
+---
+
+# Backend FastAPI Rules
+
+- Use Pydantic models for request and response validation.
+- Keep route handlers thin; move business logic into services.
+- Validate environment variables at startup.
+- Add pytest coverage for backend behavior.
+- Prefer explicit dependency injection for auth, database, and config.
+- Keep API behavior aligned with `docs/API_CONTRACT.md`.

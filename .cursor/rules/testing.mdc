@@ -1,0 +1,14 @@
+---
+description: Testing rules.
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# Testing Rules
+
+- Add regression tests for every bug fix.
+- Backend behavior should have pytest coverage.
+- Core user flows should have integration or end-to-end coverage where practical.
+- Do not skip failing tests unless the skip documents a real external blocker.
+- Update `docs/TESTING.md` when test strategy changes.

@@ -1,0 +1,75 @@
+import type { DisruptionScenario, MaintenanceRequest } from "@/types/railplan";
+
+export const emergencyRequest: MaintenanceRequest = {
+  id: "EM-001",
+  title: "Emergency Track Fault Inspection",
+  shortTitle: "Emergency fault",
+  workType: "Emergency inspection",
+  sector: "NS12–NS14",
+  durationMinutes: 60,
+  priority: "critical",
+  team: "Rapid Response Team",
+  equipment: ["Rail inspection vehicle"],
+  preferredStart: "02:00",
+  earliestStart: "01:30",
+  latestEnd: "03:30",
+  status: "emergency",
+  conflictIds: [],
+  dependencies: [],
+  description: "Urgent inspection raised after a track-circuit fault indication.",
+};
+
+export const disruptionScenarios: DisruptionScenario[] = [
+  {
+    id: "track-fault",
+    title: "Emergency track fault",
+    description: "Urgent 60-minute inspection required on NS12–NS14 at 02:00.",
+    icon: "track",
+    sector: "NS12–NS14",
+    startTime: "02:00",
+    endTime: "03:00",
+    affectedRequestIds: ["M-002", "M-014"],
+    degradedRobustness: 51,
+    warning: "Emergency possession conflicts with two scheduled jobs on NS12–NS14.",
+  },
+  {
+    id: "engineer-unavailable",
+    title: "Engineer unavailable",
+    description: "Team Alpha becomes unavailable from 01:30 onwards.",
+    icon: "team",
+    team: "Team Alpha",
+    startTime: "01:30",
+    endTime: "04:00",
+    affectedRequestIds: ["M-014"],
+    degradedRobustness: 57,
+    warning: "Critical signalling work no longer has an available qualified team.",
+  },
+  {
+    id: "work-overrun",
+    title: "Work overrun",
+    description: "M-008 overruns by 45 minutes.",
+    icon: "overrun",
+    requestId: "M-008",
+    sector: "NS12–NS14",
+    startTime: "01:30",
+    endTime: "02:15",
+    affectedRequestIds: ["M-002", "M-014"],
+    degradedRobustness: 55,
+    warning: "The rail grinding overrun consumes the planned handback buffer.",
+  },
+  {
+    id: "window-shortened",
+    title: "Engineering window shortened",
+    description: "Engineering hours end at 03:30 instead of 04:00.",
+    icon: "window",
+    startTime: "03:30",
+    endTime: "04:00",
+    affectedRequestIds: ["M-010", "M-012", "M-019"],
+    degradedRobustness: 46,
+    warning: "Three jobs now extend beyond the available engineering window.",
+  },
+];
+
+export const disruptionById = Object.fromEntries(
+  disruptionScenarios.map((scenario) => [scenario.id, scenario]),
+) as Record<string, DisruptionScenario>;

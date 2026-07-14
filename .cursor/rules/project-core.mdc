@@ -1,0 +1,16 @@
+---
+description: Core project rules for all AI coding assistants.
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# Core Project Rules
+
+- Read `AGENTS.md`, `CLAUDE.md`, and relevant docs before coding.
+- Keep changes small and scoped.
+- Do not invent environment variables; check `.env.example`.
+- Do not remove tests to make a build pass.
+- Update `docs/PROJECT_STATUS.md` after meaningful changes.
+- Update `docs/DECISIONS.md` after architectural decisions.
+- Preserve protected files unless explicitly asked.
