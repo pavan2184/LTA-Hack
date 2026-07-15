@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Clock3, Filter, LockKeyhole, Search, Wrench } from "lucide-react";
+import { AlertTriangle, Clock3, Filter, LockKeyhole, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { RailNetworkMap } from "@/components/network/RailNetworkMap";
@@ -57,7 +57,7 @@ export function RequestQueue() {
   }), [query, filter, schedule, currentView, lockedIds]);
 
   return (
-    <aside className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+    <aside className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-none">
       <div className="border-b border-slate-100 p-3">
         <div className="flex items-center justify-between">
           <div>
@@ -75,7 +75,7 @@ export function RequestQueue() {
         </div>
       </div>
 
-      <div className="h-[450px] space-y-2 overflow-y-auto p-2.5 2xl:h-[520px]">
+      <div className="h-[440px] space-y-2 overflow-y-auto p-2.5 2xl:h-[500px]">
         {visible.map((request) => {
           const status = statusFor(request);
           const selected = selectedRequestId === request.id;
@@ -85,7 +85,7 @@ export function RequestQueue() {
               aria-label={`Open ${request.id} ${request.title}`}
               key={request.id}
               onClick={() => selectRequest(request.id)}
-              className={cn("w-full rounded-lg border p-2.5 text-left transition", selected ? "border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-100" : status === "conflicted" ? "border-red-200 bg-red-50/30 hover:border-red-300" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50")}
+              className={cn("w-full rounded-xl border px-3 py-2.5 text-left transition", selected ? "border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-100" : status === "conflicted" ? "border-red-200 bg-red-50/30 hover:border-red-300" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50")}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
@@ -95,13 +95,15 @@ export function RequestQueue() {
                 <Badge variant={request.priority === "critical" ? "danger" : request.priority === "high" ? "warning" : "neutral"}>{request.priority}</Badge>
               </div>
               <p className="mt-1.5 truncate text-xs font-bold text-slate-900">{request.title}</p>
-              <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-slate-500">
-                <span className="flex items-center gap-1"><Wrench className="size-2.5" />{request.sector}</span>
-                <span className="truncate">{request.team}</span>
+              <div className="mt-2 flex items-center gap-1.5 text-[9px] text-slate-500">
+                <span>{request.sector}</span>
+                <span className="text-slate-300">•</span>
                 <span className="flex items-center gap-1"><Clock3 className="size-2.5" />{formatDuration(request.durationMinutes)}</span>
-                <span className={cn("flex items-center justify-end gap-1 font-semibold", request.conflictIds.length && currentView === "original" ? "text-red-600" : "text-slate-400")}>
-                  {lockedIds.includes(request.id) ? <><LockKeyhole className="size-2.5" />Locked</> : request.conflictIds.length && currentView === "original" ? <><AlertTriangle className="size-2.5" />{request.conflictIds.length} conflicts</> : "No conflicts"}
-                </span>
+                {(lockedIds.includes(request.id) || (request.conflictIds.length > 0 && currentView === "original")) && (
+                  <span className={cn("ml-auto flex items-center gap-1 font-semibold", lockedIds.includes(request.id) ? "text-violet-600" : "text-red-600")}>
+                    {lockedIds.includes(request.id) ? <><LockKeyhole className="size-2.5" />Locked</> : <><AlertTriangle className="size-2.5" />{request.conflictIds.length}</>}
+                  </span>
+                )}
               </div>
             </button>
           );

@@ -50,20 +50,15 @@ function ConflictSummary() {
         </div>
       </div>
       {grouped.length > 0 && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 2xl:grid-cols-1">
           {grouped.map((group) => (
-            <div key={group.type}>
-              <p className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">{group.label}</p>
-              {group.items.map((conflict) => (
-                <button key={conflict.id} type="button" onClick={() => selectConflict(conflict.id)} className="mb-1.5 w-full rounded-lg border border-slate-200 p-2.5 text-left transition hover:border-red-200 hover:bg-red-50/40">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-slate-800">{conflict.title}</span>
-                    <Badge variant={conflict.severity === "critical" ? "danger" : "warning"}>{conflict.id}</Badge>
-                  </div>
-                  <p className="mt-1 text-[10px] leading-4 text-slate-500">{conflict.explanation}</p>
-                </button>
-              ))}
-            </div>
+            <button key={group.type} type="button" onClick={() => selectConflict(group.items[0].id)} className="w-full rounded-xl border border-slate-200 p-3 text-left transition hover:border-red-200 hover:bg-red-50/40">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[11px] font-bold text-slate-800">{group.label}</span>
+                <Badge variant={group.items.some((item) => item.severity === "critical") ? "danger" : "warning"}>{group.items.length}</Badge>
+              </div>
+              <p className="mt-1 text-[10px] text-slate-500">Focus affected work on the timeline</p>
+            </button>
           ))}
         </div>
       )}
@@ -150,7 +145,7 @@ export function DetailsPanel() {
   const metrics = railPlanState.getVisibleSchedule().metrics;
 
   return (
-    <aside className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+    <aside className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-none">
       {selectedRequestId ? <RequestDetails requestId={selectedRequestId} /> : <ConflictSummary />}
       <RobustnessCard metrics={metrics} />
     </aside>

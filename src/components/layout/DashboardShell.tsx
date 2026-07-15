@@ -38,6 +38,18 @@ function InitialState() {
   );
 }
 
+function PlanHeader() {
+  return (
+    <section className="max-w-3xl pt-2">
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">Planning workspace</p>
+      <h1 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-950 sm:text-3xl">Overnight maintenance plan</h1>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Review the engineering window, resolve only the constraints that matter, and keep every final move under planner control.
+      </p>
+    </section>
+  );
+}
+
 function DisruptionBanner() {
   const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
   const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
@@ -94,21 +106,28 @@ export function DashboardShell() {
   const status: DashboardStatus = !loaded ? "Draft" : activeDisruptionId && !hasReplanned ? "Disruption detected" : currentView === "original" ? "Conflicts detected" : "Optimised";
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8]">
+    <div className="min-h-screen bg-[#f7f8fa]">
       <TopNavigation status={status} onLoadDemo={loadDemo} onReset={resetDemo} loaded={loaded} />
       {!loaded ? <InitialState /> : (
-        <main className="mx-auto max-w-[1920px] space-y-3 px-4 py-4 2xl:px-5">
+        <main className="mx-auto max-w-[1680px] space-y-6 px-5 py-7 sm:px-6 lg:py-9">
           <div className="flex items-center justify-between gap-3 xl:hidden">
             <p className="text-xs font-semibold text-slate-600">16–20 September 2026</p>
             <Badge variant={status.includes("Disruption") ? "danger" : status === "Optimised" ? "success" : "warning"}>{status}</Badge>
           </div>
-          <MetricsGrid metrics={schedule.metrics} original={currentView === "original"} />
+          <PlanHeader />
           <StrategyControls />
+          <section className="space-y-3 pt-1">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Plan overview</h2>
+              <p className="mt-1 text-xs text-slate-500">The four signals that determine whether tonight&apos;s plan is ready.</p>
+            </div>
+            <MetricsGrid metrics={schedule.metrics} original={currentView === "original"} />
+          </section>
           <AnimatePresence>{activeDisruptionId && <DisruptionBanner />}</AnimatePresence>
-          <div className="grid min-w-0 gap-3 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_340px]">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[270px_minmax(0,1fr)] 2xl:grid-cols-[270px_minmax(0,1fr)_320px]">
             <RequestQueue />
             <div className="min-w-0"><ScheduleTimeline /></div>
-            <div className="min-w-0 lg:col-span-2 xl:col-span-1"><DetailsPanel /></div>
+            <div className="min-w-0 xl:col-span-2 2xl:col-span-1"><DetailsPanel /></div>
           </div>
           <footer className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2 text-[10px] text-slate-400">
             <span>RailPlan prototype · simulated planning data · no operational decisions are executed</span>

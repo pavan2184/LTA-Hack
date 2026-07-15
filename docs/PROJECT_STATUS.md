@@ -13,11 +13,12 @@ RailPlan is a frontend-only rail maintenance control-centre dashboard that demon
 ## What Works
 
 - 22 realistic requests, six original conflicts, five conflict-free strategy schedules, four disruptions, and four response plans.
-- Desktop-first operational dashboard with metrics, request search/filters, interactive timeline, conflict focus, rail network schematic, explanations, alternatives, approvals, locks, view comparison, reset, export toast, and robustness radar.
+- Desktop-first operational dashboard with a calm plan header, four essential metrics, request search/filters, interactive timeline, conflict focus, rail network schematic, explanations, alternatives, approvals, locks, view comparison, reset, export toast, and robustness radar.
+- Progressive disclosure keeps network detail hidden until request selection and summarises conflicts by category; the third workspace column is reserved for extra-wide displays.
 - One-second optimisation and replanning simulations with deterministic job motion, degraded disruption metrics, warning/impact banners, and toasts.
 - Persisted strategy and locked request IDs, with locked placements preserved across strategy changes.
 - Initial, loading, no-conflict, impossible-placement, disruption, and response states.
-- TDD and automated UAT: 15 tests pass.
+- TDD and automated UAT: 16 tests pass.
 - Production build, lint, and TypeScript checks pass.
 
 ## Known Issues / Verification Limits
@@ -33,7 +34,7 @@ RailPlan is a frontend-only rail maintenance control-centre dashboard that demon
 
 ## Verification
 
-- `npm test` — 15/15 passed.
+- `npm test` — 16/16 passed.
 - `npm run lint` — passed cleanly.
 - `npm run typecheck` — passed.
 - `npm run build` — passed; route `/` generated statically.

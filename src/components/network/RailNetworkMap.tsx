@@ -21,6 +21,15 @@ export function RailNetworkMap() {
   const selectedPrefix = selectedStops[0]?.slice(0, 2);
   const nearbyCount = request ? schedule.jobs.filter((job) => job.sector === request.sector && job.requestId !== request.id).length : 0;
 
+  if (!request) {
+    return (
+      <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-3 text-[10px] text-slate-500">
+        <MapPinned className="size-3.5" />
+        <span><strong className="text-slate-700">Network impact</strong> appears after selecting a request.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="border-t border-slate-100 bg-slate-50/60 p-3">
       <div className="mb-3 flex items-center justify-between">
@@ -28,7 +37,7 @@ export function RailNetworkMap() {
           <MapPinned className="size-3.5 text-slate-500" />
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">Rail network impact</p>
         </div>
-        {request && <span className="text-[10px] font-bold text-cyan-700">{request.sector}</span>}
+        <span className="text-[10px] font-bold text-cyan-700">{request.sector}</span>
       </div>
       <div className="space-y-3">
         {lines.map((line) => {
@@ -60,8 +69,8 @@ export function RailNetworkMap() {
       <div className="mt-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-2.5">
         <TrainFront className="mt-0.5 size-3.5 text-cyan-700" />
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold text-slate-800">{request?.title ?? "Select a request to inspect its corridor"}</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">{request ? `${nearbyCount} nearby scheduled ${nearbyCount === 1 ? "job" : "jobs"} on this sector.` : "Related work and adjacent access will appear here."}</p>
+          <p className="truncate text-[11px] font-bold text-slate-800">{request.title}</p>
+          <p className="mt-0.5 text-[10px] text-slate-500">{nearbyCount} nearby scheduled {nearbyCount === 1 ? "job" : "jobs"} on this sector.</p>
         </div>
       </div>
     </div>

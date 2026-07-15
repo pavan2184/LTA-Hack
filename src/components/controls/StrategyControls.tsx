@@ -37,11 +37,11 @@ export function StrategyControls() {
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:flex-row lg:items-center lg:justify-between">
+    <section className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-none lg:flex-row lg:items-center lg:justify-between">
       <div className="flex min-w-0 flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
           <SlidersHorizontal className="size-4 text-cyan-700" />
-          Optimisation strategy
+          Strategy
         </div>
         <select
           aria-label="Optimisation strategy"

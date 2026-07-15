@@ -30,3 +30,11 @@ Status: Accepted
 Status: Accepted
 
 - Vitest/Testing Library cover domain transitions; browser UAT at three laptop widths covers the scripted demo and page overflow.
+
+### 2026-07-15 — Progressive disclosure for dashboard density
+
+Status: Accepted
+
+- Lead with the plan title and decision controls, then show four essential KPIs rather than five equal-weight cards.
+- Keep network and conflict details available on selection while using compact summaries in the default view.
+- Use the three-column workspace only at extra-wide widths; details move below the timeline on normal laptops.

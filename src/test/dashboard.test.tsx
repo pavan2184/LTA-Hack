@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,6 +26,16 @@ describe("RailPlan dashboard", () => {
     await user.click(screen.getByRole("button", { name: /open M-014/i }));
     expect(screen.getByRole("heading", { name: /signalling equipment inspection/i })).toBeInTheDocument();
     expect(screen.getByText(/Team Alpha was assigned to M-008/i)).toBeInTheDocument();
+  });
+
+  it("uses a restrained four-metric overview below the plan heading", async () => {
+    const user = userEvent.setup();
+    render(<DashboardShell />);
+
+    await user.click(screen.getByRole("button", { name: /load demo/i }));
+
+    expect(screen.getByRole("heading", { name: /overnight maintenance plan/i })).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Schedule summary metrics")).getAllByRole("article")).toHaveLength(4);
   });
 
   it("optimises the schedule and updates metrics", async () => {
