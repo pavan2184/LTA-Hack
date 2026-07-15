@@ -3,7 +3,6 @@
 import { AlertTriangle, Clock3, Filter, LockKeyhole, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { RailNetworkMap } from "@/components/network/RailNetworkMap";
 import { Badge } from "@/components/ui/badge";
 import { requests } from "@/data/requests";
 import { cn } from "@/lib/utils";
@@ -11,13 +10,12 @@ import { useRailPlanStore } from "@/store/useRailPlanStore";
 import type { MaintenanceRequest, RequestStatus } from "@/types/railplan";
 import { formatDuration } from "@/utils/time";
 
-type FilterId = "all" | "conflicted" | "unscheduled" | "high" | "locked";
+type FilterId = "attention" | "all" | "critical" | "locked";
 
 const filters: { id: FilterId; label: string }[] = [
+  { id: "attention", label: "Attention" },
   { id: "all", label: "All" },
-  { id: "conflicted", label: "Conflicted" },
-  { id: "unscheduled", label: "Unscheduled" },
-  { id: "high", label: "High priority" },
+  { id: "critical", label: "Critical" },
   { id: "locked", label: "Locked" },
 ];
 
@@ -28,7 +26,7 @@ function statusBadge(status: RequestStatus) {
 
 export function RequestQueue() {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterId>("all");
+  const [filter, setFilter] = useState<FilterId>("attention");
   const selectedRequestId = useRailPlanStore((state) => state.selectedRequestId);
   const selectRequest = useRailPlanStore((state) => state.selectRequest);
   const currentView = useRailPlanStore((state) => state.currentView);
@@ -50,32 +48,35 @@ export function RequestQueue() {
     const term = query.trim().toLowerCase();
     const matchesSearch = !term || request.id.toLowerCase().includes(term) || request.title.toLowerCase().includes(term);
     const status = statusFor(request);
-    const matchesFilter = filter === "all" || filter === status || (filter === "high" && ["high", "critical"].includes(request.priority));
+    const matchesFilter = filter === "all"
+      || (filter === "attention" && ["conflicted", "unscheduled"].includes(status))
+      || (filter === "critical" && request.priority === "critical")
+      || (filter === "locked" && status === "locked");
     return matchesSearch && matchesFilter;
   // statusFor intentionally reflects the current schedule snapshot.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [query, filter, schedule, currentView, lockedIds]);
 
   return (
-    <aside className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-none">
-      <div className="border-b border-slate-100 p-3">
+    <aside className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
+      <div className="border-b border-slate-100 p-3.5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-slate-950">Maintenance requests</h2>
-            <p className="text-[10px] text-slate-500">{visible.length} of {requests.length} requests</p>
+            <h2 className="text-sm font-bold text-slate-950">Work requests</h2>
+            <p className="mt-0.5 text-xs text-slate-500">{visible.length} of {requests.length} shown</p>
           </div>
           <div className="rounded-lg bg-slate-100 p-2 text-slate-500"><Filter className="size-3.5" /></div>
         </div>
         <div className="relative mt-3">
           <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-          <input aria-label="Search requests" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ID or work title" className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pl-8 pr-2 text-xs outline-none focus:border-cyan-500 focus:bg-white" />
+          <input aria-label="Search requests" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ID or work title" className="h-9 w-full rounded-md border border-slate-200 bg-slate-50 pl-8 pr-2 text-xs outline-none focus:border-cyan-500 focus:bg-white" />
         </div>
-        <div className="mt-2 flex flex-wrap gap-1">
-          {filters.map((item) => <button type="button" key={item.id} onClick={() => setFilter(item.id)} className={cn("rounded-md px-2 py-1 text-[9px] font-bold", filter === item.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500 hover:text-slate-800")}>{item.label}</button>)}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {filters.map((item) => <button type="button" aria-pressed={filter === item.id} key={item.id} onClick={() => setFilter(item.id)} className={cn("rounded-md px-2.5 py-1.5 text-[11px] font-bold", filter === item.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:text-slate-900")}>{item.label}</button>)}
         </div>
       </div>
 
-      <div className="h-[440px] space-y-2 overflow-y-auto p-2.5 2xl:h-[500px]">
+      <div className="h-[520px] space-y-2 overflow-y-auto p-2.5 2xl:h-[570px]">
         {visible.map((request) => {
           const status = statusFor(request);
           const selected = selectedRequestId === request.id;
@@ -85,23 +86,23 @@ export function RequestQueue() {
               aria-label={`Open ${request.id} ${request.title}`}
               key={request.id}
               onClick={() => selectRequest(request.id)}
-              className={cn("w-full rounded-xl border px-3 py-2.5 text-left transition", selected ? "border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-100" : status === "conflicted" ? "border-red-200 bg-red-50/30 hover:border-red-300" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50")}
+              className={cn("w-full rounded-lg border px-3 py-2.5 text-left transition", selected ? "border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-100" : status === "conflicted" ? "border-red-200 bg-red-50/30 hover:border-red-300" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50")}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-[10px] font-black text-slate-500">{request.id}</span>
+                  <span className="font-mono text-[11px] font-black text-slate-500">{request.id}</span>
                   {statusBadge(status)}
                 </div>
-                <Badge variant={request.priority === "critical" ? "danger" : request.priority === "high" ? "warning" : "neutral"}>{request.priority}</Badge>
+                <span className={cn("text-[11px] font-bold capitalize", request.priority === "critical" ? "text-red-700" : request.priority === "high" ? "text-amber-700" : "text-slate-500")}>{request.priority}</span>
               </div>
-              <p className="mt-1.5 truncate text-xs font-bold text-slate-900">{request.title}</p>
-              <div className="mt-2 flex items-center gap-1.5 text-[9px] text-slate-500">
+              <p className="mt-1.5 truncate text-[13px] font-bold text-slate-900">{request.title}</p>
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
                 <span>{request.sector}</span>
                 <span className="text-slate-300">•</span>
                 <span className="flex items-center gap-1"><Clock3 className="size-2.5" />{formatDuration(request.durationMinutes)}</span>
                 {(lockedIds.includes(request.id) || (request.conflictIds.length > 0 && currentView === "original")) && (
                   <span className={cn("ml-auto flex items-center gap-1 font-semibold", lockedIds.includes(request.id) ? "text-violet-600" : "text-red-600")}>
-                    {lockedIds.includes(request.id) ? <><LockKeyhole className="size-2.5" />Locked</> : <><AlertTriangle className="size-2.5" />{request.conflictIds.length}</>}
+                    {lockedIds.includes(request.id) ? <><LockKeyhole className="size-3" />Locked</> : <><AlertTriangle className="size-3" />{request.conflictIds.length} issues</>}
                   </span>
                 )}
               </div>
@@ -109,7 +110,6 @@ export function RequestQueue() {
           );
         })}
       </div>
-      <RailNetworkMap />
     </aside>
   );
 }

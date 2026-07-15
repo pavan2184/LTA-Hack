@@ -2,6 +2,7 @@
 
 import { MapPinned, TrainFront } from "lucide-react";
 
+import { emergencyRequest } from "@/data/disruptionScenarios";
 import { requestById } from "@/data/requests";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
@@ -16,28 +17,28 @@ export function RailNetworkMap() {
   const selectedRequestId = useRailPlanStore((state) => state.selectedRequestId);
   const railPlanState = useRailPlanStore();
   const schedule = railPlanState.getVisibleSchedule();
-  const request = selectedRequestId ? requestById[selectedRequestId] : null;
+  const request = selectedRequestId === emergencyRequest.id ? emergencyRequest : selectedRequestId ? requestById[selectedRequestId] : null;
   const selectedStops = request?.sector.split("–") ?? [];
   const selectedPrefix = selectedStops[0]?.slice(0, 2);
   const nearbyCount = request ? schedule.jobs.filter((job) => job.sector === request.sector && job.requestId !== request.id).length : 0;
 
   if (!request) {
     return (
-      <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-3 text-[10px] text-slate-500">
+      <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-xs text-slate-500">
         <MapPinned className="size-3.5" />
-        <span><strong className="text-slate-700">Network impact</strong> appears after selecting a request.</span>
+        <span><strong className="text-slate-700">Affected corridor</strong> appears after selecting a request.</span>
       </div>
     );
   }
 
   return (
-    <div className="border-t border-slate-100 bg-slate-50/60 p-3">
+    <div className="border-t border-slate-100 bg-slate-50/60 p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MapPinned className="size-3.5 text-slate-500" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">Rail network impact</p>
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Affected corridor</p>
         </div>
-        <span className="text-[10px] font-bold text-cyan-700">{request.sector}</span>
+        <span className="text-xs font-bold text-cyan-700">{request.sector}</span>
       </div>
       <div className="space-y-3">
         {lines.map((line) => {
@@ -46,7 +47,7 @@ export function RailNetworkMap() {
           const endIndex = selectedStops[1] ? line.nodes.indexOf(selectedStops[1]) : -1;
           return (
             <div key={line.id}>
-              <div className="mb-1.5 flex items-center gap-2 text-[9px] font-semibold text-slate-400"><span className={cn("h-1.5 w-5 rounded-full", line.color)} />{line.label}</div>
+              <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold text-slate-500"><span className={cn("h-1.5 w-5 rounded-full", line.color)} />{line.label}</div>
               <div className="flex items-center">
                 {line.nodes.map((node, index) => {
                   const active = lineSelected && startIndex >= 0 && index >= Math.min(startIndex, endIndex) && index <= Math.max(startIndex, endIndex);
@@ -55,7 +56,7 @@ export function RailNetworkMap() {
                     <div key={node} className={cn("flex min-w-0 flex-1 items-center", index === line.nodes.length - 1 && "flex-none")}>
                       <div className="relative flex flex-col items-center">
                         <span className={cn("relative z-10 size-2.5 rounded-full border-2 bg-white", active ? "border-cyan-600 ring-2 ring-cyan-100" : "border-slate-300")} />
-                        <span className={cn("mt-1 text-[8px]", active ? "font-bold text-cyan-800" : "text-slate-400")}>{node}</span>
+                        <span className={cn("mt-1 text-[10px]", active ? "font-bold text-cyan-800" : "text-slate-400")}>{node}</span>
                       </div>
                       {index < line.nodes.length - 1 && <span className={cn("mb-3 h-0.5 flex-1", activeSegment ? "bg-cyan-600" : "bg-slate-200")} />}
                     </div>
@@ -69,8 +70,8 @@ export function RailNetworkMap() {
       <div className="mt-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-2.5">
         <TrainFront className="mt-0.5 size-3.5 text-cyan-700" />
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold text-slate-800">{request.title}</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">{nearbyCount} nearby scheduled {nearbyCount === 1 ? "job" : "jobs"} on this sector.</p>
+          <p className="truncate text-xs font-bold text-slate-800">{request.title}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{nearbyCount} other scheduled {nearbyCount === 1 ? "job" : "jobs"} in this sector.</p>
         </div>
       </div>
     </div>

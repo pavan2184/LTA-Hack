@@ -55,11 +55,11 @@ function JobBlock({ job, request, lane, affected }: { job: ScheduledJob; request
         {job.status === "conflicted" && <AlertTriangle className="size-2.5 shrink-0" />}
         {job.locked && <LockKeyhole className="size-2.5 shrink-0" />}
         {job.status === "emergency" && <Siren className="size-2.5 shrink-0" />}
-        <span className="truncate font-mono text-[9px] font-black">{request.id}</span>
+        <span className="truncate font-mono text-[10px] font-black">{request.id}</span>
         <span className={cn("ml-auto size-1.5 shrink-0 rounded-full", request.priority === "critical" ? "bg-red-500" : request.priority === "high" ? "bg-amber-500" : "bg-slate-400", job.status === "emergency" && "bg-white")} />
       </div>
-      <p className="mt-0.5 truncate text-[9px] font-semibold leading-3">{request.shortTitle}</p>
-      <p className="truncate text-[8px] opacity-70">{job.team.replace(" Team", "")}</p>
+      <p className="mt-0.5 truncate text-[10px] font-semibold leading-3">{request.shortTitle}</p>
+      <p className="truncate text-[9px] opacity-70">{job.team.replace(" Team", "")}</p>
     </motion.button>
   );
 }
@@ -74,30 +74,30 @@ export function ScheduleTimeline() {
   const scenario = activeDisruptionId ? disruptionById[activeDisruptionId] : null;
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-none">
-      <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+    <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-slate-950">Engineering access timeline</h2>
-            <Badge variant={currentView === "disrupted" ? "danger" : currentView === "original" ? "warning" : "success"}>{currentView === "disrupted" && hasReplanned ? "replanned" : currentView}</Badge>
+            <h2 className="text-sm font-bold text-slate-950">Access plan</h2>
+            <Badge variant={currentView === "disrupted" ? "danger" : currentView === "original" ? "warning" : "success"}>{currentView === "disrupted" ? hasReplanned ? "response" : "disrupted" : currentView === "original" ? "submitted" : "recommended"}</Badge>
           </div>
-          <p className="mt-0.5 text-[10px] text-slate-500">{schedule.name} · 16 September overnight window · strategy: {selectedStrategy.replaceAll("-", " ")}</p>
+          <p className="mt-1 text-xs text-slate-500">{schedule.name} · 00:00–04:00 · {selectedStrategy.replaceAll("-", " ")}</p>
         </div>
         <div className="text-right">
           {schedule.metrics.activeConflicts === 0 ? (
-            <p className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700"><CheckCircle2 className="size-3.5" />No active conflicts detected</p>
+            <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-700"><CheckCircle2 className="size-3.5" />0 declared conflicts</p>
           ) : (
-            <p className="flex items-center gap-1.5 text-[10px] font-bold text-red-600"><AlertTriangle className="size-3.5" />{schedule.metrics.activeConflicts} active conflicts</p>
+            <p className="flex items-center gap-1.5 text-xs font-bold text-red-600"><AlertTriangle className="size-3.5" />{schedule.metrics.activeConflicts} declared conflicts</p>
           )}
-          <p className="mt-1 text-[9px] text-slate-400">All times local · engineering hours</p>
+          <p className="mt-1 text-[11px] text-slate-400">Fixture indicators · planner review required</p>
         </div>
       </div>
 
       <div className="min-w-0">
         <div className="grid grid-cols-[88px_minmax(0,1fr)] border-b border-slate-200 bg-slate-50">
-          <div className="flex items-center px-2 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Sector</div>
+          <div className="flex items-center px-2 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">Sector</div>
           <div className="grid grid-cols-9">
-            {timeLabels.map((label, index) => <div key={label} className={cn("py-2 text-[9px] font-semibold text-slate-500", index === 8 ? "text-right pr-1" : "-translate-x-2")}>{label}</div>)}
+            {timeLabels.map((label, index) => <div key={label} className={cn("py-2 text-[10px] font-semibold text-slate-500", index === 8 ? "text-right pr-1" : "-translate-x-2")}>{label}</div>)}
           </div>
         </div>
 
@@ -109,8 +109,8 @@ export function ScheduleTimeline() {
             return (
               <div key={sector} className="grid h-[76px] grid-cols-[88px_minmax(0,1fr)] border-b border-slate-100 last:border-b-0">
                 <div className={cn("flex flex-col justify-center border-r border-slate-100 px-2", sector.startsWith("NS") ? "border-l-2 border-l-red-500" : sector.startsWith("EW") ? "border-l-2 border-l-emerald-500" : "border-l-2 border-l-amber-500")}>
-                  <span className="text-[10px] font-black text-slate-700">{sector}</span>
-                  <span className="mt-0.5 text-[8px] text-slate-400">Protected access</span>
+                  <span className="text-[11px] font-black text-slate-700">{sector}</span>
+                  <span className="mt-0.5 text-[9px] text-slate-400">Protected access</span>
                 </div>
                 <div className={cn("timeline-grid timeline-minor-grid relative overflow-hidden", rowHasConflict && "bg-red-50/35")}>
                   {sectorDisruption && (
@@ -120,7 +120,7 @@ export function ScheduleTimeline() {
                       className="emergency-hatch absolute inset-y-0 z-[5] border-x border-red-400"
                       style={{ left: `${(timeToMinutes(scenario.startTime) / 240) * 100}%`, width: `${((timeToMinutes(scenario.endTime) - timeToMinutes(scenario.startTime)) / 240) * 100}%` }}
                     >
-                      <span className="absolute left-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[7px] font-black uppercase text-white">Disruption</span>
+                      <span className="absolute left-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[9px] font-black uppercase text-white">Disruption</span>
                     </motion.div>
                   )}
                   <AnimatePresence initial={false}>
@@ -139,7 +139,7 @@ export function ScheduleTimeline() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2 text-[9px] text-slate-500">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2.5 text-[11px] text-slate-500">
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm border border-slate-300 bg-white" />Scheduled</span>
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm border border-red-400 bg-red-100" />Conflicted</span>
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm border border-cyan-300 bg-cyan-50" /><MoveRight className="size-2.5" />Moved</span>
