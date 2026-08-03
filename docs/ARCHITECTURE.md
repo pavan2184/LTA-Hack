@@ -1,98 +1,119 @@
 # Architecture
 
-Last updated: 2026-07-15
+Last updated: 2026-08-02
 
-## Overview
+## Shape
 
-RailPlan is a static Next.js App Router application. The root server component renders one client dashboard. Deterministic data modules contain all requests, conflicts, strategy schedules, metrics, and disruption responses. A persisted Zustand store owns demo state and delegates derived schedule resolution to pure utilities.
+A static Next.js App Router page over a pure TypeScript planning engine, plus
+one dynamic route for the assistant. No database, no auth, no external feed.
 
-Status: implemented current architecture. The constraint engine, graph model, calculated statistics, and solver in `DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md` are proposals and are not part of this architecture.
-
-## Stack
-
-- Frontend: Next.js, React, TypeScript, Tailwind CSS.
-- UI: shadcn-style Radix primitives, Lucide icons, Framer Motion, date-fns, and Sonner notifications. Recharts remains installed but is no longer rendered.
-- State: Zustand with localStorage persistence limited to strategy and locked IDs.
-- Tests: Vitest, Testing Library, user-event, jsdom.
-- Backend/database/auth/deployment API: none.
-
-## Folder Structure
-
-```text
-src/
-  app/                 App Router entry and global styles
-  components/          layout, metrics, controls, requests, schedule, insights, network, disruption, ui
-  data/                deterministic requests and schedule variants
-  store/               Zustand store
-  types/               domain interfaces
-  utils/               time, schedule, and class helpers
-  test/                test setup and focused component/store tests
-docs/
-  README.md            documentation index and source-of-truth rules
-  CURRENT_IMPLEMENTATION_AUDIT.md
-                       exact code behaviour and known gaps
-  DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md
-                       proposed mathematical evolution
-  RAIL_SCHEDULING_RESEARCH.md
-                       annotated research evidence
+```
+src/domain/     network topology, crews, assets, work-class rules   (facts)
+src/data/       22 requests, emergency scenarios, disruptions       (inputs)
+src/engine/     intervals, validate, solve, metrics,                (computation)
+                alternatives, explain, strategies, hash
+src/store/      Zustand: view state + solver invocation             (orchestration)
+src/components/ dashboard                                           (presentation)
+src/lib/assistant/ fact set, grounding guard, templates             (language layer)
+src/app/api/assistant/ Claude call, server-side                     (model boundary)
 ```
 
-## Core Flows
+The dependency arrow points one way. `domain` knows nothing about `engine`;
+`engine` knows nothing about `components`; `components` never compute a planning
+result, they render one.
 
-1. `loadDemo` selects the original schedule and its six conflicts.
-2. `optimise` shows progress copy, then selects the active strategy schedule after a fixed delay.
-3. Strategy changes replace only unlocked placements and metrics.
-4. Disruption activation overlays an event and degraded metrics; replanning loads a deterministic response schedule.
-5. Alternative choices and recommendation actions update local overrides.
+## The central rule
 
-The words “optimise” and “replan” describe UI flows. No optimisation or replanning algorithm runs in v0.1.0.
+**`validate()` is the only authority on whether a plan is feasible.**
 
-## Data Flow and Boundaries
+The solver calls it while building. It calls it again on the finished plan, from
+scratch, before returning. The alternatives generator calls it on every candidate.
+The explanation engine calls it on counterfactuals. The tests call it on solver
+output as a property. Nothing anywhere is allowed to assert that a plan is
+acceptable without going through it.
 
-UI events call store actions. Selectors combine store state with imported immutable datasets. Components receive domain objects and emit explicit callbacks. No network calls occur, and the interface does not expose an export action.
+This is what makes the difference between a tool that shows a schedule and a tool
+whose schedule means something. A solver that only trusts its own incremental
+checks will eventually ship a plan that violates a rule it stopped looking at.
 
-```text
-immutable TypeScript fixtures
-          ↓
-Zustand state + schedule selector
-          ↓
-planner lock/alternative overlays
-          ↓
-attention queue · timeline · request inspector/schematic · decision signals
-```
+## Why atomic blocks
 
-Conflict records, metrics, explanations, alternatives, and disruption impacts are parallel fixture data. They are not recalculated after planner overlays, which means the visible placement and displayed KPIs can diverge.
+A request arrives labelled `NS10-NS12`. Another arrives labelled `NS11-NS13`.
+Compared as strings they are unrelated; on the ground they share `NS11-NS12`.
 
-## Presentation Hierarchy
+So a sector label is display only. `expandSector` turns it into block ids at
+module load, and every rule, the solver, the timeline and the corridor map all
+work on those ids. The timeline draws one row per block rather than per request
+for the same reason: a chart keyed on the requested sector would hide precisely
+the collision the tool exists to find.
 
-- The command bar has one primary action for the current state: resolve conflicts, rebuild a recommendation, or replan affected work.
-- The four headline signals are jobs placed, critical work, declared conflicts, and engineering-window load.
-- The request queue defaults to work needing attention; individual conflicts are directly selectable.
-- Submitted and Recommended are the two explicit plan views.
-- The fixed network schematic appears only in selected-request context.
-- The inspector ends with a release-readiness checklist. It does not present the fixture robustness score as a validated operational measure.
+## Why capacities, not names
 
-## State and Persistence Boundary
+v0.1.0 modelled equipment as a string. Two jobs both listing "Thermal imaging
+unit" looked like a coincidence. Modelled as a count — one calibrated unit — it
+is a constraint the validator finds without a human noticing.
 
-- Zustand owns view, strategy, selection, lock IDs/placements, accept/reject state, disruptions, loading state, and alternatives.
-- localStorage persists only `selectedStrategy` and `lockedRequestIds` under `railplan-preferences`.
-- Exact `lockedPlacements` do not persist across reload, so only in-session placement preservation is guaranteed.
-- No server state, remote cache, or database exists.
+The same dataset shows why this matters more than crew headcount: Power Systems
+has two crews, so `TEAM_CAPACITY` is satisfied for M-004 and M-011 running
+together. They still cannot both run, because there is one thermal imaging unit
+and one SS-4 isolation. Three rules, one answer, none of them typed in.
 
-## Current Validation Boundary
+## Strategies are objectives, not schedules
 
-- Data tests validate counts, references, time bounds, and exact same-sector non-overlap for strategy fixtures.
-- There is no reusable validator for team, equipment, skills, work compatibility, dependencies, safety zones, adjacent track blocks, travel, or planner overrides.
-- A strategy reporting `activeConflicts: 0` is a fixture assertion rather than a general feasibility proof.
-- All five strategy fixtures retain the `M-004`/`M-011` thermal imaging unit overlap described by original conflict `C-04`; exact-sector tests do not see cross-sector resource conflicts.
-- See `CURRENT_IMPLEMENTATION_AUDIT.md` for the complete constraint and metric gap inventory.
+A strategy is three deterministic levers over one solver: the order requests are
+considered in, how candidate start times are ranked, and how much separation or
+reserve the profile insists on. Nothing is stored. Two profiles running the same
+constraints differ only by those numbers, which is what makes the comparison
+meaningful rather than decorative.
 
-## Deployment Assumptions and Tradeoffs
+## Planner decisions re-enter the solve
 
-- Any Node host capable of building Next.js can serve the prototype.
-- Precomputed schedules guarantee a reliable demo but are not operationally valid solutions.
-- The custom Gantt timeline prioritises visual control and low dependency weight over drag-and-drop editing.
+Pinning a placement is not an overlay. It becomes a hard constraint and the night
+is solved around it. This is the difference between an interface that lets a
+planner move a bar and one where moving the bar means something: the KPIs, the
+violations and the rest of the schedule all move with the decision, or the tool
+reports that the decision cannot be honoured.
 
-## Proposed Evolution Boundary
+## Disruptions change inputs
 
-The proposed frontend-only P0 adds atomic blocks, a pure TypeScript validator, and calculated KPIs. A CP-SAT or MILP service would introduce a backend and requires an explicit accepted decision plus coordinated changes to architecture, data, API, testing, security, and deployment documentation.
+Each scenario translates into solver inputs — a mandatory emergency job pinned to
+its window, a crew marked unavailable, a job stretched by its overrun, an earlier
+handback deadline. Then the ordinary solver runs. Nothing is precomputed, which
+is why a scenario is allowed to come back infeasible.
+
+## The model boundary
+
+The assistant is a presentation layer over solver output and is constrained
+structurally rather than by instruction alone:
+
+1. The browser sends the question and the parameters identifying the plan — never
+   the plan. The server re-solves and builds its own fact set, so nothing the
+   client sends can become a fact the model repeats.
+2. The fact set is serialised into the prompt *and* reused as the allow-list for
+   the grounding check, so the two cannot drift.
+3. Any answer containing a numeric token absent from that fact set is discarded.
+4. On rejection, refusal, missing credentials or network failure, templates over
+   the same engine output answer instead, and the interface says which happened.
+
+The assistant can rephrase, summarise and prioritise. It cannot introduce a
+quantity, and it never decides feasibility.
+
+## Determinism
+
+Same inputs, same plan. Guaranteed by fixed request ordering with `id` as final
+tie-break, integer minutes throughout, candidate starts generated in a fixed
+order, and a repair loop that re-solves from scratch rather than mutating in
+place — so the result is a function of its inputs and not of the order repairs
+happened in. `inputHash` makes it checkable, and a test asserts it.
+
+## Performance
+
+22 requests solve in 20-70 ms, so solving runs inline. A Web Worker would add
+failure modes without removing a visible stall. The progress strip shows three
+real phases rather than a fake timer. That trade changes if the dataset grows.
+
+## Deployment
+
+Any Node host that can build Next.js. `/` is static; `/api/assistant` needs a
+server. Without `ANTHROPIC_API_KEY` the assistant degrades to templates and the
+rest of the application is unaffected.

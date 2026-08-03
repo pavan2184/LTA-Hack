@@ -14,3 +14,6 @@ build/
 .DS_Store
 .claude/settings.local.json
 tsconfig.tsbuildinfo
+
+# Agent tool scratch state
+.antigravity/

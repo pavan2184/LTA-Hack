@@ -1,115 +1,295 @@
 "use client";
 
-import { AlertTriangle, Clock3, Filter, LockKeyhole, Search } from "lucide-react";
+import { Lock, Search, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
+import { categoryTone } from "@/components/insights/ViolationPanel";
 import { requests } from "@/data/requests";
+import { teamById } from "@/domain/resources";
+import {
+  categoriesFor,
+  categoryOf,
+  categoryProfile,
+  conflictCategories,
+  type ConflictCategory,
+} from "@/engine/conflicts";
+import { formatClock } from "@/engine/intervals";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { MaintenanceRequest, RequestStatus } from "@/types/railplan";
-import { formatDuration } from "@/utils/time";
+import type { MaintenanceRequest } from "@/types/railplan";
 
-type FilterId = "attention" | "all" | "critical" | "locked";
+type FilterId = "attention" | "all" | "mandatory" | "pinned" | ConflictCategory;
 
-const filters: { id: FilterId; label: string }[] = [
-  { id: "attention", label: "Attention" },
+const baseFilters: { id: FilterId; label: string }[] = [
+  { id: "attention", label: "Needs action" },
   { id: "all", label: "All" },
-  { id: "critical", label: "Critical" },
-  { id: "locked", label: "Locked" },
+  { id: "mandatory", label: "Mandatory" },
+  { id: "pinned", label: "Pinned" },
 ];
 
-function statusBadge(status: RequestStatus) {
-  const variants = { scheduled: "success", conflicted: "danger", unscheduled: "warning", locked: "violet", moved: "info", emergency: "danger" } as const;
-  return <Badge variant={variants[status]}>{status}</Badge>;
-}
+type RowState = "clean" | "violating" | "deferred" | "pinned";
+
+const priorityDot: Record<string, string> = {
+  critical: "bg-signal-red",
+  high: "bg-signal-amber",
+  medium: "bg-ink-400",
+  low: "bg-rule-strong",
+};
+
+/** Sector label tinted by corridor, matching the timeline's group colours. */
+const corridorText: Record<string, string> = {
+  NS: "text-line-ns",
+  EW: "text-line-ew",
+  CC: "text-line-cc",
+};
 
 export function RequestQueue() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterId>("attention");
+
+  const result = useRailPlanStore((state) => state.activeResult());
   const selectedRequestId = useRailPlanStore((state) => state.selectedRequestId);
   const selectRequest = useRailPlanStore((state) => state.selectRequest);
-  const currentView = useRailPlanStore((state) => state.currentView);
-  const railPlanState = useRailPlanStore();
-  const schedule = railPlanState.getVisibleSchedule();
-  const lockedIds = useRailPlanStore((state) => state.lockedRequestIds);
+  const locked = useRailPlanStore((state) => state.locked);
 
-  const statusFor = (request: MaintenanceRequest): RequestStatus => {
-    const job = schedule.jobs.find((item) => item.requestId === request.id);
-    if (lockedIds.includes(request.id)) return "locked";
-    if (!job) return "unscheduled";
-    if (currentView === "original" && request.conflictIds.length) return "conflicted";
-    if (job.status === "emergency") return "emergency";
-    if (job.movedMinutes) return "moved";
-    return "scheduled";
-  };
+  const { stateFor, placementFor, categoriesOf } = useMemo(() => {
+    const violations = result?.violations ?? [];
+    const violating = new Set(violations.flatMap((v) => v.requestIds));
+    const deferred = new Set((result?.plan.deferred ?? []).map((entry) => entry.requestId));
+    const placements = new Map((result?.plan.placements ?? []).map((p) => [p.requestId, p]));
 
-  const visible = useMemo(() => requests.filter((request) => {
+    return {
+      placementFor: (id: string) => placements.get(id) ?? null,
+      categoriesOf: (id: string) => categoriesFor(violations, id),
+      stateFor: (id: string): RowState => {
+        if (violating.has(id)) return "violating";
+        if (deferred.has(id)) return "deferred";
+        if (locked[id]) return "pinned";
+        return "clean";
+      },
+    };
+  }, [result, locked]);
+
+  // Only offer a conflict-type filter for the kinds actually present, so the
+  // control never promises a slice of the queue that is empty.
+  const categoryFilters = useMemo(() => {
+    const present = new Set(
+      (result?.violations ?? []).map((violation) => categoryOf(violation.ruleId)),
+    );
+    return conflictCategories.filter((profile) => present.has(profile.id));
+  }, [result]);
+
+  const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const matchesSearch = !term || request.id.toLowerCase().includes(term) || request.title.toLowerCase().includes(term);
-    const status = statusFor(request);
-    const matchesFilter = filter === "all"
-      || (filter === "attention" && ["conflicted", "unscheduled"].includes(status))
-      || (filter === "critical" && request.priority === "critical")
-      || (filter === "locked" && status === "locked");
-    return matchesSearch && matchesFilter;
-  // statusFor intentionally reflects the current schedule snapshot.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [query, filter, schedule, currentView, lockedIds]);
+    return requests.filter((request) => {
+      const matchesSearch =
+        !term ||
+        request.id.toLowerCase().includes(term) ||
+        request.title.toLowerCase().includes(term) ||
+        request.sector.toLowerCase().includes(term);
+      if (!matchesSearch) return false;
+
+      const state = stateFor(request.id);
+      switch (filter) {
+        case "all":
+          return true;
+        case "mandatory":
+          return request.mandatory;
+        case "pinned":
+          return state === "pinned";
+        case "attention":
+          return state === "violating" || state === "deferred";
+        default:
+          return categoriesOf(request.id).includes(filter);
+      }
+    });
+  }, [query, filter, stateFor, categoriesOf]);
 
   return (
-    <aside className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
-      <div className="border-b border-slate-100 p-3.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-slate-950">Work requests</h2>
-            <p className="mt-0.5 text-xs text-slate-500">{visible.length} of {requests.length} shown</p>
-          </div>
-          <div className="rounded-lg bg-slate-100 p-2 text-slate-500"><Filter className="size-3.5" /></div>
+    <aside className="flex min-h-0 flex-col border border-rule bg-surface">
+      <div className="border-b border-rule p-2.5">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[13px] font-semibold text-ink-900">Requests</h2>
+          <span className="text-[12px] text-ink-500">
+            {visible.length} of {requests.length}
+          </span>
         </div>
-        <div className="relative mt-3">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-          <input aria-label="Search requests" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ID or work title" className="h-9 w-full rounded-md border border-slate-200 bg-slate-50 pl-8 pr-2 text-xs outline-none focus:border-cyan-500 focus:bg-white" />
+
+        <div className="relative mt-2">
+          <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-ink-400" />
+          <input
+            aria-label="Search requests"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="ID, title or sector"
+            className="h-7 w-full rounded-sm border border-rule bg-paper pl-7 pr-2 text-[12px] placeholder:text-ink-400 focus:border-accent focus:bg-surface"
+          />
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {filters.map((item) => <button type="button" aria-pressed={filter === item.id} key={item.id} onClick={() => setFilter(item.id)} className={cn("rounded-md px-2.5 py-1.5 text-[11px] font-bold", filter === item.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:text-slate-900")}>{item.label}</button>)}
+
+        <div className="mt-2 flex flex-wrap gap-1">
+          {baseFilters.map((item) => (
+            <Chip key={item.id} active={filter === item.id} onClick={() => setFilter(item.id)}>
+              {item.label}
+            </Chip>
+          ))}
+          {categoryFilters.map((profile) => (
+            <Chip
+              key={profile.id}
+              active={filter === profile.id}
+              tone={profile.id}
+              onClick={() => setFilter(filter === profile.id ? "attention" : profile.id)}
+            >
+              {profile.label}
+            </Chip>
+          ))}
         </div>
       </div>
 
-      <div className="h-[520px] space-y-2 overflow-y-auto p-2.5 2xl:h-[570px]">
-        {visible.map((request) => {
-          const status = statusFor(request);
-          const selected = selectedRequestId === request.id;
-          return (
-            <button
-              type="button"
-              aria-label={`Open ${request.id} ${request.title}`}
-              key={request.id}
-              onClick={() => selectRequest(request.id)}
-              className={cn("w-full rounded-lg border px-3 py-2.5 text-left transition", selected ? "border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-100" : status === "conflicted" ? "border-red-200 bg-red-50/30 hover:border-red-300" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50")}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-[11px] font-black text-slate-500">{request.id}</span>
-                  {statusBadge(status)}
-                </div>
-                <span className={cn("text-[11px] font-bold capitalize", request.priority === "critical" ? "text-red-700" : request.priority === "high" ? "text-amber-700" : "text-slate-500")}>{request.priority}</span>
-              </div>
-              <p className="mt-1.5 truncate text-[13px] font-bold text-slate-900">{request.title}</p>
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
-                <span>{request.sector}</span>
-                <span className="text-slate-300">•</span>
-                <span className="flex items-center gap-1"><Clock3 className="size-2.5" />{formatDuration(request.durationMinutes)}</span>
-                {(lockedIds.includes(request.id) || (request.conflictIds.length > 0 && currentView === "original")) && (
-                  <span className={cn("ml-auto flex items-center gap-1 font-semibold", lockedIds.includes(request.id) ? "text-violet-600" : "text-red-600")}>
-                    {lockedIds.includes(request.id) ? <><LockKeyhole className="size-3" />Locked</> : <><AlertTriangle className="size-3" />{request.conflictIds.length} issues</>}
-                  </span>
-                )}
-              </div>
-            </button>
-          );
-        })}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {!visible.length && (
+          <p className="p-3 text-[12px] text-ink-500">
+            {filter === "attention"
+              ? "Nothing needs action. Every request is either placed cleanly or pinned."
+              : "No requests match."}
+          </p>
+        )}
+
+        {visible.map((request) => (
+          <Row
+            key={request.id}
+            request={request}
+            state={stateFor(request.id)}
+            categories={categoriesOf(request.id)}
+            start={placementFor(request.id)?.startMinute ?? null}
+            selected={selectedRequestId === request.id}
+            onSelect={() => selectRequest(request.id)}
+          />
+        ))}
       </div>
     </aside>
+  );
+}
+
+function Row({
+  request,
+  state,
+  categories,
+  start,
+  selected,
+  onSelect,
+}: {
+  request: MaintenanceRequest;
+  state: RowState;
+  categories: ConflictCategory[];
+  start: number | null;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const team = teamById[request.teamId];
+  const moved = start !== null && start !== request.preferredStart;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`Open ${request.id}, ${request.title}`}
+      aria-current={selected}
+      className={cn(
+        "block w-full border-b border-rule px-2.5 py-2 text-left transition-colors last:border-b-0",
+        selected ? "bg-accent-soft" : "hover:bg-sunk",
+        // A 3px left rule carries the state, so it survives being scanned
+        // quickly and does not rely on the row's fill colour.
+        state === "violating" && "border-l-[3px] border-l-signal-red",
+        state === "deferred" && "border-l-[3px] border-l-signal-amber",
+        state === "pinned" && "border-l-[3px] border-l-accent",
+        state === "clean" && "border-l-[3px] border-l-signal-green",
+      )}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="flex items-center gap-1.5">
+          {/* Priority as a colour chip: scanning a queue for the critical work
+              should not require reading a word at the end of every line. */}
+          <span className={cn("h-2 w-2 shrink-0 rounded-full", priorityDot[request.priority])} />
+          <span className="font-mono text-[11px] font-medium text-ink-700">{request.id}</span>
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] font-medium">
+          {state === "pinned" && <Lock className="size-3 text-accent" />}
+          <span
+            className={
+              state === "deferred"
+                ? "text-signal-amber"
+                : state === "violating"
+                  ? "text-signal-red"
+                  : "text-ink-500"
+            }
+          >
+            {start !== null ? formatClock(start) : state === "deferred" ? "no slot" : ""}
+          </span>
+        </span>
+      </div>
+
+      <p className="mt-0.5 truncate text-[13px] text-ink-900">{request.title}</p>
+
+      <p className="mt-0.5 text-[11px] text-ink-500">
+        <span className={cn("font-medium", corridorText[request.blockIds[0]?.slice(0, 2) ?? "NS"])}>
+          {request.sector}
+        </span>{" "}
+        &middot; {request.durationMinutes} min &middot;{" "}
+        <span className={request.mandatory ? "font-medium text-signal-red" : undefined}>
+          {request.mandatory ? "mandatory" : request.priority}
+        </span>
+      </p>
+
+      {/* The two dimensions the chart cannot show: who is doing it, and when it
+          was asked for. Both are constraints in their own right. */}
+      <p className="mt-0.5 truncate text-[11px] text-ink-500">
+        {team?.name ?? request.teamId} &middot; requested{" "}
+        {formatClock(request.preferredStart)}-{formatClock(request.preferredStart + request.durationMinutes)}
+        {moved && <span className="text-accent"> · moved</span>}
+      </p>
+
+      {categories.length > 0 && (
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {categories.map((category) => (
+            <span
+              key={category}
+              className={cn("flex items-center gap-0.5 text-[10px] font-medium", categoryTone[category].text)}
+            >
+              <TriangleAlert className="size-2.5" />
+              {categoryProfile[category].label}
+            </span>
+          ))}
+        </p>
+      )}
+    </button>
+  );
+}
+
+function Chip({
+  active,
+  tone,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  tone?: ConflictCategory;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1 rounded-xs border px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+        active
+          ? "border-ink-900 bg-ink-900 text-white"
+          : "border-rule text-ink-500 hover:border-rule-strong hover:text-ink-900",
+      )}
+    >
+      {tone && <span className={cn("size-1.5 rounded-full", categoryTone[tone].dot)} />}
+      {children}
+    </button>
   );
 }
