@@ -22,7 +22,46 @@ export interface FactSet {
   allowedNumbers: Set<string>;
 }
 
+/**
+ * Fact sheets keyed by the digest of the inputs that produced them.
+ *
+ * Building one costs five strategy solves plus a counterfactual replay of every
+ * request, which is wasted on the second question about the same plan.
+ * `inputHash` already covers every input that could change the result and is
+ * asserted deterministic in `src/test/solve.test.ts`, so it is exactly the
+ * right key. Bounded so a long session cannot grow it without limit.
+ */
+const bodyCache = new Map<string, string>();
+const BODY_CACHE_LIMIT = 32;
+
 export function buildFactSet(result: SolveResult, view: "submitted" | "planned"): FactSet {
+  const key = `${result.inputHash}|${view}`;
+  let body = bodyCache.get(key);
+
+  if (body === undefined) {
+    body = buildFactSetBody(result, view);
+    // Oldest insertion first; Map preserves insertion order.
+    if (bodyCache.size >= BODY_CACHE_LIMIT) {
+      const oldest = bodyCache.keys().next().value;
+      if (oldest !== undefined) bodyCache.delete(oldest);
+    }
+    bodyCache.set(key, body);
+  }
+
+  // Solve time is measured rather than derived, so two runs of identical inputs
+  // legitimately differ. It is assembled per call and never cached — a cached
+  // fact sheet quoting a previous run's timing would be a figure the engine
+  // produced, but not one that describes the run the planner is looking at.
+  const text = `Solve time this run: ${result.solveMs} ms\n${body}`;
+  return { text, allowedNumbers: extractNumbers(text) };
+}
+
+/** Test seam, so one test's fact sheet cannot be served to another. */
+export function resetFactCache(): void {
+  bodyCache.clear();
+}
+
+function buildFactSetBody(result: SolveResult, view: "submitted" | "planned"): string {
   const lines: string[] = [];
   const push = (line: string) => lines.push(line);
 
@@ -39,7 +78,6 @@ export function buildFactSet(result: SolveResult, view: "submitted" | "planned")
   push(`Strategy: ${result.strategy}`);
   push(`Solver version: ${result.solverVersion}`);
   push(`Constraint set version: ${result.constraintVersion}`);
-  push(`Solve time: ${result.solveMs} ms`);
   push(`Candidate start times evaluated: ${result.candidatesEvaluated}`);
   push(`Input hash: ${result.inputHash}`);
   push(`Independently re-validated after solving: ${result.independentlyValidated ? "yes, 0 critical violations" : "no, violations remain"}`);
@@ -138,12 +176,20 @@ export function buildFactSet(result: SolveResult, view: "submitted" | "planned")
     )
     .forEach((request) => push(`${request.id} "${request.title}" | ${request.priority} | not in this plan`));
 
-  const text = lines.join("\n");
-  return { text, allowedNumbers: extractNumbers(text) };
+  return lines.join("\n");
 }
 
-/** Solve all five profiles so the assistant can answer comparison questions. */
+/**
+ * Solve all five profiles so the assistant can answer comparison questions.
+ *
+ * Constant for the life of the process: it takes no arguments and solves each
+ * profile against the unmodified request set, so nothing a caller does can
+ * change it. Computed once rather than five times per question.
+ */
+let comparisonTableCache: string | null = null;
+
 export function comparisonTable(): string {
+  if (comparisonTableCache !== null) return comparisonTableCache;
   const rows = strategyList.map((profile) => {
     const run = solve({ strategy: profile.id });
     return [
@@ -157,7 +203,8 @@ export function comparisonTable(): string {
       `violations ${run.violations.length}`,
     ].join(" | ");
   });
-  return rows.join("\n");
+  comparisonTableCache = rows.join("\n");
+  return comparisonTableCache;
 }
 
 /**
