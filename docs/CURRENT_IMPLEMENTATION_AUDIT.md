@@ -1,215 +1,147 @@
 # Current Implementation Audit
 
-Last updated: 2026-07-15
+Last updated: 2026-08-02
 
-Status: Current code truth for RailPlan v0.1.0.
+Status: current code truth for RailPlan v0.2.0. This file records what the code
+does, including what it still does not do. Where an earlier version of this
+document listed a gap that has since been closed, the closure is stated with the
+module that closed it.
 
-## Executive Summary
+## What changed in v0.2.0
 
-RailPlan is a polished frontend-only simulation of rail maintenance scheduling. It demonstrates the intended planner workflow, but it does not yet calculate conflicts, solve schedules, validate alternatives, recompute metrics, use live map data, or export a file.
+v0.1.0 was a presentation of scheduling: 22 requests, six hand-typed conflicts,
+five hand-authored schedules, and KPI values stored as literals. `optimise()`
+waited 1.05 seconds and swapped one object for another.
 
-The current implementation is deterministic because it selects immutable fixtures and uses fixed timers. “Optimisation” and “replanning” are presentation states, not computational jobs.
+v0.2.0 removes all of that. There are no schedule fixtures left in the
+repository. Conflicts are detected, schedules are solved, KPIs are calculated,
+and every result is re-validated before it is displayed.
 
-## Runtime and Tooling
-
-- Next.js 16 App Router and React 19.
-- TypeScript 6 and Tailwind CSS 4.
-- Zustand 5 for client state and partial localStorage persistence.
-- Radix Dialog, Lucide icons, Framer Motion, date-fns, and Sonner. Recharts remains installed but is no longer rendered.
-- Vitest, Testing Library, user-event, and jsdom for automated tests.
-- No backend, database, authentication, solver, map SDK, LLM, file generation, or runtime external API.
-- No environment variables are required; `.env.example` documents the frontend-only state.
-
-## Repository Map
-
-| Area | Files | Current responsibility |
-| --- | --- | --- |
-| App entry | `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css` | Metadata, root page, global styling, and timeline patterns. |
-| Dashboard composition | `src/components/layout/DashboardShell.tsx` | Initial state, planner workspace, metrics, disruption banner, loading overlays, and footer disclaimer. |
-| Navigation | `src/components/layout/TopNavigation.tsx` | Compact branding, planning-window context, status, and reset. |
-| Planner controls | `src/components/controls/StrategyControls.tsx` | Five planning objectives, Submitted/Recommended comparison, disruption modal, and the state-specific primary action. |
-| Request queue | `src/components/requests/RequestQueue.tsx` | Attention-first filtering, search, displayed request status, and request selection. |
-| Timeline | `src/components/schedule/ScheduleTimeline.tsx` | Fixed 00:00–04:00 Gantt-style view across six demo sectors. |
-| Inspector | `src/components/insights/DetailsPanel.tsx` | Direct conflict selection, submitted/recommended comparison, explanations, locks, accept/reject state, alternatives, selected-request map, and release readiness. |
-| Network schematic | `src/components/network/RailNetworkMap.tsx` | Selected-request fixed NS/EW/CC station-code schematic and exact-sector nearby-job count. |
-| Disruption UI | `src/components/disruption/DisruptionModal.tsx` | Selection of four preconfigured disruption scenarios. |
-| Metrics | `src/components/metrics/*` | Four planner decision signals and a concise release-readiness checklist. |
-| UI primitives | `src/components/ui/*`, `src/components/shared/*` | Buttons, badges, cards, dialog, loading, and status elements. |
-| Domain types | `src/types/railplan.ts` | Request, job, conflict, metric, strategy, and disruption interfaces. |
-| Fixture data | `src/data/*` | 22 requests, six declared conflicts, five strategies, four disruptions, and four response plans. |
-| State | `src/store/useRailPlanStore.ts` | All view, selection, strategy, planner-control, loading, and persistence state. |
-| Utilities | `src/utils/time.ts`, `src/lib/utils.ts` | `HH:mm`/minute conversion, duration formatting, and class merging. |
-| Tests | `src/test/*` | Data, store, component, and scripted demo coverage. |
-
-## Current Domain Data
-
-### Requests
-
-- `src/data/requests.ts` contains exactly 22 fabricated maintenance requests.
-- Request IDs run from `M-001` to `M-022`.
-- The demo covers six string-labelled sectors on the North–South, East–West, and Circle lines.
-- Times are plain `HH:mm` strings, not ISO timestamps.
-- The default planning window is `00:00`–`04:00`.
-- Teams and equipment are names, not capacity or availability records.
-- Priority is one of `low`, `medium`, `high`, or `critical`.
-
-### Original plan
-
-- `src/data/originalSchedule.ts` contains 18 placed jobs and four unscheduled request IDs.
-- It declares six conflict objects: two track-related records, two team records, one equipment record, and one safety-buffer record.
-- Conflict records and conflicted job statuses are authored manually; they are not derived from intervals or resource capacities.
-
-### Strategy schedules
-
-- Five modules contain the Balanced, Maximum Work Completion, Minimum Operational Risk, Minimum Schedule Changes, and Maximum Emergency Buffer variants.
-- Each module independently declares placements, unscheduled IDs, metrics, and explanatory copy.
-- The variants report zero active conflicts, but no general constraint engine proves that claim.
-- The existing automated data test verifies permitted 00:00–04:00 bounds and non-overlap only among jobs with the exact same sector string.
-
-A read-only resource-overlap audit found apparent named-team/equipment conflicts in all five strategy fixtures when each shared name is treated as capacity one:
-
-| Strategy | Overlapping resource pairs found |
-| --- | ---: |
-| Balanced | 5 |
-| Maximum Work Completion | 5 |
-| Minimum Operational Risk | 5 |
-| Minimum Schedule Changes | 6 |
-| Maximum Emergency Buffer | 4 |
-
-The clearest confirmed inconsistency is `M-004` with `M-011`: every strategy places both at 00:00–01:00 with `Power Systems Unit` and `Thermal imaging unit`, while original conflict `C-04` states that the only calibrated thermal imaging unit cannot serve both jobs. Other overlaps require explicit capacity data before they can be classified definitively, but they demonstrate why string names and fixture metrics are insufficient.
-
-### Disruptions
-
-- Four scenarios model a track fault, unavailable engineer/team, work overrun, and shortened window.
-- Four preconfigured response plans are selected after an 850 ms timer.
-- Before response, disruption metrics modify only active-conflict count, robustness, and emergency capacity on top of the selected strategy fixture.
-- Response metadata can drift from job data because both are authored separately. For example, the track-fault response lists `M-005` as moved although its job placement is unchanged.
-
-## State and Client Actions
-
-The Zustand store is the runtime source of UI state.
-
-| Action | Current effect |
+| v0.1.0 | v0.2.0 |
 | --- | --- |
-| `loadDemo()` | Shows the original fixture and clears selection, active disruption, response state, and schedule overrides. |
-| `selectRequest(id)` | Selects a request; clearing selection also clears selected conflict. |
-| `selectConflict(id)` | Selects the conflict and its first request. |
-| `changeStrategy(strategy)` | Changes the preferred strategy; original view remains original until optimised view is selected. |
-| `optimise()` | Advances through three 350 ms loading steps, then selects the chosen fixture. |
-| `toggleLock(id)` | Stores the current in-memory placement and preserves it across later fixture changes in that session. |
-| `acceptRecommendation(id)` | Records an in-memory accepted ID and removes a rejection. |
-| `rejectRecommendation(id)` | Records an in-memory rejected ID and removes an acceptance. |
-| `applyAlternative(requestId, alternativeId)` | Replaces the visible job interval locally without revalidating conflicts or recalculating metrics. |
-| `triggerDisruption(id)` | Selects a disruption, selects its first affected request, and overlays degraded metadata. |
-| `replan()` | Waits 850 ms and then selects the matching preconfigured response. |
-| `resetDemo()` | Returns to the unloaded view, clears session decisions/overrides, and retains persisted strategy/lock-ID preferences. |
-| `getVisibleSchedule()` | Selects a fixture, overlays limited disruption metrics, then merges overrides and in-memory lock placements. |
+| Six conflicts written by hand in `originalSchedule.ts` | 22 violations derived by running 12 rules over the submitted times |
+| Five `*Schedule.ts` files with fixed placements | Five objective profiles over one solver, in `engine/strategies.ts` |
+| `metrics: { utilisation: 87, robustness: 84 }` | Every metric carries value, numerator, denominator and formula |
+| `optimise()` = `wait(350) × 3` then pick a fixture | `solve()` = ordered insertion with repair, ~20-70 ms, reported honestly |
+| Sector as a string; `NS10-NS12 !== NS11-NS13` | 12 atomic blocks; the shared `NS11-NS12` is found |
+| Equipment as a name | Equipment as a unit count; one thermal imaging unit is genuinely one |
+| Alternatives with static impact copy | Alternatives generated by re-solving and validated before being offered |
+| Locks applied after fixture selection | Locks entered as hard constraints before the solve |
+| Disruption = load a prepared response | Disruption = change the inputs and solve again |
 
-## Persistence
+## Runtime
 
-- localStorage key: `railplan-preferences`.
-- Persisted fields: `selectedStrategy` and `lockedRequestIds` only.
-- Not persisted: selected request/conflict, accepted/rejected decisions, disruption, replanned state, overrides, or `lockedPlacements`.
-- A lock ID can survive reload while its exact chosen placement does not. The merge logic may fall back to the original-plan placement when possible, so the documentation must not claim that an optimised locked placement always survives a page reload.
-- No personal or operational data is stored.
+- Next.js 16 App Router, React 19, TypeScript 6, Tailwind CSS 4.
+- Zustand 5 for client state; localStorage persists the chosen objective and
+  exact pinned placements.
+- `@anthropic-ai/sdk` for the optional assistant, called from one route handler.
+- No database, no auth, no external data feed. One dynamic route (`/api/assistant`).
 
-## Current Calculations
+## Module map
 
-| Output | Current source | Actually calculated? |
+| Area | Files | Responsibility |
 | --- | --- | --- |
-| Job end time | Preferred/selected start plus request duration | Yes |
-| Moved minutes | Start minus preferred start | Yes for fixture construction |
-| Timeline left/width | Start/end minutes divided by 240 | Yes |
-| Search/filter status | Visible fixture plus request metadata | Yes |
-| Nearby job count | Jobs with the exact same sector string | Yes, simplified |
-| Scheduled jobs | `ScheduleMetrics` fixture | No |
-| Active conflicts | Fixture or limited disruption overlay | No general validation |
-| Utilisation | `ScheduleMetrics` fixture | No |
-| Robustness and sub-scores | `ScheduleMetrics` fixture retained but not rendered as a headline | No |
-| Release-readiness rows | Fixture metrics plus visible moved/deferred counts | Partly; no independent feasibility validation |
-| Alternative impact | Static option copy | No |
-| Conflict explanations | Static conflict/job copy | No rule provenance |
+| Network | `src/domain/network.ts` | Stations, 12 atomic track blocks, adjacency graph, conflict zones, sector expansion |
+| Resources | `src/domain/resources.ts` | Crew capacities and skills, equipment unit counts and turnaround, work-class compatibility |
+| Requests | `src/data/requests.ts` | 22 requests as *inputs* only: blocks, duration, clearance, priority, crew, equipment, window, dependencies |
+| Intervals | `src/engine/intervals.ts` | Half-open overlap, sweep-line over-capacity detection |
+| Validator | `src/engine/validate.ts` | 12 rules, deduplication, clustering. The only authority on feasibility |
+| Solver | `src/engine/solve.ts` | Dependency-aware ordered insertion, bounded repair, honest status |
+| Objectives | `src/engine/strategies.ts` | Five profiles: request order, candidate ranking, recovery gap, reserve |
+| Metrics | `src/engine/metrics.ts` | Eleven calculated metrics, each with its arithmetic |
+| Alternatives | `src/engine/alternatives.ts` | k-best validated slots with computed deltas |
+| Explanations | `src/engine/explain.ts` | Counterfactual: replay at the requested time, report what breaks |
+| Disruptions | `src/data/disruptions.ts` | Scenario to solver-input translation |
+| Assistant | `src/lib/assistant/*`, `src/app/api/assistant/route.ts` | Fact set, grounding check, template fallback, model call |
 
-## User-Visible Flows
+## The twelve rules
 
-### Initial load
+`BLOCK_CAPACITY`, `CONFLICT_ZONE`, `ADJACENT_WORK`, `TEAM_CAPACITY`,
+`EQUIPMENT_CAPACITY`, `SKILL_COVERAGE`, `WORK_COMPATIBILITY`,
+`DEPENDENCY_ORDER`, `TIME_WINDOW`, `HANDBACK`, `TRAVEL_TIME`,
+`SHIFT_AVAILABILITY`.
 
-The initial card explains that the data is deterministic and simulated. One `Load sample requests` action opens the submitted-plan workspace.
+Each violation carries the rule, the requests, the subjects (blocks, crews,
+assets), observed value, required value, shortfall in minutes, and a remedy.
 
-### Conflict review
+## What is calculated
 
-The request queue defaults to `Attention`, showing conflicted or unscheduled work first. Every declared conflict is directly selectable by title and focuses its first request. Request selection synchronises the queue, timeline, schematic, and inspector.
+Everything on the dashboard. `computeMetrics` returns eleven `MetricValue`
+records, each with `value`, `unit`, `numerator`, `denominator`, `formula` and a
+note; the interface exposes all of it behind the `fx` control on every figure.
 
-### Optimisation
+Two worth singling out, because they were scores in v0.1.0 and are computations
+now:
 
-The UI presents three loading messages over 1.05 seconds and then switches to the chosen fixture. The success toast reports the selected fixture's placed-job count; it does not claim independent conflict resolution or safety validation.
+- **Emergency capacity** attempts to insert each scenario in a versioned set
+  (`src/data/emergencyScenarios.ts`) at every 15-minute start, and counts a
+  scenario only when the validator accepts a slot.
+- **Rescheduling headroom** counts, per placed job, how many other start times
+  validate with the rest of the plan held still.
 
-### Planner control
+## Solver honesty
 
-Accept/reject is acknowledgement state only. Locking affects later fixture selection within the session. Applying an alternative mutates the displayed interval but does not run feasibility checks, update unscheduled IDs, or recompute metrics.
+- `OPTIMAL` only when nothing was deferred and every job took its first-choice
+  slot under the profile's ranking.
+- `INFEASIBLE` when the independent re-validation finds a critical violation, or
+  when mandatory work has no slot. The interface names the mandatory request
+  rather than showing a status code.
+- `solveMs` and `candidatesEvaluated` are measured, not decorative.
+- `inputHash` is a non-cryptographic FNV-1a digest, labelled as such. Identical
+  inputs produce an identical hash and an identical plan; this is asserted in
+  `src/test/solve.test.ts`.
 
-### Disruption and response
+## The assistant boundary
 
-The selected scenario highlights affected work and alters a small subset of displayed metrics. Replan selects a fixed response. No algorithm responds to current overrides, accepted decisions, or resource feasibility.
+The model never decides anything. The server re-solves from the request
+parameters, builds a fact set, and rejects any answer containing a numeric token
+absent from that fact set. On rejection, no credentials, a refusal, or a network
+error, the engine answers from templates and the interface says which happened.
 
-### Release readiness
+The grounding check has already earned its place: it caught the fact set missing
+counterfactual explanations, which the templates were quoting.
 
-The inspector summarises critical-work placement, declared conflict count, plan changes, and window reserve. Its disclaimer states that the indicators are simulated and fixture conflicts are not independently validated. There is no export control.
+## Verification
 
-## Existing Automated Verification
+117 tests across six files.
 
-- 5 data tests.
-- 6 store tests.
-- 5 dashboard tests.
-- 1 scripted end-to-end component UAT test.
-- Total: 17 passing tests in the last recorded run.
+- `domain.test.ts` — topology, sector expansion, adjacency symmetry, dataset integrity.
+- `validate.test.ts` — every rule at its boundary, including touching intervals, capacity above one, and the cross-sector shared block.
+- `solve.test.ts` — property tests: every strategy's output has zero critical violations under independent re-validation; determinism; locks honoured; dependency order; disruption handling.
+- `metrics.test.ts` — formulas recomputed independently, division-by-zero, range.
+- `assistant.test.ts` — fact-set completeness, grounding accepts real figures and rejects invented ones.
+- `dashboard.test.tsx` — the planner journey through the real components.
 
-The suite covers fixture counts/references, same-sector non-overlap, state transitions, in-session lock preservation, selected UI interactions, and the main demo sequence.
+Also run: `npx tsc --noEmit`, `npm run lint`, `npm run build`, and a manual
+browser pass at 1512 px covering load, solve, inspect, pin, disrupt and re-solve.
 
-It does not currently prove:
+## Known limits
 
-- team, named engineer, skill, or equipment feasibility across sectors;
-- work compatibility, safety zones, adjacent blocks, setup, travel, or every dependency;
-- alternative or manual-override feasibility;
-- metric formula correctness, because metrics are fixtures;
-- disruption response consistency;
-- persistence rehydration of exact lock placement;
-- visual layout at the three required browser widths.
+These are limits, not oversights. Each is a deliberate boundary.
 
-## Known Correctness and Presentation Gaps
+1. **The solver is a heuristic.** Ordered insertion with bounded repair. It
+   never claims an optimality bound it has not proved, but it can miss a better
+   plan a CP-SAT model would find. Benchmarking against OR-Tools is the natural
+   next step.
+2. **Crews are not reassigned.** The solver moves work in time; it keeps the
+   requested crew. Crew substitution would need qualification data it does not have.
+3. **Travel is only enforced for single-crew teams.** With two crews the plan
+   does not say which crew takes which job, so asserting a travel violation
+   would be guessing.
+4. **The topology is invented.** Station codes follow the Singapore MRT naming
+   convention; the blocks, lengths, isolation zones, crews and assets do not
+   correspond to anything real.
+5. **Solving is synchronous.** At 20-70 ms for 22 requests a Web Worker would
+   add failure modes without removing a visible stall. That trade changes if the
+   dataset grows.
+6. **No export.** The plan is a real artefact now and could be exported as
+   JSON or CSV; it has not been built, and no control claims otherwise.
+7. **Accessibility is partly verified.** Focus is visible throughout, state is
+   carried by rule, stripe and text rather than colour alone, and every control
+   is labelled. A full screen-reader pass has not been done.
 
-### High priority
+## Operational boundary
 
-1. There is no independent constraint validator or solver.
-2. “Zero conflicts” relies on fixture metadata and a limited same-sector overlap test; every strategy retains at least the known `M-004`/`M-011` thermal-unit conflict.
-3. Locks and alternatives can invalidate a schedule without changing conflicts or metrics.
-4. Team/equipment availability is represented as names, so shared-resource feasibility is not generally enforced.
-5. Robustness, utilisation, emergency capacity, and flexibility have no implemented formulas.
-
-### Medium priority
-
-1. A sector is a string rather than a list of atomic track blocks; partial overlap and adjacency cannot be calculated.
-2. The map is a fixed schematic and uses exact sector-string matching.
-3. Alternative Option C is labelled as the next engineering night but the model has no night/date field for that placement.
-4. Strategy explanations and some fixture-derived readiness fields can drift from the visible plan after local overrides.
-5. Disruption impact arrays, job changes, explanations, and metrics can drift independently.
-6. Only lock IDs persist; exact in-session lock placements do not.
-7. File export is not implemented and is intentionally not presented as an available action.
-
-### UI verification and accessibility
-
-1. Responsive visual UAT at 1280×800, 1440×900, and 1920×1080 has not been completed.
-2. Core planner text was raised to readable sizes; a few supplementary 10 px labels should still be reviewed visually.
-3. The application uses status icons and copy as well as colour in many places, but full keyboard/focus/contrast UAT remains outstanding.
-
-## Operational Boundary
-
-The prototype must not be used for actual maintenance, possession, staff, equipment, or safety decisions. It uses fabricated data and does not encode LTA operating rules. It has no authoritative track topology, availability source, competency data, audit log, approval workflow, or operational integration.
-
-## Documented Evolution Path
-
-- [`DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md`](DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md) defines the proposed constraint, solver, graph, statistic, API, UI, and verification direction.
-- [`RAIL_SCHEDULING_RESEARCH.md`](RAIL_SCHEDULING_RESEARCH.md) links that proposal to original railway scheduling research.
-- [`DECISIONS.md`](DECISIONS.md) records that these remain proposals and do not replace the accepted frontend simulation yet.
-
-The recommended first implementation milestone is a frontend-only atomic-block graph, independent TypeScript constraint validator, and calculated KPI layer. A backend or CP-SAT service requires a separate accepted decision.
+Unchanged and non-negotiable. The data is fabricated and the tool encodes no LTA
+operating rule. It must not be used for a maintenance, possession, staffing or
+safety decision.

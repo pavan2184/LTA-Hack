@@ -1,39 +1,43 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
+"use client";
+
+import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-cyan-600/40 disabled:pointer-events-none disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        default: "bg-slate-900 text-white hover:bg-slate-800",
-        primary: "bg-cyan-700 text-white hover:bg-cyan-800",
-        outline: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-        ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-        danger: "bg-red-600 text-white hover:bg-red-700",
-        success: "bg-emerald-600 text-white hover:bg-emerald-700",
-      },
-      size: {
-        default: "h-9 px-3.5",
-        sm: "h-8 px-2.5 text-xs",
-        lg: "h-10 px-5",
-        icon: "size-9",
-      },
-    },
-    defaultVariants: { variant: "default", size: "default" },
-  },
-);
+type Variant = "primary" | "default" | "quiet" | "danger";
+type Size = "sm" | "md";
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
-}
+const variants: Record<Variant, string> = {
+  primary:
+    "bg-ink-900 text-white border-ink-900 hover:bg-ink-700 hover:border-ink-700 disabled:bg-ink-400 disabled:border-ink-400",
+  default:
+    "bg-surface text-ink-900 border-rule-strong hover:bg-sunk disabled:text-ink-400 disabled:hover:bg-surface",
+  quiet:
+    "bg-transparent text-ink-700 border-transparent hover:bg-sunk disabled:text-ink-400 disabled:hover:bg-transparent",
+  danger: "bg-signal-red text-white border-signal-red hover:brightness-110 disabled:opacity-50",
+};
 
-export function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot : "button";
-  return <Comp className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+const sizes: Record<Size, string> = {
+  sm: "h-7 px-2.5 text-[12px] gap-1.5",
+  md: "h-8 px-3 text-[13px] gap-2",
+};
+
+export function Button({
+  variant = "default",
+  size = "md",
+  className,
+  ...props
+}: React.ComponentProps<"button"> & { variant?: Variant; size?: Size }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center justify-center rounded-sm border font-medium transition-colors disabled:cursor-not-allowed",
+        variants[variant],
+        sizes[size],
+        className,
+      )}
+      {...props}
+    />
+  );
 }

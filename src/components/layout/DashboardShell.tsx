@@ -1,147 +1,396 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Route, ShieldCheck } from "lucide-react";
-import { toast, Toaster } from "sonner";
+import { useState } from "react";
 
-import { StrategyControls } from "@/components/controls/StrategyControls";
-import { DetailsPanel } from "@/components/insights/DetailsPanel";
-import { TopNavigation } from "@/components/layout/TopNavigation";
-import { MetricsGrid } from "@/components/metrics/MetricsGrid";
+import { PlannerAssistant } from "@/components/assistant/PlannerAssistant";
+import { PlanToolbar } from "@/components/controls/PlanToolbar";
+import { DisruptionDialog } from "@/components/disruption/DisruptionDialog";
+import { RequestInspector } from "@/components/insights/RequestInspector";
+import { ViolationPanel } from "@/components/insights/ViolationPanel";
+import { SolverBar } from "@/components/layout/SolverBar";
 import { RequestQueue } from "@/components/requests/RequestQueue";
-import { ScheduleTimeline } from "@/components/schedule/ScheduleTimeline";
-import { StatusBadge, type DashboardStatus } from "@/components/shared/StatusBadge";
-import { LoadingOverlay } from "@/components/shared/LoadingOverlay";
-import { Badge } from "@/components/ui/badge";
+import { BlockTimeline } from "@/components/schedule/BlockTimeline";
+import { Figure } from "@/components/shared/Figure";
 import { Button } from "@/components/ui/button";
-import { disruptionById } from "@/data/disruptionScenarios";
-import { disruptionResponseSchedules } from "@/data/disruptionResponseSchedules";
+import { disruptionById } from "@/data/disruptions";
+import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
+import { trackBlocks } from "@/domain/network";
+import { formatClock } from "@/engine/intervals";
+import { plannerTimeSavedMetric } from "@/engine/metrics";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 
-function InitialState() {
-  const loadDemo = useRailPlanStore((state) => state.loadDemo);
+export function DashboardShell() {
+  const loaded = useRailPlanStore((state) => state.loaded);
+  const stage = useRailPlanStore((state) => state.stage);
+
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[1920px] items-center justify-center px-5 py-10">
-      <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-slate-950 text-cyan-300"><Route className="size-6" /></div>
-        <Badge variant="info" className="mt-5">Sample data · deterministic simulation</Badge>
-        <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950">Turn competing requests into one reviewable plan.</h1>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">Start with 22 overnight work requests across six sectors. Review declared conflicts, protect critical work, and compare planner-controlled responses.</p>
-        <div className="mt-6 flex justify-center">
-          <Button variant="primary" size="lg" onClick={loadDemo}>Load sample requests<ArrowRight className="size-4" /></Button>
+    <div className="min-h-screen bg-paper">
+      <TopBar />
+      {loaded ? <Workspace /> : <Landing />}
+      {stage !== "idle" && <SolveOverlay />}
+    </div>
+  );
+}
+
+function TopBar() {
+  const loaded = useRailPlanStore((state) => state.loaded);
+  const reset = useRailPlanStore((state) => state.reset);
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-rule-strong bg-surface">
+      <div className="mx-auto flex h-11 max-w-[1720px] items-center gap-4 px-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[14px] font-semibold tracking-tight text-ink-900">RailPlan</span>
+          <span className="text-[11px] text-ink-500">Overnight engineering planning</span>
         </div>
-        <div className="mt-7 grid gap-3 border-t border-slate-100 pt-5 text-left sm:grid-cols-3">
-          {["Track and access", "Teams and equipment", "Planner-approved changes"].map((label) => <div key={label} className="flex items-center gap-2 text-xs font-semibold text-slate-600"><ShieldCheck className="size-4 text-emerald-600" />{label}</div>)}
+        <div className="ml-auto flex items-center gap-4 text-[11px] text-ink-500">
+          <span className="hidden font-mono sm:inline">
+            {PLANNING_NIGHT} &middot; 00:00-{formatClock(WINDOW_END)}
+          </span>
+          {loaded && (
+            <Button size="sm" variant="quiet" onClick={reset}>
+              Reset
+            </Button>
+          )}
         </div>
       </div>
+    </header>
+  );
+}
+
+function Landing() {
+  const load = useRailPlanStore((state) => state.load);
+
+  return (
+    <main className="mx-auto max-w-[720px] px-4 py-16">
+      <p className="text-[11px] uppercase tracking-[0.08em] text-ink-500">Prototype · fabricated data</p>
+      <h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-tight text-ink-900">
+        {requests.length} maintenance requests. One four-hour window. {trackBlocks.length} track blocks.
+      </h1>
+      <p className="mt-3 text-[13px] leading-relaxed text-ink-700">
+        RailPlan reads the requests as submitted, runs every operating constraint against them, and
+        reports what collides. It then builds a schedule that satisfies those constraints, and checks
+        its own answer before showing it to you.
+      </p>
+
+      <dl className="mt-6 grid gap-px border border-rule bg-rule sm:grid-cols-3">
+        {[
+          ["Conflict detection", "Twelve rules over atomic track blocks, crew rosters, asset counts, isolation zones, dependencies and travel."],
+          ["Scheduling", "Priority-ordered feasible insertion with repair, at " + SLOT_MINUTES + "-minute resolution. Status and solve time are reported honestly."],
+          ["Every figure", "Carries its formula, numerator and denominator. Nothing on this dashboard is a stored score."],
+        ].map(([term, detail]) => (
+          <div key={term} className="bg-surface p-3">
+            <dt className="text-[12px] font-medium text-ink-900">{term}</dt>
+            <dd className="mt-1 text-[12px] leading-relaxed text-ink-500">{detail}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="mt-6">
+        <Button variant="primary" onClick={load}>
+          Load the submitted requests
+        </Button>
+      </div>
+
+      <p className="mt-6 border-t border-rule pt-4 text-[11px] leading-relaxed text-ink-500">
+        The network topology, crews, assets and requests are invented for this prototype. It encodes no
+        LTA operating rule and must not be used for an operational decision.
+      </p>
     </main>
   );
 }
 
-function PlanHeader() {
+function Workspace() {
+  const result = useRailPlanStore((state) => state.activeResult());
+  const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
+  const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
+  const disruptionImpact = useRailPlanStore((state) => state.disruptionImpact);
+  const replan = useRailPlanStore((state) => state.replan);
+  const stage = useRailPlanStore((state) => state.stage);
+
+  if (!result) return null;
+
+  const scenario = activeDisruptionId ? disruptionById[activeDisruptionId] : null;
+  const unresolved = disruptionImpact.filter((item) => item.severity === "critical");
+
   return (
-    <section className="flex flex-col gap-3 pt-1 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">Planning night</p>
-        <h1 className="mt-1.5 text-2xl font-black tracking-[-0.03em] text-slate-950 sm:text-3xl">Overnight engineering plan</h1>
-        <p className="mt-1.5 text-sm text-slate-500">Resolve exceptions, protect critical work, then release only after planner review.</p>
+    <main className="mx-auto max-w-[1720px] space-y-2.5 px-4 py-3">
+      <PlanToolbar />
+      <SolverBar />
+
+      {scenario && !hasReplanned && (
+        <section className="border border-signal-red bg-signal-red-soft px-3 py-2.5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-ink-900">
+                {scenario.title}: {unresolved.length} violation{unresolved.length === 1 ? "" : "s"} in the
+                current plan
+              </p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-ink-700">
+                {scenario.description} The plan has been re-checked against this situation. Nothing has been
+                rescheduled yet.
+              </p>
+            </div>
+            <Button size="sm" variant="danger" onClick={replan} disabled={stage !== "idle"}>
+              Solve around it
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {scenario && hasReplanned && <ReplanOutcome title={scenario.title} />}
+
+      <PlanSignals />
+
+      <div className="grid min-w-0 gap-2.5 lg:grid-cols-[248px_minmax(0,1fr)] 2xl:grid-cols-[248px_minmax(0,1fr)_368px]">
+        <div className="flex min-h-0 flex-col lg:max-h-[calc(100vh-260px)]">
+          <RequestQueue />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-2.5">
+          <BlockTimeline />
+          <div className="grid gap-2.5 xl:grid-cols-2">
+            <ViolationPanel />
+            <section className="grid content-start gap-2.5">
+              <SecondaryFigures />
+            </section>
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-col gap-2.5 lg:col-span-2 2xl:col-span-1">
+          <RequestInspector />
+          <div className="min-h-[300px]">
+            <PlannerAssistant />
+          </div>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600">
-        <span className="flex items-center gap-1.5"><Clock3 className="size-3.5 text-slate-400" />00:00–04:00</span>
-        <span>6 protected sectors</span>
-        <span className="text-cyan-700">Simulated planning data</span>
-      </div>
-    </section>
+
+      <ScenarioTesting />
+
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-3 text-[11px] text-ink-500">
+        <span>
+          Fabricated data. Encodes no LTA operating rule. Not for operational decisions.
+        </span>
+        <span>Human approval required before any plan is released.</span>
+      </footer>
+    </main>
   );
 }
 
-function DisruptionBanner() {
-  const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
-  const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
-  const isReplanning = useRailPlanStore((state) => state.isReplanning);
-  const replan = useRailPlanStore((state) => state.replan);
-  if (!activeDisruptionId) return null;
-  const scenario = disruptionById[activeDisruptionId];
-  const response = disruptionResponseSchedules[activeDisruptionId];
+/**
+ * The headline figures, chosen for the step the planner is on.
+ *
+ * Before scheduling the question is "how bad is this and what is idle"; after
+ * scheduling it is "what did that buy me". Showing one set for both leaves half
+ * the row answering a question nobody is asking yet.
+ */
+function PlanSignals() {
+  const result = useRailPlanStore((state) => state.activeResult());
+  const baselineConflicts = useRailPlanStore((state) => state.baselineConflicts);
+  const view = useRailPlanStore((state) => state.view);
+  if (!result) return null;
 
-  const runReplan = async () => {
-    await replan();
-    toast.success("Response plan prepared for planner review.");
-  };
+  const metrics = result.metrics;
+  const remaining = metrics.violations.value;
 
-  if (hasReplanned) {
+  if (view === "submitted") {
     return (
-      <motion.section initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-2.5">
-            <CheckCircle2 className="mt-0.5 size-4 text-emerald-700" />
-            <div><p className="text-sm font-bold text-emerald-950">Response plan prepared</p><p className="mt-1 text-xs text-emerald-800">{response.schedule.explanation}</p></div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">{response.impactSummary.slice(1, 4).map((item) => <Badge key={item} variant="success">{item}</Badge>)}</div>
-        </div>
-      </motion.section>
+      <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+        <Figure
+          metric={{ ...metrics.placed, label: "Requests received" }}
+          secondary={`for ${PLANNING_NIGHT}, 00:00-${formatClock(WINDOW_END)}`}
+        />
+        <Figure
+          metric={metrics.conflictedRequests}
+          secondary={`of ${metrics.conflictedRequests.denominator} requests`}
+          tone={metrics.conflictedRequests.value ? "red" : "green"}
+        />
+        <Figure
+          metric={metrics.violations}
+          secondary={metrics.violations.value ? "planner action required" : "validator found none"}
+          tone={metrics.violations.value ? "red" : "green"}
+        />
+        <Figure metric={metrics.teamUtilisation} secondary="crew minutes against rostered shifts" />
+        <Figure metric={metrics.blockUtilisation} secondary="block-minutes against the window" />
+      </section>
     );
   }
 
   return (
-    <motion.section initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-red-200 bg-red-50 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          <AlertTriangle className="mt-0.5 size-4 text-red-600" />
-          <div><p className="text-sm font-bold text-red-950">{scenario.title}: replan required</p><p className="mt-1 text-xs text-red-700">{scenario.warning} {scenario.affectedRequestIds.length} jobs need review.</p></div>
-        </div>
-        <Button variant="danger" size="sm" onClick={runReplan} disabled={isReplanning}><Route className="size-3.5" />Replan affected work</Button>
-      </div>
-    </motion.section>
+    <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+      <Figure
+        metric={metrics.violations}
+        secondary={`down from ${baselineConflicts} in the requests as submitted`}
+        tone={remaining ? "red" : "green"}
+      />
+      <Figure
+        metric={metrics.placed}
+        secondary={`${result.plan.deferred.length} without a slot`}
+        tone={result.plan.deferred.length ? "amber" : "green"}
+      />
+      <Figure
+        metric={metrics.criticalPlaced}
+        secondary={`of ${metrics.criticalPlaced.denominator} mandatory requests`}
+        tone={metrics.criticalPlaced.value < metrics.criticalPlaced.denominator ? "red" : "green"}
+      />
+      <Figure
+        metric={metrics.movement}
+        secondary={`${metrics.movement.denominator} of ${result.plan.placements.length} jobs moved`}
+      />
+      <Figure
+        metric={plannerTimeSavedMetric(baselineConflicts, remaining)}
+        secondary="estimated · see the formula"
+      />
+    </section>
   );
 }
 
-export function DashboardShell() {
-  const loaded = useRailPlanStore((state) => state.isDemoLoaded);
-  const currentView = useRailPlanStore((state) => state.currentView);
+/**
+ * Scenario testing, kept deliberately quiet.
+ *
+ * Absorbing a disruption is a good thing to be able to demonstrate, but it is
+ * not the problem this tool exists to solve, and giving it a headline figure
+ * and a top-level button said otherwise.
+ */
+function ScenarioTesting() {
+  const [open, setOpen] = useState(false);
   const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
-  const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
-  const isOptimising = useRailPlanStore((state) => state.isOptimising);
-  const optimisationStep = useRailPlanStore((state) => state.optimisationStep);
-  const isReplanning = useRailPlanStore((state) => state.isReplanning);
-  const resetDemo = useRailPlanStore((state) => state.resetDemo);
-  const railPlanState = useRailPlanStore();
-  const schedule = railPlanState.getVisibleSchedule();
-  const status: DashboardStatus = !loaded ? "Draft" : activeDisruptionId && !hasReplanned ? "Disruption detected" : currentView === "original" ? "Conflicts detected" : "Optimised";
+  const clearDisruption = useRailPlanStore((state) => state.clearDisruption);
+  const stage = useRailPlanStore((state) => state.stage);
+  const result = useRailPlanStore((state) => state.activeResult());
+
+  const capacity = result?.metrics.emergencyCapacity;
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
-      <TopNavigation status={status} onReset={resetDemo} loaded={loaded} />
-      {!loaded ? <InitialState /> : (
-        <main className="mx-auto max-w-[1680px] space-y-5 px-5 py-6 sm:px-6 lg:py-7">
-          <div className="flex items-center justify-between gap-3 xl:hidden">
-            <p className="text-xs font-semibold text-slate-600">16 Sep 2026 · 00:00–04:00</p>
-            <StatusBadge status={status} />
-          </div>
-          <PlanHeader />
-          <StrategyControls />
-          <section className="space-y-3">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">Decision signals</h2>
-              <p className="mt-1 text-xs text-slate-500">What needs attention before this plan can be reviewed for release.</p>
-            </div>
-            <MetricsGrid metrics={schedule.metrics} />
-          </section>
-          <AnimatePresence>{activeDisruptionId && <DisruptionBanner />}</AnimatePresence>
-          <div className="grid min-w-0 gap-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-            <RequestQueue />
-            <div className="min-w-0"><ScheduleTimeline /></div>
-            <div className="min-w-0 xl:col-span-2 2xl:col-span-1"><DetailsPanel /></div>
-          </div>
-          <footer className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2 text-xs text-slate-400">
-            <span>RailPlan prototype · simulated planning data · no operational decisions are executed</span>
-            <span>Human approval required before schedule release</span>
-          </footer>
-        </main>
+    <section className="border border-rule bg-surface px-3 py-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <div className="min-w-0">
+          <h2 className="text-[12px] font-medium text-ink-900">Scenario testing</h2>
+          <p className="text-[11px] leading-relaxed text-ink-500">
+            Test whether this schedule can absorb an emergency, a crew going off, or a shortened
+            window.
+            {capacity
+              ? ` ${capacity.numerator} of ${capacity.denominator} emergency scenarios currently fit without displacing mandatory work.`
+              : ""}
+          </p>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          {activeDisruptionId && (
+            <Button size="sm" variant="quiet" onClick={clearDisruption} disabled={stage !== "idle"}>
+              Clear scenario
+            </Button>
+          )}
+          <Button size="sm" variant="quiet" onClick={() => setOpen(true)} disabled={stage !== "idle"}>
+            Test a disruption
+          </Button>
+        </div>
+      </div>
+      <DisruptionDialog open={open} onOpenChange={setOpen} />
+    </section>
+  );
+}
+
+/**
+ * The outcome of a re-solve.
+ *
+ * "Zero violations" and "this night can go ahead" are not the same statement.
+ * A plan can satisfy every rule and still be unacceptable because mandatory
+ * work had nowhere to go — so when that happens it is said plainly, and named,
+ * rather than left for the planner to infer from a status code.
+ */
+function ReplanOutcome({ title }: { title: string }) {
+  const result = useRailPlanStore((state) => state.activeResult());
+  if (!result) return null;
+
+  const droppedMandatory = result.plan.deferred
+    .map((entry) => requestById[entry.requestId])
+    .filter((request) => request?.mandatory);
+
+  if (droppedMandatory.length) {
+    return (
+      <section className="border border-signal-red bg-signal-red-soft px-3 py-2.5">
+        <p className="text-[13px] font-medium text-ink-900">
+          No feasible plan covers this night with {title.toLowerCase()} applied.
+        </p>
+        <p className="mt-0.5 text-[12px] leading-relaxed text-ink-700">
+          Every rule is satisfied, but {droppedMandatory.map((request) => request.id).join(", ")} —
+          mandatory work — could not be placed at all.{" "}
+          {result.plan.placements.length} of {result.metrics.placed.denominator} jobs fit around the
+          disruption. Releasing this plan means accepting that deferral, or changing what the
+          disruption is allowed to displace.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border border-signal-green bg-signal-green-soft px-3 py-2">
+      <p className="text-[12px] leading-relaxed text-ink-700">
+        Re-solved with {title.toLowerCase()} applied to the inputs. {result.plan.placements.length} jobs
+        placed, {result.plan.deferred.length} deferred, {result.violations.length} violations remaining.
+      </p>
+    </section>
+  );
+}
+
+function SecondaryFigures() {
+  const result = useRailPlanStore((state) => state.activeResult());
+  const view = useRailPlanStore((state) => state.view);
+  if (!result) return null;
+  const metrics = result.metrics;
+
+  return (
+    <div className="grid auto-rows-min grid-cols-2 gap-2.5">
+      {view === "submitted" ? (
+        <Figure metric={metrics.movement} secondary={`${metrics.movement.denominator} jobs moved`} />
+      ) : (
+        <Figure metric={metrics.blockUtilisation} />
       )}
-      {isOptimising && <LoadingOverlay mode="optimise" step={optimisationStep} />}
-      {isReplanning && <LoadingOverlay mode="replan" step={1} />}
-      <Toaster richColors position="top-right" />
+      {view === "submitted" ? (
+        <Figure metric={metrics.criticalPlaced} secondary="mandatory work in this plan" />
+      ) : (
+        <Figure metric={metrics.teamUtilisation} />
+      )}
+      <Figure metric={metrics.equipmentUtilisation} />
+      <Figure metric={metrics.bufferCompliance} />
+      <Figure metric={metrics.weightedCompletion} secondary="priority-weighted" />
+      <Figure metric={metrics.flexibility} />
+    </div>
+  );
+}
+
+function SolveOverlay() {
+  const stage = useRailPlanStore((state) => state.stage);
+  const steps: { id: typeof stage; label: string }[] = [
+    { id: "validating", label: "Running constraint rules over the submitted times" },
+    { id: "solving", label: "Searching candidate start times" },
+    { id: "verifying", label: "Re-validating the result independently" },
+  ];
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-rule-strong bg-surface px-4 py-2"
+    >
+      <div className="mx-auto flex max-w-[1720px] flex-wrap items-center gap-x-5 gap-y-1 text-[12px]">
+        {steps.map((step, index) => {
+          const currentIndex = steps.findIndex((item) => item.id === stage);
+          const done = currentIndex > index;
+          const active = currentIndex === index;
+          return (
+            <span
+              key={step.id}
+              className={
+                done ? "text-signal-green" : active ? "text-ink-900" : "text-ink-400"
+              }
+            >
+              {done ? "✓ " : active ? "→ " : "  "}
+              {step.label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
