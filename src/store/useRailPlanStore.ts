@@ -1,14 +1,14 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { buildDisruptionInputs, disruptionById } from "@/data/disruptions";
-import { requestById } from "@/data/requests";
-import { findAlternatives } from "@/engine/alternatives";
-import { explainPlacement, type PlacementExplanation } from "@/engine/explain";
-import { recommendResolution, repairPlan, type Resolution } from "@/engine/resolutions";
-import { reviewSubmittedPlan, solve } from "@/engine/solve";
-import { clusterViolations, validate, type ValidationContext } from "@/engine/validate";
-import type { AlternativeSlot, Placement, SolveResult, StrategyId, Violation } from "@/types/railplan";
+import { buildDisruptionInputs, disruptionById } from "@railplan/core/data/disruptions";
+import { requestById } from "@railplan/core/data/requests";
+import { findAlternatives } from "@railplan/core/engine/alternatives";
+import { explainPlacement, type PlacementExplanation } from "@railplan/core/engine/explain";
+import { recommendResolution, repairPlan, type Resolution } from "@railplan/core/engine/resolutions";
+import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
+import { clusterViolations, validate, type ValidationContext } from "@railplan/core/engine/validate";
+import type { AlternativeSlot, Placement, SolveResult, StrategyId, Violation } from "@railplan/core/types/railplan";
 
 /**
  * The two things a planner can be looking at: the night as its requesters asked

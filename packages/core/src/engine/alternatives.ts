@@ -1,8 +1,8 @@
-import { requestById, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
-import { categoryOf, categoryProfile } from "@/engine/conflicts";
-import { conflictKey } from "@/engine/resolutions";
-import { isFeasible, validate, type ValidationContext } from "@/engine/validate";
-import { priorityWeight, type AlternativeSlot, type Plan, type ViolationRuleId } from "@/types/railplan";
+import { requestById, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { categoryOf, categoryProfile } from "../engine/conflicts";
+import { conflictKey } from "../engine/resolutions";
+import { isFeasible, validate, type ValidationContext } from "../engine/validate";
+import { priorityWeight, type AlternativeSlot, type Plan, type ViolationRuleId } from "../types/railplan";
 
 /** Minimum separation between two alternatives, so the list is not three near-identical slots. */
 const DIVERSITY_MINUTES = 30;

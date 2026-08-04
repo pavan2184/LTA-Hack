@@ -1,6 +1,6 @@
-import { requestById } from "@/data/requests";
-import { ruleCatalogue } from "@/engine/validate";
-import type { Violation, ViolationRuleId } from "@/types/railplan";
+import { requestById } from "../data/requests";
+import { ruleCatalogue } from "../engine/validate";
+import type { Violation, ViolationRuleId } from "../types/railplan";
 
 /**
  * The planner's vocabulary for a conflict.

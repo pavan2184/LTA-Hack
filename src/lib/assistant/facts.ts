@@ -1,12 +1,12 @@
-import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
-import { conflictZones, trackBlocks } from "@/domain/network";
-import { equipmentTypes, teamById, teams } from "@/domain/resources";
-import { explainPlacement } from "@/engine/explain";
-import { formatClock } from "@/engine/intervals";
-import { solve } from "@/engine/solve";
-import { strategyList } from "@/engine/strategies";
-import { ruleCatalogue } from "@/engine/validate";
-import type { SolveResult } from "@/types/railplan";
+import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from "@railplan/core/data/requests";
+import { conflictZones, trackBlocks } from "@railplan/core/domain/network";
+import { equipmentTypes, teamById, teams } from "@railplan/core/domain/resources";
+import { explainPlacement } from "@railplan/core/engine/explain";
+import { formatClock } from "@railplan/core/engine/intervals";
+import { solve } from "@railplan/core/engine/solve";
+import { strategyList } from "@railplan/core/engine/strategies";
+import { ruleCatalogue } from "@railplan/core/engine/validate";
+import type { SolveResult } from "@railplan/core/types/railplan";
 
 /**
  * The fact set is the assistant's entire world.

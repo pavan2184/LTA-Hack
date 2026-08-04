@@ -3,8 +3,8 @@ import { existsSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
-import { buildDisruptionInputs, disruptionById } from "@/data/disruptions";
-import { reviewSubmittedPlan, solve } from "@/engine/solve";
+import { buildDisruptionInputs, disruptionById } from "@railplan/core/data/disruptions";
+import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
 import { answerDeterministically } from "@/lib/assistant/deterministic";
 import { buildFactSet } from "@/lib/assistant/facts";
 import { checkGrounding, FALLBACK_NOTICE, SYSTEM_PROMPT } from "@/lib/assistant/guard";

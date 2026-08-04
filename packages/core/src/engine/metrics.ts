@@ -1,8 +1,8 @@
-import { emergencyScenarios, EMERGENCY_SET_VERSION } from "@/data/emergencyScenarios";
-import { requestById, SLOT_MINUTES, WINDOW_END, WINDOW_START } from "@/data/requests";
-import { trackBlocks } from "@/domain/network";
-import { equipmentTypes, teams } from "@/domain/resources";
-import { isFeasible, validate, type ValidationContext } from "@/engine/validate";
+import { emergencyScenarios, EMERGENCY_SET_VERSION } from "../data/emergencyScenarios";
+import { requestById, SLOT_MINUTES, WINDOW_END, WINDOW_START } from "../data/requests";
+import { trackBlocks } from "../domain/network";
+import { equipmentTypes, teams } from "../domain/resources";
+import { isFeasible, validate, type ValidationContext } from "../engine/validate";
 import {
   priorityWeight,
   type MaintenanceRequest,
@@ -10,7 +10,7 @@ import {
   type Plan,
   type PlanMetrics,
   type Violation,
-} from "@/types/railplan";
+} from "../types/railplan";
 
 export const METRIC_VERSION = "metrics-v3";
 

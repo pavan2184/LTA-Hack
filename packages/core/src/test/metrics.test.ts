@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { emergencyScenarios } from "@/data/emergencyScenarios";
-import { requestById, requests } from "@/data/requests";
-import { trackBlocks } from "@/domain/network";
-import { computeMetrics } from "@/engine/metrics";
-import { solve } from "@/engine/solve";
-import { strategyList } from "@/engine/strategies";
-import { validate } from "@/engine/validate";
-import { priorityWeight } from "@/types/railplan";
+import { emergencyScenarios } from "../data/emergencyScenarios";
+import { requestById, requests } from "../data/requests";
+import { trackBlocks } from "../domain/network";
+import { computeMetrics } from "../engine/metrics";
+import { solve } from "../engine/solve";
+import { strategyList } from "../engine/strategies";
+import { validate } from "../engine/validate";
+import { priorityWeight } from "../types/railplan";
 
 const strategies = strategyList.map((profile) => profile.id);
 

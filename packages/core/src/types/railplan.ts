@@ -1,4 +1,4 @@
-import type { WorkClass } from "@/domain/resources";
+import type { WorkClass } from "../domain/resources";
 
 export type Priority = "low" | "medium" | "high" | "critical";
 

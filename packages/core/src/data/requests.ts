@@ -1,6 +1,6 @@
-import { expandSector, sectorLabel } from "@/domain/network";
-import type { WorkClass } from "@/domain/resources";
-import type { EquipmentDemand, MaintenanceRequest, Priority } from "@/types/railplan";
+import { expandSector, sectorLabel } from "../domain/network";
+import type { WorkClass } from "../domain/resources";
+import type { EquipmentDemand, MaintenanceRequest, Priority } from "../types/railplan";
 
 /**
  * The 22 maintenance requests for the planning night.

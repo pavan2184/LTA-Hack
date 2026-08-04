@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { requests } from "@/data/requests";
+import { requests } from "../data/requests";
 import {
   blockAdjacency,
   blockDistance,
@@ -9,8 +9,8 @@ import {
   expandSector,
   sectorLabel,
   trackBlocks,
-} from "@/domain/network";
-import { equipmentById, teamById } from "@/domain/resources";
+} from "../domain/network";
+import { equipmentById, teamById } from "../domain/resources";
 
 describe("network topology", () => {
   it("expands a sector into its atomic blocks", () => {

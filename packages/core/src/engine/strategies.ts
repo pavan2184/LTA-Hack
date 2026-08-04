@@ -1,5 +1,5 @@
-import { WINDOW_END } from "@/data/requests";
-import { priorityWeight, type MaintenanceRequest, type StrategyId } from "@/types/railplan";
+import { WINDOW_END } from "../data/requests";
+import { priorityWeight, type MaintenanceRequest, type StrategyId } from "../types/railplan";
 
 /**
  * A strategy is an objective profile, not a stored schedule.

@@ -2,9 +2,9 @@
 
 import { CircleCheck, CircleSlash, TriangleAlert } from "lucide-react";
 
-import { requestById } from "@/data/requests";
+import { requestById } from "@railplan/core/data/requests";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { SolveResult } from "@/types/railplan";
+import type { SolveResult } from "@railplan/core/types/railplan";
 
 const statusCopy: Record<SolveResult["status"], { label: string; tone: string; icon: typeof CircleCheck }> = {
   OPTIMAL: { label: "Optimal", tone: "text-signal-green", icon: CircleCheck },

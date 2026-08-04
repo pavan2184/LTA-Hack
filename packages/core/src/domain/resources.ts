@@ -59,12 +59,14 @@ export const workClasses: Record<WorkClass, { label: string; isolation: string }
  * adjacent would be safer-sounding and wrong — it would forbid ordinary
  * concurrent work along a whole corridor.
  */
-const incompatiblePairs: {
+export interface WorkClassIncompatibility {
   a: WorkClass;
   b: WorkClass;
   reason: string;
   extendsToAdjacent: boolean;
-}[] = [
+}
+
+export const incompatiblePairs: WorkClassIncompatibility[] = [
   {
     a: "traction-power",
     b: "track-possession",

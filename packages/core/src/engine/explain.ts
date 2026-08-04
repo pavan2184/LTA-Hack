@@ -1,8 +1,8 @@
-import { requestById } from "@/data/requests";
-import { teamById } from "@/domain/resources";
-import { formatClock } from "@/engine/intervals";
-import { validate, type ValidationContext } from "@/engine/validate";
-import type { Plan, Violation } from "@/types/railplan";
+import { requestById } from "../data/requests";
+import { teamById } from "../domain/resources";
+import { formatClock } from "../engine/intervals";
+import { validate, type ValidationContext } from "../engine/validate";
+import type { Plan, Violation } from "../types/railplan";
 
 /**
  * Why a job ended up where it did.

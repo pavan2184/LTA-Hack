@@ -1,4 +1,4 @@
-import { expandSector } from "@/domain/network";
+import { expandSector } from "../domain/network";
 
 /**
  * The versioned emergency scenario set.

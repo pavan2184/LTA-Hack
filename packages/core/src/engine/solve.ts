@@ -1,8 +1,8 @@
-import { requests as allRequests, requestById, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
-import { digest } from "@/engine/hash";
-import { computeMetrics } from "@/engine/metrics";
-import { strategyProfiles, type StrategyProfile } from "@/engine/strategies";
-import { CONSTRAINT_VERSION, isFeasible, validate, type ValidationContext } from "@/engine/validate";
+import { requests as allRequests, requestById, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { digest } from "../engine/hash";
+import { computeMetrics } from "../engine/metrics";
+import { strategyProfiles, type StrategyProfile } from "../engine/strategies";
+import { CONSTRAINT_VERSION, isFeasible, validate, type ValidationContext } from "../engine/validate";
 import {
   priorityWeight,
   type DeferredRequest,
@@ -14,7 +14,7 @@ import {
   type StrategyId,
   type Violation,
   type ViolationRuleId,
-} from "@/types/railplan";
+} from "../types/railplan";
 
 export const SOLVER_VERSION = "railplan-greedy-repair-v2";
 

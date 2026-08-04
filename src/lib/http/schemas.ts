@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { emergencyInsertion, disruptionById } from "@/data/disruptions";
-import { requests, WINDOW_END } from "@/data/requests";
-import { strategyProfiles } from "@/engine/strategies";
-import type { StrategyId } from "@/types/railplan";
+import { emergencyInsertion, disruptionById } from "@railplan/core/data/disruptions";
+import { requests, WINDOW_END } from "@railplan/core/data/requests";
+import { strategyProfiles } from "@railplan/core/engine/strategies";
+import type { StrategyId } from "@railplan/core/types/railplan";
 
 /**
  * The boundary between the browser and the engine.

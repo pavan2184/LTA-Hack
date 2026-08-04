@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { requestById } from "@/data/requests";
-import { findOverloads, overlapMinutes } from "@/engine/intervals";
-import { buildSubmittedPlan, reviewSubmittedPlan } from "@/engine/solve";
-import { clusterViolations, validate, type ValidationContext } from "@/engine/validate";
-import type { Plan, Placement, ViolationRuleId } from "@/types/railplan";
+import { requestById } from "../data/requests";
+import { findOverloads, overlapMinutes } from "../engine/intervals";
+import { buildSubmittedPlan, reviewSubmittedPlan } from "../engine/solve";
+import { clusterViolations, validate, type ValidationContext } from "../engine/validate";
+import type { Plan, Placement, ViolationRuleId } from "../types/railplan";
 
 function place(requestId: string, startMinute: number, teamId?: string): Placement {
   const request = requestById[requestId];

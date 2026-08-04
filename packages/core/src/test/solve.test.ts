@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { buildDisruptionInputs, disruptionById, emergencyInsertion } from "@/data/disruptions";
-import { requests, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
-import { findAlternatives } from "@/engine/alternatives";
-import { explainPlacement } from "@/engine/explain";
-import { solve } from "@/engine/solve";
-import { strategyList } from "@/engine/strategies";
-import { isFeasible, validate } from "@/engine/validate";
-import type { StrategyId } from "@/types/railplan";
+import { buildDisruptionInputs, disruptionById, emergencyInsertion } from "../data/disruptions";
+import { requests, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { findAlternatives } from "../engine/alternatives";
+import { explainPlacement } from "../engine/explain";
+import { solve } from "../engine/solve";
+import { strategyList } from "../engine/strategies";
+import { isFeasible, validate } from "../engine/validate";
+import type { StrategyId } from "../types/railplan";
 
 const strategies = strategyList.map((profile) => profile.id);
 

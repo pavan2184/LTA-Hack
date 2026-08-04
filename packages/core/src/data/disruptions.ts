@@ -1,7 +1,7 @@
-import { requests } from "@/data/requests";
-import { expandSector } from "@/domain/network";
-import type { ValidationContext } from "@/engine/validate";
-import type { DisruptionScenario, MaintenanceRequest, Placement } from "@/types/railplan";
+import { requests } from "../data/requests";
+import { expandSector } from "../domain/network";
+import type { ValidationContext } from "../engine/validate";
+import type { DisruptionScenario, MaintenanceRequest, Placement } from "../types/railplan";
 
 /**
  * Disruptions are changes to the *inputs*, not to the output.

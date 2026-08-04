@@ -3,18 +3,18 @@
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { requestById } from "@/data/requests";
+import { requestById } from "@railplan/core/data/requests";
 import {
   categoryOf,
   headline,
   summariseConflicts,
   type ConflictCategory,
-} from "@/engine/conflicts";
-import { formatClock } from "@/engine/intervals";
-import { ruleCatalogue } from "@/engine/validate";
+} from "@railplan/core/engine/conflicts";
+import { formatClock } from "@railplan/core/engine/intervals";
+import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { Violation } from "@/types/railplan";
+import type { Violation } from "@railplan/core/types/railplan";
 
 /** One hue per category, matching the timeline segments and the request badges. */
 export const categoryTone: Record<ConflictCategory, { text: string; border: string; soft: string; dot: string }> = {

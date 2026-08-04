@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { requestById } from "@/data/requests";
+import { requestById } from "../data/requests";
 import {
   categoryOf,
   conflictCategories,
   headline,
   summariseConflicts,
   summaryLine,
-} from "@/engine/conflicts";
-import { conflictKey, recommendResolution, repairPlan } from "@/engine/resolutions";
-import { buildSubmittedPlan } from "@/engine/solve";
-import { ruleCatalogue, validate } from "@/engine/validate";
-import type { ViolationRuleId } from "@/types/railplan";
+} from "../engine/conflicts";
+import { conflictKey, recommendResolution, repairPlan } from "../engine/resolutions";
+import { buildSubmittedPlan } from "../engine/solve";
+import { ruleCatalogue, validate } from "../engine/validate";
+import type { ViolationRuleId } from "../types/railplan";
 
 const requested = buildSubmittedPlan();
 const violations = validate(requested);

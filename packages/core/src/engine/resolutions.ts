@@ -1,8 +1,8 @@
-import { requestById, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
-import { categoryOf, categoryProfile } from "@/engine/conflicts";
-import { formatClock } from "@/engine/intervals";
-import { validate, type ValidationContext } from "@/engine/validate";
-import { priorityWeight, type Plan, type Violation } from "@/types/railplan";
+import { requestById, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { categoryOf, categoryProfile } from "../engine/conflicts";
+import { formatClock } from "../engine/intervals";
+import { validate, type ValidationContext } from "../engine/validate";
+import { priorityWeight, type Plan, type Violation } from "../types/railplan";
 
 /**
  * Suggested fixes for a named conflict.

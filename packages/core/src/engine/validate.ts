@@ -1,11 +1,11 @@
-import { requestById, WINDOW_END, WINDOW_START } from "@/data/requests";
+import { requestById, WINDOW_END, WINDOW_START } from "../data/requests";
 import {
   blockById,
   blockDistance,
   blocksWithin,
   conflictZones,
   sectorLabel,
-} from "@/domain/network";
+} from "../domain/network";
 import {
   areWorkClassesCompatible,
   equipmentById,
@@ -13,9 +13,9 @@ import {
   MINUTES_PER_BLOCK_HOP,
   teamById,
   teams,
-} from "@/domain/resources";
-import { findOverloads, formatSpan, type Interval } from "@/engine/intervals";
-import type { MaintenanceRequest, Plan, Placement, Violation, ViolationRuleId } from "@/types/railplan";
+} from "../domain/resources";
+import { findOverloads, formatSpan, type Interval } from "../engine/intervals";
+import type { MaintenanceRequest, Plan, Placement, Violation, ViolationRuleId } from "../types/railplan";
 
 export const CONSTRAINT_VERSION = "constraints-v2";
 

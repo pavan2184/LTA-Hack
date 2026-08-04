@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { requestById } from "@/data/requests";
-import { reviewSubmittedPlan, solve } from "@/engine/solve";
+import { requestById } from "@railplan/core/data/requests";
+import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
 import { buildFactSet, resetFactCache } from "@/lib/assistant/facts";
 import type { ApiError } from "@/lib/http/errors";
 import { assistantRequestSchema } from "@/lib/http/schemas";
