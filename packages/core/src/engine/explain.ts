@@ -1,5 +1,4 @@
-import { requestById } from "../data/requests";
-import { teamById } from "../domain/resources";
+import { literalWorld } from "../domain/world";
 import { formatClock } from "../engine/intervals";
 import { validate, type ValidationContext } from "../engine/validate";
 import type { Plan, Violation } from "../types/railplan";
@@ -29,12 +28,13 @@ export function explainPlacement(
   requestId: string,
   context: ValidationContext = {},
 ): PlacementExplanation | null {
-  const request = requestById[requestId];
+  const world = context.world ?? literalWorld();
+  const request = world.requestById[requestId];
   if (!request) return null;
 
   const placement = plan.placements.find((item) => item.requestId === requestId);
   const others = plan.placements.filter((item) => item.requestId !== requestId);
-  const team = teamById[request.teamId];
+  const team = world.teamById[request.teamId];
 
   const counterfactual: Plan = {
     placements: [

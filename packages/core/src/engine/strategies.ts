@@ -1,4 +1,3 @@
-import { WINDOW_END } from "../data/requests";
 import { priorityWeight, type MaintenanceRequest, type StrategyId } from "../types/railplan";
 
 /**
@@ -24,8 +23,15 @@ export interface StrategyProfile {
    * is the honest reading of "minimum risk".
    */
   relaxBufferWhenBlocked: boolean;
-  /** Handback deadline used while solving. Below WINDOW_END leaves a reserve. */
-  planningWindowEnd: number;
+  /**
+   * Minutes held back from the end of the engineering window while solving.
+   *
+   * Expressed as a reserve rather than an absolute clock time, because a
+   * profile is a planning preference and the window belongs to the night being
+   * planned. "Keep the last 45 minutes clear" survives a night with a different
+   * handback deadline; "stop at 03:15" silently means something else.
+   */
+  windowReserveMinutes: number;
   /** Lower sorts earlier. Requests are considered in this order. */
   requestRank: (request: MaintenanceRequest) => number;
   /** Lower is preferred. Candidate start times are tried in this order. */
@@ -48,7 +54,7 @@ export const strategyProfiles: Record<StrategyId, StrategyProfile> = {
     ],
     extraBlockBufferMinutes: 15,
     relaxBufferWhenBlocked: true,
-    planningWindowEnd: WINDOW_END,
+    windowReserveMinutes: 0,
     requestRank: (request) => -weight(request) * 1000 - request.durationMinutes,
     candidateCost: (request, start) => Math.abs(start - request.preferredStart),
   },
@@ -66,7 +72,7 @@ export const strategyProfiles: Record<StrategyId, StrategyProfile> = {
     ],
     extraBlockBufferMinutes: 0,
     relaxBufferWhenBlocked: true,
-    planningWindowEnd: WINDOW_END,
+    windowReserveMinutes: 0,
     requestRank: (request) => -(weight(request) / request.durationMinutes) * 1000,
     candidateCost: (_request, start) => start,
   },
@@ -84,7 +90,7 @@ export const strategyProfiles: Record<StrategyId, StrategyProfile> = {
     ],
     extraBlockBufferMinutes: 30,
     relaxBufferWhenBlocked: false,
-    planningWindowEnd: WINDOW_END,
+    windowReserveMinutes: 0,
     requestRank: (request) => -weight(request) * 1000 - request.durationMinutes,
     candidateCost: (request, start) => start + Math.abs(start - request.preferredStart) * 0.25,
   },
@@ -102,7 +108,7 @@ export const strategyProfiles: Record<StrategyId, StrategyProfile> = {
     ],
     extraBlockBufferMinutes: 0,
     relaxBufferWhenBlocked: true,
-    planningWindowEnd: WINDOW_END,
+    windowReserveMinutes: 0,
     requestRank: (request) => -weight(request) * 1000 + request.preferredStart,
     candidateCost: (request, start) => Math.abs(start - request.preferredStart) * weight(request),
   },
@@ -120,7 +126,7 @@ export const strategyProfiles: Record<StrategyId, StrategyProfile> = {
     ],
     extraBlockBufferMinutes: 0,
     relaxBufferWhenBlocked: true,
-    planningWindowEnd: WINDOW_END - 45,
+    windowReserveMinutes: 45,
     requestRank: (request) => -weight(request) * 1000 - request.durationMinutes,
     candidateCost: (_request, start) => start,
   },

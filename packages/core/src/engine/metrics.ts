@@ -1,7 +1,5 @@
 import { emergencyScenarios, EMERGENCY_SET_VERSION } from "../data/emergencyScenarios";
-import { requestById, SLOT_MINUTES, WINDOW_END, WINDOW_START } from "../data/requests";
-import { trackBlocks } from "../domain/network";
-import { equipmentTypes, teams } from "../domain/resources";
+import { literalWorld, type PlanningWorld } from "../domain/world";
 import { isFeasible, validate, type ValidationContext } from "../engine/validate";
 import {
   priorityWeight,
@@ -55,8 +53,9 @@ export function computeMetrics(
   pool: MaintenanceRequest[],
   context: ValidationContext = {},
 ): PlanMetrics {
-  const windowEnd = context.windowEnd ?? WINDOW_END;
-  const windowLength = windowEnd - WINDOW_START;
+  const world = context.world ?? literalWorld();
+  const windowEnd = context.windowEnd ?? world.windowEnd;
+  const windowLength = windowEnd - world.windowStart;
   const placedIds = new Set(plan.placements.map((p) => p.requestId));
   const placedRequests = pool.filter((request) => placedIds.has(request.id));
 
@@ -72,44 +71,44 @@ export function computeMetrics(
 
   // --- utilisation ---------------------------------------------------------
   const blockMinutesUsed = plan.placements.reduce((sum, placement) => {
-    const request = requestById[placement.requestId];
+    const request = world.requestById[placement.requestId];
     if (!request) return sum;
     const occupancy = placement.endMinute - placement.startMinute + request.clearanceMinutes;
     return sum + occupancy * request.blockIds.length;
   }, 0);
-  const blockMinutesAvailable = trackBlocks.length * windowLength;
+  const blockMinutesAvailable = world.blocks.length * windowLength;
 
   const teamMinutesUsed = plan.placements.reduce(
     (sum, placement) => sum + (placement.endMinute - placement.startMinute),
     0,
   );
-  const teamMinutesAvailable = teams.reduce(
+  const teamMinutesAvailable = world.teams.reduce(
     (sum, team) => sum + team.capacity * (Math.min(team.shiftEnd, windowEnd) - team.shiftStart),
     0,
   );
 
   const equipmentMinutesUsed = plan.placements.reduce((sum, placement) => {
-    const request = requestById[placement.requestId];
+    const request = world.requestById[placement.requestId];
     if (!request) return sum;
     return (
       sum +
       request.equipment.reduce((inner, demand) => {
-        const type = equipmentTypes.find((item) => item.id === demand.equipmentId);
+        const type = world.equipment.find((item) => item.id === demand.equipmentId);
         const turnaround = type?.turnaroundMinutes ?? 0;
         return inner + (placement.endMinute - placement.startMinute + turnaround) * demand.units;
       }, 0)
     );
   }, 0);
-  const equipmentMinutesAvailable = equipmentTypes.reduce(
+  const equipmentMinutesAvailable = world.equipment.reduce(
     (sum, type) => sum + type.units * windowLength,
     0,
   );
 
   // --- buffers -------------------------------------------------------------
-  const buffer = bufferCompliance(plan);
-  const emergency = emergencyInsertability(plan, context);
-  const flex = flexibility(plan, context);
-  const movement = movementMinutes(plan);
+  const buffer = bufferCompliance(plan, world);
+  const emergency = emergencyInsertability(plan, context, world);
+  const flex = flexibility(plan, context, world);
+  const movement = movementMinutes(plan, world);
 
   return {
     placed: metric(
@@ -272,10 +271,10 @@ function pct(numerator: number, denominator: number): number {
   return Math.round((numerator / denominator) * 1000) / 10;
 }
 
-function bufferCompliance(plan: Plan): { score: number; pairs: number } {
+function bufferCompliance(plan: Plan, world: PlanningWorld): { score: number; pairs: number } {
   const byBlock = new Map<string, { start: number; end: number }[]>();
   plan.placements.forEach((placement) => {
-    const request = requestById[placement.requestId];
+    const request = world.requestById[placement.requestId];
     if (!request) return;
     request.blockIds.forEach((blockId) => {
       if (!byBlock.has(blockId)) byBlock.set(blockId, []);
@@ -310,8 +309,9 @@ function bufferCompliance(plan: Plan): { score: number; pairs: number } {
 function emergencyInsertability(
   plan: Plan,
   context: ValidationContext,
+  world: PlanningWorld,
 ): { insertable: number; total: number; fitting: string[] } {
-  const windowEnd = context.windowEnd ?? WINDOW_END;
+  const windowEnd = context.windowEnd ?? world.windowEnd;
   const fitting: string[] = [];
 
   emergencyScenarios.forEach((scenario) => {
@@ -346,7 +346,7 @@ function emergencyInsertability(
     for (
       let start = scenario.earliestStart;
       start + scenario.durationMinutes <= windowEnd;
-      start += SLOT_MINUTES
+      start += world.slotMinutes
     ) {
       const trial: Plan = {
         placements: [
@@ -376,12 +376,16 @@ function emergencyInsertability(
  * with the rest of the plan held still. Sampled at 30 minutes to keep the
  * computation inside a single frame.
  */
-function flexibility(plan: Plan, context: ValidationContext): { total: number; max: number } {
-  const windowEnd = context.windowEnd ?? WINDOW_END;
+function flexibility(
+  plan: Plan,
+  context: ValidationContext,
+  world: PlanningWorld,
+): { total: number; max: number } {
+  const windowEnd = context.windowEnd ?? world.windowEnd;
   let total = 0;
 
   plan.placements.forEach((placement) => {
-    const request = requestById[placement.requestId];
+    const request = world.requestById[placement.requestId];
     if (!request) return;
     const others = plan.placements.filter((item) => item.requestId !== placement.requestId);
     let count = 0;
@@ -389,7 +393,7 @@ function flexibility(plan: Plan, context: ValidationContext): { total: number; m
     for (
       let start = request.earliestStart;
       start + request.durationMinutes + request.clearanceMinutes <= Math.min(request.latestEnd, windowEnd);
-      start += SLOT_MINUTES * 2
+      start += world.slotMinutes * 2
     ) {
       if (Math.abs(start - placement.startMinute) < 30) continue;
       if (count >= FLEXIBILITY_CAP) break;
@@ -409,12 +413,15 @@ function flexibility(plan: Plan, context: ValidationContext): { total: number; m
   return { total, max: plan.placements.length * FLEXIBILITY_CAP };
 }
 
-function movementMinutes(plan: Plan): { minutes: number; weighted: number; moved: number } {
+function movementMinutes(
+  plan: Plan,
+  world: PlanningWorld,
+): { minutes: number; weighted: number; moved: number } {
   let minutes = 0;
   let weighted = 0;
   let moved = 0;
   plan.placements.forEach((placement) => {
-    const request = requestById[placement.requestId];
+    const request = world.requestById[placement.requestId];
     if (!request) return;
     const delta = Math.abs(placement.startMinute - request.preferredStart);
     if (!delta) return;

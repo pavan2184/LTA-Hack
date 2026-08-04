@@ -1,4 +1,4 @@
-import { requestById } from "../data/requests";
+import { literalWorld, type PlanningWorld } from "../domain/world";
 import { ruleCatalogue } from "../engine/validate";
 import type { Violation, ViolationRuleId } from "../types/railplan";
 
@@ -212,8 +212,11 @@ export function headline(violation: Violation): string {
 }
 
 /** Priority order for fixing: worst overlap first, mandatory work weighted up. */
-export function severityRank(violation: Violation): number {
-  const mandatory = violation.requestIds.some((id) => requestById[id]?.mandatory);
+export function severityRank(
+  violation: Violation,
+  world: PlanningWorld = literalWorld(),
+): number {
+  const mandatory = violation.requestIds.some((id) => world.requestById[id]?.mandatory);
   return violation.shortfallMinutes + (mandatory ? 1000 : 0);
 }
 

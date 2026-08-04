@@ -1,19 +1,4 @@
-import { requestById, WINDOW_END, WINDOW_START } from "../data/requests";
-import {
-  blockById,
-  blockDistance,
-  blocksWithin,
-  conflictZones,
-  sectorLabel,
-} from "../domain/network";
-import {
-  areWorkClassesCompatible,
-  equipmentById,
-  INTER_LINE_TRANSFER_MINUTES,
-  MINUTES_PER_BLOCK_HOP,
-  teamById,
-  teams,
-} from "../domain/resources";
+import { literalWorld, type PlanningWorld } from "../domain/world";
 import { findOverloads, formatSpan, type Interval } from "../engine/intervals";
 import type { MaintenanceRequest, Plan, Placement, Violation, ViolationRuleId } from "../types/railplan";
 
@@ -78,6 +63,17 @@ export const ruleCatalogue: Record<ViolationRuleId, { label: string; description
 
 export interface ValidationContext {
   /**
+   * The night being validated against: topology, resources, requests, window.
+   *
+   * Defaults to the world this package's literals describe, which is what keeps
+   * every existing caller working. A caller that has loaded a night out of
+   * Postgres passes its own world here, and the rules below are then evaluated
+   * against *that* night rather than against whichever literals happen to be
+   * compiled into the process. That distinction is the whole point: a validator
+   * that can only check the plans it already agrees with is not a gate.
+   */
+  world?: PlanningWorld;
+  /**
    * Requests that are not in the standing dataset — emergency insertions and
    * what-if jobs. Validated by exactly the same rules as everything else.
    */
@@ -101,10 +97,11 @@ interface Job {
   occupancy: Interval;
 }
 
-function buildJobs(plan: Plan, context: ValidationContext): Job[] {
+function buildJobs(plan: Plan, context: ValidationContext, world: PlanningWorld): Job[] {
   return plan.placements
     .map((placement) => {
-      const request = context.extraRequests?.[placement.requestId] ?? requestById[placement.requestId];
+      const request =
+        context.extraRequests?.[placement.requestId] ?? world.requestById[placement.requestId];
       if (!request) return null;
       const extra = context.overrun?.requestId === placement.requestId ? context.overrun.minutes : 0;
       const end = placement.endMinute + extra;
@@ -132,20 +129,21 @@ function buildJobs(plan: Plan, context: ValidationContext): Job[] {
  * generated plans. Nothing is allowed to assert feasibility without it.
  */
 export function validate(plan: Plan, context: ValidationContext = {}): Violation[] {
-  const jobs = buildJobs(plan, context);
-  const windowEnd = context.windowEnd ?? WINDOW_END;
+  const world = context.world ?? literalWorld();
+  const jobs = buildJobs(plan, context, world);
+  const windowEnd = context.windowEnd ?? world.windowEnd;
   const raw: Omit<Violation, "id">[] = [];
 
-  raw.push(...checkWindows(jobs, windowEnd));
-  raw.push(...checkBlockCapacity(jobs, context));
-  raw.push(...checkConflictZones(jobs));
-  raw.push(...checkAdjacentWork(jobs));
-  raw.push(...checkWorkCompatibility(jobs));
-  raw.push(...checkTeams(jobs, context));
-  raw.push(...checkEquipment(jobs));
-  raw.push(...checkSkills(jobs));
+  raw.push(...checkWindows(jobs, windowEnd, world));
+  raw.push(...checkBlockCapacity(jobs, context, world));
+  raw.push(...checkConflictZones(jobs, world));
+  raw.push(...checkAdjacentWork(jobs, world));
+  raw.push(...checkWorkCompatibility(jobs, world));
+  raw.push(...checkTeams(jobs, context, world));
+  raw.push(...checkEquipment(jobs, world));
+  raw.push(...checkSkills(jobs, world));
   raw.push(...checkDependencies(jobs, plan));
-  raw.push(...checkTravel(jobs));
+  raw.push(...checkTravel(jobs, world));
 
   return dedupe(raw);
 }
@@ -157,7 +155,7 @@ export function isFeasible(violations: Violation[]): boolean {
 
 // --- individual rules -------------------------------------------------------
 
-function checkWindows(jobs: Job[], windowEnd: number): Omit<Violation, "id">[] {
+function checkWindows(jobs: Job[], windowEnd: number, world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
   jobs.forEach(({ request, work, occupancy }) => {
     if (work.start < request.earliestStart) {
@@ -205,7 +203,7 @@ function checkWindows(jobs: Job[], windowEnd: number): Omit<Violation, "id">[] {
         remedy: `Start ${request.id} ${occupancy.end - windowEnd} minutes earlier or defer it.`,
       });
     }
-    if (work.start < WINDOW_START) {
+    if (work.start < world.windowStart) {
       found.push({
         ruleId: "TIME_WINDOW",
         severity: "critical",
@@ -214,9 +212,9 @@ function checkWindows(jobs: Job[], windowEnd: number): Omit<Violation, "id">[] {
         detail: `${request.id} starts at ${formatSpan(work.start, work.start).split("-")[0]}, before the window opens.`,
         subjects: ["engineering window"],
         observed: formatSpan(work.start, work.end),
-        required: `start at or after ${formatSpan(WINDOW_START, WINDOW_START).split("-")[0]}`,
-        shortfallMinutes: WINDOW_START - work.start,
-        window: { start: work.start, end: Math.min(WINDOW_START, work.end) },
+        required: `start at or after ${formatSpan(world.windowStart, world.windowStart).split("-")[0]}`,
+        shortfallMinutes: world.windowStart - work.start,
+        window: { start: work.start, end: Math.min(world.windowStart, work.end) },
         remedy: `Move ${request.id} into the window.`,
       });
     }
@@ -224,7 +222,7 @@ function checkWindows(jobs: Job[], windowEnd: number): Omit<Violation, "id">[] {
   return found;
 }
 
-function checkBlockCapacity(jobs: Job[], context: ValidationContext): Omit<Violation, "id">[] {
+function checkBlockCapacity(jobs: Job[], context: ValidationContext, world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
   const closed = new Set(context.closedBlockIds ?? []);
   const byBlock = new Map<string, Interval[]>();
@@ -237,7 +235,7 @@ function checkBlockCapacity(jobs: Job[], context: ValidationContext): Omit<Viola
   });
 
   byBlock.forEach((intervals, blockId) => {
-    const block = blockById[blockId];
+    const block = world.blockById[blockId];
     const capacity = closed.has(blockId) ? 0 : (block?.capacity ?? 1);
 
     if (capacity === 0) {
@@ -282,9 +280,9 @@ function checkBlockCapacity(jobs: Job[], context: ValidationContext): Omit<Viola
   return found;
 }
 
-function checkConflictZones(jobs: Job[]): Omit<Violation, "id">[] {
+function checkConflictZones(jobs: Job[], world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
-  conflictZones.forEach((zone) => {
+  world.conflictZones.forEach((zone) => {
     const zoneBlocks = new Set(zone.blockIds);
     const inZone = jobs.filter(
       (job) =>
@@ -312,16 +310,16 @@ function checkConflictZones(jobs: Job[]): Omit<Violation, "id">[] {
   return found;
 }
 
-function checkAdjacentWork(jobs: Job[]): Omit<Violation, "id">[] {
+function checkAdjacentWork(jobs: Job[], world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
   for (let i = 0; i < jobs.length; i += 1) {
     for (let j = i + 1; j < jobs.length; j += 1) {
       const a = jobs[i];
       const b = jobs[j];
-      const compatibility = areWorkClassesCompatible(a.request.workClass, b.request.workClass);
+      const compatibility = world.areWorkClassesCompatible(a.request.workClass, b.request.workClass);
       if (compatibility.compatible || !compatibility.extendsToAdjacent) continue;
 
-      const distance = blockDistance(a.request.blockIds, b.request.blockIds);
+      const distance = world.blockDistance(a.request.blockIds, b.request.blockIds);
       // Distance 0 is a shared block, already reported by BLOCK_CAPACITY.
       if (distance !== 1) continue;
 
@@ -332,7 +330,7 @@ function checkAdjacentWork(jobs: Job[]): Omit<Violation, "id">[] {
       const minutes = Math.max(0, overlap.end - overlap.start);
       if (minutes <= 0) continue;
 
-      const neighbours = blocksWithin(a.request.blockIds, 1).filter((id) =>
+      const neighbours = world.blocksWithin(a.request.blockIds, 1).filter((id) =>
         b.request.blockIds.includes(id),
       );
       found.push({
@@ -353,7 +351,7 @@ function checkAdjacentWork(jobs: Job[]): Omit<Violation, "id">[] {
   return found;
 }
 
-function checkWorkCompatibility(jobs: Job[]): Omit<Violation, "id">[] {
+function checkWorkCompatibility(jobs: Job[], world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
   for (let i = 0; i < jobs.length; i += 1) {
     for (let j = i + 1; j < jobs.length; j += 1) {
@@ -363,9 +361,9 @@ function checkWorkCompatibility(jobs: Job[]): Omit<Violation, "id">[] {
       if (!shared.length) continue;
       // Only meaningful where a block permits concurrent work at all; otherwise
       // BLOCK_CAPACITY is the binding rule and reporting both is noise.
-      if (shared.every((id) => (blockById[id]?.capacity ?? 1) <= 1)) continue;
+      if (shared.every((id) => (world.blockById[id]?.capacity ?? 1) <= 1)) continue;
 
-      const compatibility = areWorkClassesCompatible(a.request.workClass, b.request.workClass);
+      const compatibility = world.areWorkClassesCompatible(a.request.workClass, b.request.workClass);
       if (compatibility.compatible) continue;
 
       const overlap = {
@@ -379,7 +377,7 @@ function checkWorkCompatibility(jobs: Job[]): Omit<Violation, "id">[] {
         ruleId: "WORK_COMPATIBILITY",
         severity: "critical",
         requestIds: [a.request.id, b.request.id].sort(),
-        title: `Incompatible work on ${sectorLabel(shared)}`,
+        title: `Incompatible work on ${world.sectorLabel(shared)}`,
         detail: `${a.request.workType} and ${b.request.workType} share ${shared.join(", ")} for ${minutes} minutes. ${compatibility.reason}`,
         subjects: shared,
         observed: `${minutes} min concurrent`,
@@ -393,7 +391,7 @@ function checkWorkCompatibility(jobs: Job[]): Omit<Violation, "id">[] {
   return found;
 }
 
-function checkTeams(jobs: Job[], context: ValidationContext): Omit<Violation, "id">[] {
+function checkTeams(jobs: Job[], context: ValidationContext, world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
   const byTeam = new Map<string, Interval[]>();
   jobs.forEach((job) => {
@@ -402,7 +400,7 @@ function checkTeams(jobs: Job[], context: ValidationContext): Omit<Violation, "i
   });
 
   byTeam.forEach((intervals, teamId) => {
-    const team = teamById[teamId];
+    const team = world.teamById[teamId];
     if (!team) return;
 
     findOverloads(intervals, team.capacity).forEach((overload) => {
@@ -467,13 +465,13 @@ function checkTeams(jobs: Job[], context: ValidationContext): Omit<Violation, "i
   return found;
 }
 
-function checkEquipment(jobs: Job[]): Omit<Violation, "id">[] {
+function checkEquipment(jobs: Job[], world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
   const byEquipment = new Map<string, Interval[]>();
 
   jobs.forEach((job) => {
     job.request.equipment.forEach((demand) => {
-      const type = equipmentById[demand.equipmentId];
+      const type = world.equipmentById[demand.equipmentId];
       if (!type) return;
       if (!byEquipment.has(demand.equipmentId)) byEquipment.set(demand.equipmentId, []);
       // The asset is unavailable to anyone else until it has been moved and
@@ -489,7 +487,7 @@ function checkEquipment(jobs: Job[]): Omit<Violation, "id">[] {
   });
 
   byEquipment.forEach((intervals, equipmentId) => {
-    const type = equipmentById[equipmentId];
+    const type = world.equipmentById[equipmentId];
     if (!type) return;
     findOverloads(intervals, type.units).forEach((overload) => {
       const minutes = overload.end - overload.start;
@@ -512,9 +510,9 @@ function checkEquipment(jobs: Job[]): Omit<Violation, "id">[] {
   return found;
 }
 
-function checkSkills(jobs: Job[]): Omit<Violation, "id">[] {
+function checkSkills(jobs: Job[], world: PlanningWorld): Omit<Violation, "id">[] {
   return jobs.flatMap(({ request, placement }) => {
-    const team = teamById[placement.teamId];
+    const team = world.teamById[placement.teamId];
     if (!team) {
       return [
         {
@@ -610,9 +608,9 @@ function checkDependencies(jobs: Job[], plan: Plan): Omit<Violation, "id">[] {
  * crew the plan does not say which crew takes which job, and asserting a
  * violation would be guessing.
  */
-function checkTravel(jobs: Job[]): Omit<Violation, "id">[] {
+function checkTravel(jobs: Job[], world: PlanningWorld): Omit<Violation, "id">[] {
   const found: Omit<Violation, "id">[] = [];
-  teams
+  world.teams
     .filter((team) => team.capacity === 1)
     .forEach((team) => {
       const assigned = jobs
@@ -622,7 +620,7 @@ function checkTravel(jobs: Job[]): Omit<Violation, "id">[] {
       for (let index = 0; index < assigned.length - 1; index += 1) {
         const current = assigned[index];
         const next = assigned[index + 1];
-        const travel = travelMinutes(current.request.blockIds, next.request.blockIds);
+        const travel = travelMinutes(current.request.blockIds, next.request.blockIds, world);
         const gap = next.work.start - current.work.end;
         // A negative gap means the two jobs overlap, which TEAM_CAPACITY already
         // reports; raising a travel finding on top of it is double-counting.
@@ -633,7 +631,7 @@ function checkTravel(jobs: Job[]): Omit<Violation, "id">[] {
           severity: "critical",
           requestIds: [current.request.id, next.request.id],
           title: `${team.name} cannot reach ${next.request.id} in time`,
-          detail: `${team.name} finishes ${current.request.id} on ${sectorLabel(current.request.blockIds)} at ${formatSpan(current.work.end, current.work.end).split("-")[0]} and is due on ${sectorLabel(next.request.blockIds)} at ${formatSpan(next.work.start, next.work.start).split("-")[0]}. That move takes ${travel} minutes; only ${Math.max(0, gap)} are available.`,
+          detail: `${team.name} finishes ${current.request.id} on ${world.sectorLabel(current.request.blockIds)} at ${formatSpan(current.work.end, current.work.end).split("-")[0]} and is due on ${world.sectorLabel(next.request.blockIds)} at ${formatSpan(next.work.start, next.work.start).split("-")[0]}. That move takes ${travel} minutes; only ${Math.max(0, gap)} are available.`,
           subjects: [team.name],
           observed: `${Math.max(0, gap)} min gap`,
           required: `${travel} min gap`,
@@ -648,11 +646,11 @@ function checkTravel(jobs: Job[]): Omit<Violation, "id">[] {
 }
 
 /** Graph distance in minutes, falling back to a road transfer between lines. */
-export function travelMinutes(from: string[], to: string[]): number {
-  const distance = blockDistance(from, to);
+export function travelMinutes(from: string[], to: string[], world: PlanningWorld = literalWorld()): number {
+  const distance = world.blockDistance(from, to);
   if (distance === 0) return 0;
-  if (!Number.isFinite(distance)) return INTER_LINE_TRANSFER_MINUTES;
-  return distance * MINUTES_PER_BLOCK_HOP;
+  if (!Number.isFinite(distance)) return world.interLineTransferMinutes;
+  return distance * world.minutesPerBlockHop;
 }
 
 // --- post-processing --------------------------------------------------------

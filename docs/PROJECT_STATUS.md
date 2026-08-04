@@ -60,17 +60,35 @@ The seed exits non-zero on a digest mismatch and names the section that differs.
 `src/test/instance.test.ts` runs the same comparison and skips when no database
 is reachable, so `npm test` stays green on a clone without Docker.
 
-### Deferred, deliberately
+### The engine now reads the night it is given
 
-The engine still reads its facts from module literals rather than taking a
-`PlanningInstance` parameter. Threading one through `validate`, `solve`,
-`computeMetrics`, `explainPlacement` and `findAlternatives` changes every public
-signature the web app and the 77 engine tests call, and Phase 3 has not yet
-settled how an instance is fetched per request — doing it now risks doing it
-twice. **The consequence is worth stating plainly: until that lands, the gate
-validates a proposal against the literals, not against whatever is in Postgres.
-That is only safe while Postgres is seeded from those literals**, which the
-digest check enforces.
+This was deferred and has since landed, because it is what makes the Phase 4
+gate mean anything: a validator that can only check plans built from the
+literals it has compiled in is not a gate.
+
+`PlanningWorld` derives from a `PlanningInstance` the things the rules actually
+need — lookups by id, the adjacency walks, the compatibility matrix. It is
+carried on `ValidationContext.world`, which was already threaded through
+`validate`, `solve`, `computeMetrics`, `explainPlacement`, `findAlternatives`
+and `recommendResolution`. So the engine became instance-driven with **no public
+signature changes and no call-site churn**, and every existing caller keeps
+working by falling back to the literal world.
+
+Two consequences worth knowing:
+
+- **Strategy profiles express a reserve, not a clock time.** `planningWindowEnd:
+  WINDOW_END - 45` became `windowReserveMinutes: 45`. "Keep the last 45 minutes
+  clear" survives a night with a different handback deadline; "stop at 03:15"
+  silently means something else.
+- **`inputHash` now identifies which night was planned**, not just how. It
+  includes `instanceDigest`, so two solves that agree on strategy, locks and
+  requests but disagree on the topology no longer collide.
+
+Verified rather than asserted: the derived world is checked against the module
+topology it replaces across every block pair, every class pair and every
+request's sector label; and a separate suite hands the engine a deliberately
+different night — a shortened window, a scarcer asset, a severed adjacency — and
+insists the answers move.
 
 ## v0.3.1 — the assistant route made defensible (Phase 0 of the backend plan)
 
@@ -208,7 +226,7 @@ quietly lower the bar it is judged against. A test asserts that baseline.
 
 ## Verification
 
-- `npm test` — 165 passed, 2 skipped across 9 files (the two skips are the
+- `npm test` — 184 passed, 2 skipped across 11 files (the two skips are the
   database round trip, which needs a running Postgres).
   covering the hardened boundary and the fact-set cache).
 - `npx tsc --noEmit` — clean.

@@ -1,4 +1,5 @@
-import { requests as allRequests, requestById, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { instanceDigest } from "../domain/instance";
+import { literalWorld, type PlanningWorld } from "../domain/world";
 import { digest } from "../engine/hash";
 import { computeMetrics } from "../engine/metrics";
 import { strategyProfiles, type StrategyProfile } from "../engine/strategies";
@@ -45,14 +46,20 @@ export interface SolveOptions {
 export function solve(options: SolveOptions): SolveResult {
   const started = now();
   const profile = strategyProfiles[options.strategy];
-  const pool = options.requests ?? allRequests;
+  const world = options.context?.world ?? literalWorld();
+  const pool = options.requests ?? world.requests;
+  // The world is carried on the context rather than passed alongside it, so
+  // every downstream `validate` call is against the same night the solver
+  // planned. A solver that builds against one set of facts and is checked
+  // against another is not being checked.
   const context: ValidationContext = {
     ...options.context,
-    windowEnd: options.context?.windowEnd ?? WINDOW_END,
+    world,
+    windowEnd: options.context?.windowEnd ?? world.windowEnd,
   };
   const solveContext: ValidationContext = {
     ...context,
-    windowEnd: Math.min(context.windowEnd ?? WINDOW_END, profile.planningWindowEnd),
+    windowEnd: Math.min(context.windowEnd ?? world.windowEnd, world.windowEnd - profile.windowReserveMinutes),
   };
 
   const excluded = new Set(
@@ -106,7 +113,7 @@ export function solve(options: SolveOptions): SolveResult {
     }
 
     const unplacedMandatory = deferred
-      .map((entry) => requestById[entry.requestId])
+      .map((entry) => world.requestById[entry.requestId])
       .filter((request) => request?.mandatory);
 
     if (!unplacedMandatory.length) break;
@@ -116,7 +123,7 @@ export function solve(options: SolveOptions): SolveResult {
     // of mandatory work, then re-solve from scratch so the result stays a
     // function of its inputs rather than of the order repairs happened in.
     const blockers = placements
-      .map((placement) => requestById[placement.requestId])
+      .map((placement) => world.requestById[placement.requestId])
       .filter((request) => request && !request.mandatory && !lockedById.has(request.id) && !displaced.has(request.id))
       .sort(
         (a, b) =>
@@ -140,7 +147,7 @@ export function solve(options: SolveOptions): SolveResult {
   // rather than the strategy's tightened one.
   const violations = validate(plan, context);
   const feasible = isFeasible(violations);
-  const mandatoryDeferred = plan.deferred.some((entry) => requestById[entry.requestId]?.mandatory);
+  const mandatoryDeferred = plan.deferred.some((entry) => world.requestById[entry.requestId]?.mandatory);
 
   let status: SolveStatus;
   if (!feasible || mandatoryDeferred) status = "INFEASIBLE";
@@ -161,7 +168,7 @@ export function solve(options: SolveOptions): SolveResult {
       requests: pool.map((request) => request.id),
       locked: [...lockedById.values()].map((p) => `${p.requestId}@${p.startMinute}`).sort(),
       excluded: [...excluded].sort(),
-      context,
+      ...hashableContext(context, world),
       constraintVersion: CONSTRAINT_VERSION,
       solverVersion: SOLVER_VERSION,
     }),
@@ -182,7 +189,7 @@ export function solve(options: SolveOptions): SolveResult {
  * count fall before handing the night to the solver at all.
  */
 export function buildSubmittedPlan(
-  pool: MaintenanceRequest[] = allRequests,
+  pool: MaintenanceRequest[] = literalWorld().requests,
   overrides: Record<string, number> = {},
 ): Plan {
   return {
@@ -208,9 +215,11 @@ export function reviewSubmittedPlan(
   overrides: Record<string, number> = {},
 ): SolveResult {
   const started = now();
-  const plan = buildSubmittedPlan(allRequests, overrides);
-  const violations = validate(plan, context);
-  const metrics = computeMetrics(plan, violations, allRequests, context);
+  const world = context.world ?? literalWorld();
+  const scoped: ValidationContext = { ...context, world };
+  const plan = buildSubmittedPlan(world.requests, overrides);
+  const violations = validate(plan, scoped);
+  const metrics = computeMetrics(plan, violations, world.requests, scoped);
   return {
     status: isFeasible(violations) ? "FEASIBLE" : "INFEASIBLE",
     strategy: "submitted",
@@ -223,7 +232,7 @@ export function reviewSubmittedPlan(
       overrides: Object.entries(overrides)
         .map(([id, start]) => `${id}@${start}`)
         .sort(),
-      context,
+      ...hashableContext(context, world),
       constraintVersion: CONSTRAINT_VERSION,
     }),
     constraintVersion: CONSTRAINT_VERSION,
@@ -285,13 +294,14 @@ function place(
   context: ValidationContext,
   excluded: Set<string>,
 ): PlacementAttempt {
-  const windowEnd = context.windowEnd ?? WINDOW_END;
+  const world = context.world ?? literalWorld();
+  const windowEnd = context.windowEnd ?? world.windowEnd;
   const latest = Math.min(request.latestEnd, windowEnd - request.clearanceMinutes) - request.durationMinutes;
   const candidates: number[] = [];
   for (
-    let start = ceilToSlot(Math.max(request.earliestStart, 0));
+    let start = ceilToSlot(Math.max(request.earliestStart, 0), world.slotMinutes);
     start <= latest;
-    start += SLOT_MINUTES
+    start += world.slotMinutes
   ) {
     if (excluded.has(`${request.id}@${start}`)) continue;
     candidates.push(start);
@@ -337,7 +347,7 @@ function place(
 
       // The strategy's extra separation is a preference, not a safety rule, so
       // it is applied here rather than in the validator.
-      if (gap > 0 && !hasSeparation(placement, request, placed, gap)) continue;
+      if (gap > 0 && !hasSeparation(placement, request, placed, gap, world)) continue;
 
       return { placement, rank, evaluated, bindingRuleIds: [], reason: "" };
     }
@@ -361,13 +371,14 @@ function hasSeparation(
   request: MaintenanceRequest,
   placed: Placement[],
   gap: number,
+  world: PlanningWorld,
 ): boolean {
   const blocks = new Set(request.blockIds);
   const start = placement.startMinute;
   const end = placement.endMinute + request.clearanceMinutes;
 
   return placed.every((other) => {
-    const otherRequest = requestById[other.requestId];
+    const otherRequest = world.requestById[other.requestId];
     if (!otherRequest) return true;
     if (!otherRequest.blockIds.some((id) => blocks.has(id))) return true;
     const otherStart = other.startMinute;
@@ -389,8 +400,25 @@ function buildObjective(profile: StrategyProfile, metrics: ReturnType<typeof com
   ];
 }
 
-function ceilToSlot(minutes: number): number {
-  return Math.ceil(minutes / SLOT_MINUTES) * SLOT_MINUTES;
+/**
+ * The parts of a context that can change a result, in a form that hashes.
+ *
+ * The world cannot go into the digest as it stands: it carries functions, and
+ * serialising a whole instance on every solve would be slow and enormous. Its
+ * content digest is the right substitute — it changes when and only when the
+ * facts do, which makes `inputHash` a claim about *which night* was planned as
+ * well as how. Two solves that agree on everything except the topology they
+ * were given must not report the same hash.
+ */
+function hashableContext(context: ValidationContext, world: PlanningWorld) {
+  // The world is dropped here and represented by its digest instead.
+  const rest: ValidationContext = { ...context };
+  delete rest.world;
+  return { context: rest, instance: instanceDigest(world.instance) };
+}
+
+function ceilToSlot(minutes: number, slot: number): number {
+  return Math.ceil(minutes / slot) * slot;
 }
 
 function now(): number {

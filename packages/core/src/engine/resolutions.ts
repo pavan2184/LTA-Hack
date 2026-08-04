@@ -1,4 +1,4 @@
-import { requestById, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { literalWorld, type PlanningWorld } from "../domain/world";
 import { categoryOf, categoryProfile } from "../engine/conflicts";
 import { formatClock } from "../engine/intervals";
 import { validate, type ValidationContext } from "../engine/validate";
@@ -54,10 +54,10 @@ function criticalKeys(violations: Violation[]): Set<string> {
  * before long ones. A planner disturbs the least valuable thing on the board,
  * and so does this.
  */
-function moveOrder(requestIds: string[]): string[] {
+function moveOrder(requestIds: string[], world: PlanningWorld): string[] {
   return [...requestIds].sort((a, b) => {
-    const left = requestById[a];
-    const right = requestById[b];
+    const left = world.requestById[a];
+    const right = world.requestById[b];
     if (!left || !right) return a.localeCompare(b);
     return (
       Number(left.mandatory) - Number(right.mandatory) ||
@@ -80,7 +80,8 @@ export function recommendResolution(
   violation: Violation,
   context: ValidationContext = {},
 ): Resolution | null {
-  const windowEnd = context.windowEnd ?? WINDOW_END;
+  const world = context.world ?? literalWorld();
+  const windowEnd = context.windowEnd ?? world.windowEnd;
   const baseline = validate(plan, context);
   const baselineKeys = criticalKeys(baseline);
   const target = conflictKey(violation);
@@ -88,8 +89,8 @@ export function recommendResolution(
 
   let best: Resolution | null = null;
 
-  for (const requestId of moveOrder(violation.requestIds)) {
-    const request = requestById[requestId];
+  for (const requestId of moveOrder(violation.requestIds, world)) {
+    const request = world.requestById[requestId];
     if (!request) continue;
 
     const current = plan.placements.find((placement) => placement.requestId === requestId);
@@ -99,7 +100,7 @@ export function recommendResolution(
     const latest =
       Math.min(request.latestEnd, windowEnd - request.clearanceMinutes) - request.durationMinutes;
 
-    for (let start = request.earliestStart; start <= latest; start += SLOT_MINUTES) {
+    for (let start = request.earliestStart; start <= latest; start += world.slotMinutes) {
       if (start === current.startMinute) continue;
 
       const trial: Plan = {

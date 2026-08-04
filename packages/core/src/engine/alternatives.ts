@@ -1,4 +1,4 @@
-import { requestById, SLOT_MINUTES, WINDOW_END } from "../data/requests";
+import { literalWorld } from "../domain/world";
 import { categoryOf, categoryProfile } from "../engine/conflicts";
 import { conflictKey } from "../engine/resolutions";
 import { isFeasible, validate, type ValidationContext } from "../engine/validate";
@@ -22,10 +22,11 @@ export function findAlternatives(
   requestId: string,
   context: ValidationContext = {},
 ): { alternatives: AlternativeSlot[]; bindingRuleId: ViolationRuleId | null } {
-  const request = requestById[requestId];
+  const world = context.world ?? literalWorld();
+  const request = world.requestById[requestId];
   if (!request) return { alternatives: [], bindingRuleId: null };
 
-  const windowEnd = context.windowEnd ?? WINDOW_END;
+  const windowEnd = context.windowEnd ?? world.windowEnd;
   const current = plan.placements.find((placement) => placement.requestId === requestId);
   const others = plan.placements.filter((placement) => placement.requestId !== requestId);
   const latest =
@@ -47,7 +48,7 @@ export function findAlternatives(
   const feasibleStarts: number[] = [];
   const blockedBy = new Map<ViolationRuleId, number>();
 
-  for (let start = request.earliestStart; start <= latest; start += SLOT_MINUTES) {
+  for (let start = request.earliestStart; start <= latest; start += world.slotMinutes) {
     if (current && start === current.startMinute) continue;
 
     const trial: Plan = {
@@ -175,7 +176,8 @@ export function applyAlternative(
   startMinute: number,
   context: ValidationContext = {},
 ): { plan: Plan; violations: ReturnType<typeof validate>; feasible: boolean } {
-  const request = requestById[requestId];
+  const world = context.world ?? literalWorld();
+  const request = world.requestById[requestId];
   if (!request) return { plan, violations: [], feasible: true };
 
   const next: Plan = {
