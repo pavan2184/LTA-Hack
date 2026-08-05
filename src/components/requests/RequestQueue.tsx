@@ -4,19 +4,19 @@ import { Lock, Search, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { categoryTone } from "@/components/insights/ViolationPanel";
-import { requests } from "@/data/requests";
-import { teamById } from "@/domain/resources";
+import { requests } from "@railplan/core/data/requests";
+import { teamById } from "@railplan/core/domain/resources";
 import {
   categoriesFor,
   categoryOf,
   categoryProfile,
   conflictCategories,
   type ConflictCategory,
-} from "@/engine/conflicts";
-import { formatClock } from "@/engine/intervals";
+} from "@railplan/core/engine/conflicts";
+import { formatClock } from "@railplan/core/engine/intervals";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { MaintenanceRequest } from "@/types/railplan";
+import type { MaintenanceRequest } from "@railplan/core/types/railplan";
 
 type FilterId = "attention" | "all" | "mandatory" | "pinned" | ConflictCategory;
 

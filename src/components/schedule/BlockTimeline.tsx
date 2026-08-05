@@ -3,15 +3,15 @@
 import { Lock } from "lucide-react";
 import { useMemo } from "react";
 
-import { emergencyInsertion } from "@/data/disruptions";
-import { requestById, WINDOW_END } from "@/data/requests";
-import { blockById, lines, trackBlocks, type LineId } from "@/domain/network";
-import { teamById } from "@/domain/resources";
-import { categoryOf, conflictCategories, type ConflictCategory } from "@/engine/conflicts";
-import { formatClock } from "@/engine/intervals";
+import { emergencyInsertion } from "@railplan/core/data/disruptions";
+import { requestById, WINDOW_END } from "@railplan/core/data/requests";
+import { blockById, lines, trackBlocks, type LineId } from "@railplan/core/domain/network";
+import { teamById } from "@railplan/core/domain/resources";
+import { categoryOf, conflictCategories, type ConflictCategory } from "@railplan/core/engine/conflicts";
+import { formatClock } from "@railplan/core/engine/intervals";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { Placement, Violation } from "@/types/railplan";
+import type { Placement, Violation } from "@railplan/core/types/railplan";
 
 const TICKS = [0, 30, 60, 90, 120, 150, 180, 210, 240];
 

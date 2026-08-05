@@ -1,8 +1,8 @@
-import { requestById } from "@/data/requests";
-import { explainPlacement } from "@/engine/explain";
-import { formatClock } from "@/engine/intervals";
-import { ruleCatalogue } from "@/engine/validate";
-import type { SolveResult } from "@/types/railplan";
+import { requestById } from "@railplan/core/data/requests";
+import { explainPlacement } from "@railplan/core/engine/explain";
+import { formatClock } from "@railplan/core/engine/intervals";
+import { ruleCatalogue } from "@railplan/core/engine/validate";
+import type { SolveResult } from "@railplan/core/types/railplan";
 
 /**
  * Template answers built straight from engine output.

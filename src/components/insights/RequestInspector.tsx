@@ -3,10 +3,10 @@
 import { Lock, Unlock } from "lucide-react";
 import { useMemo } from "react";
 
-import { requestById } from "@/data/requests";
-import { teamById } from "@/domain/resources";
-import { formatClock } from "@/engine/intervals";
-import { ruleCatalogue } from "@/engine/validate";
+import { requestById } from "@railplan/core/data/requests";
+import { teamById } from "@railplan/core/domain/resources";
+import { formatClock } from "@railplan/core/engine/intervals";
+import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 import { Button } from "@/components/ui/button";

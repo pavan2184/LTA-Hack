@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-import type { MetricValue } from "@/types/railplan";
+import type { MetricValue } from "@railplan/core/types/railplan";
 
 function suffix(unit: MetricValue["unit"]): string {
   if (unit === "percent") return "%";

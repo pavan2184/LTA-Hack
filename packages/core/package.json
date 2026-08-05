@@ -1,0 +1,13 @@
+{
+  "name": "@railplan/core",
+  "version": "0.3.1",
+  "private": true,
+  "type": "module",
+  "description": "The constraint engine, network topology and resource model. No UI, no HTTP, no database.",
+  "exports": {
+    "./engine/*": "./src/engine/*.ts",
+    "./domain/*": "./src/domain/*.ts",
+    "./data/*": "./src/data/*.ts",
+    "./types/*": "./src/types/*.ts"
+  }
+}

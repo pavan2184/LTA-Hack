@@ -1,8 +1,8 @@
 "use client";
 
-import { emergencyInsertion } from "@/data/disruptions";
-import { requestById } from "@/data/requests";
-import { blocksWithin, conflictZones, lineOrder, lines, type LineId } from "@/domain/network";
+import { emergencyInsertion } from "@railplan/core/data/disruptions";
+import { requestById } from "@railplan/core/data/requests";
+import { blocksWithin, conflictZones, lineOrder, lines, type LineId } from "@railplan/core/domain/network";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 

@@ -1,11 +1,141 @@
 # Project Status
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 ## Current version
 
-v0.3.0 — the same engine, presented as the planner's workflow: requested plan,
-conflicts, optimised schedule.
+v0.4.0 — the engine extracted into a package, and the planning facts given a
+contract and a schema. The engine itself is unchanged.
+
+## v0.4.0 — packages/core and the planning facts (Phase 1 of the backend plan)
+
+**`packages/core` is now a workspace package** holding `domain`, `data`,
+`engine` and `types`, consumed by the web app and the API route through
+subpath imports (`@railplan/core/engine/solve`). Inside the package imports are
+relative; there is no `@/` alias there on purpose, because an alias meaning one
+thing in the app and another in the engine is a trap for whoever moves a file
+next. The 77 engine tests moved with it and pass with no assertion changes.
+
+`docs/ARCHITECTURE.md` has claimed since v0.2.0 that the engine knows nothing
+about the interface. That held by discipline alone. An ESLint rule now fails the
+build if anything under `packages/core` imports from the web app, from React, or
+from Next — which also matters because the package is about to be consumed by
+something that is not a Next app.
+
+**`PlanningInstance` is the contract for a night's facts** — stations, blocks,
+adjacency, zones, teams, equipment, incompatible work classes, requests, and the
+window — as one serialisable value with a canonical ordering and a content
+digest. It exists because those facts are about to have three readers: this
+package's literals, Postgres, and a Python CP-SAT service. Three readers of the
+same facts is exactly where they quietly stop being the same facts, so
+`instanceDigest` is the check that says whether two sources agree.
+
+**The schema is authored** in `supabase/migrations/`: 16 tables with the
+constraints in the database rather than only in the application, because the
+application is about to stop being the only writer. `mandatory` is a generated
+column (`priority = 'critical'`) rather than a stored one; the incompatible-pair
+table has a `check (class_a < class_b)` so the same rule cannot be stored twice
+in opposite orders; `request_blocks` holds atomic block ids and a position,
+never a sector label. Every table has row-level security enabled with no
+policies, which denies everything by default until Phase 2 defines who may read
+what.
+
+### Not yet verified
+
+**The migration has never been applied and the seed has never run.** The Docker
+daemon became unresponsive while pulling the Supabase images, so the round trip
+is written but unproven. What *is* verified: the migration parses under the real
+Postgres parser (`libpg-query`) as 2 enums, 16 tables, 3 indexes and 16 RLS
+statements, all 16 tables have RLS enabled, and all 18 foreign keys target
+tables defined in the same migration.
+
+To finish it:
+
+```
+npm run db:start   # supabase start
+npm run db:seed    # writes the literals, reads them back, compares digests
+```
+
+The seed exits non-zero on a digest mismatch and names the section that differs.
+`src/test/instance.test.ts` runs the same comparison and skips when no database
+is reachable, so `npm test` stays green on a clone without Docker.
+
+### The engine now reads the night it is given
+
+This was deferred and has since landed, because it is what makes the Phase 4
+gate mean anything: a validator that can only check plans built from the
+literals it has compiled in is not a gate.
+
+`PlanningWorld` derives from a `PlanningInstance` the things the rules actually
+need — lookups by id, the adjacency walks, the compatibility matrix. It is
+carried on `ValidationContext.world`, which was already threaded through
+`validate`, `solve`, `computeMetrics`, `explainPlacement`, `findAlternatives`
+and `recommendResolution`. So the engine became instance-driven with **no public
+signature changes and no call-site churn**, and every existing caller keeps
+working by falling back to the literal world.
+
+Two consequences worth knowing:
+
+- **Strategy profiles express a reserve, not a clock time.** `planningWindowEnd:
+  WINDOW_END - 45` became `windowReserveMinutes: 45`. "Keep the last 45 minutes
+  clear" survives a night with a different handback deadline; "stop at 03:15"
+  silently means something else.
+- **`inputHash` now identifies which night was planned**, not just how. It
+  includes `instanceDigest`, so two solves that agree on strategy, locks and
+  requests but disagree on the topology no longer collide.
+
+Verified rather than asserted: the derived world is checked against the module
+topology it replaces across every block pair, every class pair and every
+request's sector label; and a separate suite hands the engine a deliberately
+different night — a shortened window, a scarcer asset, a severed adjacency — and
+insists the answers move.
+
+## v0.3.1 — the assistant route made defensible (Phase 0 of the backend plan)
+
+The engine was never the weak point; the single route in front of it was. This
+session fixed live defects in `src/app/api/assistant/route.ts` and added the HTTP
+primitives the later phases build on. Nothing about the engine, the solver or the
+dashboard changed.
+
+Defects fixed, each with a test:
+
+1. **An unvalidated `strategy` was an unhandled 500.** `solve()` ran outside the
+   route's try/catch and `strategyProfiles[unknown]` is `undefined`, so the
+   solver dereferenced it and threw. Now a 400 with a typed envelope.
+2. **`locked` was unbounded client-controlled CPU.** Every entry is re-validated
+   at every candidate start inside the solver, and `buildFactSet` ran five more
+   complete solves per request on top. Now capped at one pin per plannable
+   request, with each `requestId` and time checked, behind a 64 KB body guard.
+3. **No timeout on the model call.** The SDK retries timeouts, so a bare timeout
+   is not a bound — `{ timeout: 12_000, maxRetries: 1 }` is, under a
+   `maxDuration` of 30.
+4. **`stop_reason: "max_tokens"` was unhandled.** Adaptive thinking is on by
+   default on this model and `max_tokens` caps thinking and reply together, so a
+   truncated answer was possible — and a half-sentence containing only real
+   figures passes the grounding check. Truncation now falls back to the engine.
+5. **The client could forge assistant turns.** `history` accepted
+   `role: "assistant"` entries and replayed them into the prompt. The guard
+   catches invented numbers, not injected instructions, so the route now accepts
+   only the planner's own questions.
+6. Added: per-request id echoed to the client, `pino` structured logging with
+   token counts and a cost estimate, and a provisional in-memory rate limit.
+
+**Six solves per question became one.** `comparisonTable()` takes no arguments
+and solves the unmodified request set, so it is constant for the life of the
+process and is now computed once. The rest of the fact sheet is cached on
+`inputHash`, with the *measured* solve time assembled per call and never cached —
+a cached sheet quoting a previous run's timing would be a figure the engine
+produced, but not one describing the run in front of the planner.
+
+### Known limits of this phase
+
+- **The rate limit is per-instance and provisional.** It lives in one server's
+  memory, so on a multi-instance host it limits per instance and resets on a cold
+  start. It is replaced by a Postgres token bucket keyed on the authenticated
+  user in Phase 2. The input bounds, not the limiter, are what removed the
+  amplification that made a flood dangerous.
+- `docs/API_CONTRACT.md` still describes the v0.1.0 store and states the project
+  has no backend. It is stale and is rewritten in Phase 6.
 
 ## Summary
 
@@ -96,7 +226,9 @@ quietly lower the bar it is judged against. A test asserts that baseline.
 
 ## Verification
 
-- `npm test` — 138 passed across 7 files.
+- `npm test` — 184 passed, 2 skipped across 11 files (the two skips are the
+  database round trip, which needs a running Postgres).
+  covering the hardened boundary and the fact-set cache).
 - `npx tsc --noEmit` — clean.
 - `npm run lint` — clean.
 - `npm run build` — succeeds; `/` static, `/api/assistant` dynamic.

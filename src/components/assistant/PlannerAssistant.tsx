@@ -4,6 +4,7 @@ import { CornerDownLeft } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { AssistantResponse } from "@/app/api/assistant/route";
+import type { ApiError } from "@/lib/http/errors";
 import { suggestedQuestions } from "@/lib/assistant/deterministic";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
@@ -48,7 +49,13 @@ export function PlannerAssistant() {
     const trimmed = question.trim();
     if (!trimmed || pending) return;
 
-    const history = turns.slice(-6).map((turn) => ({ role: turn.role, content: turn.content }));
+    // Only the planner's own questions are sent. Replaying our previous answers
+    // back to the server would let anything posting to the route put words in
+    // the assistant's mouth, so the server no longer accepts them.
+    const history = turns
+      .filter((turn) => turn.role === "user")
+      .slice(-6)
+      .map((turn) => ({ role: "user" as const, content: turn.content }));
     setTurns((current) => [...current, { role: "user", content: trimmed }]);
     setInput("");
     setPending(true);
@@ -66,6 +73,23 @@ export function PlannerAssistant() {
           history,
         }),
       });
+
+      if (!response.ok) {
+        const failure = (await response.json().catch(() => null)) as ApiError | null;
+        setTurns((current) => [
+          ...current,
+          {
+            role: "assistant",
+            content:
+              failure?.error.message ??
+              "The assistant could not answer that. The plan and its figures are unaffected.",
+            mode: "engine",
+            notice: failure ? `Reference ${failure.error.requestId}` : null,
+          },
+        ]);
+        return;
+      }
+
       const data = (await response.json()) as AssistantResponse;
       setTurns((current) => [
         ...current,

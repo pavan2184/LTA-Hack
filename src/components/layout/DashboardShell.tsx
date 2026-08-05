@@ -12,11 +12,11 @@ import { RequestQueue } from "@/components/requests/RequestQueue";
 import { BlockTimeline } from "@/components/schedule/BlockTimeline";
 import { Figure } from "@/components/shared/Figure";
 import { Button } from "@/components/ui/button";
-import { disruptionById } from "@/data/disruptions";
-import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from "@/data/requests";
-import { trackBlocks } from "@/domain/network";
-import { formatClock } from "@/engine/intervals";
-import { plannerTimeSavedMetric } from "@/engine/metrics";
+import { disruptionById } from "@railplan/core/data/disruptions";
+import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from "@railplan/core/data/requests";
+import { trackBlocks } from "@railplan/core/domain/network";
+import { formatClock } from "@railplan/core/engine/intervals";
+import { plannerTimeSavedMetric } from "@railplan/core/engine/metrics";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 
 export function DashboardShell() {

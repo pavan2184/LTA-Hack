@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { answerDeterministically, suggestedQuestions } from "@/lib/assistant/deterministic";
 import { buildFactSet, extractNumbers, normaliseNumber } from "@/lib/assistant/facts";
 import { checkGrounding, SYSTEM_PROMPT } from "@/lib/assistant/guard";
-import { reviewSubmittedPlan, solve } from "@/engine/solve";
+import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
 
 const planned = solve({ strategy: "balanced" });
 const facts = buildFactSet(planned, "planned");

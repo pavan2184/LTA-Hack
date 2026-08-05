@@ -5,12 +5,12 @@ import { useMemo } from "react";
 
 import { categoryTone } from "@/components/insights/ViolationPanel";
 import { Button } from "@/components/ui/button";
-import { requests } from "@/data/requests";
-import { summariseConflicts } from "@/engine/conflicts";
-import { strategyList } from "@/engine/strategies";
+import { requests } from "@railplan/core/data/requests";
+import { summariseConflicts } from "@railplan/core/engine/conflicts";
+import { strategyList } from "@railplan/core/engine/strategies";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { StrategyId } from "@/types/railplan";
+import type { StrategyId } from "@railplan/core/types/railplan";
 
 /**
  * The workflow, stated as the three things that actually happen.
