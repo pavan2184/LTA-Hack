@@ -70,6 +70,96 @@ is re-checked so you see what breaks, and only then is it solved again. The
 emergency-insertion scenario comes back infeasible and names the mandatory job
 that has nowhere to go. That is the correct answer, not a failure.
 
+## How the rule-based scheduler works
+
+The current scheduler is a deterministic, dependency-aware greedy insertion
+heuristic with bounded repair (`railplan-greedy-repair-v2`). It is implemented in
+pure TypeScript in `packages/core/src/engine/solve.ts`; it is not CP-SAT, MILP, or
+an exhaustive search. `packages/core/src/engine/validate.ts` is deliberately
+separate and is the only authority on whether a plan is feasible.
+
+The scheduling flow is:
+
+1. Build a `PlanningWorld` from the planning instance: requests, atomic track
+   blocks, graph adjacency, conflict zones, team and equipment capacities, and
+   the engineering window. The same world is passed to every validation call.
+2. Insert planner-pinned placements first as hard constraints and remove those
+   requests from the scheduling queue.
+3. Order the remaining requests using the selected objective profile, while
+   ensuring every predecessor appears before work that depends on it. Request ID
+   is the final tie-break, so identical inputs always produce the same order.
+4. Generate every permitted start at 15-minute intervals. A candidate must fit
+   the request's earliest start, latest end, clearance time, and the effective
+   handback deadline. Candidates are then ranked according to the objective.
+5. Insert one candidate into the partial plan and run the complete validator.
+   The candidate is accepted only when it creates no critical violation for the
+   request being placed. Strategy recovery gaps are applied after the hard rules:
+   Balanced may relax its 15-minute preference when necessary; Minimum risk does
+   not relax its 30-minute gap.
+6. If mandatory work remains unplaced, run up to four repair rounds. Each round
+   defers the lowest-priority eligible non-mandatory placement (preferring a
+   longer job when priorities tie) and rebuilds the plan from scratch. Re-solving
+   avoids making the result depend on the history of earlier mutations.
+7. Validate the complete plan again against the real engineering window. A
+   critical violation or deferred mandatory request makes the result
+   `INFEASIBLE`; otherwise it is `FEASIBLE`. The narrower `OPTIMAL` label is used
+   only when every request is placed at its first-choice candidate with no
+   deferrals. The result also reports candidates examined, solve time, solver and
+   constraint versions, and a deterministic input digest.
+
+### Hard rules
+
+Every trial placement and completed plan is checked against the same 12-rule
+catalogue (`constraints-v2`):
+
+| Rule | What it checks |
+| --- | --- |
+| `BLOCK_CAPACITY` | Work plus clearance does not exceed an atomic block's concurrent capacity; a closed block has capacity zero. |
+| `CONFLICT_ZONE` | Only one applicable job holds a fabricated isolation or crossover zone at a time. |
+| `ADJACENT_WORK` | Work classes whose hazard extends beyond a block do not overlap on neighbouring blocks. |
+| `TEAM_CAPACITY` | Concurrent assignments do not exceed the number of crews rostered for the named team. |
+| `EQUIPMENT_CAPACITY` | Concurrent equipment demand, including turnaround time, does not exceed serviceable units. |
+| `SKILL_COVERAGE` | The assigned team exists and holds every skill required by the request. |
+| `WORK_COMPATIBILITY` | Incompatible work classes do not overlap on a block that permits concurrent occupation. |
+| `DEPENDENCY_ORDER` | A successor starts only after its predecessor's work, clearance, and dependency lag. |
+| `TIME_WINDOW` | Work stays inside the request's permitted start and finish bounds and the planning window. |
+| `HANDBACK` | Work plus clearance finishes before the engineering-window deadline. |
+| `TRAVEL_TIME` | A single-crew team has enough time to travel between consecutive jobs. |
+| `SHIFT_AVAILABILITY` | Work stays inside the assigned team's shift and avoids disruption withdrawals. |
+
+Capacity breaches use a sweep-line calculation rather than pairwise comparisons,
+so three simultaneous demands against capacity two are detected even when no
+individual pair is independently over capacity. Violations are deduplicated by
+rule and request set, retain the exact offending interval, and are grouped into
+connected clusters for the planner.
+
+### Objective profiles
+
+All five strategies use the same hard rules and placement algorithm. They change
+only request order, candidate ranking, recovery-gap preference, and end-of-window
+reserve:
+
+| Strategy | Scheduling preference |
+| --- | --- |
+| Balanced | Prioritise higher-value work, stay near requested times, and prefer a 15-minute block recovery gap that may be relaxed. |
+| Maximum completion | Rank work by priority value per minute and pack it as early as possible with no extra gap. |
+| Minimum risk | Prefer early finishes and enforce a non-relaxable 30-minute recovery gap. |
+| Minimum changes | Penalise priority-weighted movement from requested times and favour schedule stability. |
+| Emergency reserve | Plan against a deadline 45 minutes early, leaving the tail of the window available for urgent work. |
+
+Suggested conflict fixes and alternative slots do not bypass these rules. Each
+candidate move is inserted into the real plan and re-validated before it is
+shown. Locks likewise re-enter the next solve as hard constraints.
+
+### Current limits
+
+The scheduler can find a feasible plan quickly for this 22-request prototype,
+but bounded greedy search can miss a better feasible schedule. It therefore does
+not claim a general optimality bound. It moves requests in time but does not
+reassign crews; travel is checked only for teams with one crew because a
+multi-crew plan does not identify which crew performs each job. All topology,
+capacities, travel estimates, work rules, and requests are fabricated.
+
 ## The assistant
 
 It reads engine output and nothing else. The server re-solves from the request
@@ -83,30 +173,32 @@ counterfactual explanations that the templates were quoting.
 ## Layout
 
 ```
-src/domain/            topology, crews, assets, work-class rules
-src/data/              22 requests, emergency scenarios, disruptions
-src/engine/            validate · solve · metrics · alternatives · explain
-src/store/             Zustand: view state and solver invocation
-src/components/        dashboard
-src/lib/assistant/     fact set, grounding guard, templates
-src/app/api/assistant/ Claude call, server side
+packages/core/src/domain/  topology, crews, assets, work-class rules
+packages/core/src/data/    22 requests, emergency scenarios, disruptions
+packages/core/src/engine/  validate · solve · metrics · alternatives · explain
+packages/core/src/types/   planning inputs and result contracts
+src/store/                 Zustand: view state and solver invocation
+src/components/            dashboard
+src/lib/assistant/         fact set, grounding guard, templates
+src/app/api/assistant/     Claude call, server side
 ```
 
-`src/engine/validate.ts` is the file to read first. It is the only authority on
-whether a plan is feasible, and everything else defers to it.
+`packages/core/src/engine/validate.ts` is the file to read first. It is the only
+authority on whether a plan is feasible, and everything else defers to it.
 
 ## Checks
 
 ```bash
-npm test          # 117 tests
+npm test          # engine, API, and UI tests
 npm run lint
 npm run typecheck
 npm run build
 ```
 
-The tests that matter most are the properties in `src/test/solve.test.ts`: every
-strategy's output survives independent re-validation, identical inputs produce an
-identical plan and hash, and pins are honoured exactly.
+The tests that matter most are the properties in
+`packages/core/src/test/solve.test.ts`: every strategy's output survives
+independent re-validation, identical inputs produce an identical plan and hash,
+and pins are honoured exactly.
 
 ## Documentation
 
