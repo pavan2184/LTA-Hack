@@ -9,6 +9,8 @@ import { NotificationSettings } from "@/components/notifications/NotificationSet
 import { PlanNotifications } from "@/components/notifications/PlanNotifications";
 import { Button } from "@/components/ui/button";
 
+import { SavedPlanExports } from "./SavedPlanExports";
+
 const strategies: [StrategyId, string][] = [
   ["balanced", "Balanced"], ["max-completion", "Maximum completion"],
   ["min-risk", "Minimum risk"], ["min-changes", "Minimum changes"],
@@ -93,7 +95,7 @@ export function SavedPlansWorkspace() {
       </div>
     </section>
     {error && <p role="alert" className="rounded border border-signal-red bg-signal-red-soft p-3 text-sm">{error}</p>}
-    <p role="status" aria-live="polite" className="text-sm">{busy ? "Working…" : notice}</p>
+    <p role="status" aria-label="Plan operation status" aria-live="polite" className="text-sm">{busy ? "Working…" : notice}</p>
     <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
       <section aria-label="Saved versions">
         <h2 className="mb-3 text-lg font-semibold">Saved versions</h2>
@@ -120,6 +122,7 @@ export function SavedPlansWorkspace() {
             ['Created', selected.createdAt], ['Published', selected.publishedAt ?? 'Not published'], ['Superseded by', selected.supersededBy ?? 'None']].map(([label, value]) =>
             <div key={label}><dt className="text-ink-500">{label}</dt><dd className="break-all font-mono">{value}</dd></div>)}
         </dl>
+        <SavedPlanExports key={selected.id} planId={selected.id} disabled={busy} />
         <section><h3 className="mb-2 font-semibold">Independent validation</h3>
           <p className="text-sm">{selected.validation.independentlyValidated ? 'No critical constraint violations found.' : 'This version has critical violations and cannot be published.'}</p>
           {selected.status === 'INFEASIBLE' && <p className="text-sm">The solver reported this plan infeasible. Review deferred mandatory work and violations.</p>}

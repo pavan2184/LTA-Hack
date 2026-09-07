@@ -19,7 +19,7 @@
 - [x] #12: Accessible workforce demand/capacity visualization from engine data.
 - [x] #13: Validated, attributed local geographic snapshot, separate from safety topology. Publication remains blocked by conflicting source licence notices.
 - [x] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status. Live provider success unverified without configured/authorized destination.
-- [ ] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
+- [x] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
 - [ ] #16: Complete role journeys and accessible adjustable dashboard.
 - [ ] #17: Release security, accessibility, responsive and end-to-end verification.
 - [ ] #18: Consented audio capture/transcription through the existing review boundary.
@@ -331,3 +331,26 @@ production planner configure/publish/failure/retry and contractor own-slot/scope
 checks pass. New corrective migration fixed runtime SQL alias collision; UI late
 retry guard fixed reproduced stale-config race. Temporary data removed,13 guards
 enabled,parity/replay pass,server stopped. No live Telegram calls. #15 next.
+
+## #15 implementation design
+
+Export the selected persisted plan through a planner-authorized GET route with
+strict UUID and json/csv format validation. Immutable plan data supplies placements,
+deferrals, calculations, generation timestamp and full provenance. Separate current
+source/publication observations identify stale and superseded versions without
+re-solving or substituting live facts. Mark every artifact non-operational, and
+keep infeasible/unvalidated/draft states prominent.
+
+Use stable deterministic JSON and documented CSV record/column ordering. Escape
+all string cells, preserving quotes, commas, newlines and Unicode; neutralize
+formula prefixes including leading control/whitespace variants. Use safe UUID
+attachment filenames, UTF-8 content types and private no-store/nosniff headers.
+Contractors cannot download global plans. JSON/CSV buttons fetch only the selected
+saved ID, retain its view on failure and abort obsolete requests when switching
+versions. Backend agent owns serialization/route/DB tests; parent owns download UI,
+security/docs and integration verification. No migration or publication is required.
+
+#15 verified:505 zero skips,DB59+4,lint/typecheck/build,reviews pass. Actual Chrome
+JSON/CSV files match saved version; superseded assessment and responsive widths pass.
+Fixtures removed,13 guards enabled,parity/replay pass,preview stopped. Read-only
+source revision function required the reviewed immutable migration above. #16 next.

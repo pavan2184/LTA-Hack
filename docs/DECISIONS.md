@@ -437,3 +437,22 @@ may remain pending for explicit retry. Unsent superseded schedules are blocked.
 and [response parameters](https://core.telegram.org/bots/api#responseparameters)
 were checked on2026-09-07. No provider credentials or authorized destination exist
 for live verification. Tests use controlled transports; no real message is sent.
+
+## 2026-09-07 — Issue #15 saved exports and freshness observations
+
+Export immutable persisted facts, parameters, placements and calculated results;
+never rebuild from browser state or re-run the solver. Keep current source revision
+and publication state in a separate assessment so stale/superseded warnings cannot
+rewrite what was originally solved. Use saved generation time rather than a new
+export timestamp, allowing repeatable bytes when the assessment is unchanged.
+A narrow planner-authorized SQL function reads the source revision without taking
+the mutation lock or incrementing its generation. Existing applied migrations stay
+immutable; this read surface requires a new reviewed migration.
+
+JSON is the exact machine-readable representation. CSV has stable record/column
+ordering and neutralizes spreadsheet formula/control prefixes before escaping all
+cells. The extra prefix intentionally changes displayed cell text; it does not
+change stored data. CSV consumers differ and may strip escaping during re-save, so
+no universal safe round-trip claim is made. See [OWASP CSV Injection](https://owasp.org/www-community/attacks/CSV_Injection).
+Downloads are planner-only, private/no-store attachments. Switching the selected
+saved version aborts an outstanding download; an error preserves the plan view.

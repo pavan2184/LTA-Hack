@@ -258,3 +258,19 @@ known-success deduplication. The injected provider is controlled. Exact-organisa
 cleanup restores all four notification history guards transactionally; no planning
 facts are mutated. Required schema application and final gate results are recorded
 in PROJECT_STATUS rather than interpreting absent-table failures as skips.
+
+## Issue #15 export verification
+
+Serializer fixtures cover validated/infeasible, deferred, Unicode, stale and
+superseded artifacts. Assertions compare deterministic bytes and all saved metrics,
+placements and provenance. CSV parsing checks quotes, delimiters, newlines and
+formula prefixes including leading whitespace/control/BOM and full-width variants.
+HTTP checks require verified planner access, strict UUID/format, safe attachment
+headers and sanitized errors. Live DB checks compare stored rows and repeated
+exports, preserve both source revision and lock generation, and mutate current
+facts to prove only the freshness assessment changes while saved data remains exact.
+
+`plan-exports-ui.test.tsx` verifies raw JSON/CSV download bytes, selected-version
+filenames, recoverable authorization/network failures and cancellation of late
+responses. Its real SavedPlansWorkspace integration proves a version change aborts
+the old download. No solver or current-facts loader is part of export generation.

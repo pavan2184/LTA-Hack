@@ -323,3 +323,19 @@ pass. Browser bundles have no Telegram transport/token-variable references;
 missing-credential delivery and explicit retry stay separate from publication
 success. All temporary data was removed and13 history guards verified enabled.
 No live provider success is claimed.
+
+## Issue #15 export boundary — review in progress
+
+Global plan exports require verified planner access. Files contain saved plan facts
+and provenance, including approved descriptions, but no private transcript evidence,
+credentials or notification destinations. Current source/publication observations
+are separate and do not substitute new inputs or assert operational approval.
+JSON preserves exact values. Every CSV string cell is escaped; formula prefixes
+and leading whitespace/control variants are neutralized as text. This is an
+initial-export mitigation, not a promise about every spreadsheet program or a
+file re-saved by one; [OWASP documents that limitation](https://owasp.org/www-community/attacks/CSV_Injection).
+
+Safe UUID attachment filenames, UTF-8 content types, nosniff and private no-store
+headers prevent content/header ambiguity and shared caching. The browser aborts
+obsolete version downloads and does not download error responses. Independent
+backend/security review and final full verification are pending.

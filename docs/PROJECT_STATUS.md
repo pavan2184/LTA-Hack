@@ -2,10 +2,27 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#14 implemented; #15 next
+## Ordered issue work — #4–#15 implemented; #16 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#15 is implemented: deterministic persisted-plan JSON/CSV exports, separate
+source/publication assessment, formula neutralization and authenticated downloads.
+Verification: **505 tests pass, zero skips**,57 files; required DB59 rollback and4
+isolated concurrency checks, lint/typecheck/build and independent SQL/backend/UI
+reviews pass. Migration `20260907132243_readonly_planning_source.sql` is applied
+and immutable. Export reads do not mutate source revision or lock generation.
+
+Production browser JSON and CSV downloads were saved through Chrome's Save dialog
+and parsed from disk. JSON placements, metrics, objectives and validation exactly
+match the selected saved version; its superseded state is prominent. CSV has17
+placements and5 deferrals, matching that version. Widths1280/1440/1920 have no
+horizontal overflow; browser logs are empty. In-app download initiation was observed;
+actual file saving was verified in Chrome. No live Excel re-save safety claim.
+Two temporary users and two published plan fixtures were removed; all13 history
+guards are enabled, baseline parity and immutable migration replay pass. Both test
+sessions were signed out and preview stopped. #16 is next.
 
 #14 is implemented: immutable contractor-scoped publication outbox, versioned
 planner-managed destinations and explicit audited retry. Publication commits

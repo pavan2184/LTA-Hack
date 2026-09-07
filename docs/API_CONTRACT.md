@@ -83,7 +83,7 @@ throws for an unavailable database, missing schema/night or query error.
 `npm test` explicitly skips database tests only if the connectivity probe fails;
 a reachable database with missing tables or wrong data fails.
 
-Structured intake, ingestion and notification routes are documented below. Export routes remain gated by issue #15.
+Structured intake, ingestion, notification and saved-export routes are documented below.
 
 ## Durable plans — issue #6
 
@@ -325,3 +325,65 @@ missing_credentials, invalid_chat, invalid_message, rejected, rate_limited,
 unavailable and ambiguous. Provider descriptions, token-bearing URLs and raw
 exceptions never enter responses, audit rows or logs. A rate-limited attempt
 retains the bounded provider retry delay and rejects an early explicit retry.
+
+## Saved plan export — issue #15
+
+`GET /api/plans/:id/export?format=json|csv` returns a file for one durable saved
+version. It authenticates the Supabase identity and trusted planner role before
+reading the UUID or query. Contractors cannot export global plan contents and
+receive 403. The UUID is normalized to lowercase; the query must contain exactly
+one `format`, either `json` or `csv`, with no unknown parameters and at most 128
+characters of encoded query. There is no implicit format or exploratory-store
+export path.
+
+Success headers:
+
+- `Content-Disposition: attachment; filename="railplan-<lowercase UUID>.json"`
+  (or `.csv`); no user text enters the filename.
+- `Content-Type: application/json; charset=utf-8` or `text/csv; charset=utf-8`.
+- `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`, and
+  `x-request-id`. Error responses retain the private/no-store/no-sniff boundary.
+
+Errors retain `{error:{code,message,requestId}}`: identity 401/403/503,
+invalid_request 400, not_found 404, invalid_plan 409 for incomplete saved
+references, and a sanitized engine_error 500 for unavailable export storage.
+No database exception, private row or connection string is included in errors.
+
+The version-1 JSON document begins with `exportVersion`, `notice` and `assessment`,
+so non-operational, draft, stale, infeasible and superseded warnings precede the
+large saved payload. Assessment includes `publicationState`, `sourceFreshness`,
+`currentSourceRevision`, `engineVersionMatch`, `stale`, `publishedAt`,
+`supersededBy`, `nonOperational: true` and warnings. Current source/engine/publication
+state is a **separate observation**, not a rewrite or revalidation of saved results.
+A current source revision does not certify railway feasibility or safety.
+
+`provenance` contains the exact saved plan ID/night/input digest/source revision,
+solver/constraint versions, strategy/status/independent result, `generatedAt`,
+creator, `solveMs` and candidate count. Remaining sections are saved `parameters`,
+`placements`, `deferrals`, every metric and objective, saved independent validation
+and violations, and the complete saved planning `facts`. Placement/deferral labels
+(title, sector, blocks, submission revision) come exclusively from those saved
+facts. No solver, validator, current-fact loader or browser store is rerun.
+
+CSV uses CRLF records, UTF-8 text and this stable column order:
+
+`record_type,record_id,field,value,unit,request_id,title,sector,team_id,start_minute,end_minute,details_json`
+
+Record types are metadata, parameters, placement, deferral, metric, objective,
+validation and facts. Metadata begins with the prototype notice, then assessment
+and provenance. Placement/deferral rows include saved labels and exact minutes or
+reason; `details_json` retains the complete record. Every metric includes its
+value/unit and full formula/numerator/denominator details. Objective vector order
+and saved placement/deferral/violation array order are preserved; metric keys and
+nested JSON object keys sort lexically. Full saved facts and parameters are JSON
+cells. JSON top-level section order is fixed by the export builder. There is no
+volatile `exportedAt`: unchanged saved content and unchanged state observations
+produce the same bytes, including generation time from storage.
+
+Every CSV cell is quoted; embedded quotes double, and commas/newlines/Unicode are
+retained. String cells that expose `=`, `+`, `-`, `@` or their full-width variants
+after leading whitespace, control characters or BOM receive a leading apostrophe.
+Numeric negative values remain numeric text. CSV deliberately changes hazardous
+string cells for spreadsheet use; **JSON is the exact machine-readable format**.
+Spreadsheet import, save and reopen behavior varies and may remove escapes; this
+is not a universal guarantee across every spreadsheet program or later edit.

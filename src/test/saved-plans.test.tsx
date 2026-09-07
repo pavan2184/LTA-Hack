@@ -76,7 +76,7 @@ it('does not claim publication when another planner already superseded the selec
   const user = userEvent.setup(); render(<SavedPlansWorkspace />);
   await user.click(await screen.findByRole('button', { name: /Open version/ }));
   await user.click(await screen.findByRole('button', { name: 'Publish this version' }));
-  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('already been superseded'));
+  await waitFor(() => expect(screen.getByRole('status', { name: 'Plan operation status' })).toHaveTextContent('already been superseded'));
   expect(screen.queryByText('Plan published.')).not.toBeInTheDocument();
 });
 

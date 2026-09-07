@@ -72,7 +72,7 @@ The browser persists `strategy` and exact `locked` placements under
 `railplan-preferences`. The local dashboard
 keeps exploratory generations and disruptions in session state. Dedicated saved
 plans and their decisions/publications/audits are durable. Request-submission
-and notification workflows are documented below; exports remain issue #15.
+and notification workflows and saved-plan exports are documented below.
 
 ## Identity — issue #5
 
@@ -312,3 +312,32 @@ trusted configuration at each claim, allowing an explicit retry after correcting
 a missing destination. Test delivery keys contain the configuration version, and
 configuration reads expose only that version's test. Neither notification work nor
 chat changes advance planning-source revision or alter a saved engine result.
+
+## Saved export projection — issue #15
+
+`PlanExport` is a versioned read-only projection, not a new stored plan or approval.
+It combines the immutable planning run's facts/parameters/result and normalized
+placement/deferral rows. Exact saved request labels enrich exported work rows.
+The provenance retains original generation timestamp/runtime, input digest,
+source revision, solver/constraint versions, strategy, status and independent
+validation; full metric arithmetic, objectives and violation/deferral details
+remain intact. Exports never replace saved values with current literals or a new
+solve.
+
+A repeatable-read authenticated transaction reads the saved rows, append-only
+publication/supersession links and current source revision coherently. The narrow
+`read_current_planning_source()` function checks the trusted planner, fixes its
+search path and SELECTs the revision without locks or writes; it grants no direct
+read access to the underlying source table. Exporting does not advance source
+revision or lock generation. A source mismatch or older engine version yields a
+stale assessment; source/publication observations can change while the entire
+saved payload remains unchanged.
+
+JSON retains exact string content with deterministic section/key ordering and
+saved array order. CSV adds stable record types/columns and a spreadsheet-oriented
+formula-prefix defense, while retaining full structured data in JSON cells.
+Neither format contains transcript source material, private draft history,
+Telegram credentials/configuration or public geographic source data. Approved
+request fields already present in saved engine facts are included under the same
+planner-only global-plan authorization. No export record or dynamic export-time
+timestamp is persisted.
