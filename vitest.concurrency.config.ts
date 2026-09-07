@@ -5,7 +5,7 @@ export default defineConfig({
   ...base,
   test: {
     ...base.test,
-    include: ["scripts/db/plan-concurrency.test.ts"],
+    include: ["scripts/db/*-concurrency.test.ts"],
     exclude: configDefaults.exclude,
     fileParallelism: false,
   },

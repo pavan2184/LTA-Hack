@@ -5,6 +5,23 @@ import { createPlanSchema } from "@/lib/plans/schemas";
 import { planInputDigest, validatePlanParameters } from "@/lib/plans/input";
 
 describe("durable plan input contract", () => {
+  it("changes saved-plan provenance for workforce supply or demand, independent of row order", () => {
+    const facts = buildInstanceFromLiterals();
+    const input = createPlanSchema.parse({ planningNight: facts.planningNight });
+    const original = planInputDigest(facts, input);
+    expect(facts.workforceAvailability.length).toBeGreaterThan(0);
+    expect(facts.workforceDemand.length).toBeGreaterThan(0);
+    expect(planInputDigest({ ...facts,
+      workforceRoles: [...facts.workforceRoles].reverse(),
+      workforceAvailability: [...facts.workforceAvailability].reverse(),
+      workforceDemand: [...facts.workforceDemand].reverse(),
+    }, input)).toBe(original);
+    for (const key of ["workforceAvailability", "workforceDemand"] as const) {
+      const changed = { ...facts, [key]: facts[key].map((row, index) =>
+        index === 0 ? { ...row, count: row.count + 1 } : row) };
+      expect(planInputDigest(changed, input)).not.toBe(original);
+    }
+  });
   it("bounds dates, strategies, pins and rejects caller-authored results", () => {
     expect(
       createPlanSchema.parse({ planningNight: "2026-08-03" }),

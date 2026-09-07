@@ -31,6 +31,11 @@ Strategy and exact pinned placements persist locally. The dedicated `/plans` wor
 isolation gate planner and contractor workspaces. The app runs directly in Node.js.
 The owner requires a database workflow without Docker (2026-09-07).
 
+Anonymous workforce role catalogs, people availability windows and per-request
+role demand now round-trip through the shared instance and database. They are
+independent of team crew capacity. Workforce constraint enforcement follows #8;
+no individual workers, leave records or personal locations are collected.
+
 ## Ordered delivery scope
 
 GitHub issues #4–#21 define the authorized roadmap: database baseline,

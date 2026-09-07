@@ -1,7 +1,20 @@
-import { canonicalise, type PlanningInstance } from "@railplan/core/domain/instance";
+import { assertWorkforceInstance } from "@railplan/core/domain/workforce";
+import type {
+  WorkforceRole,
+  WorkforceAvailability,
+  WorkforceDemand,
+} from "@railplan/core/types/workforce";
+import {
+  canonicalise,
+  type PlanningInstance,
+} from "@railplan/core/domain/instance";
 import type { LineId } from "@railplan/core/domain/network";
 import type { WorkClass } from "@railplan/core/domain/resources";
-import type { EquipmentDemand, MaintenanceRequest, Priority } from "@railplan/core/types/railplan";
+import type {
+  EquipmentDemand,
+  MaintenanceRequest,
+  Priority,
+} from "@railplan/core/types/railplan";
 
 import type { TransactionSql } from "postgres";
 
@@ -55,6 +68,9 @@ export async function loadPlanningInstance(
     requestSkillRows,
     requestEquipmentRows,
     dependencyRows,
+    workforceRoleRows,
+    workforceAvailabilityRows,
+    workforceDemandRows,
   ] = await Promise.all([
     sql<{ code: string; name: string; line: LineId; ordinal: number }[]>`
       select code, name, line, ordinal from stations`,
@@ -68,10 +84,18 @@ export async function loadPlanningInstance(
         capacity: number;
       }[]
     >`select * from track_blocks`,
-    sql<{ block_id: string; neighbour_id: string }[]>`select * from block_adjacency`,
-    sql<{ id: string; name: string; reason: string }[]>`select * from conflict_zones`,
-    sql<{ zone_id: string; block_id: string }[]>`select * from conflict_zone_blocks`,
-    sql<{ zone_id: string; work_class: string }[]>`select * from conflict_zone_work_classes`,
+    sql<
+      { block_id: string; neighbour_id: string }[]
+    >`select * from block_adjacency`,
+    sql<
+      { id: string; name: string; reason: string }[]
+    >`select * from conflict_zones`,
+    sql<
+      { zone_id: string; block_id: string }[]
+    >`select * from conflict_zone_blocks`,
+    sql<
+      { zone_id: string; work_class: string }[]
+    >`select * from conflict_zone_work_classes`,
     sql<
       {
         id: string;
@@ -87,7 +111,12 @@ export async function loadPlanningInstance(
       { id: string; name: string; units: number; turnaround_minutes: number }[]
     >`select * from equipment_types`,
     sql<
-      { class_a: WorkClass; class_b: WorkClass; reason: string; extends_to_adjacent: boolean }[]
+      {
+        class_a: WorkClass;
+        class_b: WorkClass;
+        reason: string;
+        extends_to_adjacent: boolean;
+      }[]
     >`select * from work_class_incompatibility`,
     sql<
       {
@@ -113,14 +142,29 @@ export async function loadPlanningInstance(
     // unlike the skill and dependency sets below.
     sql<{ request_id: string; block_id: string }[]>`
       select request_id, block_id from request_blocks order by request_id, position`,
-    sql<{ request_id: string; skill: string }[]>`select * from request_required_skills`,
+    sql<
+      { request_id: string; skill: string }[]
+    >`select * from request_required_skills`,
     sql<
       { request_id: string; equipment_id: string; units: number }[]
     >`select * from request_equipment`,
-    sql<{ request_id: string; depends_on_id: string }[]>`select * from request_dependencies`,
+    sql<
+      { request_id: string; depends_on_id: string }[]
+    >`select * from request_dependencies`,
+    sql<WorkforceRole[]>`select id,name from workforce_roles`,
+    sql<
+      WorkforceAvailability[]
+    >`select planning_night::text as "planningNight",team_id as "teamId",role_id as "roleId",start_minute as "startMinute",end_minute as "endMinute",people_count as count from workforce_availability where planning_night=${planningNight}`,
+    sql<
+      WorkforceDemand[]
+    >`select d.request_id as "requestId",d.role_id as "roleId",d.people_count as count from request_workforce_demand d join maintenance_requests r on r.id=d.request_id where r.planning_night=${planningNight}`,
   ]);
 
-  const group = <T, V>(rows: T[], key: (row: T) => string, value: (row: T) => V) => {
+  const group = <T, V>(
+    rows: T[],
+    key: (row: T) => string,
+    value: (row: T) => V,
+  ) => {
     const map = new Map<string, V[]>();
     rows.forEach((row) => {
       const list = map.get(key(row));
@@ -130,17 +174,41 @@ export async function loadPlanningInstance(
     return map;
   };
 
-  const zoneBlocks = group(zoneBlockRows, (r) => r.zone_id, (r) => r.block_id);
-  const zoneClasses = group(zoneClassRows, (r) => r.zone_id, (r) => r.work_class);
-  const teamSkills = group(teamSkillRows, (r) => r.team_id, (r) => r.skill);
-  const requestBlocks = group(requestBlockRows, (r) => r.request_id, (r) => r.block_id);
-  const requestSkills = group(requestSkillRows, (r) => r.request_id, (r) => r.skill);
+  const zoneBlocks = group(
+    zoneBlockRows,
+    (r) => r.zone_id,
+    (r) => r.block_id,
+  );
+  const zoneClasses = group(
+    zoneClassRows,
+    (r) => r.zone_id,
+    (r) => r.work_class,
+  );
+  const teamSkills = group(
+    teamSkillRows,
+    (r) => r.team_id,
+    (r) => r.skill,
+  );
+  const requestBlocks = group(
+    requestBlockRows,
+    (r) => r.request_id,
+    (r) => r.block_id,
+  );
+  const requestSkills = group(
+    requestSkillRows,
+    (r) => r.request_id,
+    (r) => r.skill,
+  );
   const requestEquipment = group(
     requestEquipmentRows,
     (r) => r.request_id,
     (r): EquipmentDemand => ({ equipmentId: r.equipment_id, units: r.units }),
   );
-  const dependencies = group(dependencyRows, (r) => r.request_id, (r) => r.depends_on_id);
+  const dependencies = group(
+    dependencyRows,
+    (r) => r.request_id,
+    (r) => r.depends_on_id,
+  );
 
   const requests: MaintenanceRequest[] = requestRows.map((row) => ({
     id: row.id,
@@ -165,8 +233,11 @@ export async function loadPlanningInstance(
     description: row.description,
   }));
 
-  return canonicalise({
+  const instance = canonicalise({
     planningNight,
+    workforceRoles: [...workforceRoleRows],
+    workforceAvailability: [...workforceAvailabilityRows],
+    workforceDemand: [...workforceDemandRows],
     window: {
       startMinute: night.window_start_minute,
       endMinute: night.window_end_minute,
@@ -224,4 +295,6 @@ export async function loadPlanningInstance(
       interLineTransferMinutes: night.inter_line_transfer_minutes,
     },
   });
+  assertWorkforceInstance(instance);
+  return instance;
 }

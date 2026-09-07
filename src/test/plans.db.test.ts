@@ -55,6 +55,32 @@ async function fixture(
 describe.skipIf(!reachable)(
   "durable plans under real authenticated SQL (rollback)",
   () => {
+    it("snapshots aggregate workforce and rejects publication after supply or demand changes", async () => {
+      await fixture(async (tx, planner) => {
+        const first = await createPlan(planner, input, tx);
+        const [before] = await tx`select facts from railplan_private.planning_runs where id=${first.id}`;
+        expect(before.facts.workforceAvailability.length).toBeGreaterThan(0);
+        expect(before.facts.workforceDemand.length).toBeGreaterThan(0);
+        await tx`update public.workforce_availability set people_count=people_count+1
+          where planning_night=${PLANNING_NIGHT} and team_id='T-TRK'`;
+        await expect(publishPlan(planner, first.id, tx)).rejects.toMatchObject({ code: "stale_plan" });
+        const second = await createPlan(planner, input, tx);
+        expect(second.inputDigest).not.toBe(first.inputDigest);
+        expect(BigInt(second.sourceRevision)).toBeGreaterThan(BigInt(first.sourceRevision));
+        await tx`update public.request_workforce_demand set people_count=people_count+1 where request_id='M-001'`;
+        await expect(publishPlan(planner, second.id, tx)).rejects.toMatchObject({ code: "stale_plan" });
+        const third = await createPlan(planner, input, tx);
+        expect(third.inputDigest).not.toBe(second.inputDigest);
+        const [after] = await tx`select facts from railplan_private.planning_runs where id=${first.id}`;
+        expect(after.facts).toEqual(before.facts);
+        expect(await getPlan(planner, first.id, tx)).toEqual(first);
+        for (const plan of [first, second]) {
+          expect(await tx`select action,actor_id from railplan_private.plan_audit_events
+            where plan_id=${plan.id} and action='rejected_stale'`)
+            .toEqual([{ action: "rejected_stale", actor_id: planner.id }]);
+        }
+      });
+    });
     it("roundtrips immutable normalized output, provenance and calculated metrics", async () => {
       await fixture(async (tx, planner) => {
         const plan = await createPlan(planner, input, tx);

@@ -12,7 +12,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    exclude: [...configDefaults.exclude, "scripts/db/plan-concurrency.test.ts"],
+    exclude: [...configDefaults.exclude, "scripts/db/*-concurrency.test.ts"],
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
   },

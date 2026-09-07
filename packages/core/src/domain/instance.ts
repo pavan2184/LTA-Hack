@@ -1,4 +1,14 @@
 import {
+  workforceRoles,
+  workforceAvailability,
+  workforceDemand,
+} from "../data/workforce";
+import type {
+  WorkforceRole,
+  WorkforceAvailability,
+  WorkforceDemand,
+} from "../types/workforce";
+import {
   PLANNING_NIGHT,
   requests,
   SLOT_MINUTES,
@@ -63,6 +73,9 @@ export interface PlanningInstance {
   adjacency: { blockId: string; neighbourId: string }[];
   conflictZones: ConflictZone[];
   teams: Team[];
+  workforceRoles: WorkforceRole[];
+  workforceAvailability: WorkforceAvailability[];
+  workforceDemand: WorkforceDemand[];
   equipment: EquipmentType[];
   workClassIncompatibilities: WorkClassIncompatibility[];
   requests: MaintenanceRequest[];
@@ -88,6 +101,9 @@ export function buildInstanceFromLiterals(): PlanningInstance {
     ),
     conflictZones,
     teams,
+    workforceRoles,
+    workforceAvailability,
+    workforceDemand,
     equipment: equipmentTypes,
     workClassIncompatibilities: incompatiblePairs,
     requests,
@@ -112,17 +128,38 @@ export function canonicalise(instance: PlanningInstance): PlanningInstance {
 
   return {
     ...instance,
-    stations: [...instance.stations].sort((a, b) => a.code.localeCompare(b.code)),
+    stations: [...instance.stations].sort((a, b) =>
+      a.code.localeCompare(b.code),
+    ),
     blocks: byId(instance.blocks),
     adjacency: [...instance.adjacency].sort(
-      (a, b) => a.blockId.localeCompare(b.blockId) || a.neighbourId.localeCompare(b.neighbourId),
+      (a, b) =>
+        a.blockId.localeCompare(b.blockId) ||
+        a.neighbourId.localeCompare(b.neighbourId),
     ),
     conflictZones: byId(instance.conflictZones).map((zone) => ({
       ...zone,
       blockIds: [...zone.blockIds].sort(),
       appliesToWorkClasses: [...zone.appliesToWorkClasses].sort(),
     })),
-    teams: byId(instance.teams).map((team) => ({ ...team, skills: [...team.skills].sort() })),
+    teams: byId(instance.teams).map((team) => ({
+      ...team,
+      skills: [...team.skills].sort(),
+    })),
+    workforceRoles: byId(instance.workforceRoles),
+    workforceAvailability: [...instance.workforceAvailability].sort(
+      (a, b) =>
+        a.planningNight.localeCompare(b.planningNight) ||
+        a.teamId.localeCompare(b.teamId) ||
+        a.roleId.localeCompare(b.roleId) ||
+        a.startMinute - b.startMinute ||
+        a.endMinute - b.endMinute,
+    ),
+    workforceDemand: [...instance.workforceDemand].sort(
+      (a, b) =>
+        a.requestId.localeCompare(b.requestId) ||
+        a.roleId.localeCompare(b.roleId),
+    ),
     equipment: byId(instance.equipment),
     // Each pair is unordered, so the two classes are sorted within the pair as
     // well as between pairs. Otherwise the same rule written the other way round
@@ -137,7 +174,9 @@ export function canonicalise(instance: PlanningInstance): PlanningInstance {
       // Block order is meaningful — it runs along the line — so it is left
       // alone. Skills, equipment and dependencies are sets written as arrays.
       requiredSkills: [...request.requiredSkills].sort(),
-      equipment: [...request.equipment].sort((a, b) => a.equipmentId.localeCompare(b.equipmentId)),
+      equipment: [...request.equipment].sort((a, b) =>
+        a.equipmentId.localeCompare(b.equipmentId),
+      ),
       dependencies: [...request.dependencies].sort(),
     })),
   };
@@ -155,12 +194,21 @@ export function instanceDigest(instance: PlanningInstance): string {
 }
 
 /** Verify content and identify changed sections without exposing their values. */
-export function assertInstancesMatch(expected: PlanningInstance, actual: PlanningInstance): void {
+export function assertInstancesMatch(
+  expected: PlanningInstance,
+  actual: PlanningInstance,
+): void {
   const left = canonicalise(expected);
   const right = canonicalise(actual);
   const sections = (Object.keys(left) as (keyof PlanningInstance)[]).filter(
     (key) => stableStringify(left[key]) !== stableStringify(right[key]),
   );
-  if (sections.length) throw new Error(`Planning instance mismatch. Sections that differ: ${sections.join(", ")}`);
-  if (instanceDigest(left) !== instanceDigest(right)) throw new Error("Planning instance digest mismatch; check canonicalisation.");
+  if (sections.length)
+    throw new Error(
+      `Planning instance mismatch. Sections that differ: ${sections.join(", ")}`,
+    );
+  if (instanceDigest(left) !== instanceDigest(right))
+    throw new Error(
+      "Planning instance digest mismatch; check canonicalisation.",
+    );
 }

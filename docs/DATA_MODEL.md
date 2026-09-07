@@ -7,7 +7,8 @@ Last updated: 2026-09-07 · RailPlan v0.4.0
 `packages/core/src/domain/instance.ts` defines `PlanningInstance`, one serializable
 night of facts: `planningNight`, integer-minute `window` (start/end/slot), stations,
 atomic blocks, bidirectional adjacency edges, conflict zones, teams, equipment,
-work-class incompatibilities, maintenance requests and travel parameters.
+work-class incompatibilities, maintenance requests, anonymous workforce roles,
+availability/demand and travel parameters.
 
 `canonicalise()` orders sets consistently but preserves request block order.
 `instanceDigest()` hashes canonical content, including topology and resources.
@@ -26,7 +27,8 @@ alternatives, explanations and repairs; omitted worlds use the literal instance.
 
 ## Database tables
 
-The baseline migration defines 16 tables, all with RLS enabled. Issue #5 grants authenticated planners read/write policies;
+The baseline migration defines 16 planning-fact tables; issue #7 adds three
+workforce fact tables, all with RLS enabled. Issue #5 grants authenticated planners read/write policies;
 contractors and anonymous callers cannot access these global facts. The owner-only
 maintenance seed and parity loader bypass RLS. Application SQL must use the
 authenticated transaction helper.
@@ -38,6 +40,7 @@ authenticated transaction helper.
 | Resources | teams, team_skills, equipment_types, work_class_incompatibility |
 | Night | planning_nights |
 | Requests | maintenance_requests, request_blocks, request_required_skills, request_equipment, request_dependencies |
+| Workforce | workforce_roles, workforce_availability, request_workforce_demand |
 
 Foreign keys preserve references. Checks constrain positive capacities/durations,
 nonnegative buffers, valid windows, block ordering and non-self dependencies.
@@ -68,8 +71,8 @@ individual rosters and timezone conversion are not implemented.
 The browser persists `strategy` and exact `locked` placements under
 `railplan-preferences`. The local dashboard
 keeps exploratory generations and disruptions in session state. Dedicated saved
-plans and their decisions/publications/audits are durable. Request-submission,
-workforce and notification tables remain later issue work.
+plans and their decisions/publications/audits are durable. Request-submission
+and notification workflows remain later issue work.
 
 ## Identity — issue #5
 
@@ -110,3 +113,41 @@ bounded to 1,000 characters. There are no raw request bodies, credentials or
 transcripts in audit. Planning facts currently mean the baseline maintenance
 requests; approved intake becomes the source when #11 implements it. All fact,
 child, resource and topology mutations conservatively stale all nights.
+
+## Anonymous workforce — issue #7
+
+`@railplan/core/types/workforce` defines `WorkforceRole {id,name}`,
+`WorkforceAvailability {planningNight,teamId,roleId,startMinute,endMinute,count}`
+and `WorkforceDemand {requestId,roleId,count}`. `PlanningInstance` carries the
+three arrays as `workforceRoles`, `workforceAvailability` and `workforceDemand`.
+Demand is normalized beside requests, preserving existing MaintenanceRequest
+callers. Roles are configurable identifiers, not individual qualifications.
+
+Availability is an absolute count of people during the half-open interval
+`[startMinute,endMinute)`, not an additive supply event. Same-night/team/role
+windows cannot overlap; adjacent windows may replace the count. Zero is explicit
+unavailability; an absent window means no declared supply. Supply permits integer
+counts 0–10,000, demand requires 1–10,000, and each request/role pair is unique.
+Team.capacity continues to count concurrent crews. People counts are independent.
+
+Database foreign keys reject unknown teams, roles, requests and planning nights.
+A GiST exclusion constraint prevents overlapping supply even across concurrent
+transactions. A trigger checks availability against its actual night window and
+also rejects a parent-night resize that would strand existing availability.
+The source revision trigger serializes both writes before these checks; all three
+workforce tables participate in saved-plan invalidation and use planner-only RLS.
+No named workers, personal leave, worker qualifications or personal locations exist.
+
+Canonicalization sorts roles by ID, supply by night/team/role/start/end and demand
+by request/role. Every field contributes to instance and saved-plan input digests.
+The loader filters supply and demand to the selected night and explicitly validates
+references, counts, bounds and ambiguity. Canonicalization itself does not enforce
+references, allowing existing synthetic engine callers to alter request pools or
+windows for exploratory tests. Source-validating boundaries use
+`assertWorkforceInstance` explicitly.
+
+The fabricated default has two roles, 22 availability rows and 44 demand rows.
+Supply is an explicit per-team input fixture, never Team.capacity multiplied by a
+constant. Each baseline job declares two technicians and one supervisor as a demo
+assumption, not an operational staffing standard. Issue #7 carries these facts;
+workforce feasibility, emergency/disruption demand handling and metrics follow #8.

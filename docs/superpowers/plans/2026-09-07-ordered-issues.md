@@ -11,7 +11,7 @@
 - [x] #4: Verify local reset/seed/load, diagnose mismatches by section, test available/unavailable database behavior, synchronize v0.4 contracts and versions. Files: `scripts/db/`, `src/lib/db/`, `src/test/instance.test.ts`, `supabase/config.toml`, package manifests, required project documents. Verify with database commands, tests, lint, typecheck, build.
 - [x] #5: Supabase sessions, planner/contractor authorization, RLS matrix and shared token bucket; security review.
 - [x] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
-- [ ] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
+- [x] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
 - [ ] #8: Workforce capacity validator, solver enforcement and calculated metrics.
 - [ ] #9: Validated contractor submission lifecycle and immutable approved revisions.
 - [ ] #10: Private transcript proposals with exact evidence and bounded model access.
@@ -105,3 +105,33 @@ Host/Origin normalization. Production browser save/reload/review/stale rejection
 publish/supersede/logout passed; committed audits independently matched actions.
 Exact-ID UAT cleanup restored all six history guards. Preview server stopped.
 #7 is next.
+
+## #7 implementation design
+
+Add anonymous configurable roles, per-night/team/role availability windows and
+per-request role headcounts to the canonical PlanningInstance. Supply windows
+are half-open, non-overlapping per team/role/night, and bounded by the actual
+night. Zero supply is explicit; demand counts are positive integers. Demand
+references a known request and role. Parent night changes must preserve window
+bounds. Team.capacity continues to count concurrent crews; role supply is
+explicit fabricated data, independent of that crew count.
+
+New fact tables follow planner-only RLS and the existing source revision lock.
+Literal/DB parity and both instance and saved-plan digests include workforce
+content. Old snapshots remain unchanged; a workforce-only edit must reject
+publication of an older draft with an audit. Model/schema/storage work completes
+here; hard solver enforcement remains the following issue #8. No personal
+worker records, names, qualifications, leave or individual location are added.
+
+Verification includes invalid reference/count/window/overlap database probes,
+schema validation, digest ordering/content tests, default engine regressions,
+saved plan stale/snapshot checks, migration replay, seed parity, and independent
+security review before applying the migration.
+
+## #7 completed
+
+Canonical hosted/literal parity `fnv1a:8c4a9050cfea5e8b`, 22 requests, two roles,
+22 availability windows and 44 demand rows. 259 tests pass without skips;
+required DB33 plus isolated concurrency3 pass, including both night-resize/supply
+insert orderings. Lint/typecheck/build, migration replay and independent review
+pass. All test fixtures cleaned; no UI change or local preview. #8 is next.

@@ -97,3 +97,23 @@ deletes plans or changes RLS. The global source revision advances during fixture
 setup/cleanup, so existing unpublished demo versions become stale; actual source
 facts and published snapshots remain unchanged. All temporary Auth/plan/night/
 request fixtures are removed on success. This suite fails when DB is unavailable.
+
+## Issue #7 workforce checks
+
+`packages/core/src/test/workforce.test.ts` covers seeded defaults and unchanged
+engine callers, canonical order, supply-only/demand-only digests, role/reference/
+count/night/overlap validation and adjacent zero-supply windows.
+`workforce-schemas.test.ts` verifies bounded strict payloads and trusted-instance
+references. `workforce.db.test.ts` uses real authenticated rollback transactions
+for full parity, invalid counts/unknown FKs, overlapping and adjacent windows,
+parent-night resize protection, night filtering and contractor/anonymous denial.
+The saved-plan tests additionally prove workforce-only changes stale old drafts
+and leave their stored snapshots intact with rejected-publication audits.
+
+`scripts/db/workforce-concurrency.test.ts` runs only in the required isolated
+concurrency phase after all rollback files. Two READ COMMITTED transactions race
+availability insertion against parent-night shrinkage, in both orderings. The
+loser must reject rather than commit out-of-bounds availability. Exact future-night
+and Auth-ID cleanup removes these fixtures; no plan-history trigger bypass is
+needed. All `scripts/db/*-concurrency.test.ts` files are excluded from ordinary
+`npm test` and run sequentially under `vitest.concurrency.config.ts` in `test:db`.

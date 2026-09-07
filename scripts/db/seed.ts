@@ -9,7 +9,11 @@
  *
  *   npm run db:seed
  */
-import { assertInstancesMatch, buildInstanceFromLiterals, instanceDigest } from "@railplan/core/domain/instance";
+import {
+  assertInstancesMatch,
+  buildInstanceFromLiterals,
+  instanceDigest,
+} from "@railplan/core/domain/instance";
 
 import { connect, DATABASE_URL } from "../../src/lib/db/client";
 import { loadPlanningInstance } from "../../src/lib/db/instance";
@@ -19,7 +23,9 @@ async function main() {
   const expected = instanceDigest(instance);
 
   console.log(`seeding ${redact(DATABASE_URL)}`);
-  console.log(`night ${instance.planningNight}, ${instance.requests.length} requests`);
+  console.log(
+    `night ${instance.planningNight}, ${instance.requests.length} requests`,
+  );
 
   const sql = connect();
   try {
@@ -32,7 +38,8 @@ async function main() {
           conflict_zones, conflict_zone_blocks, conflict_zone_work_classes,
           teams, team_skills, equipment_types, work_class_incompatibility,
           planning_nights, maintenance_requests, request_blocks,
-          request_required_skills, request_equipment, request_dependencies
+          request_required_skills, request_equipment, request_dependencies,
+          workforce_roles, workforce_availability, request_workforce_demand
         restart identity cascade`;
 
       await tx`insert into stations ${tx(
@@ -71,9 +78,13 @@ async function main() {
       )}`;
 
       const zoneBlocks = instance.conflictZones.flatMap((zone) =>
-        zone.blockIds.map((blockId) => ({ zone_id: zone.id, block_id: blockId })),
+        zone.blockIds.map((blockId) => ({
+          zone_id: zone.id,
+          block_id: blockId,
+        })),
       );
-      if (zoneBlocks.length) await tx`insert into conflict_zone_blocks ${tx(zoneBlocks)}`;
+      if (zoneBlocks.length)
+        await tx`insert into conflict_zone_blocks ${tx(zoneBlocks)}`;
 
       const zoneClasses = instance.conflictZones.flatMap((zone) =>
         zone.appliesToWorkClasses.map((workClass) => ({
@@ -81,7 +92,8 @@ async function main() {
           work_class: workClass,
         })),
       );
-      if (zoneClasses.length) await tx`insert into conflict_zone_work_classes ${tx(zoneClasses)}`;
+      if (zoneClasses.length)
+        await tx`insert into conflict_zone_work_classes ${tx(zoneClasses)}`;
 
       await tx`insert into equipment_types ${tx(
         instance.equipment.map((item) => ({
@@ -128,6 +140,10 @@ async function main() {
         },
       ])}`;
 
+      await tx`insert into workforce_roles ${tx(instance.workforceRoles)}`;
+      if (instance.workforceAvailability.length)
+        await tx`insert into workforce_availability ${tx(instance.workforceAvailability.map((row) => ({ planning_night: row.planningNight, team_id: row.teamId, role_id: row.roleId, start_minute: row.startMinute, end_minute: row.endMinute, people_count: row.count })))}`;
+
       // `mandatory` is a generated column and is deliberately not written here.
       await tx`insert into maintenance_requests ${tx(
         instance.requests.map((request) => ({
@@ -150,6 +166,9 @@ async function main() {
         })),
       )}`;
 
+      if (instance.workforceDemand.length)
+        await tx`insert into request_workforce_demand ${tx(instance.workforceDemand.map((row) => ({ request_id: row.requestId, role_id: row.roleId, people_count: row.count })))}`;
+
       // Atomic block ids, never the sector label. The label is display only and
       // two labels can be unrelated as strings while sharing physical track.
       const requestBlocks = instance.requests.flatMap((request) =>
@@ -162,7 +181,10 @@ async function main() {
       await tx`insert into request_blocks ${tx(requestBlocks)}`;
 
       const requestSkills = instance.requests.flatMap((request) =>
-        request.requiredSkills.map((skill) => ({ request_id: request.id, skill })),
+        request.requiredSkills.map((skill) => ({
+          request_id: request.id,
+          skill,
+        })),
       );
       await tx`insert into request_required_skills ${tx(requestSkills)}`;
 
@@ -191,7 +213,9 @@ async function main() {
     console.log(`database digest ${actual}`);
 
     assertInstancesMatch(instance, loaded);
-    console.log("\nround trip verified: the database and the engine describe the same night.");
+    console.log(
+      "\nround trip verified: the database and the engine describe the same night.",
+    );
   } finally {
     await sql.end({ timeout: 1 });
   }
@@ -202,7 +226,10 @@ function redact(url: string): string {
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error && error.message.startsWith("Planning instance")
-    ? error.message : "Seed failed. Verify the dedicated RailPlan DATABASE_URL and applied migrations. No credentials or database payloads are printed.");
+  console.error(
+    error instanceof Error && error.message.startsWith("Planning instance")
+      ? error.message
+      : "Seed failed. Verify the dedicated RailPlan DATABASE_URL and applied migrations. No credentials or database payloads are printed.",
+  );
   process.exitCode = 1;
 });

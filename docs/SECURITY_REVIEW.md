@@ -1,6 +1,6 @@
 # Security Review
 
-Last updated: 2026-09-07 · issues #5–#6 authentication and persistence review
+Last updated: 2026-09-07 · issues #5–#7 authentication, persistence and workforce review
 
 ## Boundaries actually implemented
 
@@ -13,7 +13,7 @@ Last updated: 2026-09-07 · issues #5–#6 authentication and persistence review
 - The server assistant computes facts itself and checks model numeric tokens.
   Access requires a verified planner. User history cannot forge assistant roles. Provider refusal, truncation,
   unavailable credentials and grounding failures fall back to the engine.
-- RLS on all 16 planning tables permits only authenticated planners to read or
+- RLS on all 19 planning fact tables permits only authenticated planners to read or
   modify facts. Contractor profile/organisation reads are scoped. Application SQL
   sets the authenticated role and verified claims inside its transaction;
   privileged owner connections are reserved for database maintenance tooling.
@@ -22,6 +22,23 @@ Last updated: 2026-09-07 · issues #5–#6 authentication and persistence review
   transaction. Migration checksums live in an unexposed private schema.
 - Secrets belong server-side. `DATABASE_URL` must never be public or committed.
   Seed and verification reports must not print credentials or input contents.
+
+## Issue #7 aggregate workforce boundary
+
+Roles, per-night/team/role headcounts and request demand contain no worker
+identities, qualifications, leave or personal locations. Strict payload schemas
+reject extra fields; there is no new public management route at this stage.
+The three fact tables use planner-only RLS and existing source revision triggers.
+Contractors and anonymous callers receive no global workforce visibility.
+
+Foreign keys constrain references, integer checks bound counts, and a half-open
+GiST exclusion prevents overlapping absolute availability from being silently
+double-counted. Availability and parent-night changes check the actual night
+bounds. Both first update the shared source row, serializing concurrent writes.
+The trigger uses invoker privileges and an empty search path; it cannot bypass
+RLS or accept an actor from the caller. Workforce-only changes participate in
+canonical and SHA-256 digests and invalidate older drafts; saved snapshots remain
+immutable. Independent pre-application review found no important blockers.
 
 ## Open findings and ordered remediation
 
@@ -142,3 +159,11 @@ publication, reload and supersession passed. Independently read committed audits
 matched all actions. Exact-ID temporary-plan/account cleanup restored all six
 history guards. Review also verified Next.js Host normalization handling keeps
 Origin scheme/port checks and ignores caller-supplied forwarded hosts.
+
+Issue #7 live verification passed: authenticated planner roundtrip/mutations,
+contractor/anonymous denial on all three tables, invalid references/counts/windows,
+non-overlap and parent resize checks. Separate committed concurrency tests cover
+both write orderings and assert no out-of-night rows; fixtures cleaned. Saved-plan
+regressions confirm workforce-only stale rejection audits and immutable snapshots.
+Full259, required DB33 and isolated concurrency3 tests passed; final independent
+review found no important defects.

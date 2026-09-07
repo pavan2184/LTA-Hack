@@ -128,3 +128,21 @@ or superseded version is idempotent and returns its existing state. Decisions ar
 append-only review records, not an intake approval lifecycle or edits to a plan.
 `/plans` provides save/list/reload/decision/publish UI; local exploratory dashboard
 generations are distinct and broader workflow integration remains #16.
+
+## Workforce input schemas — issue #7
+
+`src/lib/http/workforce-schemas.ts` exports strict reusable role, availability and
+demand schemas plus `workforceInputSchema(trustedInstance)` for a bounded selected-
+night replacement payload `{availability, demand}`. Each array is capped at 1,000
+rows. IDs are trimmed 1–64 characters; role names 1–120. Supply counts are integer
+0–10,000, demand counts 1–10,000. Start minutes are 0–1,440 and ends 1–2,880, with
+end strictly after start; the trusted instance further restricts both to the actual
+night. Unknown properties, including named-person fields, are rejected.
+
+Instance-aware validation rejects unknown request/team/role IDs, cross-night
+supply, duplicate request/role demands and overlapping same-team/role supply.
+A writer must load the trusted role/team/request catalogs; client catalogs cannot
+be used as reference authority. These are schemas for subsequent write workflows,
+not new HTTP management or request-intake routes. Plan generation continues to
+accept parameters only and reads workforce inputs from the database. Workforce
+feasibility enforcement follows #8.

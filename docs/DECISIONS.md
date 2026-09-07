@@ -4,6 +4,28 @@ Last updated: 2026-09-07
 
 ## Log
 
+### 2026-09-07 — Issue #7 separate crew capacity from anonymous people supply
+
+Keep Team.capacity as the crew-concurrency rule. Model configurable workforce
+roles, absolute people availability windows and per-request role/count demand in
+three independent PlanningInstance arrays. Explicit fabricated defaults preserve
+existing callers without collecting named-worker data or deriving headcount from
+crew capacity. Workforce enforcement is the next ordered issue, #8.
+
+Availability windows use half-open intervals and cannot overlap for a given
+night/team/role. This prevents ambiguous double-counting; adjacent windows replace
+the declared count, and zero can record unavailability. Use a GiST exclusion
+constraint plus night-bound checks on both availability writes and parent-night
+resizes. Existing global source-revision serialization protects those checks
+against concurrent writes and makes workforce-only changes stale saved drafts.
+
+Canonicalization only orders facts and hashes full content. Validate workforce
+references/counts/windows explicitly at loader and write-schema boundaries so
+synthetic engine callers remain free to alter request pools and windows for tests.
+Demand remains normalized beside requests, avoiding a breaking MaintenanceRequest
+change. Later emergency/disruption demand handling must use the same role model.
+
+
 ### 2026-09-07 — Issue #6 immutable server-generated plans
 
 Persist full canonical input facts and parameters, SHA-256 provenance and exact

@@ -174,3 +174,19 @@ Tables and narrowly granted write functions are in the non-exposed
 recheck trusted planner profiles and derive actors from auth.uid(). Never add this
 schema to Supabase's exposed Data API schemas. Contractor reads remain denied
 until a later scoped delivery contract exists.
+
+## Workforce fact boundary — issue #7
+
+Anonymous staffing data crosses the same PlanningInstance/seed/loader/canonical
+hash boundary as topology and equipment. Role and demand catalogs remain plain
+serializable facts. The database loader and workforce write-payload schema call
+`assertWorkforceInstance` for references, counts, actual night bounds and duplicate/
+overlapping data. Existing pure engine callers continue to accept the instance
+with defaults; canonical sorting does not itself reject exploratory request/window
+changes. No workforce solver rule or metric is introduced before #8.
+
+PostgreSQL `btree_gist` supports the availability exclusion constraint. Shared
+source-revision statement triggers serialize supply mutations and parent-night
+window changes. The row checks run after that serialization and validate both
+sides of the relationship, including concurrent READ COMMITTED writers. Workforce
+facts are planner-only under RLS and every change invalidates old draft provenance.

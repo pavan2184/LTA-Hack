@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#6 complete; #7 next
+## Ordered issue work — #4–#7 complete; #8 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
@@ -11,6 +11,24 @@ RailPlan Dev is healthy on Supabase Free in Singapore, project
 `ufcdynfjfzbjvglsdaqp`, in `pavan2184's Org`. The new empty hosted database is
 the replacement for #4's local Docker reset baseline. Neither unrelated
 Supabase projects nor the local NRI_Land database were modified.
+
+#6 is committed as `c0e39ce`. #7 is complete with anonymous roles, availability
+and request demand, canonical parity, bounded validation and immutable saved-plan
+provenance. Migration `20260907082740_workforce_facts.sql` is applied and immutable.
+The seeded workforce digest is `fnv1a:8c4a9050cfea5e8b` for 22 requests, two roles,
+22 team/role availability windows and 44 demand rows. Team capacity still counts
+crews; explicit role headcounts count people. No worker identities are collected.
+
+#7 verification: six new database regressions failed before migration and passed
+afterward. Full suite **259 passed, zero skipped**, 23 files. Required DB gate:
+parity, **33 rollback tests**, and **3 isolated concurrency tests** passed. These
+include both availability-insert/parent-night-resize orderings; the second writer
+is observed waiting and rejects any resulting out-of-night window. Temporary
+committed fixtures are cleaned up by exact IDs. Workforce-only edits change both
+instance and saved-plan digests, stale older drafts with an audit, and preserve
+old snapshots. Migration replay, lint, typecheck, production build and independent
+security/code review passed. No UI changed in #7; existing dashboard tests pass.
+No local preview server is running. #8 hard workforce feasibility is next.
 
 Implemented for #4:
 
