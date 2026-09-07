@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#7 complete; #8 next
+## Ordered issue work — #4–#8 complete; #9 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
@@ -28,7 +28,32 @@ committed fixtures are cleaned up by exact IDs. Workforce-only edits change both
 instance and saved-plan digests, stale older drafts with an audit, and preserve
 old snapshots. Migration replay, lint, typecheck, production build and independent
 security/code review passed. No UI changed in #7; existing dashboard tests pass.
-No local preview server is running. #8 hard workforce feasibility is next.
+No local preview server is running.
+
+#8 is complete. WORKFORCE_CAPACITY is a critical shared-validator rule with exact
+team/role/interval/headcount/contributor evidence. Crew concurrency remains
+separate; absent supply is zero and undefined demand fails closed. Candidate
+search, pins, repairs, alternatives, emergencies and independent final validation
+all enforce it. Metrics include person-minute utilisation and shortage intervals
+with formulas. Constraints-v3/solver-v3 provenance protects saved publication.
+
+Verification: full **284 passed, zero skips**, 24 files; required DB **34 rollback
+plus 3 isolated concurrency tests** passed, including fresh mandatory workforce
+infeasibility refusing publication. Lint/typecheck/build and independent reviews
+passed. Review fixed emergency alternative lookup, unsupported alternatives
+claiming feasibility, and stale disruption metrics after repairs/view changes.
+The last two copy corrections passed targeted UI tests and a fresh typecheck/build.
+No applied migration changed; parity stays `fnv1a:8c4a9050cfea5e8b`.
+
+Production browser UAT passed login, submitted workforce evidence and formula
+(3825/13200 person-minutes), generation (17 placed, 5 deferred, zero violations
+and zero workforce shortages), disruption preview, requested/planned view change,
+replan and logout. Workforce utilisation changed 23.2% → 24.5% with emergency
+impact and 30.3% on the requested-plan impact; the replan honestly reported
+mandatory work without a slot. Widths1280/1440/1920 had no document overflow;
+browser warnings/errors were empty. Browser viewport restored, temporary planner
+removed, no saved UAT plans created, final database parity passed. Production
+preview stopped before the final build. #9 is next.
 
 Implemented for #4:
 

@@ -78,6 +78,7 @@ export type ViolationRuleId =
   | "CONFLICT_ZONE"
   | "ADJACENT_WORK"
   | "TEAM_CAPACITY"
+  | "WORKFORCE_CAPACITY"
   | "EQUIPMENT_CAPACITY"
   | "SKILL_COVERAGE"
   | "WORK_COMPATIBILITY"
@@ -112,6 +113,14 @@ export interface Violation {
    */
   window: { start: number; end: number } | null;
   remedy: string;
+  /** Null counts mean demand is unknown; this is a critical input omission. */
+  workforce?: {
+    teamId: string;
+    roleId: string | null;
+    demand: number | null;
+    available: number | null;
+    shortfall: number | null;
+  };
 }
 
 export interface MetricValue {
@@ -134,6 +143,8 @@ export interface PlanMetrics {
   conflictedRequests: MetricValue;
   blockUtilisation: MetricValue;
   teamUtilisation: MetricValue;
+  workforceUtilisation: MetricValue;
+  workforceShortageIntervals: MetricValue;
   equipmentUtilisation: MetricValue;
   bufferCompliance: MetricValue;
   emergencyCapacity: MetricValue;

@@ -17,6 +17,7 @@ import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from 
 import { trackBlocks } from "@railplan/core/domain/network";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { plannerTimeSavedMetric } from "@railplan/core/engine/metrics";
+import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 
 export function DashboardShell() {
@@ -75,7 +76,7 @@ function Landing() {
 
       <dl className="mt-6 grid gap-px border border-rule bg-rule sm:grid-cols-3">
         {[
-          ["Conflict detection", "Twelve rules over atomic track blocks, crew rosters, asset counts, isolation zones, dependencies and travel."],
+          ["Conflict detection", `${Object.keys(ruleCatalogue).length} rules over atomic track blocks, crew capacity, workforce headcounts, asset counts, isolation zones, dependencies and travel.`],
           ["Scheduling", "Priority-ordered feasible insertion with repair, at " + SLOT_MINUTES + "-minute resolution. Status and solve time are reported honestly."],
           ["Every figure", "Carries its formula, numerator and denominator. Nothing on this dashboard is a stored score."],
         ].map(([term, detail]) => (
@@ -316,8 +317,7 @@ function ReplanOutcome({ title }: { title: string }) {
           Every rule is satisfied, but {droppedMandatory.map((request) => request.id).join(", ")} —
           mandatory work — could not be placed at all.{" "}
           {result.plan.placements.length} of {result.metrics.placed.denominator} jobs fit around the
-          disruption. Releasing this plan means accepting that deferral, or changing what the
-          disruption is allowed to displace.
+          disruption. This plan cannot be published until all mandatory work can be scheduled.
         </p>
       </section>
     );
@@ -336,8 +336,10 @@ function ReplanOutcome({ title }: { title: string }) {
 function SecondaryFigures() {
   const result = useRailPlanStore((state) => state.activeResult());
   const view = useRailPlanStore((state) => state.view);
+  const disruptionMetrics = useRailPlanStore((state) => state.disruptionMetrics);
   if (!result) return null;
   const metrics = result.metrics;
+  const workforce = disruptionMetrics ?? metrics;
 
   return (
     <div className="grid auto-rows-min grid-cols-2 gap-2.5">
@@ -352,6 +354,12 @@ function SecondaryFigures() {
         <Figure metric={metrics.teamUtilisation} />
       )}
       <Figure metric={metrics.equipmentUtilisation} />
+      <Figure metric={workforce.workforceUtilisation} secondary={disruptionMetrics ? "disruption impact before replanning" : "people-minutes against role availability"} />
+      <Figure
+        metric={workforce.workforceShortageIntervals}
+        secondary="team and role windows requiring more staff"
+        tone={workforce.workforceShortageIntervals.value ? "red" : "green"}
+      />
       <Figure metric={metrics.bufferCompliance} />
       <Figure metric={metrics.weightedCompletion} secondary="priority-weighted" />
       <Figure metric={metrics.flexibility} />

@@ -38,7 +38,8 @@ export interface Resolution {
 
 /** Identity of a conflict that survives re-validation, unlike its display id. */
 export function conflictKey(violation: Violation): string {
-  return `${violation.ruleId}|${[...violation.requestIds].sort().join(",")}`;
+  return `${violation.ruleId}|${[...violation.requestIds].sort().join(",")}` +
+    (violation.ruleId === "WORKFORCE_CAPACITY" ? `|${JSON.stringify([violation.workforce, violation.window])}` : "");
 }
 
 function criticalKeys(violations: Violation[]): Set<string> {
@@ -90,11 +91,11 @@ export function recommendResolution(
   let best: Resolution | null = null;
 
   for (const requestId of moveOrder(violation.requestIds, world)) {
-    const request = world.requestById[requestId];
+    const request = context.extraRequests?.[requestId] ?? world.requestById[requestId];
     if (!request) continue;
 
     const current = plan.placements.find((placement) => placement.requestId === requestId);
-    if (!current) continue;
+    if (!current || current.locked) continue;
 
     const others = plan.placements.filter((placement) => placement.requestId !== requestId);
     const latest =
@@ -123,6 +124,7 @@ export function recommendResolution(
       if (trialKeys.size >= baselineKeys.size) continue;
 
       const creates = [...trialKeys].filter((key) => !baselineKeys.has(key));
+      if (creates.length) continue;
       const clears = [...baselineKeys].filter((key) => !trialKeys.has(key));
       const movement = Math.abs(start - current.startMinute);
 

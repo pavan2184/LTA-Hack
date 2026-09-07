@@ -17,7 +17,7 @@ import {
   type ViolationRuleId,
 } from "../types/railplan";
 
-export const SOLVER_VERSION = "railplan-greedy-repair-v2";
+export const SOLVER_VERSION = "railplan-greedy-repair-v3";
 
 /** Backtracking rounds allowed when mandatory work cannot be placed. */
 const MAX_REPAIR_ROUNDS = 4;
@@ -48,6 +48,10 @@ export function solve(options: SolveOptions): SolveResult {
   const profile = strategyProfiles[options.strategy];
   const world = options.context?.world ?? literalWorld();
   const pool = options.requests ?? world.requests;
+  const requestById = {
+    ...world.requestById, ...options.context?.extraRequests,
+    ...Object.fromEntries(pool.map(request => [request.id, request])),
+  };
   // The world is carried on the context rather than passed alongside it, so
   // every downstream `validate` call is against the same night the solver
   // planned. A solver that builds against one set of facts and is checked
@@ -55,6 +59,10 @@ export function solve(options: SolveOptions): SolveResult {
   const context: ValidationContext = {
     ...options.context,
     world,
+    extraRequests: {
+      ...options.context?.extraRequests,
+      ...Object.fromEntries(pool.filter(request => request !== world.requestById[request.id]).map(request => [request.id, request])),
+    },
     windowEnd: options.context?.windowEnd ?? world.windowEnd,
   };
   const solveContext: ValidationContext = {
@@ -113,7 +121,7 @@ export function solve(options: SolveOptions): SolveResult {
     }
 
     const unplacedMandatory = deferred
-      .map((entry) => world.requestById[entry.requestId])
+      .map((entry) => requestById[entry.requestId])
       .filter((request) => request?.mandatory);
 
     if (!unplacedMandatory.length) break;
@@ -123,7 +131,7 @@ export function solve(options: SolveOptions): SolveResult {
     // of mandatory work, then re-solve from scratch so the result stays a
     // function of its inputs rather than of the order repairs happened in.
     const blockers = placements
-      .map((placement) => world.requestById[placement.requestId])
+      .map((placement) => requestById[placement.requestId])
       .filter((request) => request && !request.mandatory && !lockedById.has(request.id) && !displaced.has(request.id))
       .sort(
         (a, b) =>
@@ -147,7 +155,7 @@ export function solve(options: SolveOptions): SolveResult {
   // rather than the strategy's tightened one.
   const violations = validate(plan, context);
   const feasible = isFeasible(violations);
-  const mandatoryDeferred = plan.deferred.some((entry) => world.requestById[entry.requestId]?.mandatory);
+  const mandatoryDeferred = plan.deferred.some((entry) => requestById[entry.requestId]?.mandatory);
 
   let status: SolveStatus;
   if (!feasible || mandatoryDeferred) status = "INFEASIBLE";

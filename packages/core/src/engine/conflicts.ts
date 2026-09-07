@@ -5,7 +5,7 @@ import type { Violation, ViolationRuleId } from "../types/railplan";
 /**
  * The planner's vocabulary for a conflict.
  *
- * The validator reports twelve rules because twelve distinct things can be
+ * The validator reports thirteen rules because thirteen distinct things can be
  * wrong. A planner asks a shorter question: *what kind* of problem is this, and
  * therefore who do I have to talk to — the possession desk, the roster, the
  * asset controller? These categories are that question, and nothing more: they
@@ -47,7 +47,7 @@ export const conflictCategories: ConflictCategoryProfile[] = [
     plural: "engineer conflicts",
     description:
       "The assigned team is committed elsewhere, off shift, unqualified, or cannot travel between two jobs in the gap left.",
-    ruleIds: ["TEAM_CAPACITY", "SHIFT_AVAILABILITY", "SKILL_COVERAGE", "TRAVEL_TIME"],
+    ruleIds: ["WORKFORCE_CAPACITY", "TEAM_CAPACITY", "SHIFT_AVAILABILITY", "SKILL_COVERAGE", "TRAVEL_TIME"],
     tone: "engineer",
   },
   {
@@ -171,6 +171,7 @@ export function categoriesFor(violations: Violation[], requestId: string): Confl
  * engine, neither is authored per job.
  */
 export function headline(violation: Violation): string {
+  if (violation.ruleId === "WORKFORCE_CAPACITY") return violation.detail;
   const ids = violation.requestIds;
   // A conflict zone carries its id first and its name second; the name is the
   // half a planner recognises. A possession overlap can name several blocks, and

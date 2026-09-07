@@ -19,6 +19,16 @@ export function answerDeterministically(question: string, result: SolveResult): 
     return describeRequest(requestId, result);
   }
 
+  if (/\b(workforce|staffing|headcount)\b/.test(text)) {
+    const utilisation = result.metrics.workforceUtilisation;
+    const shortages = result.metrics.workforceShortageIntervals;
+    const evidence = result.violations.filter((v) => v.ruleId === "WORKFORCE_CAPACITY").slice(0, 3);
+    return `${utilisation.label} is ${utilisation.value}%. Formula: ${utilisation.formula}. ` +
+      `Numerator ${utilisation.numerator}, denominator ${utilisation.denominator}. ${utilisation.note} ` +
+      `${shortages.label}: ${shortages.value}. ${shortages.formula}. ${shortages.note} ` +
+      evidence.map((v) => `${v.detail} ${v.remedy}`).join(" ");
+  }
+
   if (/\b(strateg|objective|compare|trade|instead)\b/.test(text)) {
     return (
       `This plan uses the ${result.strategy} objective. ` +
@@ -49,7 +59,8 @@ export function answerDeterministically(question: string, result: SolveResult): 
       top
         .map(
           (violation) =>
-            `${violation.requestIds.join(" and ")} breaching ${ruleCatalogue[violation.ruleId].label} by ${violation.shortfallMinutes} minutes`,
+            violation.ruleId === "WORKFORCE_CAPACITY" ? violation.detail :
+              `${violation.requestIds.join(" and ")} breaching ${ruleCatalogue[violation.ruleId].label} by ${violation.shortfallMinutes} minutes`,
         )
         .join("; ") +
       `.`

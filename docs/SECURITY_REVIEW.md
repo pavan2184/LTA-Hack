@@ -1,6 +1,6 @@
 # Security Review
 
-Last updated: 2026-09-07 · issues #5–#7 authentication, persistence and workforce review
+Last updated: 2026-09-07 · issues #5–#8 authentication, persistence and workforce review
 
 ## Boundaries actually implemented
 
@@ -167,3 +167,28 @@ both write orderings and assert no out-of-night rows; fixtures cleaned. Saved-pl
 regressions confirm workforce-only stale rejection audits and immutable snapshots.
 Full259, required DB33 and isolated concurrency3 tests passed; final independent
 review found no important defects.
+
+## Issue #8 hard workforce enforcement
+
+The shared validator owns staffing feasibility. Missing supply means zero;
+missing or invalid demand definitions produce a critical unknown-demand finding,
+not zero staffing. Emergency/custom requests supply explicit role demand through
+trusted engine context. No new network input or extra permissions were added.
+Workforce fields contain aggregate headcounts only. Exact shortages include
+team, role, participants, interval, demand, availability and shortfall.
+
+Candidate evaluation, pins, repair, alternatives and final validation use the
+same rule. Automatic repair preserves locks and rejects newly introduced
+conflicts. Saved-plan publication rejects fresh infeasible mandatory work;
+constraint/solver version changes invalidate old engine output. Workforce
+arithmetic and shortage count flow into the assistant fact allow-list; template
+answers preserve exact validator evidence without inventing headcounts.
+
+Independent review found emergency alternatives ignored extra requests (fixed)
+and the UI impact metric cache could survive a change to its underlying plan
+(fixed with four transition regressions). Unsupported alternative IDs also now
+return false with actual validation findings. All scoped reviews are clean.
+Full284 tests, required DB34/concurrency3, lint/typecheck/build and production
+browser workflow passed. Last copy corrections passed two targeted UI tests and
+a fresh build. Browser errors/warnings empty; temporary account cleaned and
+final hosted parity unchanged.

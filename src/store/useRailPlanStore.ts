@@ -1,14 +1,36 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { buildDisruptionInputs, disruptionById } from "@railplan/core/data/disruptions";
+import {
+  buildDisruptionInputs,
+  disruptionById,
+} from "@railplan/core/data/disruptions";
 import { requestById } from "@railplan/core/data/requests";
 import { findAlternatives } from "@railplan/core/engine/alternatives";
-import { explainPlacement, type PlacementExplanation } from "@railplan/core/engine/explain";
-import { recommendResolution, repairPlan, type Resolution } from "@railplan/core/engine/resolutions";
+import { computeMetrics } from "@railplan/core/engine/metrics";
+import {
+  explainPlacement,
+  type PlacementExplanation,
+} from "@railplan/core/engine/explain";
+import {
+  recommendResolution,
+  repairPlan,
+  type Resolution,
+} from "@railplan/core/engine/resolutions";
 import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
-import { clusterViolations, validate, type ValidationContext } from "@railplan/core/engine/validate";
-import type { AlternativeSlot, Placement, SolveResult, StrategyId, Violation } from "@railplan/core/types/railplan";
+import {
+  clusterViolations,
+  validate,
+  type ValidationContext,
+} from "@railplan/core/engine/validate";
+import type {
+  AlternativeSlot,
+  Placement,
+  PlanMetrics,
+  SolveResult,
+  StrategyId,
+  Violation,
+} from "@railplan/core/types/railplan";
 
 /**
  * The two things a planner can be looking at: the night as its requesters asked
@@ -51,8 +73,12 @@ interface RailPlanState {
 
   submitted: SolveResult | null;
   planned: SolveResult | null;
+  /** Scenario already included in the current planned result, if any. */
+  plannedDisruptionId: string | null;
   /** Violations the active disruption causes in the plan as it stands. */
   disruptionImpact: Violation[];
+  /** Computed impact before any re-solve; original run provenance stays intact. */
+  disruptionMetrics: PlanMetrics | null;
   /**
    * Work the scenario forces into the plan — an emergency insertion, or a job
    * stretched by an overrun. Drawn alongside the plan so the cause of the
@@ -81,14 +107,74 @@ interface RailPlanState {
   reset: () => void;
 
   activeResult: () => SolveResult | null;
-  alternativesFor: (requestId: string) => { alternatives: AlternativeSlot[]; bindingRuleId: string | null };
+  alternativesFor: (requestId: string) => {
+    alternatives: AlternativeSlot[];
+    bindingRuleId: string | null;
+  };
   explanationFor: (requestId: string) => PlacementExplanation | null;
   clusters: () => ReturnType<typeof clusterViolations>;
   context: () => ValidationContext;
 }
 
+/** Evaluate the scenario against the placements currently on screen. A solved
+ * scenario result already includes its overrun/emergency, so never overlay it a
+ * second time when a planner returns from the requested-plan view. */
+function disruptionState(state: RailPlanState) {
+  const empty = {
+    hasReplanned: false,
+    disruptionImpact: [] as Violation[],
+    disruptionMetrics: null as PlanMetrics | null,
+    disruptionPlacements: [] as Placement[],
+  };
+  const scenario = state.activeDisruptionId
+    ? disruptionById[state.activeDisruptionId]
+    : null;
+  const current =
+    state.view === "planned"
+      ? (state.planned ?? state.submitted)
+      : state.submitted;
+  if (!scenario || !current) return empty;
+  if (
+    state.view === "planned" &&
+    state.planned &&
+    state.plannedDisruptionId === scenario.id
+  )
+    return { ...empty, hasReplanned: true };
+  const inputs = buildDisruptionInputs(scenario, current.plan.placements);
+  const changed = new Map(
+    inputs.locked.map((placement) => [placement.requestId, placement]),
+  );
+  const affectedPlan = {
+    placements: [
+      ...current.plan.placements.map(
+        (placement) => changed.get(placement.requestId) ?? placement,
+      ),
+      ...inputs.locked.filter(
+        (placement) =>
+          !current.plan.placements.some(
+            (item) => item.requestId === placement.requestId,
+          ),
+      ),
+    ],
+    deferred: current.plan.deferred,
+  };
+  const impact = validate(affectedPlan, inputs.context);
+  return {
+    hasReplanned: false,
+    disruptionImpact: impact,
+    disruptionMetrics: computeMetrics(
+      affectedPlan,
+      impact,
+      inputs.requests,
+      inputs.context,
+    ),
+    disruptionPlacements: inputs.locked,
+  };
+}
+
 /** Lets the browser paint the progress overlay between real solver phases. */
-const yieldToPaint = () => new Promise<void>((resolve) => setTimeout(resolve, 90));
+const yieldToPaint = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 90));
 
 export const useRailPlanStore = create<RailPlanState>()(
   persist(
@@ -108,7 +194,9 @@ export const useRailPlanStore = create<RailPlanState>()(
       lastSolveMs: 0,
       submitted: null,
       planned: null,
+      plannedDisruptionId: null,
       disruptionImpact: [],
+      disruptionMetrics: null,
       disruptionPlacements: [],
 
       load: async () => {
@@ -120,9 +208,12 @@ export const useRailPlanStore = create<RailPlanState>()(
           view: "submitted",
           submitted,
           planned: null,
+          plannedDisruptionId: null,
           overrides: {},
           lastRepair: [],
-          baselineConflicts: submitted.violations.filter((v) => v.severity === "critical").length,
+          baselineConflicts: submitted.violations.filter(
+            (v) => v.severity === "critical",
+          ).length,
           stage: "idle",
           lastSolveMs: submitted.solveMs,
           selectedRequestId: null,
@@ -130,6 +221,7 @@ export const useRailPlanStore = create<RailPlanState>()(
           activeDisruptionId: null,
           hasReplanned: false,
           disruptionImpact: [],
+          disruptionMetrics: null,
           disruptionPlacements: [],
         });
       },
@@ -139,8 +231,10 @@ export const useRailPlanStore = create<RailPlanState>()(
         set({ stage: "solving" });
         await yieldToPaint();
 
-        const scenario = state.activeDisruptionId ? disruptionById[state.activeDisruptionId] : null;
-        const base = state.planned?.plan.placements ?? state.submitted?.plan.placements ?? [];
+        const scenario = state.activeDisruptionId
+          ? disruptionById[state.activeDisruptionId]
+          : null;
+        const base = state.activeResult()?.plan.placements ?? [];
         const inputs = scenario ? buildDisruptionInputs(scenario, base) : null;
 
         const result = solve({
@@ -155,16 +249,19 @@ export const useRailPlanStore = create<RailPlanState>()(
 
         set({
           planned: result,
+          plannedDisruptionId: scenario?.id ?? null,
           view: "planned",
           stage: "idle",
           lastSolveMs: result.solveMs,
           hasReplanned: Boolean(scenario),
           disruptionImpact: [],
+          disruptionMetrics: null,
           disruptionPlacements: [],
         });
       },
 
-      setView: (view) => set({ view }),
+      setView: (view) =>
+        set((state) => ({ view, ...disruptionState({ ...state, view }) })),
 
       setStrategy: async (strategy) => {
         set({ strategy });
@@ -180,7 +277,8 @@ export const useRailPlanStore = create<RailPlanState>()(
         ].find((item) => item.id === id);
         set({
           selectedViolationId: id,
-          selectedRequestId: violation?.requestIds[0] ?? get().selectedRequestId,
+          selectedRequestId:
+            violation?.requestIds[0] ?? get().selectedRequestId,
         });
       },
 
@@ -190,9 +288,9 @@ export const useRailPlanStore = create<RailPlanState>()(
         if (next[requestId]) {
           delete next[requestId];
         } else {
-          const placement = state.activeResult()?.plan.placements.find(
-            (item) => item.requestId === requestId,
-          );
+          const placement = state
+            .activeResult()
+            ?.plan.placements.find((item) => item.requestId === requestId);
           if (!placement) return;
           next[requestId] = { ...placement, locked: true };
         }
@@ -236,11 +334,13 @@ export const useRailPlanStore = create<RailPlanState>()(
       applySuggestion: (requestId, startMinute) => {
         const state = get();
         const overrides = { ...state.overrides, [requestId]: startMinute };
+        const submitted = reviewSubmittedPlan(state.context(), overrides);
         set({
           overrides,
-          submitted: reviewSubmittedPlan(state.context(), overrides),
+          submitted,
           selectedRequestId: requestId,
           lastRepair: [],
+          ...disruptionState({ ...state, submitted }),
         });
       },
 
@@ -268,23 +368,27 @@ export const useRailPlanStore = create<RailPlanState>()(
           overrides[move.requestId] = move.toMinute;
         });
 
+        const submitted = reviewSubmittedPlan(context, overrides);
         set({
           overrides,
           lastRepair: outcome.moves,
-          submitted: reviewSubmittedPlan(context, overrides),
+          submitted,
           view: "submitted",
           stage: "idle",
           selectedViolationId: null,
+          ...disruptionState({ ...state, submitted, view: "submitted" }),
         });
       },
 
       clearSuggestions: () => {
         const state = get();
+        const submitted = reviewSubmittedPlan(state.context());
         set({
           overrides: {},
           lastRepair: [],
-          submitted: reviewSubmittedPlan(state.context()),
+          submitted,
           selectedViolationId: null,
+          ...disruptionState({ ...state, submitted }),
         });
       },
 
@@ -293,7 +397,9 @@ export const useRailPlanStore = create<RailPlanState>()(
         const result = state.activeResult();
         if (!result) return null;
         const source =
-          state.activeDisruptionId && !state.hasReplanned ? state.disruptionImpact : result.violations;
+          state.activeDisruptionId && !state.hasReplanned
+            ? state.disruptionImpact
+            : result.violations;
         const violation = source.find((item) => item.id === violationId);
         if (!violation) return null;
         return recommendResolution(result.plan, violation, state.context());
@@ -309,32 +415,14 @@ export const useRailPlanStore = create<RailPlanState>()(
         const current = state.activeResult();
         if (!scenario || !current) return;
 
-        const inputs = buildDisruptionInputs(scenario, current.plan.placements);
-        // Merge rather than append: a scenario that changes an existing job (an
-        // overrun) supplies a replacement for it, and appending would leave the
-        // plan holding the same job twice and colliding with itself.
-        const changed = new Map(inputs.locked.map((placement) => [placement.requestId, placement]));
-        const affectedPlan = {
-          placements: [
-            ...current.plan.placements.map(
-              (placement) => changed.get(placement.requestId) ?? placement,
-            ),
-            ...inputs.locked.filter(
-              (placement) =>
-                !current.plan.placements.some((item) => item.requestId === placement.requestId),
-            ),
-          ],
-          deferred: current.plan.deferred,
-        };
-        const impact = validate(affectedPlan, inputs.context);
-
+        const impact = disruptionState({ ...state, activeDisruptionId: id });
         set({
           activeDisruptionId: id,
-          hasReplanned: false,
-          disruptionImpact: impact,
-          disruptionPlacements: inputs.locked,
-          selectedViolationId: impact[0]?.id ?? null,
-          selectedRequestId: impact[0]?.requestIds[0] ?? state.selectedRequestId,
+          ...impact,
+          selectedViolationId: impact.disruptionImpact[0]?.id ?? null,
+          selectedRequestId:
+            impact.disruptionImpact[0]?.requestIds[0] ??
+            state.selectedRequestId,
         });
       },
 
@@ -348,6 +436,7 @@ export const useRailPlanStore = create<RailPlanState>()(
           activeDisruptionId: null,
           hasReplanned: false,
           disruptionImpact: [],
+          disruptionMetrics: null,
           disruptionPlacements: [],
         });
         if (get().planned) await get().buildPlan();
@@ -368,13 +457,17 @@ export const useRailPlanStore = create<RailPlanState>()(
           stage: "idle",
           submitted: null,
           planned: null,
+          plannedDisruptionId: null,
           disruptionImpact: [],
+          disruptionMetrics: null,
           disruptionPlacements: [],
         }),
 
       activeResult: () => {
         const state = get();
-        return state.view === "planned" ? (state.planned ?? state.submitted) : state.submitted;
+        return state.view === "planned"
+          ? (state.planned ?? state.submitted)
+          : state.submitted;
       },
 
       alternativesFor: (requestId) => {
@@ -393,17 +486,23 @@ export const useRailPlanStore = create<RailPlanState>()(
 
       clusters: () => {
         const state = get();
-        const violations = state.activeDisruptionId && !state.hasReplanned
-          ? state.disruptionImpact
-          : (state.activeResult()?.violations ?? []);
+        const violations =
+          state.activeDisruptionId && !state.hasReplanned
+            ? state.disruptionImpact
+            : (state.activeResult()?.violations ?? []);
         return clusterViolations(violations);
       },
 
       context: () => {
         const state = get();
-        const scenario = state.activeDisruptionId ? disruptionById[state.activeDisruptionId] : null;
+        const scenario = state.activeDisruptionId
+          ? disruptionById[state.activeDisruptionId]
+          : null;
         if (!scenario) return {};
-        return buildDisruptionInputs(scenario, state.activeResult()?.plan.placements ?? []).context;
+        return buildDisruptionInputs(
+          scenario,
+          state.activeResult()?.plan.placements ?? [],
+        ).context;
       },
     }),
     {
@@ -411,7 +510,10 @@ export const useRailPlanStore = create<RailPlanState>()(
       storage: createJSONStorage(() => localStorage),
       // Exact locked placements persist, not just their ids, so a planner's
       // pinned times survive a reload rather than silently reverting.
-      partialize: (state) => ({ strategy: state.strategy, locked: state.locked }),
+      partialize: (state) => ({
+        strategy: state.strategy,
+        locked: state.locked,
+      }),
     },
   ),
 );

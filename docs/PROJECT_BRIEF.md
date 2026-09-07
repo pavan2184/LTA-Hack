@@ -4,7 +4,7 @@ Last updated: 2026-09-07 · RailPlan v0.4.0
 
 RailPlan is a non-operational rail-maintenance planning prototype. It evaluates
 22 fabricated requests across 12 atomic track blocks in a four-hour engineering
-window, calculates conflicts, proposes placements and independently validates
+window, calculates conflicts including aggregate workforce shortages, proposes placements and independently validates
 its results. Users are maintenance planners and operations controllers.
 
 ## Implemented journeys

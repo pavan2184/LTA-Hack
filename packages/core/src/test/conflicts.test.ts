@@ -80,7 +80,8 @@ describe("conflict windows", () => {
 
 describe("recommended resolutions", () => {
   it("only offers a move that it validated first", () => {
-    const target = violations[0];
+    // The worst baseline conflict has no clean single move under workforce constraints.
+    const target = violations.find(v => v.ruleId === "DEPENDENCY_ORDER" && v.requestIds.includes("M-013"))!;
     const resolution = recommendResolution(requested, target)!;
     expect(resolution).not.toBeNull();
 
@@ -96,6 +97,7 @@ describe("recommended resolutions", () => {
 
     expect(after.map(conflictKey)).not.toContain(conflictKey(target));
     expect(after.length).toBeLessThan(violations.length);
+    expect(after.every(v => violations.map(conflictKey).includes(conflictKey(v)))).toBe(true);
   });
 
   it("moves the cheapest job in the conflict, not the mandatory one", () => {

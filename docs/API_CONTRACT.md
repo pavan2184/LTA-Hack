@@ -146,3 +146,13 @@ be used as reference authority. These are schemas for subsequent write workflows
 not new HTTP management or request-intake routes. Plan generation continues to
 accept parameters only and reads workforce inputs from the database. Workforce
 feasibility enforcement follows #8.
+
+## Workforce enforcement — issue #8
+
+Saved plan generation and publication use constraints-v3 and the shared
+WORKFORCE_CAPACITY rule. Explicit demand is required for every placed request;
+missing supply is zero and missing demand is unknown, never assumed zero. A
+fresh run with unstaffed mandatory work is INFEASIBLE and cannot publish.
+Workforce metrics retain the existing MetricValue shape; violations optionally
+carry structured team/role/demand/available/shortfall evidence. Null headcounts
+mean an unknown demand definition. No workforce write API is introduced here.

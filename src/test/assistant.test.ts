@@ -85,6 +85,17 @@ describe("grounding check", () => {
 });
 
 describe("engine-only answers", () => {
+  it("explains workforce headcount from computed metrics and exact validator evidence", () => {
+    const submitted = reviewSubmittedPlan();
+    const answer = answerDeterministically("How is workforce capacity calculated?", submitted);
+    expect(answer).toContain(submitted.metrics.workforceUtilisation.formula);
+    expect(answer).toContain(String(submitted.metrics.workforceShortageIntervals.value));
+    const shortages = submitted.violations.filter((v) => v.ruleId === "WORKFORCE_CAPACITY");
+    expect(shortages.length).toBeGreaterThan(0);
+    for (const shortage of shortages.slice(0, 3)) expect(answer).toContain(shortage.detail);
+    expect(answerDeterministically("What is the conflict?", { ...submitted, violations: [shortages[0]] })).toContain(shortages[0].detail);
+    expect(checkGrounding(answer, buildFactSet(submitted, "submitted").allowedNumbers).grounded).toBe(true);
+  });
   it("answers a request question from the explanation engine", () => {
     const answer = answerDeterministically("Why did M-014 move?", planned);
     expect(answer).toContain("M-014");

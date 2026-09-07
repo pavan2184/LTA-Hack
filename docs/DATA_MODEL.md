@@ -151,3 +151,39 @@ Supply is an explicit per-team input fixture, never Team.capacity multiplied by 
 constant. Each baseline job declares two technicians and one supervisor as a demo
 assumption, not an operational staffing standard. Issue #7 carries these facts;
 workforce feasibility, emergency/disruption demand handling and metrics follow #8.
+
+## Workforce results — issue #8
+
+`WORKFORCE_CAPACITY` is a critical `ViolationRuleId`. Each quantified violation
+includes contributing `requestIds`, exact half-open `window`, observed/required
+text, remedy and `workforce: {teamId,roleId,demand,available,shortfall}`. Headcounts
+are numbers; `shortfallMinutes` is the interval duration, not people. Separate
+roles and distinct intervals remain separate violations. A missing or invalid
+demand definition carries null role/counts and null window, with an explicit
+input-completion remedy; unknown demand is never silently interpreted as zero.
+
+`ValidationContext.extraWorkforceDemand` supplies complete per-request overrides
+for synthetic scenarios. It is hashed with the solve context. The built-in
+emergency set declares two technicians and one supervisor per scenario as a
+fabricated assumption. Normal database demand remains normalized in the instance.
+No migration or individual workforce records are introduced.
+
+`PlanMetrics.workforceUtilisation` is demanded person-minutes / available
+person-minutes × 100, rounded to one decimal. Availability is clipped to the
+engineering window, team shifts and outages; demand includes actual overruns and
+excludes clearance. It may exceed 100 for infeasible plans. A zero denominator
+returns 0 by documented convention, with shortages shown separately. Unknown
+request demand is excluded from the known numerator and prominently identified
+as incomplete in the metric note and as a critical violation.
+
+`PlanMetrics.workforceShortageIntervals` counts maximal constant team/role
+segments with demand above supply. Its numerator is that count; denominator is
+all assessed segments with positive demand. It is a count, not a percentage.
+Adjacent segments merge only if contributors, demand and available headcount are
+identical. Both fields retain the ordinary MetricValue shape and formulas.
+`assessWorkforce` also exports the exact intervals, shortages and missing IDs for
+subsequent visualizations. Crew utilisation remains a distinct metric.
+
+Constraint version is `constraints-v3`, solver version
+`railplan-greedy-repair-v3`, metric version `metrics-v4`, and emergency scenario
+version `emergency-set-v2`; older immutable saved results retain their versions.

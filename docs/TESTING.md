@@ -117,3 +117,20 @@ loser must reject rather than commit out-of-bounds availability. Exact future-ni
 and Auth-ID cleanup removes these fixtures; no plan-history trigger bypass is
 needed. All `scripts/db/*-concurrency.test.ts` files are excluded from ordinary
 `npm test` and run sequentially under `vitest.concurrency.config.ts` in `test:db`.
+
+## Issue #8 workforce enforcement checks
+
+`packages/core/src/test/workforce-engine.test.ts` exercises simultaneous demand
+independent of crew capacity, touching endpoints, clearance exclusion, changing
+availability, multiple roles, exact contributing requests and missing supply.
+It verifies fail-closed missing/malformed demand, ambiguous supply rejection,
+assigned-team/shift boundaries, all five strategies, impossible mandatory work,
+locks, automatic repair, baseline and emergency alternatives, and explicit
+emergency staffing. Hand-calculated metric expectations cover person-minute
+numerators/denominators, shortage segments, outages, overruns and shortened
+windows; scenario demand changes must alter the input hash.
+
+A baseline repair regression targets a known solvable dependency conflict and
+checks no new conflict is introduced. The former assumption that the first
+baseline conflict always has a clean single move no longer holds when workforce
+shortages are enforced. The ordinary core suite is independent of the database.

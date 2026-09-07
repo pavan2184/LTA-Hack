@@ -12,7 +12,7 @@
 - [x] #5: Supabase sessions, planner/contractor authorization, RLS matrix and shared token bucket; security review.
 - [x] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
 - [x] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
-- [ ] #8: Workforce capacity validator, solver enforcement and calculated metrics.
+- [x] #8: Workforce capacity validator, solver enforcement and calculated metrics.
 - [ ] #9: Validated contractor submission lifecycle and immutable approved revisions.
 - [ ] #10: Private transcript proposals with exact evidence and bounded model access.
 - [ ] #11: Planner review, approval and source revision invalidation.
@@ -135,3 +135,32 @@ Canonical hosted/literal parity `fnv1a:8c4a9050cfea5e8b`, 22 requests, two roles
 required DB33 plus isolated concurrency3 pass, including both night-resize/supply
 insert orderings. Lint/typecheck/build, migration replay and independent review
 pass. All test fixtures cleaned; no UI change or local preview. #8 is next.
+
+## #8 implementation design
+
+Use one core workforce assessment over half-open request demand and absolute
+availability windows. Missing supply is zero; missing demand definitions are
+unknown and fail closed. Emergency scenarios carry explicit fabricated demand.
+The shared validator emits critical WORKFORCE_CAPACITY evidence with exact
+team/role/interval, headcount demand/supply/shortfall and contributing requests.
+Every candidate, pin, repair, alternative and final result uses that validator.
+Computed workforce utilisation and shortage interval count remain MetricValue
+objects with arithmetic provenance; exact intervals live in the shared assessment.
+Crew capacity stays separate. Workforce-only infeasible mandatory work cannot
+publish even when the plan is fresh. A pending disruption computes separate
+impact metrics before replanning, preserving original run provenance.
+
+Verify boundaries, piecewise supply, multiple roles, capacity shortage moves,
+unsatisfiable work, pins/repair/alternative/disruption recomputation, server
+publication refusal, dashboard figures/formulas, grounded assistant evidence,
+full suite/build, independent review, and production browser workflow.
+
+## #8 completed
+
+Full284 without skips, DB34 and isolated concurrency3 pass; lint/typecheck/build
+and independent review pass. Scoped fixes resolved emergency/unknown alternatives
+and disruption-metric refresh. Production browser login/evidence/fx/generate/
+disruption/view-switch/replan/logout and1280/1440/1920 overflow checks passed,
+no console warnings/errors. Last copy changes verified by targeted UI tests and
+fresh build. Temporary planner removed; no UAT plans created; preview stopped.
+#9 is next.

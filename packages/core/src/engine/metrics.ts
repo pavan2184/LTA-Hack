@@ -10,7 +10,9 @@ import {
   type Violation,
 } from "../types/railplan";
 
-export const METRIC_VERSION = "metrics-v3";
+import { assessWorkforce } from "./workforce";
+
+export const METRIC_VERSION = "metrics-v4";
 
 /** Recovery gap a planner expects between consecutive jobs on the same block. */
 const TARGET_RECOVERY_GAP = 15;
@@ -109,6 +111,10 @@ export function computeMetrics(
   const emergency = emergencyInsertability(plan, context, world);
   const flex = flexibility(plan, context, world);
   const movement = movementMinutes(plan, world);
+  const workforce = assessWorkforce(plan, context);
+  const workforceNote = workforce.missingRequestIds.length
+    ? `Incomplete staffing definitions for ${workforce.missingRequestIds.join(", ")}; known demand only, feasibility blocked.`
+    : "Anonymous role headcounts during work; excludes clearance. Supply is bounded by shifts, outages and the engineering window. Fabricated inputs, not operational staffing standards.";
 
   return {
     placed: metric(
@@ -173,13 +179,27 @@ export function computeMetrics(
     ),
     teamUtilisation: metric(
       "teamUtilisation",
-      "Engineer utilisation",
+      "Crew utilisation",
       pct(teamMinutesUsed, teamMinutesAvailable),
       "percent",
       teamMinutesUsed,
       teamMinutesAvailable,
       "Σ job duration / Σ (crews × shift minutes)",
       "Reported separately from block and equipment use; the three are not interchangeable.",
+    ),
+    workforceUtilisation: metric(
+      "workforceUtilisation", "Workforce utilisation",
+      pct(workforce.personMinutesUsed, workforce.personMinutesAvailable), "percent",
+      workforce.personMinutesUsed, workforce.personMinutesAvailable,
+      "demanded person-minutes / available person-minutes × 100",
+      `${workforceNote} A zero denominator returns 0 by convention; shortages remain separately reported.`,
+    ),
+    workforceShortageIntervals: metric(
+      "workforceShortageIntervals", "Workforce shortage intervals",
+      workforce.shortages.length, "count", workforce.shortages.length,
+      workforce.intervals.filter(row => row.demand > 0).length,
+      "count of team/role intervals with demand > availability / all assessed intervals with demand",
+      `${workforceNote} Intervals split whenever contributors, headcount or availability changes.`,
     ),
     equipmentUtilisation: metric(
       "equipmentUtilisation",
@@ -341,6 +361,10 @@ function emergencyInsertability(
     const scenarioContext: ValidationContext = {
       ...context,
       extraRequests: { ...context.extraRequests, [scenario.id]: synthetic },
+      extraWorkforceDemand: [
+        ...(context.extraWorkforceDemand ?? []).filter(row => row.requestId !== scenario.id),
+        ...scenario.workforceDemand.map(row => ({ ...row, requestId: scenario.id })),
+      ],
     };
 
     for (

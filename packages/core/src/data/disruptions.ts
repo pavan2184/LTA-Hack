@@ -104,7 +104,14 @@ export function buildDisruptionInputs(
       const pool = [...requests, emergencyInsertion];
       return {
         requests: pool,
-        context: { extraRequests: { [emergencyInsertion.id]: emergencyInsertion } },
+        context: {
+          extraRequests: { [emergencyInsertion.id]: emergencyInsertion },
+          // Explicit fabricated scenario staffing, never an inferred crew multiplier.
+          extraWorkforceDemand: [
+            { requestId: emergencyInsertion.id, roleId: "technician", count: 2 },
+            { requestId: emergencyInsertion.id, roleId: "supervisor", count: 1 },
+          ],
+        },
         locked: [
           {
             requestId: emergencyInsertion.id,

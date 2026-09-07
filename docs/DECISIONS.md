@@ -4,6 +4,27 @@ Last updated: 2026-09-07
 
 ## Log
 
+
+### 2026-09-07 — Workforce is a hard aggregate constraint (#8)
+
+Status: Accepted within the ordered issue scope.
+
+Enforce role headcounts independently of concurrent crew capacity. Segment
+half-open work and absolute supply by assigned team/role, preserving each
+contributor or supply change in explainable findings. Share that assessment with
+person-minute and shortage metrics so the displayed arithmetic matches validation.
+Clip supply to shifts, outages and engineering bounds; count overrun as work and
+exclude clearance. Missing supply is zero; missing demand is unknown and blocks
+feasibility, including synthetic jobs. Emergency fixtures declare their own
+fabricated role counts, never an operational staffing rule inferred from crews.
+
+Keep automatic repairs inside planner locks and reject newly introduced conflicts.
+Include interval/team/role/headcount in workforce conflict identity so findings
+cannot collapse across resource or time boundaries. Bump engine and metric
+versions; old immutable plan snapshots remain historical and cannot pass a
+current-version publication gate. No named-worker features or database schema
+changes are part of this decision.
+
 ### 2026-09-07 — Issue #7 separate crew capacity from anonymous people supply
 
 Keep Team.capacity as the crew-concurrency rule. Model configurable workforce
@@ -264,3 +285,11 @@ Status: Proposed
 - Use an attributed, versioned public station/rail geometry snapshot for presentation while keeping operational block/safety data separate.
 - Add historical planned/actual data only after provenance, data-quality, privacy, and security requirements are approved.
 - Public station coordinates must not be treated as authoritative operational topology.
+
+### 2026-09-07 — Recompute disruption impact without rewriting a solver run
+
+Cache a separate impact assessment for the active view, recomputed whenever
+submitted work is repaired or the view changes. A plannedDisruptionId records
+which scenario a generated result already includes, avoiding double application
+on return to that view. Workforce figures label the unsolved preview explicitly;
+solver provenance continues to describe the original generation.

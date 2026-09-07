@@ -36,6 +36,11 @@ describe("concurrent plan publication (isolated committed fixtures)", () => {
         await tx`insert into public.request_blocks select ${requestId},block_id,position from public.request_blocks where request_id='M-001'`;
         await tx`insert into public.request_required_skills select ${requestId},skill from public.request_required_skills where request_id='M-001'`;
         await tx`insert into public.request_equipment select ${requestId},equipment_id,units from public.request_equipment where request_id='M-001'`;
+        await tx`insert into public.request_workforce_demand select ${requestId},role_id,people_count from public.request_workforce_demand where request_id='M-001'`;
+        await tx`insert into public.workforce_availability
+          select ${night}::date,a.team_id,a.role_id,a.start_minute,a.end_minute,a.people_count
+          from public.workforce_availability a join public.maintenance_requests r
+          on r.team_id=a.team_id and r.planning_night=a.planning_night where r.id='M-001'`;
       });
       const input = {
         planningNight: night!,

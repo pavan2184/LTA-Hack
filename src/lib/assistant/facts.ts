@@ -98,7 +98,7 @@ function buildFactSetBody(result: SolveResult, view: "submitted" | "planned"): s
     push(
       `${violation.id} | rule ${violation.ruleId} (${ruleCatalogue[violation.ruleId].label}) | ` +
         `requests ${violation.requestIds.join(", ")} | observed ${violation.observed} | required ${violation.required} | ` +
-        `shortfall ${violation.shortfallMinutes} min | ${violation.detail} | remedy: ${violation.remedy}`,
+        `${violation.ruleId === "WORKFORCE_CAPACITY" ? "shortage interval duration" : "shortfall"} ${violation.shortfallMinutes} min | ${violation.detail} | remedy: ${violation.remedy}`,
     );
   });
   push("");

@@ -2,7 +2,10 @@ import { literalWorld, type PlanningWorld } from "../domain/world";
 import { findOverloads, formatSpan, type Interval } from "../engine/intervals";
 import type { MaintenanceRequest, Plan, Placement, Violation, ViolationRuleId } from "../types/railplan";
 
-export const CONSTRAINT_VERSION = "constraints-v2";
+import { workforceViolations } from "./workforce";
+import type { WorkforceDemand } from "../types/workforce";
+
+export const CONSTRAINT_VERSION = "constraints-v3";
 
 /**
  * The rule catalogue. Every violation the validator can emit is declared here,
@@ -26,6 +29,10 @@ export const ruleCatalogue: Record<ViolationRuleId, { label: string; description
   TEAM_CAPACITY: {
     label: "Team availability",
     description: "A team is assigned to more concurrent jobs than it has crews.",
+  },
+  WORKFORCE_CAPACITY: {
+    label: "Workforce availability",
+    description: "Concurrent role headcounts exceed declared people availability, or staffing demand is undefined.",
   },
   EQUIPMENT_CAPACITY: {
     label: "Equipment availability",
@@ -78,6 +85,8 @@ export interface ValidationContext {
    * what-if jobs. Validated by exactly the same rules as everything else.
    */
   extraRequests?: Record<string, MaintenanceRequest>;
+  /** Complete explicit per-request demand overrides for what-if and emergency jobs. */
+  extraWorkforceDemand?: WorkforceDemand[];
   /** Blocks removed from service, e.g. by a disruption. */
   closedBlockIds?: string[];
   /** Teams unavailable from a given minute onwards. */
@@ -140,6 +149,7 @@ export function validate(plan: Plan, context: ValidationContext = {}): Violation
   raw.push(...checkAdjacentWork(jobs, world));
   raw.push(...checkWorkCompatibility(jobs, world));
   raw.push(...checkTeams(jobs, context, world));
+  raw.push(...workforceViolations(plan, context));
   raw.push(...checkEquipment(jobs, world));
   raw.push(...checkSkills(jobs, world));
   raw.push(...checkDependencies(jobs, plan));
@@ -666,7 +676,8 @@ function dedupe(raw: Omit<Violation, "id">[]): Violation[] {
   const merged = new Map<string, Omit<Violation, "id">>();
 
   raw.forEach((violation) => {
-    const key = `${violation.ruleId}|${[...violation.requestIds].sort().join(",")}`;
+    const key = `${violation.ruleId}|${[...violation.requestIds].sort().join(",")}` +
+      (violation.ruleId === "WORKFORCE_CAPACITY" ? `|${JSON.stringify([violation.workforce, violation.window])}` : "");
     const existing = merged.get(key);
     if (!existing) {
       merged.set(key, { ...violation, requestIds: [...violation.requestIds].sort() });

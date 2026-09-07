@@ -190,3 +190,25 @@ source-revision statement triggers serialize supply mutations and parent-night
 window changes. The row checks run after that serialization and validate both
 sides of the relationship, including concurrent READ COMMITTED writers. Workforce
 facts are planner-only under RLS and every change invalidates old draft provenance.
+
+## Anonymous workforce enforcement — issue #8
+
+`engine/workforce.ts` segments work and absolute availability at every endpoint,
+per assigned team and role. It merges only segments with identical contributors,
+demand and supply. The validator reports each overloaded segment independently;
+crew capacity remains a separate rule. No worker identities or qualifications are
+inferred from these aggregate counts.
+
+The same assessment feeds person-minute utilisation and shortage interval metrics.
+Supply is intersected with the team's shift, engineering window and any outage;
+overrun extends demand, while block-clearance time does not. Missing supply is
+zero. Missing or malformed demand is unknown and blocks feasibility. Extra jobs
+carry explicit `ValidationContext.extraWorkforceDemand` definitions; built-in
+emergency scenarios declare fabricated counts rather than inheriting a staffing
+standard. Emergency insertability is revalidated with those counts.
+
+Candidates, pinned final plans, repair and alternatives use the shared validator.
+Automatic repair preserves locks and rejects moves that introduce a new conflict;
+workforce conflict identity includes its team, role, counts and interval. The
+solver resolves mandatory custom requests from its actual input pool, so a
+staffing-blocked emergency is reported infeasible even when absent from literals.

@@ -55,6 +55,19 @@ async function fixture(
 describe.skipIf(!reachable)(
   "durable plans under real authenticated SQL (rollback)",
   () => {
+    it("never publishes a fresh plan that cannot staff mandatory work", async () => {
+      await fixture(async (tx, planner) => {
+        await withAuthenticatedTransaction(planner, async (db) => {
+          await db`update public.workforce_availability set people_count=0 where planning_night=${PLANNING_NIGHT}`;
+        }, tx);
+        const plan = await createPlan(planner, input, tx);
+        expect(plan.status).toBe("INFEASIBLE");
+        expect(plan.deferred.some((d) => d.bindingRuleIds.includes("WORKFORCE_CAPACITY"))).toBe(true);
+        await expect(publishPlan(planner, plan.id, tx)).rejects.toMatchObject({ code: "invalid_plan" });
+        expect((await getPlan(planner, plan.id, tx)).publishState).toBe("draft");
+        expect(await tx`select * from railplan_private.plan_publications where plan_id=${plan.id}`).toEqual([]);
+      });
+    });
     it("snapshots aggregate workforce and rejects publication after supply or demand changes", async () => {
       await fixture(async (tx, planner) => {
         const first = await createPlan(planner, input, tx);

@@ -23,7 +23,7 @@ export function findAlternatives(
   context: ValidationContext = {},
 ): { alternatives: AlternativeSlot[]; bindingRuleId: ViolationRuleId | null } {
   const world = context.world ?? literalWorld();
-  const request = world.requestById[requestId];
+  const request = context.extraRequests?.[requestId] ?? world.requestById[requestId];
   if (!request) return { alternatives: [], bindingRuleId: null };
 
   const windowEnd = context.windowEnd ?? world.windowEnd;
@@ -118,7 +118,7 @@ export function findAlternatives(
         summary: buildSummary(delta, currentMovement),
         whyItWorks: baselineCategories.length
           ? `Clears the ${joinWords(baselineCategories.map((label) => label.toLowerCase()))}. Every other rule re-checked at this start.`
-          : "Sector, crew, equipment and sequencing all check clear at this start.",
+          : "Sector, crew, workforce, equipment and sequencing all check clear at this start.",
         impact: buildImpact(start, current?.startMinute ?? null, movement),
       };
     });
@@ -177,8 +177,10 @@ export function applyAlternative(
   context: ValidationContext = {},
 ): { plan: Plan; violations: ReturnType<typeof validate>; feasible: boolean } {
   const world = context.world ?? literalWorld();
-  const request = world.requestById[requestId];
-  if (!request) return { plan, violations: [], feasible: true };
+  const request = context.extraRequests?.[requestId] ?? world.requestById[requestId];
+  // An unsupported edit cannot be accepted; still expose the current plan’s
+  // actual findings rather than manufacture a clean validation result.
+  if (!request) return { plan, violations: validate(plan, context), feasible: false };
 
   const next: Plan = {
     placements: [
