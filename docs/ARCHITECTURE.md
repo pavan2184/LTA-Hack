@@ -316,3 +316,12 @@ new demand or supply rules. Missing demand stays unknown. A shared
 impact validation and the chart, preventing duplicate emergency work or overruns.
 The existing request selection synchronizes contributor buttons with the Gantt
 and inspector. The current dashboard remains an exploratory literal snapshot.
+
+## Geographic context
+
+`data/geography/` contains a versioned presentational station-point snapshot.
+`src/lib/geography/` validates its source metadata and exact known station set.
+Offline scripts transform a reviewed local archive; the renderer imports JSON
+and makes no map-service request. Core instances, hashes and feasibility never
+import geography. Connections reference existing fabricated block IDs; geography
+does not supply track alignment, operational possession/isolation or safety data.

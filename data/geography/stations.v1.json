@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "metadata": {
+    "dataset": "LTA DataMall Train Station (March 2026)",
+    "sourceUrl": "https://datamall.lta.gov.sg/content/dam/datamall/datasets/Geospatial/TrainStation_Mar2026.zip",
+    "catalogueUrl": "https://datamall.lta.gov.sg/content/datamall/en/static-data.html",
+    "accessedAt": "2026-09-07",
+    "sourceSha256": "7a7c6730ce7a9092b38d095ef7b663e8281ae612b1c9477449ea7c215b477e09",
+    "transformVersion": "svy21-area-centroid-v1",
+    "licenceName": "Singapore Open Data Licence v1.0 (conflicting archive notice)",
+    "licenceUrl": "https://datamall.lta.gov.sg/content/datamall/en/SingaporeOpenDataLicence.html",
+    "licenceStatus": "conflicting",
+    "licenceNote": "DataMall publishes the Singapore Open Data Licence v1.0, but the archive XML says \"The data is for internal use only\". Older archive metadata does not establish that this restriction was superseded. Source-publication permission remains unresolved; confirm with LTA before public deployment or redistribution.",
+    "attribution": "Station reference points derived from Land Transport Authority, LTA DataMall Train Station (March 2026), accessed 7 September 2026. No LTA endorsement. Area-weighted polygon centroids transformed from archive SVY21 to WGS84; not entrances, surveyed track geometry or operational authority."
+  },
+  "stations": [
+    {
+      "code": "NS10",
+      "name": "Admiralty",
+      "longitude": 103.800977,
+      "latitude": 1.4405871,
+      "sourceFeatureIndex": 150,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "NS11",
+      "name": "Sembawang",
+      "longitude": 103.8201939,
+      "latitude": 1.4490696,
+      "sourceFeatureIndex": 91,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "NS12",
+      "name": "Canberra",
+      "longitude": 103.8297148,
+      "latitude": 1.4431184,
+      "sourceFeatureIndex": 126,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "NS13",
+      "name": "Yishun",
+      "longitude": 103.8349722,
+      "latitude": 1.4295818,
+      "sourceFeatureIndex": 104,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "NS14",
+      "name": "Khatib",
+      "longitude": 103.8330381,
+      "latitude": 1.4175768,
+      "sourceFeatureIndex": 82,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "NS15",
+      "name": "Yio Chu Kang",
+      "longitude": 103.8448008,
+      "latitude": 1.3817576,
+      "sourceFeatureIndex": 90,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "NS16",
+      "name": "Ang Mo Kio",
+      "longitude": 103.8496164,
+      "latitude": 1.3699487,
+      "sourceFeatureIndex": 123,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "EW18",
+      "name": "Redhill",
+      "longitude": 103.81679,
+      "latitude": 1.2896195,
+      "sourceFeatureIndex": 187,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "EW19",
+      "name": "Queenstown",
+      "longitude": 103.8060452,
+      "latitude": 1.2946113,
+      "sourceFeatureIndex": 169,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "EW20",
+      "name": "Commonwealth",
+      "longitude": 103.7982907,
+      "latitude": 1.3024476,
+      "sourceFeatureIndex": 131,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "EW21",
+      "name": "Buona Vista",
+      "longitude": 103.7899423,
+      "latitude": 1.3072583,
+      "sourceFeatureIndex": 119,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "EW22",
+      "name": "Dover",
+      "longitude": 103.7786492,
+      "latitude": 1.3113947,
+      "sourceFeatureIndex": 53,
+      "sourceAttachment": ""
+    },
+    {
+      "code": "CC10",
+      "name": "MacPherson",
+      "longitude": 103.8902615,
+      "latitude": 1.326368,
+      "sourceFeatureIndex": 116,
+      "sourceAttachment": "CC10_MPS STN.zip"
+    },
+    {
+      "code": "CC11",
+      "name": "Tai Seng",
+      "longitude": 103.8881645,
+      "latitude": 1.3354531,
+      "sourceFeatureIndex": 103,
+      "sourceAttachment": "CC11_TSG STN.zip"
+    },
+    {
+      "code": "CC12",
+      "name": "Bartley",
+      "longitude": 103.8797252,
+      "latitude": 1.3428468,
+      "sourceFeatureIndex": 209,
+      "sourceAttachment": "CC12_BLY STN.zip"
+    }
+  ]
+}

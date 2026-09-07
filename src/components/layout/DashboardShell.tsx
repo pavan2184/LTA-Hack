@@ -11,6 +11,7 @@ import { SolverBar } from "@/components/layout/SolverBar";
 import { RequestQueue } from "@/components/requests/RequestQueue";
 import { BlockTimeline } from "@/components/schedule/BlockTimeline";
 import { WorkforceTimeline } from "@/components/schedule/WorkforceTimeline";
+import { GeographicNetworkView } from "@/components/network/GeographicNetworkView";
 import { Figure } from "@/components/shared/Figure";
 import { Button } from "@/components/ui/button";
 import { disruptionById } from "@railplan/core/data/disruptions";
@@ -152,6 +153,7 @@ function Workspace() {
         <div className="flex min-w-0 flex-col gap-2.5">
           <WorkforceTimeline />
           <BlockTimeline />
+          <GeographicNetworkView />
           <div className="grid gap-2.5 xl:grid-cols-2">
             <ViolationPanel />
             <section className="grid content-start gap-2.5">

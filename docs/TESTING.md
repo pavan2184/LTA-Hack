@@ -219,3 +219,21 @@ React act can batch away that stage and miss an unmount). A nondefault team/role
 must survive the solve. Emergency inspector tests exercise exact forced time and
 headcounts before/after replanning, scenario clearing/replacement, and unchanged
 baseline request controls.
+
+## Issue #13 geographic context checks
+
+`geography.test.ts` covers exact station identity/source selection, strict metadata,
+unknown/duplicate/missing/out-of-range coordinates, weighted polygon centroids and
+holes, projection control point, source-shape failures and local archive guards.
+`npm run geo:verify` checks the bundled snapshot without network; add `-- --source
+/path/to/TrainStation_Mar2026.zip` to reproduce it exactly from the reviewed archive.
+The command explicitly does not resolve the conflicting source licence notice.
+
+`geographic-map.test.tsx` uses fabricated fixture coordinates to test no runtime
+fetch/image/tile dependency, geographic aspect, source acknowledgement, exact block
+highlights, depot labels, keyboard selection, extra emergency work and unmapped
+coordinates. `geographic-workspace.test.tsx` uses the real local snapshot and store
+for map/timeline/inspector selection and disruption clearing. The isolation test
+changes a map coordinate and confirms fresh engine facts, digest, placements and
+validation remain unchanged. Production UAT verifies those connected views and
+three desktop widths with clean browser logs.

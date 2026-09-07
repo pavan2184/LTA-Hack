@@ -17,7 +17,7 @@
 - [x] #10: Private transcript proposals with exact evidence and bounded model access.
 - [x] #11: Planner review, approval and source revision invalidation.
 - [x] #12: Accessible workforce demand/capacity visualization from engine data.
-- [ ] #13: Validated, attributed local geographic snapshot, separate from safety topology.
+- [x] #13: Validated, attributed local geographic snapshot, separate from safety topology. Publication remains blocked by conflicting source licence notices.
 - [ ] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status.
 - [ ] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
 - [ ] #16: Complete role journeys and accessible adjustable dashboard.
@@ -274,3 +274,25 @@ contributor selection now opens exact read-only details. Browser confirms counts
 shared selection, filter retention, no duplicated emergency demand, honest
 infeasibility, clearing and three desktop widths. Accounts cleaned, baseline
 parity unchanged and preview stopped. No migration required. #13 is next.
+
+## #13 implementation design
+
+Create a strict versioned snapshot of fifteen representative station points from
+the official March2026 LTA Train Station polygon archive. Keep source hash,
+reviewed feature mapping, transform version, source/date/attribution and both
+conflicting licence notices. Offline verification rejects missing/unknown/duplicate
+station references and malformed/out-of-range coordinates, with optional exact
+regeneration from the local archive. Licence clearance remains a publication check.
+
+Render a local SVG below the primary Gantt, with geographic aspect, station/block
+identity, selected request, clearly fabricated depot-block midpoint, nearby demo
+work and scenario-affected blocks. Provide equivalent text/keyboard selection and
+conspicuous geography-versus-safety distinction. Source/schema/transform agent and
+map UI agent own separate files; parent owns store integration, invariance and
+shared-selection tests, docs, full gates and browser UAT. No DB migration.
+
+#13 verification:405 tests,DB49+3,lint/typecheck/build,exact source reproduction,
+independent code/security review and production selection/emergency/label/responsive
+checks pass. No runtime map API dependency; no feasibility change. Temporary users
+removed, parity unchanged, preview stopped. Licence clearance is unconfirmed and
+public redistribution/deployment remains blocked; technical dependencies allow #14.

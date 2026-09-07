@@ -383,3 +383,33 @@ Share pending disruption-input assembly between validation and the visualization
 A solved scenario already contains its forced placements and must not receive a
 second emergency insertion or overrun. This is presentation/orchestration only;
 no solver version, feasibility rules or persisted planning facts change.
+
+### 2026-09-07 — Keep public geography outside the planning instance
+
+Status: Accepted for #13 implementation; source reuse confirmation remains open.
+
+The official March2026 Train Station ZIP contains symbolic station polygons in
+SVY21 despite its catalogue describing points. Derive representative centroids
+and convert to WGS84; record the exact archive hash, feature indices, reviewed
+station/attachment allowlist and transform version. Store only the fifteen
+coordinate facts needed for this prototype, not source polygons or internal XML.
+Straight connections identify the existing fabricated blocks and do not assert
+actual track alignment. The demo depot marker is the midpoint of its configured
+block, never a claimed public depot location.
+
+The DataMall Singapore Open Data Licence v1.0 page grants dataset reuse with
+conspicuous source acknowledgement and a latest-licence link. The ZIP’s legacy
+XML additionally says “The data is for internal use only”. Record both notices
+with licence status conflicting; the dates do not establish supersession. Do not
+claim unqualified open licensing. Publication clearance for this source remains
+unconfirmed; attribution alone does not settle it.
+
+Primary references: [catalogue](https://datamall.lta.gov.sg/content/datamall/en/static-data.html),
+[archive](https://datamall.lta.gov.sg/content/dam/datamall/datasets/Geospatial/TrainStation_Mar2026.zip),
+[dataset licence](https://datamall.lta.gov.sg/content/datamall/en/SingaporeOpenDataLicence.html),
+[site terms](https://datamall.lta.gov.sg/content/datamall/en/term-of-use.html).
+
+Coordinates, display projection and source metadata stay outside core facts,
+hashes, solver and validator imports. Map selection uses the same request/block
+IDs as the Gantt/inspector. Nearby means same/adjacent demo blocks, not a new
+geographic safety distance. No live map/tile/API calls are made by the renderer.

@@ -1,0 +1,107 @@
+[
+  {
+    "code": "NS10",
+    "name": "Admiralty",
+    "sourceName": "ADMIRALTY MRT STATION",
+    "sourceFeatureIndex": 150,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "NS11",
+    "name": "Sembawang",
+    "sourceName": "SEMBAWANG MRT STATION",
+    "sourceFeatureIndex": 91,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "NS12",
+    "name": "Canberra",
+    "sourceName": "CANBERRA MRT STATION",
+    "sourceFeatureIndex": 126,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "NS13",
+    "name": "Yishun",
+    "sourceName": "YISHUN MRT STATION",
+    "sourceFeatureIndex": 104,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "NS14",
+    "name": "Khatib",
+    "sourceName": "KHATIB MRT STATION",
+    "sourceFeatureIndex": 82,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "NS15",
+    "name": "Yio Chu Kang",
+    "sourceName": "YIO CHU KANG MRT STATION",
+    "sourceFeatureIndex": 90,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "NS16",
+    "name": "Ang Mo Kio",
+    "sourceName": "ANG MO KIO MRT STATION",
+    "sourceFeatureIndex": 123,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "EW18",
+    "name": "Redhill",
+    "sourceName": "REDHILL MRT STATION",
+    "sourceFeatureIndex": 187,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "EW19",
+    "name": "Queenstown",
+    "sourceName": "QUEENSTOWN MRT STATION",
+    "sourceFeatureIndex": 169,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "EW20",
+    "name": "Commonwealth",
+    "sourceName": "COMMONWEALTH MRT STATION",
+    "sourceFeatureIndex": 131,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "EW21",
+    "name": "Buona Vista",
+    "sourceName": "BUONA VISTA MRT STATION",
+    "sourceFeatureIndex": 119,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "EW22",
+    "name": "Dover",
+    "sourceName": "DOVER MRT STATION",
+    "sourceFeatureIndex": 53,
+    "sourceAttachment": ""
+  },
+  {
+    "code": "CC10",
+    "name": "MacPherson",
+    "sourceName": "MACPHERSON MRT STATION",
+    "sourceFeatureIndex": 116,
+    "sourceAttachment": "CC10_MPS STN.zip"
+  },
+  {
+    "code": "CC11",
+    "name": "Tai Seng",
+    "sourceName": "TAI SENG MRT STATION",
+    "sourceFeatureIndex": 103,
+    "sourceAttachment": "CC11_TSG STN.zip"
+  },
+  {
+    "code": "CC12",
+    "name": "Bartley",
+    "sourceName": "BARTLEY MRT STATION",
+    "sourceFeatureIndex": 209,
+    "sourceAttachment": "CC12_BLY STN.zip"
+  }
+]

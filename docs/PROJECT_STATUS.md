@@ -2,10 +2,31 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#12 complete; #13 next
+## Ordered issue work — #4–#13 implemented; #14 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#13 is implemented and technically verified: a strict, attributed local snapshot
+of fifteen station points, reproducible from the official March2026 polygon
+archive, drives an accessible SVG below the primary timeline. Map, timeline and
+inspector share request/block identity, including emergency work. Public geography
+has no effect on solver inputs or feasibility; depot markers and connecting blocks
+remain explicitly fabricated.
+
+Verification: **405 tests pass, zero skips**,47 files; required DB49 rollback
+and3 isolated concurrency checks pass. Lint/typecheck/build, exact source
+reproduction and independent code/security review pass. Production browser checks
+passed map-to-timeline and timeline-to-map selection, emergency highlighting,
+source notices and whole-map station labels at680px. Widths1280/1440/1920 had no
+document overflow; browser logs were empty. Final label-only adjustments passed
+scoped lint/typecheck and production rebuild. Two temporary accounts were removed,
+no saved artifacts created, baseline parity unchanged and preview stopped.
+
+**Publication gate:** the source archive's internal-use notice conflicts with the
+DataMall open-data licence. Clearance remains unconfirmed; do not publicly deploy
+or redistribute the geographic snapshot until resolved. No raw source geometry or
+archive is committed. #13 is not claimed licence-cleared. #14 is next.
 
 #11 is committed as `1ee6c16`. #12 is complete: an accessible workforce chart
 above the Gantt displays exact available, demanded and signed remaining people by

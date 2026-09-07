@@ -279,3 +279,19 @@ browser verification pass. The browser confirms human attribution, original evid
 history, explicit sharing and separate approval. Controlled fabricated proposals
 were used; no live model-success claim is made. Temporary records were removed,
 history guards restored, parity verified and preview stopped.
+
+## Issue #13 source and geographic presentation boundary
+
+The versioned fifteen-point snapshot contains public coordinate facts and minimal
+provenance only. Runtime schema pins reviewed official HTTPS links and metadata,
+known station names/source references, unique IDs/coordinates and Singapore bounds.
+The offline transformer verifies archive hash, known member paths, CRS and encoding;
+no untrusted archive extraction or runtime map calls are used. No raw footprints,
+archive, internal source XML or tracking SDK is bundled. Geometry never changes
+validator facts or feasibility; map markers keep the fabricated block IDs.
+
+Independent code/security review found no important defect. This review does not
+clear source redistribution rights: the DataMall open-data page conflicts with the
+archive’s internal-use notice. The snapshot, map and documentation retain that
+conflict; public deployment/redistribution requires source-permission resolution.
+No external request to LTA or public publication has been performed.
