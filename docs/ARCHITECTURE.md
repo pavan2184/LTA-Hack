@@ -4,9 +4,9 @@ Last updated: 2026-09-07
 
 ## Shape
 
-A static Next.js App Router page over a pure TypeScript planning engine, plus
+A server-gated Next.js App Router workspace over a pure TypeScript planning engine, plus
 one dynamic route for the assistant. Postgres planning-facts migrations and a
-seed/loader exist; the dashboard still consumes literals. No auth or live feed
+seed/loader exist; the dashboard still consumes literals. Supabase email/password authentication gates planner and contractor workspaces; no live feed
 yet. The owner requires database development without Docker.
 
 ```
@@ -116,8 +116,7 @@ real phases rather than a fake timer. That trade changes if the dataset grows.
 
 ## Deployment
 
-Any Node host that can build Next.js. `/` is static; `/api/assistant` needs a
-server. Without `ANTHROPIC_API_KEY` the assistant degrades to templates and the
+Any Node host that can build Next.js. `/`, `/contractor`, `/login` and `/api/assistant` need a server. Without `ANTHROPIC_API_KEY` the assistant degrades to templates and the
 rest of the application is unaffected.
 
 ## Database boundary (v0.4.0)
@@ -131,3 +130,24 @@ facts, and `scripts/db/verify.ts` is the required non-skipping parity gate.
 The hosted RailPlan Dev project passes migration, seed and literal/database parity
 verification. The loader uses a repeatable-read transaction for a consistent
 snapshot and transaction-pooler compatibility. Plans and audits are not persisted yet.
+
+## Identity boundary — issue #5
+
+`@supabase/ssr` maintains cookies through the Next.js proxy and server clients.
+Pages and the assistant verify the current user with `auth.getUser()`, then load
+an operator-assigned profile. Signup metadata is never authorization input.
+Missing configuration fails closed; unassigned accounts see access pending.
+Contractors receive a separate workspace pending intake in #9. The planner's
+existing deterministic UI remains client-side behind the server page boundary.
+
+All application SQL goes through `withAuthenticatedTransaction`: it sets the
+transaction-local authenticated role and minimal claims derived from the verified
+user, reads the trusted profile under RLS, and closes its connection. The owner
+connection used by maintenance scripts is never the application authorization
+context. Future solve/approve/publish/resource routes must invoke `requireAction`
+and use this transaction boundary; those endpoints do not exist yet.
+
+Assistant limits use a locked per-user token bucket in the private schema, shared
+across application instances. A narrowly granted private definer function checks
+the current planner profile, chooses the caller from `auth.uid()`, and fixes the
+rate and clock server-side. Clients cannot mutate the bucket directly.

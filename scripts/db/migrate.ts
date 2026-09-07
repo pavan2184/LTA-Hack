@@ -16,10 +16,13 @@ async function main() {
     await sql.begin(async (tx) => {
       await tx`select pg_advisory_xact_lock(72419504)`;
       await tx`create schema if not exists railplan_private`;
-      await tx`revoke all on schema railplan_private from public, anon, authenticated`;
+      await tx`revoke all on schema railplan_private from public, anon`;
       await tx`create table if not exists railplan_private.migrations (
         name text primary key, sha256 text not null, applied_at timestamptz not null default now()
       )`;
+      // Later migrations expose narrow private functions to authenticated users.
+      // Preserve schema USAGE while keeping the migration ledger inaccessible.
+      await tx`revoke all on railplan_private.migrations from public, anon, authenticated`;
       const history = await tx<MigrationVersion[]>`select name, sha256 from railplan_private.migrations`;
       validateMigrationHistory(migrations, history);
       const applied = new Set(history.map((migration) => migration.name));

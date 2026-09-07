@@ -88,3 +88,40 @@ Read `PROJECT_STATUS.md` for actual results and unresolved failures.
 
 Follow issues #4–#21 in numeric order. #4 verification is recorded in PROJECT_STATUS.md. Do not claim later
 identity, workforce, persistence or product features are implemented.
+
+## Identity setup and operator provisioning (issue #5)
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the
+same dedicated project in `.env.local`. These are public client values; never
+substitute service-role/secret credentials. Keep email confirmation enabled.
+An operator must create/confirm the intended Auth account using the Supabase
+console or the account owner's normal signup flow before assigning a role.
+The app does not send invitations or auto-promote new accounts.
+
+After checking the user's confirmed Auth UUID, run:
+
+```bash
+npm run db:provision-user -- USER_UUID planner
+npm run db:provision-user -- USER_UUID contractor ORGANISATION_UUID
+```
+
+Create the contractor organisation through authorized SQL first. This script is
+privileged operator tooling, not an HTTP route; it uses the private DATABASE_URL,
+checks that the Auth user has a confirmed email, and never creates accounts or
+handles passwords. Role changes take effect at the next server authorization
+check. Sign in at `/login`. Unassigned users see access pending. Contractors see
+their workspace with intake explicitly unavailable until #9.
+
+No default/demo online identities are seeded. Automated database tests use
+random, rollback-only records without login credentials; any live sign-in UAT
+uses temporary randomized accounts and deletes them after the check.
+
+### Optional local-only demo identities
+
+Issue #5 also provides `npm run db:seed-auth-local` for an already-running local
+Supabase-compatible database. It refuses hosted/non-loopback URLs and production
+mode before connecting, does not start Docker, and is not part of the hosted
+workflow. Both demo passwords are random and written only to ignored
+`.railplan-local-demo.json` with owner-only permissions. Existing credentials or
+account emails cause refusal, not replacement. The hosted refusal is verified;
+actual local account creation is not exercised in this no-Docker environment.

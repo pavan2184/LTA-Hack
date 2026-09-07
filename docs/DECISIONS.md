@@ -4,6 +4,22 @@ Last updated: 2026-09-07
 
 ## Log
 
+### 2026-09-07 — Issue #5 trusted profiles and application RLS
+
+Use official Supabase SSR email/password sessions and verify users server-side.
+Assign roles only through operator-controlled profiles, with no role selected
+from user metadata or signup input. A verified identity enters a transaction with
+`SET LOCAL ROLE authenticated` and minimal JWT claims, so the owner DB connection
+cannot silently bypass application RLS. Planner-only action guards are shared for
+future solve/approve/publish/resource routes; runtime policy tests for later
+issue tables wait for those tables to exist.
+
+Use a private atomic DB token bucket for assistant cost control. The narrow
+security-definer function is necessary to prevent users granting themselves
+quota; it accepts no identity or rate input and rechecks the planner profile.
+There are no default online accounts or automatic role promotions.
+
+
 ### 2026-09-07 — Hosted RailPlan Dev baseline
 
 Status: Accepted by the owner choosing and creating the online project.

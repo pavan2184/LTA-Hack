@@ -51,3 +51,22 @@ browser UAT. Record runs and skipped checks in `PROJECT_STATUS.md`.
 Future identity, persistence, request lifecycle, workforce and integration work
 must add its route/RLS/constraint tests before issue #17's complete two-role
 release suite. Current tests do not certify real railway operational safety.
+
+## Issue #5 authorization checks
+
+`auth.test.ts` tests the planner action matrix and actual streamed body limit.
+`api.assistant.test.ts` checks typed anonymous/forbidden/unavailable responses,
+planner fallback behavior, oversized actual bytes and the shared quota response.
+External session/quota dependencies are mocked only in route unit tests.
+`auth.db.test.ts` uses randomly identified, rollback-isolated auth/profile/org
+fixtures against the real database. No stored passwords or access tokens are
+needed. It exercises application SET ROLE/claims, planner reads/writes,
+contractor and anonymous denial, forged metadata, organisation isolation,
+unassigned profiles, token burst/refill and direct private-table denial.
+`test:db` includes this suite after the required parity gate. Request submissions,
+plan versions, approvals, notifications and audit policies are tested when their
+own numbered issues introduce their tables, not by placeholder tests here.
+
+`auth-session.test.ts` verifies server-confirmed identity, invalid/missing/
+anonymous denial, fail-closed configuration and 503 classification for Auth
+network/service failures. `auth-seed.test.ts` checks the local-only seed guard.

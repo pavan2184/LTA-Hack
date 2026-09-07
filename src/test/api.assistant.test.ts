@@ -6,7 +6,10 @@ import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
 import { buildFactSet, resetFactCache } from "@/lib/assistant/facts";
 import type { ApiError } from "@/lib/http/errors";
 import { assistantRequestSchema } from "@/lib/http/schemas";
-import { clientKey, consume, resetRateLimits } from "@/lib/http/rateLimit";
+import { AuthError } from "@/lib/auth/permissions";
+const auth = vi.hoisted(() => ({ requireActor: vi.fn(), consume: vi.fn() }));
+vi.mock("@/lib/auth/session", () => ({ requireActor: auth.requireActor }));
+vi.mock("@/lib/auth/rate-limit", () => ({ consumeAssistantToken: auth.consume }));
 
 /**
  * The boundary tests.
@@ -17,7 +20,7 @@ import { clientKey, consume, resetRateLimits } from "@/lib/http/rateLimit";
  * the happy path, which is exactly the degraded mode the design promises.
  */
 async function loadRoute() {
-  vi.resetModules();
+
   delete process.env.ANTHROPIC_API_KEY;
   delete process.env.ANTHROPIC_AUTH_TOKEN;
   process.env.ANTHROPIC_CONFIG_DIR = "/nonexistent/railplan-test-config";
@@ -42,7 +45,8 @@ const validBody = {
 };
 
 beforeEach(() => {
-  resetRateLimits();
+  auth.requireActor.mockReset().mockResolvedValue({ identity: { id: "verified-user" }, actor: { role: "planner" } });
+  auth.consume.mockReset().mockResolvedValue({ allowed: true, retryAfterSeconds: 0, remaining: 11 });
   resetFactCache();
 });
 
@@ -185,31 +189,27 @@ describe("answering without credentials", () => {
   });
 });
 
-describe("rate limiting", () => {
-  it("refuses a sustained burst and says how long to wait", () => {
-    const key = "198.51.100.7";
-    const now = Date.now();
-    const results = Array.from({ length: 40 }, () => consume(key, now));
-
-    expect(results.filter((result) => result.allowed).length).toBeLessThan(40);
-    const refused = results.find((result) => !result.allowed);
-    expect(refused?.retryAfterSeconds).toBeGreaterThan(0);
-  });
-
-  it("refills over time rather than locking a client out", () => {
-    const key = "198.51.100.8";
-    const now = Date.now();
-    Array.from({ length: 40 }, () => consume(key, now));
-    expect(consume(key, now).allowed).toBe(false);
-    // A minute later the bucket has refilled.
-    expect(consume(key, now + 60_000).allowed).toBe(true);
-  });
-
-  it("keys on the first forwarded address, which is a throttle key and not an identity", () => {
-    const request = new Request("http://localhost/", {
-      headers: { "x-forwarded-for": "203.0.113.5, 70.41.3.18" },
+describe("authenticated route matrix", () => {
+  for (const [code, status] of [["unauthenticated", 401], ["forbidden", 403], ["auth_unavailable", 503]] as const) {
+    it(`returns typed ${status} before reading input`, async () => {
+      auth.requireActor.mockRejectedValue(new AuthError(code));
+      const { POST } = await loadRoute();
+      const response = await POST(post("not JSON", { "x-user-role": "planner", "x-forwarded-for": "forged" }));
+      expect(response.status).toBe(status);
+      expect((await response.json()).error.code).toBe(code);
     });
-    expect(clientKey(request)).toBe("203.0.113.5");
+  }
+  it("returns a shared limiter rejection with retry-after", async () => {
+    auth.consume.mockResolvedValue({ allowed: false, retryAfterSeconds: 5 });
+    const { POST } = await loadRoute();
+    const response = await POST(post(validBody));
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("5");
+  });
+  it("rejects oversized actual data despite an understated length", async () => {
+    const { POST } = await loadRoute();
+    const response = await POST(post({ question: "x".repeat(65536) }, { "content-length": "1" }));
+    expect(response.status).toBe(413);
   });
 });
 

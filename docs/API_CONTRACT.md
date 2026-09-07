@@ -36,16 +36,33 @@ Errors: `{ error: { code, message, requestId } }`.
 
 | HTTP | Codes |
 | --- | --- |
+| 401 | unauthenticated |
+| 403 | forbidden |
+| 503 | auth_unavailable |
 | 400 | malformed_request, invalid_request |
 | 413 | payload_too_large |
 | 429 | rate_limited (also Retry-After header) |
 | 500 | engine_error |
 
-Current limits: the 64 KiB body check only checks declared Content-Length; a
-streamed/underdeclared body is not bounded before JSON parsing. The provisional
-in-memory limiter allows a burst of 12 and refills 12/minute, keyed by untrusted
-proxy headers. There is no authentication yet. These are documented security
-limitations, not release-ready controls; issue #5 adds identity and shared limits.
+Authentication precedes input processing: the Supabase Auth server verifies the
+cookie identity, then the trusted profile must be `planner`. User-supplied role,
+organisation and proxy headers cannot grant access or select a quota identity.
+Missing configuration or unavailable authorization storage returns typed 503.
+
+The body is read as a stream with a hard 64 KiB actual-byte limit, including
+chunked requests or dishonest Content-Length. The shared Postgres token bucket
+permits a burst of 12 and refills 12/minute, keyed by verified user ID. Quota
+failure is closed; it never falls back to an in-memory/IP-based allowance.
+
+## Workspace authentication
+
+`/login` posts email/password through a Next.js Server Action to Supabase
+`signInWithPassword`. No signup/invitation, role selection or default account is
+created by the app. Generic errors avoid account enumeration. Sign out is a
+Server Action; Next.js validates Server Action origins. Session refresh uses the
+proxy cookie adapter. `/` redirects anonymous users to login, contractors to
+`/contractor`, and shows unassigned accounts an access-pending screen. Only a
+verified planner receives the existing planning dashboard.
 
 ## Client orchestration
 
@@ -65,4 +82,4 @@ throws for an unavailable database, missing schema/night or query error.
 a reachable database with missing tables or wrong data fails.
 
 There are no request, plan, publication, ingestion, notification or export routes
-yet. Issues #5–#21 define their ordered implementation and authorization gates.
+yet. Issues #6–#21 define their ordered implementation and authorization gates.

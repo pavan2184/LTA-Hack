@@ -17,3 +17,6 @@ tsconfig.tsbuildinfo
 
 # Agent tool scratch state
 .antigravity/
+
+# Random credentials from the explicitly loopback-only auth demo seed.
+.railplan-local-demo.json

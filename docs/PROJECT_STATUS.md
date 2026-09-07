@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — issue #4 complete; #5 next
+## Ordered issue work — issues #4 and #5 complete; #6 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
@@ -50,6 +50,49 @@ Historical environment recovery: the initial Docker image pull exhausted disk
 space and was stopped. The owner then selected hosted Supabase. Project build
 output was deleted to recover space; no unrelated volumes or source were deleted.
 Docker-backed npm commands were removed. All current database work is online.
+
+## Issue #5 — implementation and database authorization verified
+
+Added official Supabase SSR login/logout, server-verified identities and trusted
+planner/contractor profiles. Pages gate the existing planner UI and give
+contractors an honest workspace pending #9 intake. Added operator-only profile
+provisioning for confirmed Auth UUIDs and a loopback-only demo auth seed that
+refuses hosted databases and generates random credentials into an ignored 0600
+file. No default online accounts were created.
+
+The identity migration adds profiles, organisations, scoped RLS and a private
+atomic assistant quota. Application queries set transaction-local authenticated
+role and verified claims before loading profiles. Only planners manage existing
+planning facts; shared action guards cover assistant, solve, approve, publish
+and resource management. Later issue tables/routes are not preimplemented.
+
+The assistant now uses server identity, typed 401/403/503, an actual streamed
+64 KiB body bound, and a shared user-keyed quota. Parent applied the migration
+and fixed migration-runner replay to preserve private function schema usage
+while denying authenticated access to the migration ledger.
+
+Verification: final full suite **220 passed, zero skipped** across 16 files;
+required `test:db` passed 20 tests after database parity verified all 22 requests.
+Lint, typecheck, production build and diff whitespace checks passed. Real
+rollback database checks cover planner/contractor/anonymous/unassigned access,
+organisation isolation, forged metadata, shared quota and private ledger denial.
+Local auth seeder correctly refused the hosted environment; operator script
+rejected missing arguments. Local auth account creation was not exercised
+because no local Supabase Auth instance is running under the no-Docker direction.
+
+Production HTTP verification passed the real login Server Action, returned
+session cookies, correct planner/contractor/unassigned workspace, and logout
+cookie removal for all three temporary identities. Anonymous API access returned
+401; contractor and unassigned access returned 403; planner input validation
+returned 400. The browser rendered the login page and its generic invalid-login
+alert correctly. Temporary hosted identities and their organisation were deleted
+with exact-ID cleanup after verification. No permanent demo credentials remain.
+
+Independent security/code review passed after classifying Auth service/network
+failures as 503 rather than 401, with regressions. The earlier disk error was
+resolved; current production preview runs at http://127.0.0.1:3000. #5 is complete
+for the hosted workflow; #6 is next. Local Auth creation remains an explicitly
+unrun optional check. No GitHub issues have been closed yet.
 
 ## Historical implementation record
 

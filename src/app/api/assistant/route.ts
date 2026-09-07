@@ -10,8 +10,11 @@ import { buildFactSet } from "@/lib/assistant/facts";
 import { checkGrounding, FALLBACK_NOTICE, SYSTEM_PROMPT } from "@/lib/assistant/guard";
 import { apiError, newRequestId } from "@/lib/http/errors";
 import { requestLogger } from "@/lib/http/logger";
-import { clientKey, consume } from "@/lib/http/rateLimit";
-import { assistantRequestSchema, describeIssue, MAX_BODY_BYTES } from "@/lib/http/schemas";
+import { requireActor } from "@/lib/auth/session";
+import { AuthError } from "@/lib/auth/permissions";
+import { consumeAssistantToken } from "@/lib/auth/rate-limit";
+import { BodyError, readBoundedJson } from "@/lib/http/body";
+import { assistantRequestSchema, describeIssue } from "@/lib/http/schemas";
 
 export const runtime = "nodejs";
 /** Ceiling for the whole handler, above the worst case of the model call below. */
@@ -45,25 +48,25 @@ export async function POST(request: Request) {
   const log = requestLogger(requestId, "POST /api/assistant");
   const startedAt = Date.now();
 
-  const declaredLength = Number(request.headers.get("content-length") ?? "0");
-  if (declaredLength > MAX_BODY_BYTES) {
-    log.warn({ declaredLength }, "request body over limit");
-    return apiError("payload_too_large", "The request is too large.", requestId);
-  }
-
-  const limit = consume(clientKey(request));
-  if (!limit.allowed) {
-    log.warn({ retryAfterSeconds: limit.retryAfterSeconds }, "rate limited");
-    return apiError("rate_limited", "Too many questions at once. Try again shortly.", requestId, {
+  try {
+    const { identity } = await requireActor("assistant");
+    const limit = await consumeAssistantToken(identity);
+    if (!limit.allowed) return apiError("rate_limited", "Too many questions at once. Try again shortly.", requestId, {
       "retry-after": String(limit.retryAfterSeconds),
     });
+  } catch (error) {
+    if (error instanceof AuthError) return apiError(error.code,
+      error.code === "unauthenticated" ? "Sign in to continue." : error.code === "forbidden" ? "Planner access is required." : "Authentication is unavailable.", requestId);
+    // Do not log upstream auth/database errors: they can contain credentials.
+    log.error("authorization unavailable");
+    return apiError("auth_unavailable", "Authentication is unavailable.", requestId);
   }
-
   let raw: unknown;
   try {
-    raw = await request.json();
-  } catch {
-    return apiError("malformed_request", "The request body was not valid JSON.", requestId);
+    raw = await readBoundedJson(request);
+  } catch (error) {
+    const code = error instanceof BodyError ? error.code : "malformed_request";
+    return apiError(code, code === "payload_too_large" ? "The request is too large." : "The request body was not valid JSON.", requestId);
   }
 
   const parsed = assistantRequestSchema.safeParse(raw);

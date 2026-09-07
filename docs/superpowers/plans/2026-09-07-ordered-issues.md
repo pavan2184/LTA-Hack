@@ -9,7 +9,7 @@
 ## Execution gates
 
 - [x] #4: Verify local reset/seed/load, diagnose mismatches by section, test available/unavailable database behavior, synchronize v0.4 contracts and versions. Files: `scripts/db/`, `src/lib/db/`, `src/test/instance.test.ts`, `supabase/config.toml`, package manifests, required project documents. Verify with database commands, tests, lint, typecheck, build.
-- [ ] #5: Supabase sessions, planner/contractor authorization, RLS matrix and shared token bucket; security review.
+- [x] #5: Supabase sessions, planner/contractor authorization, RLS matrix and shared token bucket; security review.
 - [ ] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
 - [ ] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
 - [ ] #8: Workforce capacity validator, solver enforcement and calculated metrics.
@@ -63,3 +63,13 @@ Seed and database digest match fnv1a:fef0c4904e890f43 for 22 requests. Full suit
 deleted applied migrations; fixed with three regression tests. Follow-up suite
 17 passed with live database parity and migration replay; re-review clean.
 #4 is complete under the owner's no-Docker direction. #5 is next.
+
+## Hosted authentication completed
+
+#5: 220 tests pass without skips, including live rollback RLS/quota checks.
+Lint/typecheck/build pass; independent review clean after the Auth outage fix.
+Real production login/session/workspace/logout HTTP journeys pass for temporary
+planner, contractor and unassigned users. Anonymous and role API gates pass.
+Browser login/error rendering passes; exact-ID hosted fixture cleanup completed.
+Optional local Auth seed refuses hosted targets and remains unrun without local
+Auth, consistent with the no-Docker direction. #6 is next.

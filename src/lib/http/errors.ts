@@ -17,6 +17,9 @@ export interface ApiError {
 }
 
 export type ApiErrorCode =
+  | "unauthenticated"
+  | "forbidden"
+  | "auth_unavailable"
   | "malformed_request"
   | "invalid_request"
   | "payload_too_large"
@@ -24,6 +27,9 @@ export type ApiErrorCode =
   | "engine_error";
 
 const STATUS: Record<ApiErrorCode, number> = {
+  unauthenticated: 401,
+  forbidden: 403,
+  auth_unavailable: 503,
   malformed_request: 400,
   invalid_request: 400,
   payload_too_large: 413,
