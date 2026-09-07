@@ -25,8 +25,8 @@
 
   --color-ink-900: #14161a;
   --color-ink-700: #3a4048;
-  --color-ink-500: #666e77;
-  --color-ink-400: #949ba3;
+  --color-ink-500: #505861;
+  --color-ink-400: #59616a;
 
   --color-rule: #d7d3ca;
   --color-rule-strong: #b6b0a4;
@@ -35,7 +35,7 @@
      contrast as text on white. */
   --color-signal-red: #c42b1c;
   --color-signal-red-soft: #fce9e6;
-  --color-signal-amber: #b26800;
+  --color-signal-amber: #8e5200;
   --color-signal-amber-soft: #fdf1dc;
   --color-signal-green: #0e7a45;
   --color-signal-green-soft: #e2f4e9;
@@ -57,7 +57,7 @@
   --color-cf-sector-soft: #fce9e6;
   --color-cf-engineer: #6a3fa0;
   --color-cf-engineer-soft: #efe9f8;
-  --color-cf-compatibility: #b26800;
+  --color-cf-compatibility: #8e5200;
   --color-cf-compatibility-soft: #fdf1dc;
   --color-cf-equipment: #0d6d80;
   --color-cf-equipment-soft: #e2f2f5;
@@ -70,6 +70,10 @@
   --color-line-ns: #d42e12;
   --color-line-ew: #009645;
   --color-line-cc: #fa9e0d;
+  /* Readable line labels; the brighter official colors remain on swatches. */
+  --color-line-ns-ink: #ad260f;
+  --color-line-ew-ink: #006b31;
+  --color-line-cc-ink: #875300;
   --color-line-ns-tint: #fbeeeb;
   --color-line-ew-tint: #e8f5ee;
   --color-line-cc-tint: #fdf4e4;

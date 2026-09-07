@@ -357,3 +357,46 @@ Obsolete snapshot requests must be cancelled/ignored; remote failures stay visib
 without replacing saved content with demo literals. Independent full review and re-review are clean.536 full tests,DB59+4 and
 production two-role UI journey pass. Final colour-only correction passed10 focused
 checks/typecheck/build and visual recheck. No live external provider calls were made.
+
+## Issue #17 release review — in progress
+
+Independent audit found no P0/P1 implementation defect but reproduced two P2
+assistant gaps: missing same-origin JSON enforcement before quota/provider work,
+and raw exception/model-token logging. Both are fixed. Authenticated origin and
+content-type checks now precede quota; logs use fixed events/counts, validated
+numeric usage and allowlisted stop reasons. SDK logging is explicitly disabled.
+Ten new security cases plus22 existing assistant and9 proxy cases pass; independent
+re-review is clean. Tests include cross-origin/simple content types, private-error
+sentinels and adversarial provider metadata.
+
+The initial dependency audit reported7 high and3 moderate findings. Next.js and its
+ESLint configuration are upgraded together to16.3.4; the PostCSS override is8.5.28,
+and compatible transitive updates resolve the remaining advisories. A fresh
+`npm audit --json` reports zero findings. The [Next.js upgrade guide](https://nextjs.org/docs/app/guides/upgrading/version-16)
+and [16.3.4 release](https://github.com/vercel/next.js/releases/tag/v16.3.4) informed
+the upgrade; no major-version codemod is needed. This audit covers dependencies,
+not permission clearance or proof that an entire deployed environment is secure.
+
+Five accessibility P2 findings are fixed with regression evidence: scroll-bound
+modal/real launcher focus restoration, contrast-safe small text, assistant result
+announcements, stable notification card identity and retry outcome focus/live
+status. Final independent re-review also resolved saved line-label contrast and
+ambiguous retry HTTP/network-failure focus, with50 focused regression checks.
+Full582 tests and required DB59+4 checks, lint/typecheck/build and E2E4 pass.
+Hosted private-schema RPC access is denied with406/PGRST106. Controlled provider
+success/failure/retry, stale publication, organisation/owner isolation, exact
+exports and sensitive-log sentinel checks pass through production HTTP.
+
+Actual hosted seed rollback verification preserved all19 fact hashes and source
+revision/generation. A harness cleanup SQL42601 was fixed with bound UUID arrays;
+failed-run recovery and successful cleanup both verified all13 guards enabled.
+No destructive hosted/Auth reset or real provider request was made.
+
+Rendered keyboard/AX checks pass at1280×800,1440×900,1920×1080 and640×400; login
+also fits320 CSS pixels. Modal actions scroll into view, tab focus wraps and
+returns after dismissal. Saved Gantt selection has a2px focus outline and the
+CC label computes to rgb(135,83,0). Missing-AI assistant answers retain input
+focus and populate the named live region; transcript errors preserve entered
+text. Browser error/warning logs are empty. These do not establish actual spoken
+screen-reader behavior or native browser zoom. Approval to briefly enable global
+VoiceOver in a separate Chrome window remains pending; #17 is not marked complete.

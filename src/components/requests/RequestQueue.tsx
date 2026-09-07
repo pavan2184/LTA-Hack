@@ -38,9 +38,9 @@ const priorityDot: Record<string, string> = {
 
 /** Sector label tinted by corridor, matching the timeline's group colours. */
 const corridorText: Record<string, string> = {
-  NS: "text-line-ns",
-  EW: "text-line-ew",
-  CC: "text-line-cc",
+  NS: "text-line-ns-ink",
+  EW: "text-line-ew-ink",
+  CC: "text-line-cc-ink",
 };
 
 export function RequestQueue() {

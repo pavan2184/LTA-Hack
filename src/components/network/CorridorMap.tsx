@@ -51,7 +51,7 @@ export function CorridorMap({ requestId }: { requestId: string }) {
           );
 
           return (
-            <div key={lineId} className={cn(!hasWork && "opacity-45")}>
+            <div key={lineId} className={cn(!hasWork && "border-l border-rule pl-1")}>
               <div className="mb-1 flex items-center gap-1.5">
                 <span
                   className={cn(
@@ -63,10 +63,10 @@ export function CorridorMap({ requestId }: { requestId: string }) {
                   className={cn(
                     "text-[11px] font-semibold",
                     lineId === "NS"
-                      ? "text-line-ns"
+                      ? "text-line-ns-ink"
                       : lineId === "EW"
-                        ? "text-line-ew"
-                        : "text-line-cc",
+                        ? "text-line-ew-ink"
+                        : "text-line-cc-ink",
                   )}
                 >
                   {lines[lineId].name}

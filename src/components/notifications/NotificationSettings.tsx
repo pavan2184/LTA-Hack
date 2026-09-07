@@ -236,7 +236,7 @@ function ConfigurationCard({
       )}
       {configuration.lastTest && (
         <DeliveryRecord
-          key={`${configuration.lastTest.id}:${configuration.lastTest.attemptCount}`}
+          key={configuration.lastTest.id}
           delivery={configuration.lastTest}
           allowRetry={botConfigured && !dirty && !busy}
           onUpdated={(delivery) =>

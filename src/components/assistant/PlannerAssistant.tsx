@@ -110,6 +110,8 @@ export function PlannerAssistant() {
     }
   };
 
+  const latestAnswer = turns.at(-1)?.role === "assistant" ? turns.at(-1) : null;
+
   return (
     <section className="flex min-h-0 flex-col border border-rule bg-surface">
       <header className="flex items-baseline justify-between border-b border-rule px-3 py-2">
@@ -166,6 +168,11 @@ export function PlannerAssistant() {
         </ol>
 
         {pending && <p className="mt-3 text-[12px] text-ink-400">Checking the plan…</p>}
+        <p role="status" aria-label="Assistant response" aria-live="polite" aria-atomic="true" className="sr-only">
+          {pending ? "Checking the plan…" : latestAnswer
+            ? `${latestAnswer.content} ${latestAnswer.notice ?? (latestAnswer.mode === "engine" ? "Answered by the engine directly." : "Grounded: every figure checked against engine output.")}`
+            : ""}
+        </p>
       </div>
 
       <form
@@ -178,7 +185,8 @@ export function PlannerAssistant() {
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          disabled={pending}
+          readOnly={pending}
+          aria-busy={pending}
           placeholder="Why did M-014 move?"
           aria-label="Ask about this plan"
           className="h-7 min-w-0 flex-1 rounded-sm border border-rule bg-paper px-2 text-[12px] placeholder:text-ink-400 focus:border-accent focus:bg-surface"

@@ -8,11 +8,12 @@ Use Node.js 22 and npm. From a fresh clone:
 
 ```bash
 npm ci
+# Configure .env.local and provision a confirmed role as described below.
 npm run dev
 ```
 
-The app runs directly in Node at http://localhost:3000. No database is required
-for the current fabricated-data dashboard. The optional assistant uses
+The app runs directly in Node at http://localhost:3000. Hosted Supabase Auth and
+PostgreSQL configuration are required for the protected role workspaces. The optional assistant uses
 `ANTHROPIC_API_KEY` or a local Anthropic auth profile; absent credentials use
 engine templates. Do not commit credentials. Database scripts load the Git-ignored `.env.local` file; exported shell/CI
 values take precedence.
@@ -48,9 +49,13 @@ it is a no-op; editing an applied migration fails. Add a new migration for chang
 The clean, newly created hosted database replaces the old local reset gate.
 There is deliberately no command that resets the hosted project's managed schemas.
 
-`db:seed` replaces RailPlan demo planning facts; it is not a production seed.
-Use it only on this dedicated development project. It writes all facts in one
-transaction, loads them through a consistent read transaction, and checks parity.
+`db:seed` bootstraps RailPlan demo planning facts only when no workflow records
+exist, using an explicit DATABASE_URL. It writes and reads back facts in the same
+transaction and verifies parity before commit. It refuses existing plans, intake,
+private drafts or notification history and never uses CASCADE. After initial
+bootstrap, use `npm run db:seed -- --verify-only` for a rolled-back rehearsal;
+all19 fact-table hashes plus source revision/generation must remain unchanged.
+Run either mode only in a coordinated dedicated development test window.
 `db:verify` never skips unavailable, unseeded or mismatched data. Ordinary tests
 explicitly skip only when the database probe cannot connect.
 
@@ -73,7 +78,8 @@ GrowMe Hackathon, LearnGraph, or NRI_Land.
 `packages/core/src` owns domain facts, types, validator, solver, metrics,
 alternatives and explanations. `src/store/useRailPlanStore.ts` orchestrates the
 three-step planner flow. `src/components` renders computed results.
-`src/app/api/assistant` is the single HTTP endpoint. `src/lib/db` and `scripts/db`
+`src/app/api` contains authenticated request, ingestion, saved-plan, notification
+and assistant routes; docs/API_CONTRACT.md lists their boundaries. `src/lib/db` and `scripts/db`
 implement database read-back and seed verification.
 
 Load requests, inspect conflicts, apply repairs, generate a plan, inspect metric
@@ -86,8 +92,8 @@ Run npm test, npm run lint, npm run typecheck and npm run build. Database
 integration is an additional required gate, not replaced by ordinary test skips.
 Read `PROJECT_STATUS.md` for actual results and unresolved failures.
 
-Follow issues #4–#21 in numeric order. #4 verification is recorded in PROJECT_STATUS.md. Do not claim later
-identity, workforce, persistence or product features are implemented.
+Follow issues #4–#21 in numeric order. #4–#16 are implemented locally; current
+release checks and remaining scope are recorded in PROJECT_STATUS.md.
 
 ## Identity setup and operator provisioning (issue #5)
 
@@ -109,8 +115,9 @@ Create the contractor organisation through authorized SQL first. This script is
 privileged operator tooling, not an HTTP route; it uses the private DATABASE_URL,
 checks that the Auth user has a confirmed email, and never creates accounts or
 handles passwords. Role changes take effect at the next server authorization
-check. Sign in at `/login`. Unassigned users see access pending. Contractors see
-their workspace with intake explicitly unavailable until #9.
+check. Sign in at `/login`. Unassigned users see access pending. Contractors see their organisation-only intake/private proposals and published
+slots. Planners land at `/plans`, with `/requests` review and an explicitly
+fabricated `/sandbox` for exploratory conflict repair.
 
 No default/demo online identities are seeded. Automated database tests use
 random, rollback-only records without login credentials; any live sign-in UAT
@@ -125,3 +132,17 @@ workflow. Both demo passwords are random and written only to ignored
 `.railplan-local-demo.json` with owner-only permissions. Existing credentials or
 account emails cause refusal, not replacement. The hosted refusal is verified;
 actual local account creation is not exercised in this no-Docker environment.
+
+## Release verification (#17)
+
+Use `npm ci`, `npm test`, `npm run test:db`, `npm run lint`, `npm run typecheck`
+and `npm run build`. Then run `npm run test:e2e` separately: it starts a loopback
+production server with controlled Anthropic/Telegram responses, uses real hosted
+Auth and database application routes, and removes exact temporary fixtures. Read
+`scripts/e2e/README.md` for preflight/cleanup boundaries. Do not run it alongside
+other database tests or a shared production checkout build. Live external provider
+success and a freshly recreated Supabase/Auth project are not claimed.
+
+Do not publish the geographic snapshot until its conflicting source reuse notices
+are resolved. No real Telegram recipients or model credentials are needed for the
+controlled-provider suite. A public deployment has not been performed.

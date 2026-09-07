@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { NotificationDelivery } from "@railplan/core/types/notifications";
 import { notificationRequest } from "./notification-api";
 export const notificationButton =
@@ -14,20 +14,35 @@ export function DeliveryRecord({
   allowRetry?: boolean;
   onUpdated?: (delivery: NotificationDelivery) => void;
 }) {
-  const [loadedAt] = useState(() => Date.now());
+  const [loadedAt, setLoadedAt] = useState(() => Date.now());
   const retryDelayed =
     delivery.nextRetryAt !== null &&
     Date.parse(delivery.nextRetryAt) > loadedAt;
   const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const retryRef = useRef<HTMLButtonElement>(null);
+  const outcomeRef = useRef<HTMLParagraphElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const restoreFocus = useRef<"outcome" | "error" | null>(null);
+  useLayoutEffect(() => {
+    const target = restoreFocus.current;
+    restoreFocus.current = null;
+    if (target === "outcome") outcomeRef.current?.focus();
+    if (target === "error") errorRef.current?.focus();
+  }, [delivery, error]);
   const canRetry =
     allowRetry &&
     delivery.status !== "sent" &&
     !delivery.inFlight &&
     delivery.errorCode !== "superseded_plan";
   async function retry() {
-    if (!canRetry || retryDelayed || (delivery.ambiguous && !acknowledged))
+    if (
+      busy ||
+      !canRetry ||
+      retryDelayed ||
+      (delivery.ambiguous && !acknowledged)
+    )
       return;
     setBusy(true);
     setError("");
@@ -38,10 +53,24 @@ export function DeliveryRecord({
         `/api/notifications/${delivery.id}/retry`,
         delivery.ambiguous ? { acknowledgeDuplicateRisk: true } : {},
       );
+      const active = document.activeElement;
+      restoreFocus.current =
+        active === retryRef.current &&
+        (result.delivery.status === "sent" ||
+          result.delivery.inFlight ||
+          result.delivery.ambiguous ||
+          result.delivery.errorCode === "superseded_plan" ||
+          (result.delivery.nextRetryAt !== null &&
+            Date.parse(result.delivery.nextRetryAt) > Date.now()))
+          ? "outcome"
+          : null;
+      setLoadedAt(Date.now());
       onUpdated?.(result.delivery);
     } catch (cause) {
+      restoreFocus.current =
+        document.activeElement === retryRef.current ? "error" : null;
       setError(
-        cause instanceof Error
+        cause instanceof Error && cause.message
           ? cause.message
           : "Retry failed. Refresh to check delivery status.",
       );
@@ -57,9 +86,23 @@ export function DeliveryRecord({
     >
       <header>
         <h4 className="font-semibold">{delivery.organisationName}</h4>
-        <p className="text-sm">
+        <p
+          ref={outcomeRef}
+          tabIndex={-1}
+          role="status"
+          aria-label={`Delivery outcome for ${delivery.organisationName}`}
+          aria-live="polite"
+          aria-atomic="true"
+          className="text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {busy ? "Retrying… " : ""}
           {delivery.kind === "test" ? "Test message" : "Publication message"} ·
-          Status: {delivery.status} · Attempts: {delivery.attemptCount}
+          Status: {delivery.status}
+          {delivery.ambiguous ? " · outcome unknown" : ""} · Attempts:{" "}
+          {delivery.attemptCount}
+          <span className="sr-only">
+            {delivery.errorMessage ? ` · ${delivery.errorMessage}` : ""}
+          </span>
         </p>
       </header>
       {delivery.inFlight && (
@@ -138,7 +181,12 @@ export function DeliveryRecord({
         </p>
       </details>
       {error && (
-        <p role="alert" className="text-sm text-signal-red">
+        <p
+          ref={errorRef}
+          tabIndex={-1}
+          role="alert"
+          className="text-sm text-signal-red focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
           {error}
         </p>
       )}
@@ -156,10 +204,10 @@ export function DeliveryRecord({
             </label>
           )}
           <button
+            ref={retryRef}
             className={notificationButton}
-            disabled={
-              busy || retryDelayed || (delivery.ambiguous && !acknowledged)
-            }
+            aria-disabled={busy || undefined}
+            disabled={retryDelayed || (delivery.ambiguous && !acknowledged)}
             onClick={retry}
           >
             {busy

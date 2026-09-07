@@ -50,6 +50,11 @@ Authentication precedes input processing: the Supabase Auth server verifies the
 cookie identity, then the trusted profile must be `planner`. User-supplied role,
 organisation and proxy headers cannot grant access or select a quota identity.
 Missing configuration or unavailable authorization storage returns typed 503.
+After authentication, Origin must match the actual request scheme/Host/port and
+Content-Type must be application/json before assistant quota or model work.
+Non-browser clients may omit Origin; opaque/cross-origin values are denied.
+Logs contain fixed events, counts and bounded numeric usage only; SDK debug logging
+is disabled, and provider errors/questions/model tokens are never serialized.
 
 The body is read as a stream with a hard 64 KiB actual-byte limit, including
 chunked requests or dishonest Content-Length. The shared Postgres token bucket
@@ -63,8 +68,7 @@ failure is closed; it never falls back to an in-memory/IP-based allowance.
 created by the app. Generic errors avoid account enumeration. Sign out is a
 Server Action; Next.js validates Server Action origins. Session refresh uses the
 proxy cookie adapter. `/` redirects anonymous users to login, contractors to
-`/contractor`, and shows unassigned accounts an access-pending screen. Only a
-verified planner receives the existing planning dashboard.
+`/contractor`, and shows unassigned accounts an access-pending screen. Verified planners land at `/plans`; `/requests` and `/sandbox` remain planner-only.
 
 ## Client orchestration
 
@@ -127,7 +131,7 @@ returns invalid_plan 409 otherwise. Repeating publication of an already publishe
 or superseded version is idempotent and returns its existing state. Decisions are
 append-only review records, not an intake approval lifecycle or edits to a plan.
 `/plans` provides save/list/reload/decision/publish UI; local exploratory dashboard
-generations are distinct and broader workflow integration remains #16.
+generations stay distinct at `/sandbox`; #16 links role workspaces and saved visual review.
 
 ## Workforce input schemas — issue #7
 
@@ -145,7 +149,7 @@ A writer must load the trusted role/team/request catalogs; client catalogs canno
 be used as reference authority. These are schemas for subsequent write workflows,
 not new HTTP management or request-intake routes. Plan generation continues to
 accept parameters only and reads workforce inputs from the database. Workforce
-feasibility enforcement follows #8.
+feasibility enforcement is described in #8 below.
 
 ## Workforce enforcement — issue #8
 
@@ -216,7 +220,7 @@ per-field model estimate, not a safety or accuracy guarantee. `DraftEvidence`
 contains `{field, quote, start, end, timestamp}` with exact source offsets computed
 by the server. Internal priority, team, role/owner, approval and schedule fields
 are absent from the accepted output schema. No transcript is submitted as a
-request or added to planning inputs. Private editing/submission follows #11.
+request or added to planning inputs. Private editing/submission is explicit through the #11 routes below.
 
 Errors have `{error:{code,message,requestId}}`. Input errors are
 payload_too_large 413, invalid_encoding/empty_transcript/invalid_request 400;

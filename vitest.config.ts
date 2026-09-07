@@ -15,7 +15,11 @@ export default defineConfig({
     // Rollback DB fixtures share the global planning-source lock. Running files
     // together measures lock queues rather than each test's execution timeout.
     fileParallelism: false,
-    exclude: [...configDefaults.exclude, "scripts/db/*-concurrency.test.ts"],
+    exclude: [
+      ...configDefaults.exclude,
+      "scripts/db/*-concurrency.test.ts",
+      "scripts/e2e/**",
+    ],
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
   },

@@ -281,12 +281,13 @@ function ScenarioTesting() {
               Clear scenario
             </Button>
           )}
-          <Button size="sm" variant="quiet" onClick={() => setOpen(true)} disabled={stage !== "idle"}>
-            Test a disruption
-          </Button>
+          <DisruptionDialog open={open} onOpenChange={setOpen} trigger={
+            <Button size="sm" variant="quiet" disabled={stage !== "idle"}>
+              Test a disruption
+            </Button>
+          } />
         </div>
       </div>
-      <DisruptionDialog open={open} onOpenChange={setOpen} />
     </section>
   );
 }

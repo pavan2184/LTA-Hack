@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { disruptionScenarios } from "@railplan/core/data/disruptions";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
@@ -11,7 +11,9 @@ import { useRailPlanStore } from "@/store/useRailPlanStore";
 export function DisruptionDialog({
   open,
   onOpenChange,
+  trigger,
 }: {
+  trigger: ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -25,6 +27,7 @@ export function DisruptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogTitle>Test a disruption</DialogTitle>
         <DialogDescription>

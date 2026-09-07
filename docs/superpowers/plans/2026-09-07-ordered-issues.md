@@ -22,6 +22,9 @@
 - [x] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
 - [x] #16: Complete role journeys and accessible adjustable dashboard.
 - [ ] #17: Release security, accessibility, responsive and end-to-end verification.
+  - Implementation, independent reviews,582 tests,DB59+4,E2E4,lint/typecheck/build,
+    seed rollback and keyboard/reflow browser checks pass. Native VoiceOver and
+    browser-zoom checks await desktop-interruption approval; retain this open gate.
 - [ ] #18: Consented audio capture/transcription through the existing review boundary.
 - [ ] #19: Explicit provider imports with least privilege and provenance.
 - [ ] #20: Reproducible CP-SAT benchmark; retain production heuristic pending evidence.
@@ -388,3 +391,29 @@ visual colour semantics corrected after reproduced findings; final10focused+buil
 and browser recheck pass. Complete two-role UI journey+download, sandbox regression,
 1280/1440/1920 widths and pointer/keyboard/persistence pass. Fixtures removed,
 13guards enabled,parity/replay pass,server stopped. #17 next.
+
+## #17 release verification design
+
+Add a separate real-HTTP end-to-end suite against a local production Next server
+and the correct hosted development database. Only temporary identity/org fixture
+provisioning and exact cleanup use SQL; all request/proposal/approval/generation/
+publication/delivery/export operations use authenticated application HTTP. Controlled
+provider responses live in a fail-closed test-only Node preload outside application
+code. Never call Anthropic/Telegram live. Refuse existing publications or unrelated
+approved intake before testing. Dedicated suite is excluded from ordinary tests.
+Verify hosted Data API does not expose the private schema, not merely local config.
+
+Parent owns dependency audit/remediation, assistant origin/content-type and sensitive
+logging fixes, docs and final browser/keyboard verification. Security reviewer
+independently audits all boundaries. Layout implementer fixes evidenced accessibility
+issues with regressions, including dialog scrolling/focus, contrast, asynchronous
+answer/delivery announcements and stable retry focus. E2E implementer owns harness
+and cleanup. Shared hosted database suites run serially. Rebuild only with local
+preview stopped.
+
+Hosted no-Docker migration replay/seed/digest replaces destructive local reset; do
+not erase managed schemas or user data. Retain the geography permission conflict as
+a public deployment/redistribution gate. Actual model/Telegram success remains
+unverified without credentials; controlled-provider E2E is labeled accordingly.
+Screen-reader evidence must distinguish semantic/AX checks from an actual reader.
+No public deployment occurs in this release verification task.

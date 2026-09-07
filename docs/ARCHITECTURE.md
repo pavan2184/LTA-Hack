@@ -337,3 +337,18 @@ It never substitutes the sandbox store or regenerates feasibility. Publication
 status/source freshness are separate observations; publication still revalidates
 on the server. Saved IDs key visual selection and pending requests are cancelled
 on changes. Layout preferences are browser-local presentation data only.
+
+## Issue #17 release harness and log boundary
+
+The application has no test-mode provider endpoint or alternate authorization
+path. A separate test child starts the normal production server on127.0.0.1:3101.
+A guarded Node preload intercepts only fixed provider hosts with controlled
+responses, allows configured Supabase Auth traffic, and rejects other external
+fetches. The parent uses real cookies and application HTTP for domain changes.
+Temporary identity bootstrap and exact cleanup are privileged fixture tooling,
+not application APIs. Default tests exclude this committed-fixture suite.
+
+Assistant API calls apply the shared Origin/Host JSON mutation guard before quota
+and retain deterministic fallback. Application logging never serializes prompt,
+provider exception, ungrounded token or arbitrary usage metadata; only fixed
+events, counts and bounded numeric usage cross the log boundary.

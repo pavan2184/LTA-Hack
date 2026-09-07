@@ -2,10 +2,46 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#16 implemented; #17 next
+## Ordered issue work — #4–#16 implemented; #17 in progress
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#16 is committed as `abf3d47`. #17 implementation and automated release checks
+pass; actual VoiceOver and native browser-zoom checks remain pending. Enabling
+VoiceOver would interrupt the owner's active desktop, so approval was requested
+and has not yet been received. #17 stays unchecked; #18–#21 have not started.
+
+Fresh verification: **582 tests pass, zero skips,65 files**; required DB59 rollback
+and4 actual-concurrency checks; lint/typecheck/Next16.3.4 production build pass.
+The separate production HTTP E2E suite passes4 tests, including the complete
+two-role workflow through real hosted sessions. Controlled providers prove one
+Anthropic extraction and Telegram failure→retry→success with no duplicate send.
+Private-schema RPC access returns406/PGRST106; exact fixture cleanup restores all13
+history guards. JSON bytes match, CSV formula defense and contractor scope pass.
+Seed --verify-only passes after real writes/parity readback/rollback, with all19
+table hashes and source revision/generation unchanged. No fresh hosted/Auth reset,
+live provider receipt or public deployment is claimed.
+
+The dependency audit's10 findings are resolved (Next/eslint16.3.4,PostCSS8.5.28 and
+compatible transitives); fresh npm audit reports0. Assistant same-origin JSON
+checks precede quota and raw errors/model values stay out of logs. Independent
+security and UI review/re-review are clean. Accessibility fixes cover small-text
+contrast, modal scroll/focus, live assistant answers and notification retry focus;
+two follow-up findings have failing-then-passing regressions and50 scoped checks.
+
+Production browser checks pass at1280×800,1440×900,1920×1080 and640×400: saved
+Gantt selection, publication feedback,2px keyboard focus and no page overflow.
+Login also fits320 CSS pixels. In the short modal, tabbing scrolls actions into
+view; focus wraps within the modal and returns after Escape/Cancel. Assistant
+answering without credentials retains input focus and updates its named live
+region. These are rendered keyboard/AX checks and zoom-equivalent layout sizes,
+not actual screen-reader speech or a browser zoom-menu check.
+Transcript extraction without credentials shows an accessible error and retains
+the entered text. Browser error/warning logs are empty. Final browser cleanup
+removed two temporary users, their organisation and one fabricated saved plan;
+all13 history guards are enabled and the22-request baseline digest is unchanged.
+The test session is signed out, viewport restored, and preview servers are stopped.
 
 #16 is implemented: planners land in saved planning with consistent role-scoped
 navigation; the interactive fabricated conflict-repair tool remains at `/sandbox`.

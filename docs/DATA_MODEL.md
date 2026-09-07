@@ -341,3 +341,12 @@ Telegram credentials/configuration or public geographic source data. Approved
 request fields already present in saved engine facts are included under the same
 planner-only global-plan authorization. No export record or dynamic export-time
 timestamp is persisted.
+
+## Release verification fixtures (#17)
+
+The dedicated end-to-end suite provisions random temporary Auth identities and
+organisation/profile records, then creates every domain record through normal
+authenticated HTTP. It removes only those exact IDs and owned artifact histories
+in a transaction and verifies all13 immutability guards are re-enabled. Recovery
+manifests contain IDs only, with owner-only permissions. No production test role,
+provider override endpoint or additional persistent schema is introduced.

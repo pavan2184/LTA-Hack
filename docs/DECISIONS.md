@@ -470,3 +470,27 @@ inputs; it is not a new validation authority. No schema/provider change is neede
 Use a versioned, bounded local preference record for presentation only. Panel
 collapse preserves child state; pointer and keyboard controls expose the same
 size bounds. Gantt remains primary and narrower screens stack secondary panels.
+
+### 2026-09-07 — Issue #17 release verification boundaries
+
+Run the complete collaborative journey through a production Next server and real
+hosted Supabase sessions. SQL provisions only isolated test identities and removes
+their exact artifacts afterward. Controlled Anthropic and Telegram responses live
+in a guarded child-process preload, never an application test endpoint or deployed
+provider override. This verifies integration, failure and retry behavior without
+sending real messages or claiming model quality. Private-schema exposure is also
+checked against the hosted Data API.
+
+Preserve the existing hosted project. Seed verification performs actual writes and
+parity readback inside a rolled-back transaction, then compares every seeded table
+and source revision/generation. Both seed modes refuse existing workflow records;
+normal bootstrap verifies parity before commit and no longer uses CASCADE. This is
+a rollback rehearsal on the migrated database, not a claim that a fresh hosted Auth
+project was recreated. History guards must remain enabled after fixture cleanup.
+
+Upgrade Next and affected compatible dependencies to resolve the observed audit
+findings. The assistant requires same-origin JSON before quota use and logs only
+bounded allowlisted usage metadata; provider exceptions and model output stay out
+of logs. Accessibility checks distinguish component assertions, rendered keyboard
+and zoom behavior, and actual screen-reader observations. Public deployment remains
+subject to the separately documented geographic-source licence conflict.

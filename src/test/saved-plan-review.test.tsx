@@ -149,9 +149,15 @@ describe("saved snapshot visual review", () => {
     });
     expect(bar).toHaveClass("bg-surface", "text-ink-900", "border-rule-strong");
     expect(bar.style.backgroundColor).toBe("");
-    expect(
-      within(timeline).getByText("NS10-NS11", { exact: true }),
-    ).toHaveStyle({ color: "#c0392b" });
+    for (const [block, tone] of [
+      ["NS10-NS11", "text-line-ns-ink"],
+      ["EW18-EW19", "text-line-ew-ink"],
+      ["CC11-CC12", "text-line-cc-ink"],
+    ]) {
+      const label = within(timeline).getByText(block, { exact: true });
+      expect(label).toHaveClass(tone);
+      expect(label.style.color).toBe("");
+    }
     await userEvent.click(bar);
     expect(bar).toHaveClass("border-accent", "ring-accent");
     expect(bar).toHaveAttribute("aria-pressed", "true");

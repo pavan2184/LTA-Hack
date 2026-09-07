@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { PlanExport } from "@railplan/core/types/exports";
 import type { Plan } from "@railplan/core/types/railplan";
 import { buildWorld, type PlanningWorld } from "@railplan/core/domain/world";
-import { lines } from "@railplan/core/domain/network";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { Figure } from "@/components/shared/Figure";
 import { WorkforceChart } from "@/components/schedule/WorkforceChart";
@@ -294,8 +293,7 @@ function SavedGantt({
                 className="grid grid-cols-[8rem_1fr] border-t border-rule py-2"
               >
                 <span
-                  className="text-xs font-semibold"
-                  style={{ color: lines[block.line].colour }}
+                  className={`text-xs font-semibold ${{ NS: "text-line-ns-ink", EW: "text-line-ew-ink", CC: "text-line-cc-ink" }[block.line]}`}
                 >
                   {block.id}
                 </span>

@@ -27,9 +27,9 @@ const corridor: Record<
   LineId,
   { swatch: string; text: string; gutter: string; lane: string; band: string }
 > = {
-  NS: { swatch: "bg-line-ns", text: "text-line-ns", gutter: "gutter-ns", lane: "lane-ns", band: "band-ns" },
-  EW: { swatch: "bg-line-ew", text: "text-line-ew", gutter: "gutter-ew", lane: "lane-ew", band: "band-ew" },
-  CC: { swatch: "bg-line-cc", text: "text-line-cc", gutter: "gutter-cc", lane: "lane-cc", band: "band-cc" },
+  NS: { swatch: "bg-line-ns", text: "text-line-ns-ink", gutter: "gutter-ns", lane: "lane-ns", band: "band-ns" },
+  EW: { swatch: "bg-line-ew", text: "text-line-ew-ink", gutter: "gutter-ew", lane: "lane-ew", band: "band-ew" },
+  CC: { swatch: "bg-line-cc", text: "text-line-cc-ink", gutter: "gutter-cc", lane: "lane-cc", band: "band-cc" },
 };
 
 /** One hue per conflict category, matching the chips and the conflict list. */
@@ -400,7 +400,7 @@ export function BlockTimeline() {
                                       : inConflict
                                         ? "z-10 border-rule-strong bg-surface text-ink-700"
                                         : "border-signal-green bg-signal-green-soft text-signal-green",
-                                dimmed && "opacity-35",
+                                dimmed && "border-dashed",
                                 highlighted.has(bar.placement.requestId) && !selected && "z-20 ring-1 ring-ink-900",
                               )}
                               style={{
@@ -413,7 +413,7 @@ export function BlockTimeline() {
                               {bar.placement.locked && <Lock className="size-2.5 shrink-0" />}
                               <span className="truncate font-mono text-[11px] font-medium">{request.id}</span>
                               {team && bar.width > 8 && (
-                                <span className="truncate text-[10px] opacity-75">
+                                <span className="truncate text-[10px]">
                                   {shortTeam(team.name)}
                                 </span>
                               )}

@@ -2,57 +2,61 @@
 
 Last updated: 2026-09-07 · RailPlan v0.4.0
 
-RailPlan is a non-operational rail-maintenance planning prototype. It evaluates
-22 fabricated requests across 12 atomic track blocks in a four-hour engineering
-window, calculates conflicts including aggregate workforce shortages, proposes placements and independently validates
-its results. Users are maintenance planners and operations controllers.
+RailPlan is a non-operational rail-maintenance planning prototype for planners and
+contractor organisations. A fabricated baseline of22 requests over12 atomic track
+blocks is combined with explicitly approved contractor revisions for a selected
+engineering night. No output is an operational instruction or safety approval.
 
 ## Implemented journeys
 
-1. Load the requested plan and inspect exact conflict rules and intervals.
-2. Apply validated repairs or generate a schedule with one of five deterministic
-   objective profiles.
-3. Inspect calculated metrics, formulas, counterfactual explanations and feasible
-   alternatives; pin work and re-solve around those hard constraints.
-4. Apply an emergency, crew outage, overrun or early handback and replan.
-5. Ask the optional assistant about server-computed facts; use deterministic
-   answers when credentials or grounded model output are unavailable.
+1. A provisioned contractor creates a manual draft or explicitly extracts private
+   proposals from meeting text, reviews missing fields/evidence, and submits work.
+2. A planner reviews the exact submission, assigns scheduling/safety fields and
+   approves or returns/rejects it. Only an active approved revision enters planning.
+3. Saved planning generates an immutable server-computed version with the shared
+   workforce-aware validator, full input facts, parameters, output and provenance.
+4. The planner inspects a primary Gantt, linked request/workforce/geographic panels,
+   saved calculations, status and source freshness; adjustable panels support
+   keyboard/pointer controls and browser-local layout preferences.
+5. Publication rechecks current source/version/feasibility and records immutable
+   history. Contractor-scoped Telegram delivery has separate audited failure/retry
+   status. JSON/CSV exports preserve the saved version and its assessment.
+6. Contractors see their organisation's published slots. The separate `/sandbox`
+   preserves fabricated conflict repair, alternatives, pins, disruptions and the
+   optional engine-grounded assistant; sandbox edits are not persisted approvals.
 
-## Current product boundary
+## Architecture and boundaries
 
-The Next.js dashboard uses the pure TypeScript `@railplan/core` engine. Schedules,
-conflicts, metrics, alternatives and disruption responses are computed at runtime.
-Input data and operational topology are fabricated. The map is a schematic.
-No real LTA rules, live feeds or operational safety certification are represented.
+Next.js and the pure TypeScript `@railplan/core` engine run directly in Node.js.
+Supabase verifies identity; trusted profiles and PostgreSQL RLS scope every workflow.
+The owner requires hosted RailPlan Dev with no Docker. Durable plans retain exact
+facts; a shared source revision invalidates publication after planning inputs change.
+The validator is the sole feasibility authority. The heuristic does not establish
+optimality, and missing mandatory work prevents publication.
 
-Postgres planning-input migrations and a TypeScript seed/loader are authored;
-verification status is in `PROJECT_STATUS.md`. The dashboard still reads literals.
-Strategy and exact pinned placements persist locally. The dedicated `/plans` workflow generates durable server-computed versions from database facts, reloads their exact output, records decisions and publishes with stale-source protection and audit history. The dashboard remains a labelled local exploratory workflow; wider integration follows #16. Supabase identity and organisation
-isolation gate planner and contractor workspaces. The app runs directly in Node.js.
-The owner requires a database workflow without Docker (2026-09-07).
+Anonymous workforce role counts are independent of team crew-concurrency capacity.
+No named workers, leave records, qualifications or personal locations are collected.
+Transcript extraction stores only supported private fields and bounded exact excerpts,
+never the full source text. Model estimates require human review. Missing optional
+AI credentials preserve manual intake and deterministic sandbox assistant answers;
+missing Telegram credentials do not undo publication. Live provider success remains
+unverified until credentials and an authorized recipient are available.
 
-Anonymous workforce role catalogs, people availability windows and per-request
-role demand now round-trip through the shared instance and database. They are
-independent of team crew capacity. Workforce constraint enforcement follows #8;
-no individual workers, leave records or personal locations are collected.
+The geographic panel uses an attributed local station-point snapshot; its straight
+connections, possessions, depot markers and safety topology are fabricated. A source
+archive restriction conflicts with the open-data licence. Public deployment or
+redistribution remains gated on permission clearance; no clearance is claimed.
 
-## Ordered delivery scope
+## Ordered delivery and verification
 
-GitHub issues #4–#21 define the authorized roadmap: database baseline,
-authentication, versioned plans, aggregate workforce supply/demand and constraints,
-request intake and transcript proposals, planner approval, workforce/geographic
-views, Telegram publication, exports, product integration and release verification.
-Later work covers voice, scoped provider imports, a CP-SAT benchmark and a
-separate named-crew go/no-go decision. Follow numeric order and dependency gates.
+Issues #4–#21 define the authorized roadmap and must be handled in numeric order.
+#4–#16 are implemented locally; #17 release verification is underway. #18 consented
+audio, #19 scoped provider imports, #20 CP-SAT benchmarking and #21 a separate
+named-crew go/no-go decision follow. No named-worker implementation is authorized
+by the decision task itself.
 
-## Success criteria and limits
-
-Every feasibility claim passes the shared validator; every metric exposes its
-calculation. Lint, typecheck, tests and production build must pass. Database gates
-must fail on drift rather than silently skip. Product UAT covers the workflow
-and widths 1280, 1440 and 1920 pixels.
-
-The heuristic does not prove global optimality. Crew reassignment, individual
-qualifications, authenticated collaboration, durable exports and notifications
-remain pending their respective issues. Keep fabricated-data and non-operational
-labels visible throughout.
+Tests, lint, typecheck, build, required hosted DB/RLS/concurrency checks and a
+separate controlled-provider end-to-end suite form the release gates. Browser UAT
+covers both roles, visible focus/keyboard operation and1280/1440/1920px layouts.
+Record actual results, skipped checks and remaining risks in PROJECT_STATUS.md;
+never treat mocked provider success or semantic accessibility checks as live proof.

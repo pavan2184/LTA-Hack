@@ -13,11 +13,13 @@ an operational decision.
 ## Run it
 
 ```bash
-npm install
+npm ci
 npm run dev      # http://localhost:3000
 ```
 
-No configuration required. The engine is pure TypeScript.
+Configure the existing `.env.example` variables in ignored `.env.local`, using
+the hosted Supabase project and a confirmed, provisioned planner or contractor
+account. See [Teammate handoff](docs/TEAM_HANDOFF.md). No Docker is used.
 
 The planner assistant is optional. Without credentials it answers from the engine
 using templates — correct, just terser. With `ANTHROPIC_API_KEY` set (or an
@@ -26,13 +28,15 @@ figures the engine produced. See `.env.example`.
 
 ## What it actually does
 
-Nothing on the dashboard is stored. There are no schedule fixtures in this
-repository.
+Contractors submit work for planner review. Approved revisions become inputs to
+immutable saved plans, with publication, scoped delivery status and JSON/CSV
+exports. Planners land in Saved plans; `/sandbox` retains the interactive
+fabricated conflict-repair demo. Saved views use their exact original facts.
 
-**Detects conflicts.** Twelve rules over atomic track blocks, crew capacities,
+**Detects conflicts.** Thirteen rules over atomic track blocks, crew capacities,
 equipment unit counts, isolation zones, work-class compatibility, dependencies,
-travel time and handback deadlines. Against the submitted times it finds 22
-violations across 4 clusters. Nobody typed that list.
+travel time and handback deadlines. Workforce role counts are checked independently of crew concurrency. Conflict
+counts and intervals are computed from the current inputs.
 
 Two of them are worth the demo on their own:
 
@@ -44,8 +48,7 @@ Two of them are worth the demo on their own:
   thermal imaging unit, and both sit inside the SS-4 traction isolation area.
 
 **Builds a schedule.** Dependency-aware ordered insertion with bounded repair at
-15-minute resolution. Roughly 20-70 ms. Reports `OPTIMAL`, `FEASIBLE` or
-`INFEASIBLE` honestly, with solve time, candidate count and an input digest on
+15-minute resolution. Roughly 20-70 ms. Reports `FEASIBLE` or `INFEASIBLE` without claiming global optimality, with solve time, candidate count and an input digest on
 screen.
 
 **Checks its own work.** Every plan is handed back to the validator from scratch
@@ -73,7 +76,7 @@ that has nowhere to go. That is the correct answer, not a failure.
 ## How the rule-based scheduler works
 
 The current scheduler is a deterministic, dependency-aware greedy insertion
-heuristic with bounded repair (`railplan-greedy-repair-v2`). It is implemented in
+heuristic with bounded repair (`railplan-greedy-repair-v3`). It is implemented in
 pure TypeScript in `packages/core/src/engine/solve.ts`; it is not CP-SAT, MILP, or
 an exhaustive search. `packages/core/src/engine/validate.ts` is deliberately
 separate and is the only authority on whether a plan is feasible.

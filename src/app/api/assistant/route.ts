@@ -1,13 +1,22 @@
 import { existsSync } from "node:fs";
+import { assertPlanMutation } from "@/lib/plans/http";
+import { PlanError } from "@/lib/plans/input";
 
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
-import { buildDisruptionInputs, disruptionById } from "@railplan/core/data/disruptions";
+import {
+  buildDisruptionInputs,
+  disruptionById,
+} from "@railplan/core/data/disruptions";
 import { reviewSubmittedPlan, solve } from "@railplan/core/engine/solve";
 import { answerDeterministically } from "@/lib/assistant/deterministic";
 import { buildFactSet } from "@/lib/assistant/facts";
-import { checkGrounding, FALLBACK_NOTICE, SYSTEM_PROMPT } from "@/lib/assistant/guard";
+import {
+  checkGrounding,
+  FALLBACK_NOTICE,
+  SYSTEM_PROMPT,
+} from "@/lib/assistant/guard";
 import { apiError, newRequestId } from "@/lib/http/errors";
 import { requestLogger } from "@/lib/http/logger";
 import { requireActor } from "@/lib/auth/session";
@@ -50,29 +59,59 @@ export async function POST(request: Request) {
 
   try {
     const { identity } = await requireActor("assistant");
+    assertPlanMutation(request);
     const limit = await consumeAssistantToken(identity);
-    if (!limit.allowed) return apiError("rate_limited", "Too many questions at once. Try again shortly.", requestId, {
-      "retry-after": String(limit.retryAfterSeconds),
-    });
+    if (!limit.allowed)
+      return apiError(
+        "rate_limited",
+        "Too many questions at once. Try again shortly.",
+        requestId,
+        {
+          "retry-after": String(limit.retryAfterSeconds),
+        },
+      );
   } catch (error) {
-    if (error instanceof AuthError) return apiError(error.code,
-      error.code === "unauthenticated" ? "Sign in to continue." : error.code === "forbidden" ? "Planner access is required." : "Authentication is unavailable.", requestId);
+    if (error instanceof PlanError)
+      return apiError(error.code, error.message, requestId);
+    if (error instanceof AuthError)
+      return apiError(
+        error.code,
+        error.code === "unauthenticated"
+          ? "Sign in to continue."
+          : error.code === "forbidden"
+            ? "Planner access is required."
+            : "Authentication is unavailable.",
+        requestId,
+      );
     // Do not log upstream auth/database errors: they can contain credentials.
     log.error("authorization unavailable");
-    return apiError("auth_unavailable", "Authentication is unavailable.", requestId);
+    return apiError(
+      "auth_unavailable",
+      "Authentication is unavailable.",
+      requestId,
+    );
   }
   let raw: unknown;
   try {
     raw = await readBoundedJson(request);
   } catch (error) {
     const code = error instanceof BodyError ? error.code : "malformed_request";
-    return apiError(code, code === "payload_too_large" ? "The request is too large." : "The request body was not valid JSON.", requestId);
+    return apiError(
+      code,
+      code === "payload_too_large"
+        ? "The request is too large."
+        : "The request body was not valid JSON.",
+      requestId,
+    );
   }
 
   const parsed = assistantRequestSchema.safeParse(raw);
   if (!parsed.success) {
     const detail = describeIssue(parsed.error);
-    log.warn({ detail }, "request failed validation");
+    log.warn(
+      { issueCount: parsed.error.issues.length },
+      "request failed validation",
+    );
     return apiError("invalid_request", detail, requestId);
   }
   const body = parsed.data;
@@ -85,8 +124,13 @@ export async function POST(request: Request) {
   let facts;
   let deterministic;
   try {
-    const scenario = body.disruptionId ? disruptionById[body.disruptionId] : null;
-    const locked = body.locked.map((placement) => ({ ...placement, locked: true }));
+    const scenario = body.disruptionId
+      ? disruptionById[body.disruptionId]
+      : null;
+    const locked = body.locked.map((placement) => ({
+      ...placement,
+      locked: true,
+    }));
     const inputs = scenario ? buildDisruptionInputs(scenario, locked) : null;
 
     result =
@@ -101,8 +145,8 @@ export async function POST(request: Request) {
 
     facts = buildFactSet(result, body.view);
     deterministic = answerDeterministically(body.question, result);
-  } catch (error) {
-    log.error({ err: error }, "engine failed to build a plan");
+  } catch {
+    log.error("engine failed to build a plan");
     return apiError(
       "engine_error",
       "The planning engine could not evaluate that request.",
@@ -111,8 +155,13 @@ export async function POST(request: Request) {
   }
 
   const respond = (payload: AssistantResponse, outcome: string) => {
-    log.info({ outcome, mode: payload.mode, ms: Date.now() - startedAt }, "assistant answered");
-    return NextResponse.json<AssistantResponse>(payload, { headers: { "x-request-id": requestId } });
+    log.info(
+      { outcome, mode: payload.mode, ms: Date.now() - startedAt },
+      "assistant answered",
+    );
+    return NextResponse.json<AssistantResponse>(payload, {
+      headers: { "x-request-id": requestId },
+    });
   };
 
   if (!hasCredentials()) {
@@ -129,7 +178,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const client = new Anthropic();
+    const client = new Anthropic({ logLevel: "off" });
     const message = await client.messages.create(
       {
         model: MODEL,
@@ -151,7 +200,12 @@ export async function POST(request: Request) {
             cache_control: { type: "ephemeral" },
           },
         ],
-        messages: [{ role: "user", content: buildPrompt(facts.text, body.question, body.history) }],
+        messages: [
+          {
+            role: "user",
+            content: buildPrompt(facts.text, body.question, body.history),
+          },
+        ],
       },
       // The SDK retries timeouts, so a bare timeout is not a bound — the pair
       // is. Worst case here is 24s, inside the handler's own ceiling.
@@ -165,7 +219,8 @@ export async function POST(request: Request) {
         {
           answer: deterministic,
           mode: "engine",
-          notice: "The model declined to answer, so the engine answered directly.",
+          notice:
+            "The model declined to answer, so the engine answered directly.",
           rejected: [],
           model: MODEL,
         },
@@ -181,7 +236,8 @@ export async function POST(request: Request) {
         {
           answer: deterministic,
           mode: "engine",
-          notice: "The model's answer was cut short, so the engine answered directly.",
+          notice:
+            "The model's answer was cut short, so the engine answered directly.",
           rejected: [],
           model: MODEL,
         },
@@ -200,7 +256,8 @@ export async function POST(request: Request) {
         {
           answer: deterministic,
           mode: "engine",
-          notice: "The model returned no text, so the engine answered directly.",
+          notice:
+            "The model returned no text, so the engine answered directly.",
           rejected: [],
           model: MODEL,
         },
@@ -210,7 +267,10 @@ export async function POST(request: Request) {
 
     const grounding = checkGrounding(answer, facts.allowedNumbers);
     if (!grounding.grounded) {
-      log.warn({ unsupported: grounding.unsupported.slice(0, 8) }, "answer failed grounding");
+      log.warn(
+        { unsupportedCount: grounding.unsupported.length },
+        "answer failed grounding",
+      );
       return respond(
         {
           answer: deterministic,
@@ -227,8 +287,8 @@ export async function POST(request: Request) {
       { answer, mode: "model", notice: null, rejected: [], model: MODEL },
       "grounded",
     );
-  } catch (error) {
-    log.error({ err: error }, "model call failed");
+  } catch {
+    log.error("model call failed");
     return respond(
       {
         answer: deterministic,
@@ -236,7 +296,8 @@ export async function POST(request: Request) {
         // The planner is told the model was unreachable, not what it said.
         // Upstream error text can carry request details that do not belong in
         // a browser.
-        notice: "The model could not be reached, so the engine answered directly.",
+        notice:
+          "The model could not be reached, so the engine answered directly.",
         rejected: [],
         model: MODEL,
       },
@@ -260,7 +321,11 @@ const USD_PER_M_OUTPUT = 25;
  * what the planner asked, and this keeps those turns clearly marked as the
  * planner's own words.
  */
-function buildPrompt(facts: string, question: string, history: { content: string }[]): string {
+function buildPrompt(
+  facts: string,
+  question: string,
+  history: { content: string }[],
+): string {
   const earlier = history.length
     ? `Earlier questions from this planner, for context only:\n${history
         .map((turn) => `- ${turn.content}`)
@@ -269,25 +334,48 @@ function buildPrompt(facts: string, question: string, history: { content: string
   return `FACTS\n=====\n${facts}\n=====\n\n${earlier}Planner's question: ${question}`;
 }
 
-function logUsage(log: ReturnType<typeof requestLogger>, message: Anthropic.Message): void {
+function logUsage(
+  log: ReturnType<typeof requestLogger>,
+  message: Anthropic.Message,
+): void {
   const usage = message.usage;
-  const cacheRead = usage.cache_read_input_tokens ?? 0;
-  const cacheWrite = usage.cache_creation_input_tokens ?? 0;
+  // Treat even SDK-typed provider metadata as untrusted at the logging boundary.
+  const count = (value: unknown) =>
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= 1_000_000_000
+      ? value
+      : 0;
+  const inputTokens = count(usage?.input_tokens);
+  const outputTokens = count(usage?.output_tokens);
+  const cacheRead = count(usage?.cache_read_input_tokens);
+  const cacheWrite = count(usage?.cache_creation_input_tokens);
+  const stopReason = [
+    "end_turn",
+    "max_tokens",
+    "stop_sequence",
+    "tool_use",
+    "pause_turn",
+    "refusal",
+  ].includes(message.stop_reason ?? "")
+    ? message.stop_reason
+    : "unknown";
   // Cache reads bill at ~0.1x input and writes at ~1.25x, so a flat input rate
   // would misreport the cost of exactly the turns caching is meant to help.
   const usd =
-    (usage.input_tokens * USD_PER_M_INPUT +
+    (inputTokens * USD_PER_M_INPUT +
       cacheWrite * USD_PER_M_INPUT * 1.25 +
       cacheRead * USD_PER_M_INPUT * 0.1 +
-      usage.output_tokens * USD_PER_M_OUTPUT) /
+      outputTokens * USD_PER_M_OUTPUT) /
     1_000_000;
 
   log.info(
     {
       model: MODEL,
-      stopReason: message.stop_reason,
-      inputTokens: usage.input_tokens,
-      outputTokens: usage.output_tokens,
+      stopReason,
+      inputTokens,
+      outputTokens,
       cacheReadTokens: cacheRead,
       cacheWriteTokens: cacheWrite,
       estimatedUsd: Number(usd.toFixed(6)),
@@ -313,7 +401,8 @@ function hasCredentials(): boolean {
 }
 
 function resolveCredentials(): boolean {
-  if (process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN) return true;
+  if (process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN)
+    return true;
   const configDir =
     process.env.ANTHROPIC_CONFIG_DIR ??
     (process.env.HOME ? `${process.env.HOME}/.config/anthropic` : null);

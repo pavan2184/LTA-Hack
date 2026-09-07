@@ -435,3 +435,245 @@ it("does not attach an old destination's retry result after a new destination is
   expect(screen.queryByText("Old destination test")).not.toBeInTheDocument();
   expect(screen.queryByText(/old-chat-message/)).not.toBeInTheDocument();
 });
+
+it.each(["failed", "sent", "ambiguous"] as const)(
+  "announces a durable %s retry outcome and retains a logical keyboard focus target",
+  async (outcome) => {
+    let finish!: (response: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.method
+          ? new Promise<Response>((resolve) => {
+              finish = resolve;
+            })
+          : Promise.resolve(Response.json({ deliveries: [delivery] })),
+      ),
+    );
+    render(<PlanNotifications planId="plan-1" publishState="published" />);
+    const user = userEvent.setup();
+    const retry = await screen.findByRole("button", { name: "Retry delivery" });
+    retry.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      screen.getByRole("status", {
+        name: "Delivery outcome for Alpha contractor",
+      }),
+    ).toHaveTextContent("Retrying");
+    await act(async () =>
+      finish(
+        Response.json({
+          delivery: {
+            ...delivery,
+            status: outcome === "sent" ? "sent" : "failed",
+            ambiguous: outcome === "ambiguous",
+            attemptCount: 2,
+            errorCode: outcome === "sent" ? null : "test_failure",
+            errorMessage:
+              outcome === "sent"
+                ? null
+                : "Provider could not confirm delivery.",
+          },
+        }),
+      ),
+    );
+    const status = screen.getByRole("status", {
+      name: "Delivery outcome for Alpha contractor",
+    });
+    expect(status).toHaveTextContent(
+      outcome === "ambiguous" ? /unknown/i : outcome,
+    );
+    if (outcome === "sent" || outcome === "ambiguous")
+      expect(status).toHaveFocus();
+    else {
+      expect(screen.getByRole("button", { name: "Retry delivery" })).toBe(
+        retry,
+      );
+      expect(retry).toHaveFocus();
+    }
+    if (outcome === "ambiguous") {
+      expect(
+        screen.getByRole("checkbox", { name: /may send a duplicate/ }),
+      ).not.toBeChecked();
+      expect(retry).toBeDisabled();
+    }
+  },
+);
+
+it("retains the test delivery action after a failed retry in configuration", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) =>
+      url.endsWith("/retry")
+        ? Response.json({
+            delivery: { ...delivery, kind: "test", attemptCount: 2 },
+          })
+        : Response.json({
+            configurations: [
+              {
+                ...configuration,
+                chatId: "-123",
+                version: 1,
+                lastTest: { ...delivery, kind: "test" },
+              },
+            ],
+            botConfigured: true,
+          }),
+    ),
+  );
+  render(<NotificationSettings />);
+  const user = userEvent.setup();
+  const retry = await screen.findByRole("button", { name: "Retry delivery" });
+  retry.focus();
+  await user.keyboard("{Enter}");
+  await screen.findByText(/Attempts: 2/);
+  expect(screen.getByRole("button", { name: "Retry delivery" })).toBe(retry);
+  expect(retry).toHaveFocus();
+});
+
+it("retains busy retry focus, prevents repeated sends, resets acknowledgement and honors a new cooldown", async () => {
+  let finish!: (response: Response) => void;
+  const fetcher = vi.fn((_url: string, init?: RequestInit) =>
+    init?.method
+      ? new Promise<Response>((resolve) => {
+          finish = resolve;
+        })
+      : Promise.resolve(
+          Response.json({ deliveries: [{ ...delivery, ambiguous: true }] }),
+        ),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  render(<PlanNotifications planId="plan-1" publishState="published" />);
+  const user = userEvent.setup();
+  const acknowledgement = await screen.findByRole("checkbox", {
+    name: /may send a duplicate/,
+  });
+  await user.click(acknowledgement);
+  const retry = screen.getByRole("button", { name: "Retry delivery" });
+  retry.focus();
+  await user.keyboard("{Enter}{Enter}");
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(retry).toHaveFocus();
+  expect(retry).toHaveAttribute("aria-disabled", "true");
+  expect(retry).not.toBeDisabled();
+  await act(async () =>
+    finish(
+      Response.json({
+        delivery: {
+          ...delivery,
+          attemptCount: 2,
+          ambiguous: true,
+          errorCode: "rate_limited",
+          nextRetryAt: "2099-01-01T00:00:00Z",
+        },
+      }),
+    ),
+  );
+  expect(acknowledgement).not.toBeChecked();
+  expect(
+    screen.getByRole("status", {
+      name: "Delivery outcome for Alpha contractor",
+    }),
+  ).toHaveFocus();
+  await user.click(acknowledgement);
+  expect(retry).toBeDisabled();
+  expect(screen.getByText(/Retry available after 2099/)).toBeInTheDocument();
+});
+
+it("does not steal focus when a pending retry finishes after the planner moved elsewhere", async () => {
+  let finish!: (response: Response) => void;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((_url: string, init?: RequestInit) =>
+      init?.method
+        ? new Promise<Response>((resolve) => {
+            finish = resolve;
+          })
+        : Promise.resolve(Response.json({ deliveries: [delivery] })),
+    ),
+  );
+  render(<PlanNotifications planId="plan-1" publishState="published" />);
+  const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Retry delivery" }),
+  );
+  const refresh = screen.getByRole("button", {
+    name: "Refresh delivery status",
+  });
+  refresh.focus();
+  await act(async () =>
+    finish(
+      Response.json({
+        delivery: {
+          ...delivery,
+          status: "sent",
+          attemptCount: 2,
+          errorCode: null,
+          errorMessage: null,
+        },
+      }),
+    ),
+  );
+  expect(refresh).toHaveFocus();
+  expect(
+    screen.getByRole("status", {
+      name: "Delivery outcome for Alpha contractor",
+    }),
+  ).toHaveTextContent("sent");
+});
+
+it.each(["http", "network"] as const)(
+  "moves focus to an ambiguous retry's %s error unless the planner moved elsewhere",
+  async (failure) => {
+    let finish!: (response: Response) => void;
+    let fail!: (error: Error) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.method
+          ? new Promise<Response>((resolve, reject) => {
+              finish = resolve;
+              fail = reject;
+            })
+          : Promise.resolve(
+              Response.json({ deliveries: [{ ...delivery, ambiguous: true }] }),
+            ),
+      ),
+    );
+    render(<PlanNotifications planId="plan-1" publishState="published" />);
+    const user = userEvent.setup();
+    const acknowledgement = await screen.findByRole("checkbox", {
+      name: /may send a duplicate/,
+    });
+    const retry = screen.getByRole("button", { name: "Retry delivery" });
+    const refresh = screen.getByRole("button", {
+      name: "Refresh delivery status",
+    });
+    for (const movedElsewhere of [false, true]) {
+      await user.click(acknowledgement);
+      retry.focus();
+      await user.keyboard("{Enter}");
+      if (movedElsewhere) refresh.focus();
+      await act(async () => {
+        if (failure === "network") fail(new Error("offline"));
+        else
+          finish(
+            Response.json(
+              { error: { message: "Retry service unavailable." } },
+              { status: 503 },
+            ),
+          );
+      });
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent(
+        failure === "http"
+          ? "Retry service unavailable."
+          : "Unable to reach notification services.",
+      );
+      expect(acknowledgement).not.toBeChecked();
+      expect(retry).toBeDisabled();
+      if (movedElsewhere) expect(refresh).toHaveFocus();
+      else expect(alert).toHaveFocus();
+    }
+  },
+);

@@ -26,7 +26,6 @@ Tests load Git-ignored .env.local and run database checks when reachable.
 ```bash
 npm ci
 npm run db:migrate
-npm run db:seed
 npm run db:verify
 npm run test:db
 npm test
@@ -34,6 +33,13 @@ npm run lint
 npm run typecheck
 npm run build
 ```
+
+For a dedicated empty development database, `npm run db:seed` bootstraps facts
+and verifies their round trip before committing. It refuses existing workflow
+records. On the configured migrated test database, `npm run db:seed -- --verify-only`
+performs the same writes and readback, rolls back, then compares all19 fact-table
+hashes and source revision/generation. Coordinate an exclusive test window; this
+is not a destructive project reset. Invalid flags fail before connecting.
 
 A deliberate change to equipment supply must produce an error naming
 `equipment`. The integration probe changes it in a transaction and rolls back,
@@ -291,3 +297,33 @@ status and return to the contractor's scoped published slot. Verify the sandbox
 regression journey and widths1280/1440/1920, then clean exact fixture accounts and
 artifacts. Provider success, microphone consent and source rights remain separate
 verification boundaries; #16 does not silently resolve those gates.
+
+## Issue #17 release suites and evidence limits
+
+Run the normal suite and `test:db` serially against the hosted test database, then
+lint/typecheck/build. `npm run test:e2e` is separate and must not overlap other
+DB suites: see `scripts/e2e/README.md`. It starts the built app, authenticates real
+role sessions and exercises manual/transcript proposal→approval→workforce-aware
+solve→publication→controlled Telegram failure/retry/success→persisted exports and
+contractor scope. It verifies hosted private-schema exposure, stale errors, bounded
+error envelopes, private evidence and exact cleanup. Controlled responses do not
+verify live model extraction quality or a real Telegram recipient.
+
+`api.assistant-security.test.ts` reproduces origin/content-type and logging leaks.
+`accessibility.test.tsx` and notification regressions check dialog keyboard return,
+scroll bounds, contrast arithmetic, live answers, stable retry focus, acknowledgement
+reset and cooldowns. Actual browser zoom/reader evidence is recorded separately.
+`npm audit` must be rerun after dependency changes; its result is point-in-time.
+
+No Docker, destructive Supabase/Auth project reset, real provider send or public
+deployment is part of this run. Historical clean bootstrap and current parity are
+not described as a freshly recreated hosted project.
+
+Hosted #17 rehearsal evidence (2026-09-07): `db:seed -- --verify-only` passed with
+canonical digest `fnv1a:8c4a9050cfea5e8b`, all19 table hashes and source revision/
+generation unchanged. The production E2E suite passed4 tests (one full journey,
+three provider-boundary tests). The initial run exposed a harness cleanup SQL
+fragment error; bound UUID arrays fixed it and exact recovery restored all13
+history guards. Private-schema probing uses a nonmutating RPC with Content-Profile,
+which returns406/PGRST106; REST root discovery instead requires a secret key and
+is not evidence of schema exposure. No app authorization rule was relaxed.

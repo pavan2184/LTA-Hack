@@ -99,7 +99,7 @@ function DeliveryHistory({ planId, publishState, warning }: Props) {
       )}
       {deliveries.map((delivery) => (
         <DeliveryRecord
-          key={`${delivery.id}:${delivery.attemptCount}`}
+          key={delivery.id}
           delivery={delivery}
           allowRetry={publishState === "published"}
           onUpdated={(updated) =>
