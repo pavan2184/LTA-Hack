@@ -201,3 +201,21 @@ journey. Both new DB files are included in the required test:db gate. Migration
 syntax was verified in an intentionally rolled-back PostgreSQL transaction before
 review/application. The focused four live proposal-review cases passed with all
 fixtures rolled back. No provider key is needed to test this human review boundary.
+
+## Issue #12 workforce visualization checks
+
+`workforce-series.test.ts` independently calculates expected headcounts at each
+slot and supply/placement event boundary, including non-aligned boundaries, gaps,
+signed deficits and team/role isolation. `visible-planning-inputs.test.ts` exercises
+real store strategy/pin/suggestion/repair and disruption transitions, proving
+exactly one emergency insertion, one overrun and zero supply after withdrawal.
+Component and dashboard integration checks cover accessible interval values,
+filters, keyboard contributor selection, unknown demand and changed-plan state.
+Production UAT checks shortage selection, generation, disruption/replan, shared
+request selection, desktop overflow and console errors.
+
+The loading regression crosses the visible non-idle store stage (a single async
+React act can batch away that stage and miss an unmount). A nondefault team/role
+must survive the solve. Emergency inspector tests exercise exact forced time and
+headcounts before/after replanning, scenario clearing/replacement, and unchanged
+baseline request controls.

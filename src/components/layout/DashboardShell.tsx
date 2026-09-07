@@ -10,6 +10,7 @@ import { ViolationPanel } from "@/components/insights/ViolationPanel";
 import { SolverBar } from "@/components/layout/SolverBar";
 import { RequestQueue } from "@/components/requests/RequestQueue";
 import { BlockTimeline } from "@/components/schedule/BlockTimeline";
+import { WorkforceTimeline } from "@/components/schedule/WorkforceTimeline";
 import { Figure } from "@/components/shared/Figure";
 import { Button } from "@/components/ui/button";
 import { disruptionById } from "@railplan/core/data/disruptions";
@@ -149,6 +150,7 @@ function Workspace() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-2.5">
+          <WorkforceTimeline />
           <BlockTimeline />
           <div className="grid gap-2.5 xl:grid-cols-2">
             <ViolationPanel />

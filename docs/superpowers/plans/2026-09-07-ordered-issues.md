@@ -16,7 +16,7 @@
 - [x] #9: Validated contractor submission lifecycle and immutable approved revisions.
 - [x] #10: Private transcript proposals with exact evidence and bounded model access.
 - [x] #11: Planner review, approval and source revision invalidation.
-- [ ] #12: Accessible workforce demand/capacity visualization from engine data.
+- [x] #12: Accessible workforce demand/capacity visualization from engine data.
 - [ ] #13: Validated, attributed local geographic snapshot, separate from safety topology.
 - [ ] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status.
 - [ ] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
@@ -248,3 +248,29 @@ history, version conflicts, single atomic submission, field completion, planner
 roles, exact engine revision and stale saved plans. Run the full gates and a real
 two-role browser edit → submit → review → approve journey using controlled private
 proposals, without claiming live model extraction.
+
+## #12 implementation design
+
+Render role headcounts above the Gantt from the shared workforce assessment, with
+one team/role selection so other teams cannot mask a shortage. Preserve every
+slot and actual event boundary, signed remaining capacity, textual shortage
+markers, accessible numeric details and contributor buttons selecting the same
+request in the timeline/inspector. Unknown demand remains explicit.
+
+Share the displayed disruption-input assembly with the validator; emergency work
+and overrun placements appear exactly once before and after replanning. Handle
+loading, empty, infeasible, no-shortage and pending replan states. This chart is
+in the existing exploratory dashboard; saved workflow integration stays #16.
+Verify independent hand-calculated slot/event values, filters and keyboard
+selection, every strategy/pin/alternative/repair/disruption transition, full gates,
+independent review and production browser flow. No DB migration is needed.
+
+## #12 completed
+
+368 tests without skips, DB49/concurrency3, lint/typecheck/build, independent
+review and production browser verification pass. Filter reset during loading
+reproduced in component and real-store regressions, then fixed. Emergency
+contributor selection now opens exact read-only details. Browser confirms counts,
+shared selection, filter retention, no duplicated emergency demand, honest
+infeasibility, clearing and three desktop widths. Accounts cleaned, baseline
+parity unchanged and preview stopped. No migration required. #13 is next.

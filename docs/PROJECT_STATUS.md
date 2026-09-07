@@ -2,10 +2,32 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#11 complete; #12 next
+## Ordered issue work — #4–#12 complete; #13 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#11 is committed as `1ee6c16`. #12 is complete: an accessible workforce chart
+above the Gantt displays exact available, demanded and signed remaining people by
+team/role. Slot and non-aligned event boundaries come from the shared workforce
+assessment. Unknown demand, out-of-window shortages, pending replan and infeasible
+plans stay explicit. Contributor selection synchronizes chart, timeline and
+inspector, including read-only emergency placement and staffing details.
+
+Verification: **368 tests pass, zero skips**,43 files; required DB49 rollback
+and3 isolated concurrency checks pass. Lint/typecheck/build and independent
+reviews pass. Review found filters reset during loading; component and actual
+store regressions reproduced it, and preserving hidden/inert details fixed it.
+No solver rules, database facts or applied migrations changed.
+
+Production browser checks passed shortage counts/contributors, shared selection,
+filter retention across generation/alternative/pin/strategy changes, emergency
+preview/replan with demand counted once, exact emergency inspector and clearing.
+An infeasible emergency replan explicitly reports unplaced mandatory work despite
+zero current violations. Widths1280/1440/1920 had no document overflow; browser
+logs were empty. Default objective and viewport restored, two temporary accounts
+removed, no saved artifacts created, baseline parity unchanged and preview stopped.
+#13 is next.
 
 #10 is committed as `c48974e`. #11 is complete: owner-private proposal edits,
 explicit submission into the shared request review queue, immutable source and

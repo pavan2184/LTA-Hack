@@ -368,3 +368,18 @@ change planning facts. Conservatively invalidate source attestations for every
 cancellation and rejected-to-draft reversal, even without an active approval,
 alongside existing approval and replacement invalidation. Every successful change
 keeps the authenticated actor, prior/new state, revision and reason.
+
+### 2026-09-07 — Project workforce assessment instead of recomputing chart staffing
+
+Status: Accepted for issue #12.
+
+Use exact core assessment intervals for available, demanded and signed remaining
+headcount. Preserve every event boundary between regular slots; averaging could
+hide a short shortage. Filter one team and role at a time so surplus elsewhere
+cannot mask a shortage. Accessible interval values and contributor controls expose
+the same information as the visual chart. Unknown demand remains explicit.
+
+Share pending disruption-input assembly between validation and the visualization.
+A solved scenario already contains its forced placements and must not receive a
+second emergency insertion or overrun. This is presentation/orchestration only;
+no solver version, feasibility rules or persisted planning facts change.

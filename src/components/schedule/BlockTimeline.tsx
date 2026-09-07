@@ -388,6 +388,7 @@ export function BlockTimeline() {
                               onClick={() => selectRequest(bar.placement.requestId)}
                               title={`${request.id} ${request.title} — ${formatClock(bar.placement.startMinute)}-${formatClock(bar.placement.endMinute)}${team ? ` — ${team.name}` : ""}`}
                               aria-label={`Select ${request.id}, ${request.title}`}
+                              aria-pressed={selected}
                               className={cn(
                                 "absolute flex min-w-[26px] items-center gap-1 overflow-hidden rounded-xs border px-1 text-left transition-opacity",
                                 selected

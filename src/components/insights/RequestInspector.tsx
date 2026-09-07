@@ -3,12 +3,15 @@
 import { Lock, Unlock } from "lucide-react";
 import { useMemo } from "react";
 
+import { disruptionById } from "@railplan/core/data/disruptions";
 import { requestById } from "@railplan/core/data/requests";
+import { workforceRoles } from "@railplan/core/data/workforce";
 import { teamById } from "@railplan/core/domain/resources";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
+import { visiblePlanningInputs } from "@/store/visible-planning-inputs";
 import { Button } from "@/components/ui/button";
 import { Tag } from "@/components/ui/tag";
 import { CorridorMap } from "@/components/network/CorridorMap";
@@ -23,6 +26,16 @@ export function RequestInspector() {
   const explanationFor = useRailPlanStore((state) => state.explanationFor);
   const alternativesFor = useRailPlanStore((state) => state.alternativesFor);
   const view = useRailPlanStore((state) => state.view);
+  const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
+  const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
+  const scenario = activeDisruptionId ? disruptionById[activeDisruptionId] : null;
+  const visible = useMemo(
+    () => visiblePlanningInputs(result, scenario, hasReplanned),
+    [result, scenario, hasReplanned],
+  );
+  const scenarioRequest = selectedRequestId
+    ? visible?.context.extraRequests?.[selectedRequestId]
+    : null;
 
   const request = selectedRequestId ? requestById[selectedRequestId] : null;
 
@@ -31,15 +44,55 @@ export function RequestInspector() {
   // Dropping it would leave a stale explanation next to a changed schedule.
   /* eslint-disable react-hooks/exhaustive-deps */
   const explanation = useMemo(
-    () => (selectedRequestId ? explanationFor(selectedRequestId) : null),
-    [selectedRequestId, result, explanationFor],
+    () => (selectedRequestId && !scenarioRequest ? explanationFor(selectedRequestId) : null),
+    [selectedRequestId, scenarioRequest, result, explanationFor],
   );
 
   const alternatives = useMemo(
-    () => (selectedRequestId ? alternativesFor(selectedRequestId) : null),
-    [selectedRequestId, result, alternativesFor],
+    () => (selectedRequestId && !scenarioRequest ? alternativesFor(selectedRequestId) : null),
+    [selectedRequestId, scenarioRequest, result, alternativesFor],
   );
   /* eslint-enable react-hooks/exhaustive-deps */
+
+  if (scenarioRequest && visible) {
+    const placement = visible.plan.placements.find((item) => item.requestId === scenarioRequest.id);
+    const team = (visible.context.world?.teamById ?? teamById)[scenarioRequest.teamId];
+    const roles = visible.context.world?.instance.workforceRoles ?? workforceRoles;
+    const staffing = visible.context.extraWorkforceDemand?.filter((item) => item.requestId === scenarioRequest.id);
+    return (
+      <div className="border border-rule bg-surface">
+        <header className="border-b border-rule px-3 py-2.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="font-mono text-[12px] font-medium text-ink-700">{scenarioRequest.id}</span>
+            {scenarioRequest.mandatory && <Tag tone="red">mandatory</Tag>}
+          </div>
+          <h2 className="mt-0.5 text-[14px] font-semibold leading-snug text-ink-900">{scenarioRequest.title}</h2>
+          <p className="mt-0.5 text-[12px] text-ink-500">
+            {scenarioRequest.workType} &middot; {scenarioRequest.sector} &middot; {scenarioRequest.durationMinutes} min
+          </p>
+        </header>
+        <dl className="grid grid-cols-2 gap-px border-b border-rule bg-rule">
+          <Cell label="Forced placement">
+            {placement ? `${formatClock(placement.startMinute)}-${formatClock(placement.endMinute)}` : "No slot"}
+          </Cell>
+          <Cell label="Blocks">{scenarioRequest.blockIds.join(", ")}</Cell>
+          <Cell label="Team">{team ? `${team.name} (${team.id})` : scenarioRequest.teamId}</Cell>
+          <Cell label="Declared staffing">
+            {staffing?.length
+              ? staffing.map((item) => `${roles.find((role) => role.id === item.roleId)?.name ?? item.roleId}: ${item.count}`).join("; ")
+              : "Not declared"}
+          </Cell>
+        </dl>
+        <section className="px-3 py-2.5 text-[12px] leading-relaxed text-ink-700">
+          <p>{scenarioRequest.description}</p>
+          <p className="mt-1.5 text-ink-500">
+            The scenario fixes this mandatory request to its required time. These are read-only
+            scenario details; staffing counts are declared demo inputs.
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   if (!request || !result) {
     return (

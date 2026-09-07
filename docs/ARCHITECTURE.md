@@ -305,3 +305,14 @@ checks; they do not alter planning input provenance. Every cancellation and
 rejected-to-draft reversal now increments the planning source, alongside approval
 and approved replacement, exactly once per successful transition. Private history
 is capped at 100 revisions to bound the deliberately shared snapshot.
+
+## Workforce visualization
+
+The chart projects `assessWorkforce` intervals, the same assessment used by the
+validator and metrics. It retains slot and non-slot event boundaries, shows signed
+remaining headcount, and separates teams and roles. Components do not derive
+new demand or supply rules. Missing demand stays unknown. A shared
+`visiblePlanningInputs` adapter assembles pending disruption placements for both
+impact validation and the chart, preventing duplicate emergency work or overruns.
+The existing request selection synchronizes contributor buttons with the Gantt
+and inspector. The current dashboard remains an exploratory literal snapshot.

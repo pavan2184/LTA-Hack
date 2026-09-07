@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { visiblePlanningInputs } from "./visible-planning-inputs";
 
 import {
   buildDisruptionInputs,
@@ -141,32 +142,16 @@ function disruptionState(state: RailPlanState) {
   )
     return { ...empty, hasReplanned: true };
   const inputs = buildDisruptionInputs(scenario, current.plan.placements);
-  const changed = new Map(
-    inputs.locked.map((placement) => [placement.requestId, placement]),
-  );
-  const affectedPlan = {
-    placements: [
-      ...current.plan.placements.map(
-        (placement) => changed.get(placement.requestId) ?? placement,
-      ),
-      ...inputs.locked.filter(
-        (placement) =>
-          !current.plan.placements.some(
-            (item) => item.requestId === placement.requestId,
-          ),
-      ),
-    ],
-    deferred: current.plan.deferred,
-  };
-  const impact = validate(affectedPlan, inputs.context);
+  const visible = visiblePlanningInputs(current, scenario, false)!;
+  const impact = validate(visible.plan, visible.context);
   return {
     hasReplanned: false,
     disruptionImpact: impact,
     disruptionMetrics: computeMetrics(
-      affectedPlan,
+      visible.plan,
       impact,
       inputs.requests,
-      inputs.context,
+      visible.context,
     ),
     disruptionPlacements: inputs.locked,
   };
