@@ -1,16 +1,18 @@
 # Architecture
 
-Last updated: 2026-08-02
+Last updated: 2026-09-07
 
 ## Shape
 
 A static Next.js App Router page over a pure TypeScript planning engine, plus
-one dynamic route for the assistant. No database, no auth, no external feed.
+one dynamic route for the assistant. Postgres planning-facts migrations and a
+seed/loader exist; the dashboard still consumes literals. No auth or live feed
+yet. The owner requires database development without Docker.
 
 ```
-src/domain/     network topology, crews, assets, work-class rules   (facts)
-src/data/       22 requests, emergency scenarios, disruptions       (inputs)
-src/engine/     intervals, validate, solve, metrics,                (computation)
+packages/core/src/domain/     network topology, crews, assets, work-class rules   (facts)
+packages/core/src/data/       22 requests, emergency scenarios, disruptions       (inputs)
+packages/core/src/engine/     intervals, validate, solve, metrics,                (computation)
                 alternatives, explain, strategies, hash
 src/store/      Zustand: view state + solver invocation             (orchestration)
 src/components/ dashboard                                           (presentation)
@@ -117,3 +119,15 @@ real phases rather than a fake timer. That trade changes if the dataset grows.
 Any Node host that can build Next.js. `/` is static; `/api/assistant` needs a
 server. Without `ANTHROPIC_API_KEY` the assistant degrades to templates and the
 rest of the application is unaffected.
+
+## Database boundary (v0.4.0)
+
+`PlanningInstance` is the serializable contract shared by literals and the
+Postgres loader. Canonical ordering and section-level digest comparison detect
+source drift. `PlanningWorld` derives the lookups carried through engine context.
+The core package cannot import web, React or Next code; ESLint enforces this.
+`supabase/migrations` stores schema history, `scripts/db/seed.ts` writes demo
+facts, and `scripts/db/verify.ts` is the required non-skipping parity gate.
+The hosted RailPlan Dev project passes migration, seed and literal/database parity
+verification. The loader uses a repeatable-read transaction for a consistent
+snapshot and transaction-pooler compatibility. Plans and audits are not persisted yet.

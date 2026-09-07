@@ -1,72 +1,54 @@
 # Project Brief
 
-Last updated: 2026-07-15
+Last updated: 2026-09-07 · RailPlan v0.4.0
 
-## One-Line Description
+RailPlan is a non-operational rail-maintenance planning prototype. It evaluates
+22 fabricated requests across 12 atomic track blocks in a four-hour engineering
+window, calculates conflicts, proposes placements and independently validates
+its results. Users are maintenance planners and operations controllers.
 
-RailPlan is a presentation-ready, frontend-only control-centre simulation that demonstrates how rail maintenance planners could review conflicts, compare explainable schedule strategies, retain human control, and respond to disruptions.
+## Implemented journeys
 
-## Problem Statement Alignment
+1. Load the requested plan and inspect exact conflict rules and intervals.
+2. Apply validated repairs or generate a schedule with one of five deterministic
+   objective profiles.
+3. Inspect calculated metrics, formulas, counterfactual explanations and feasible
+   alternatives; pin work and re-solve around those hard constraints.
+4. Apply an emergency, crew outage, overrun or early handback and replan.
+5. Ask the optional assistant about server-computed facts; use deterministic
+   answers when credentials or grounded model output are unavailable.
 
-The challenge is to automate maintenance scheduling when track requests compete for short engineering windows, sector access, compatible work, engineers, and equipment. A complete solution must detect conflicts, flag them clearly, suggest alternatives, and automate rescheduling.
+## Current product boundary
 
-RailPlan v0.1.0 demonstrates the intended user workflow and presentation. It does not yet fulfil the mathematical automation claim because schedules and conflicts are preconfigured. The proposed deterministic path is documented in `DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md` and supported by the annotated papers in `RAIL_SCHEDULING_RESEARCH.md`.
+The Next.js dashboard uses the pure TypeScript `@railplan/core` engine. Schedules,
+conflicts, metrics, alternatives and disruption responses are computed at runtime.
+Input data and operational topology are fabricated. The map is a schematic.
+No real LTA rules, live feeds or operational safety certification are represented.
 
-## Problem and Users
+Postgres planning-input migrations and a TypeScript seed/loader are authored;
+verification status is in `PROJECT_STATUS.md`. The dashboard still reads literals.
+Strategy and exact pinned placements persist locally. Plans, approvals and audit
+history are not yet durable. The assistant is the only HTTP route; identity and
+organization isolation are pending issue #5. The app runs directly in Node.js.
+The owner requires a database workflow without Docker (2026-09-07).
 
-Rail work requests compete for track access, teams, equipment, safety buffers, and short engineering windows. Primary users are maintenance planners and operations controllers; secondary users are engineering leads and hackathon evaluators. This prototype is not for passengers and does not execute real operational decisions.
+## Ordered delivery scope
 
-## Core User Journeys
+GitHub issues #4–#21 define the authorized roadmap: database baseline,
+authentication, versioned plans, aggregate workforce supply/demand and constraints,
+request intake and transcript proposals, planner approval, workforce/geographic
+views, Telegram publication, exports, product integration and release verification.
+Later work covers voice, scoped provider imports, a CP-SAT benchmark and a
+separate named-crew go/no-go decision. Follow numeric order and dependency gates.
 
-1. Load submitted requests, see the work needing attention first, and inspect the exact track/resource reason for a conflict.
-2. Resolve declared conflicts, compare Submitted and Recommended plans, and review critical-work coverage and plan changes.
-3. Switch planning objectives to trade completion, risk, schedule stability, and emergency capacity.
-4. Trigger a disruption, inspect affected work, replan, and review the impact summary.
-5. Accept a change, retain the submitted placement, lock work, or inspect alternatives to demonstrate planner control.
+## Success criteria and limits
 
-## MVP Scope
+Every feasibility claim passes the shared validator; every metric exposes its
+calculation. Lint, typecheck, tests and production build must pass. Database gates
+must fail on drift rather than silently skip. Product UAT covers the workflow
+and widths 1280, 1440 and 1920 pixels.
 
-- One desktop-first App Router dashboard with 22 deterministic requests.
-- Original, five optimised strategies, disruption, and response schedules.
-- Request filtering/search, selection, network highlighting, timeline interactions, explanations, alternatives, and locks.
-- Animated metrics, optimisation/replanning loading states, toasts, comparisons, and reset.
-- Browser-local persistence for strategy and locked work only.
-- Planner-first information hierarchy with attention filtering, declared-conflict language, critical-work coverage, and a release-readiness checklist.
-
-## Current Product Truth
-
-- Requests, conflicts, schedules, metrics, alternatives, and response plans are deterministic TypeScript fixtures.
-- “Optimise” and “replan” select fixtures after fixed loading timers.
-- The map is a fixed rail-line schematic, not a geographic or operational track-block model.
-- Planner locks and alternative overrides affect visible placements but are not revalidated and do not recalculate KPIs.
-- Export/file generation is unavailable and is not presented as a working control.
-- The prototype is not suitable for operational decisions.
-
-## Non-MVP Scope
-
-- Backend, authentication, database, external APIs, real optimisation, live railway feeds, file generation, and production deployment.
-
-The mathematical validator, calculated KPIs, public-map snapshot, and solver described in the proposal are roadmap items, not v0.1.0 scope.
-
-## Success Metrics
-
-- Complete the scripted two-minute demo without refresh or dead controls.
-- No horizontal page overflow at 1280, 1440, or 1920 px.
-- Tests cover state transitions and metric changes; lint, typecheck, tests, build, and UAT pass.
-
-## Key Risks
-
-- Dense timeline becoming unreadable at 1280 px; mitigated with a fixed sector column and compact grid.
-- Mock variants drifting from metrics; mitigated with central schedule definitions and store tests.
-- Client hydration/persistence mismatch; mitigated by a mounted state and partial persistence.
-- Motion obscuring the demo; transitions remain brief and deterministic.
-- Fixture metadata being mistaken for independently validated feasibility; mitigated through explicit simulation labels and the current implementation audit.
-- Planner overrides making the displayed plan inconsistent with unchanged metrics; this remains a known implementation gap.
-- Strategy fixtures reporting zero conflicts while retaining at least one known shared-resource collision; the deterministic P0 validator is required before making feasibility claims.
-
-## Documentation
-
-- `README.md` in this directory is the documentation index and source-of-truth guide.
-- `CURRENT_IMPLEMENTATION_AUDIT.md` records exact current behaviour and gaps.
-- `DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md` is a proposed future direction.
-- `RAIL_SCHEDULING_RESEARCH.md` is supporting research, not an accepted architecture decision.
+The heuristic does not prove global optimality. Crew reassignment, individual
+qualifications, authenticated collaboration, durable exports and notifications
+remain pending their respective issues. Keep fabricated-data and non-operational
+labels visible throughout.

@@ -24,7 +24,7 @@ function fnv(text: string, seed: number, reverse: boolean): string {
 }
 
 /** JSON.stringify with sorted object keys, so key order cannot change the hash. */
-function stableStringify(value: unknown): string {
+export function stableStringify(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   const entries = Object.entries(value as Record<string, unknown>)

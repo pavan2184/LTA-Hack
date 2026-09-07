@@ -5,7 +5,7 @@ import {
   WINDOW_END,
   WINDOW_START,
 } from "../data/requests";
-import { digest } from "../engine/hash";
+import { digest, stableStringify } from "../engine/hash";
 import type { MaintenanceRequest } from "../types/railplan";
 import {
   blockAdjacency,
@@ -152,4 +152,15 @@ export function canonicalise(instance: PlanningInstance): PlanningInstance {
  */
 export function instanceDigest(instance: PlanningInstance): string {
   return digest(canonicalise(instance));
+}
+
+/** Verify content and identify changed sections without exposing their values. */
+export function assertInstancesMatch(expected: PlanningInstance, actual: PlanningInstance): void {
+  const left = canonicalise(expected);
+  const right = canonicalise(actual);
+  const sections = (Object.keys(left) as (keyof PlanningInstance)[]).filter(
+    (key) => stableStringify(left[key]) !== stableStringify(right[key]),
+  );
+  if (sections.length) throw new Error(`Planning instance mismatch. Sections that differ: ${sections.join(", ")}`);
+  if (instanceDigest(left) !== instanceDigest(right)) throw new Error("Planning instance digest mismatch; check canonicalisation.");
 }

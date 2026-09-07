@@ -9,7 +9,7 @@
  *
  *   npm run db:seed
  */
-import { buildInstanceFromLiterals, instanceDigest } from "@railplan/core/domain/instance";
+import { assertInstancesMatch, buildInstanceFromLiterals, instanceDigest } from "@railplan/core/domain/instance";
 
 import { connect, DATABASE_URL } from "../../src/lib/db/client";
 import { loadPlanningInstance } from "../../src/lib/db/instance";
@@ -190,37 +190,19 @@ async function main() {
     console.log(`literals digest ${expected}`);
     console.log(`database digest ${actual}`);
 
-    if (actual !== expected) {
-      console.error("\nThe seeded database does not describe the same night as the literals.");
-      console.error(firstDifference(instance, loaded));
-      process.exitCode = 1;
-      return;
-    }
+    assertInstancesMatch(instance, loaded);
     console.log("\nround trip verified: the database and the engine describe the same night.");
   } finally {
-    await sql.end();
+    await sql.end({ timeout: 1 });
   }
-}
-
-/** Narrow a digest mismatch to the section that differs, so the report is useful. */
-function firstDifference(
-  expected: ReturnType<typeof buildInstanceFromLiterals>,
-  actual: ReturnType<typeof buildInstanceFromLiterals>,
-): string {
-  const keys = Object.keys(expected) as (keyof typeof expected)[];
-  const differing = keys.filter(
-    (key) => JSON.stringify(expected[key]) !== JSON.stringify(actual[key]),
-  );
-  return differing.length
-    ? `Sections that differ: ${differing.join(", ")}`
-    : "Digests differ but every section matches — check canonicalise().";
 }
 
 function redact(url: string): string {
   return url.replace(/\/\/[^@]*@/, "//***@");
 }
 
-main().catch((error) => {
-  console.error(error);
+main().catch((error: unknown) => {
+  console.error(error instanceof Error && error.message.startsWith("Planning instance")
+    ? error.message : "Seed failed. Verify the dedicated RailPlan DATABASE_URL and applied migrations. No credentials or database payloads are printed.");
   process.exitCode = 1;
 });

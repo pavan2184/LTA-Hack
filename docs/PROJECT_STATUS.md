@@ -1,6 +1,60 @@
 # Project Status
 
-Last updated: 2026-08-04
+Last updated: 2026-09-07
+
+## Ordered issue work — issue #4 complete; #5 next
+
+Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
+order and then required no Docker. No GitHub issue has been closed yet.
+
+RailPlan Dev is healthy on Supabase Free in Singapore, project
+`ufcdynfjfzbjvglsdaqp`, in `pavan2184's Org`. The new empty hosted database is
+the replacement for #4's local Docker reset baseline. Neither unrelated
+Supabase projects nor the local NRI_Land database were modified.
+
+Implemented for #4:
+
+- Transactional migration runner with an unexposed SHA-256 migration ledger;
+  repeated migrations are a no-op and edited applied migrations fail.
+- Corrected PostgreSQL enum pair ordering to match TypeScript lexical ordering.
+- Seeded all 22 fabricated requests and read them back through the real loader.
+- Consistent repeatable-read loader transactions also fix stalling pooled reads.
+- Shared content comparison reports changed sections, ignores object property
+  order, and preserves meaningful request block order.
+- Required db:verify/test:db commands cannot turn missing infrastructure into a
+  passing gate. Ordinary tests show explicit skips only if the probe fails.
+- Hosted TLS verifies Supabase's public CA and hostname; prepared statements
+  are disabled for transaction pooling. Port 6543 works; 5432 times out on this
+  network. Credentials are confined to ignored, owner-readable `.env.local`.
+- Updated v0.4 contracts, package versions, setup and security documentation.
+
+Verification (2026-09-07):
+
+- Both migrations applied successfully to the empty hosted database.
+- db:migrate rerun: both recorded as already applied.
+- db:seed and db:verify: database/literal digest `fnv1a:fef0c4904e890f43`, 22 requests.
+- npm test: **191 passed, zero skipped**, across 11 files; includes live database
+  parity, rolled-back equipment drift, all public tables using RLS, and reversed
+  work-class pair rejection.
+- Lint, typecheck, production build and diff whitespace checks passed.
+- Before database setup, db:verify correctly failed while optional tests reported
+  unavailable-database skips. No browser UI behavior changed in this baseline.
+- Code review passed after adding missing/edited migration-history rejection.
+  The follow-up run passed 17 migration/instance tests, live migration replay,
+  lint and typecheck. The prior full suite/build passed unchanged app behavior.
+- No local app server started. #4 is complete under the hosted/no-Docker
+  requirement; #5 authentication is next.
+- npm audit has unresolved advisories; remediation remains a release gate.
+
+Historical environment recovery: the initial Docker image pull exhausted disk
+space and was stopped. The owner then selected hosted Supabase. Project build
+output was deleted to recover space; no unrelated volumes or source were deleted.
+Docker-backed npm commands were removed. All current database work is online.
+
+## Historical implementation record
+
+The entries below describe earlier milestones. Their "not yet verified" notes
+are historical; the current verification state is recorded above.
 
 ## Current version
 
@@ -134,8 +188,7 @@ produced, but not one describing the run in front of the planner.
   start. It is replaced by a Postgres token bucket keyed on the authenticated
   user in Phase 2. The input bounds, not the limiter, are what removed the
   amplification that made a flood dangerous.
-- `docs/API_CONTRACT.md` still describes the v0.1.0 store and states the project
-  has no backend. It is stale and is rewritten in Phase 6.
+- The API contract was stale at this milestone; synchronized during issue #4.
 
 ## Summary
 

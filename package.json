@@ -1,6 +1,6 @@
 {
   "name": "railplan",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -13,10 +13,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:start": "supabase start",
-    "db:stop": "supabase stop",
-    "db:reset": "supabase db reset",
-    "db:seed": "tsx scripts/db/seed.ts"
+    "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/db/seed.ts",
+    "db:verify": "node --env-file-if-exists=.env.local --import tsx scripts/db/verify.ts",
+    "test:db": "npm run db:verify && vitest run src/test/instance.test.ts",
+    "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/db/migrate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

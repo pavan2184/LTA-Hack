@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 import {
   buildInstanceFromLiterals,
   canonicalise,
   instanceDigest,
+  assertInstancesMatch,
 } from "@railplan/core/domain/instance";
 import { blockAdjacency, trackBlocks } from "@railplan/core/domain/network";
 import { requests } from "@railplan/core/data/requests";
@@ -48,6 +49,24 @@ describe("the planning instance", () => {
     // One more thermal imaging unit is exactly the kind of change that stops
     // M-004 and M-011 conflicting, so it had better not hash the same.
     expect(instanceDigest(tampered)).not.toBe(instanceDigest(instance));
+    expect(() => assertInstancesMatch(instance, tampered)).toThrow(/equipment/);
+  });
+
+  it("ignores canonical ordering when verifying a round trip", () => {
+    expect(() => assertInstancesMatch(instance, {
+      ...instance, requests: [...instance.requests].reverse(),
+    })).not.toThrow();
+  });
+
+  it("compares values independently of database object property order", () => {
+    const reordered = {
+      ...instance,
+      equipment: instance.equipment.map((item) => ({
+        units: item.units, turnaroundMinutes: item.turnaroundMinutes,
+        name: item.name, id: item.id,
+      })),
+    };
+    expect(() => assertInstancesMatch(instance, reordered)).not.toThrow();
   });
 
   it("carries the whole night", () => {
@@ -94,20 +113,28 @@ describe("the planning instance", () => {
  * loader is caught by `npm test` on a machine that does have the database up.
  */
 const sql = connect();
-const reachable = await Promise.race([
-  sql`select 1`.then(
-    () => true,
-    () => false,
-  ),
-  // A refused connection rejects immediately, but a half-open port or a
-  // container still starting will not. The suite must not hang on either.
-  new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2_000)),
-]);
+const reachable = await sql`select 1`.then(() => true, () => false);
+afterAll(() => sql.end({ timeout: 1 }));
+if (!reachable) console.warn("Database integration tests skipped: Postgres unavailable. Configure DATABASE_URL for the dedicated RailPlan database and apply migrations/seed; npm run db:verify is the required non-skipping gate.");
 
 describe.skipIf(!reachable)(`round trip through ${DATABASE_URL.replace(/\/\/[^@]*@/, "//***@")}`, () => {
+  it("protects every public planning table with row-level security", async () => {
+    const tables = await sql`select tablename, rowsecurity from pg_tables where schemaname = 'public'`;
+    expect(tables.length).toBeGreaterThanOrEqual(16);
+    expect(tables.filter((table) => !table.rowsecurity)).toEqual([]);
+  });
+
+  it("rejects reversed lexical work-class pairs", async () => {
+    await expect(sql.begin(async (tx) => {
+      await tx`insert into work_class_incompatibility (class_a, class_b, reason, extends_to_adjacent)
+        values ('traction-power', 'civil', 'invalid reverse pair probe', false)`;
+      throw new Error("The database accepted a reversed pair");
+    })).rejects.toMatchObject({ code: "23514" });
+  });
+
   it("reads back exactly the night that was seeded", async () => {
     const loaded = await loadPlanningInstance(sql, instance.planningNight);
-    expect(instanceDigest(loaded)).toBe(instanceDigest(instance));
+    assertInstancesMatch(instance, loaded);
   });
 
   it("reports which section differs rather than only that a digest moved", async () => {
@@ -117,6 +144,15 @@ describe.skipIf(!reachable)(`round trip through ${DATABASE_URL.replace(/\/\/[^@]
       expect({ [key]: loaded[key] }).toEqual({ [key]: instance[key] });
     });
   });
-});
 
-if (!reachable) await sql.end();
+  it("detects real stored data drift and rolls the mutation back", async () => {
+    const rollback = new Error("rollback drift probe");
+    await expect(sql.begin(async (tx) => {
+      await tx`update equipment_types set units = units + 1 where id = 'E-THM'`;
+      const loaded = await loadPlanningInstance(tx, instance.planningNight);
+      expect(() => assertInstancesMatch(instance, loaded)).toThrow(/equipment/);
+      throw rollback;
+    })).rejects.toBe(rollback);
+    assertInstancesMatch(instance, await loadPlanningInstance(sql, instance.planningNight));
+  });
+});

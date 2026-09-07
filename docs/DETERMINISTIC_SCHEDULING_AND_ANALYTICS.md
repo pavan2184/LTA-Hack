@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-15
 
-Status: Proposed technical direction. This document does not change the accepted frontend-only architecture or claim that the current mock schedules are solver-generated.
+Status: Historical design and remaining roadmap. The TypeScript engine and v0.4 input contract are now implemented; CP-SAT, public geography and other later sections remain proposals. Present-tense descriptions of the old simulation below are historical context; see PROJECT_STATUS.md for current truth.
 
 See `README.md` in this directory for documentation status/precedence and `RAIL_SCHEDULING_RESEARCH.md` for the annotated research survey and paper-to-feature mapping behind these recommendations.
 
@@ -33,7 +33,7 @@ The current prototype has a clean presentation architecture but does not yet com
 - `src/data/scheduleBuilder.ts` creates three alternatives without checking whether the alternatives are feasible.
 - `src/data/disruptionResponseSchedules.ts` declares response plans and robustness values manually.
 - `src/components/network/RailNetworkMap.tsx` is a useful schematic, but it uses a small fixed list of station codes and counts only exact sector-string matches.
-- `src/store/useRailPlanStore.ts` selects among fixtures and applies planner overrides; it does not run a constraint engine.
+- The v0.1 `src/store/useRailPlanStore.ts` selected fixtures; the current store runs the shared constraint engine.
 - The automated data test proves that optimised jobs do not overlap on the same exact sector. It does not yet prove team, equipment, compatibility, dependency, adjacent-sector, travel-time, safety-buffer, or permitted-window feasibility.
 - A read-only resource audit confirms that every current strategy retains at least the `M-004`/`M-011` shared thermal imaging unit conflict even while its metric reports zero active conflicts.
 
@@ -238,7 +238,7 @@ A locked placement is a constraint, not a post-processing override:
 x_{in^*t^*}=1
 \]
 
-The current store merges locked jobs after selecting a fixture. A real solver must include locks before it solves so it can prove whether the remaining plan is feasible.
+The v0.1 store merged locked jobs after selecting a fixture. A real solver must include locks before it solves so it can prove whether the remaining plan is feasible.
 
 #### 10. Emergency reserve
 

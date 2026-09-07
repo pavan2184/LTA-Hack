@@ -1,108 +1,90 @@
 # Teammate Handoff
 
-Last updated: 2026-07-15
+Last updated: 2026-09-07 · RailPlan v0.4.0
 
-## Snapshot
+## Run the application without Docker
 
-RailPlan v0.1.0 is a frontend-only, presentation-ready simulation for the LTA smarter-maintenance-planning challenge. The product workflow is implemented and tested; the scheduling mathematics are researched and designed but not yet implemented as a validator or solver.
-
-Use this document for a fast project orientation. For exact code truth, read `CURRENT_IMPLEMENTATION_AUDIT.md`; for current priorities and limitations, read `PROJECT_STATUS.md`.
-
-## Get Running
-
-Requirements: Node.js 22 and npm.
+Use Node.js 22 and npm. From a fresh clone:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`. No `.env` file or external service is required.
+The app runs directly in Node at http://localhost:3000. No database is required
+for the current fabricated-data dashboard. The optional assistant uses
+`ANTHROPIC_API_KEY` or a local Anthropic auth profile; absent credentials use
+engine templates. Do not commit credentials. Database scripts load the Git-ignored `.env.local` file; exported shell/CI
+values take precedence.
 
-Before sharing a change, run:
+## Hosted database baseline (issue #4)
+
+RailPlan Dev is the dedicated Free-plan project in pavan2184's Org, Singapore:
+https://supabase.com/dashboard/project/ufcdynfjfzbjvglsdaqp
+
+No Docker is used. Create `.env.local` (Git-ignored, owner-only permissions) and
+set the existing `DATABASE_URL` to the project's connection URI, percent-encoding
+the password. Never commit credentials. Database scripts and Vitest load this
+file automatically; exported environment values take precedence. Use Node 22.9+
+for `--env-file-if-exists` support.
+
+The verified endpoint uses transaction pooling on port 6543. Port 5432 times out
+on this Mac's current network. `connect()` disables prepared statements and uses
+Supabase's public CA with certificate and hostname validation. The CA is vendored
+in `config/supabase-ca.crt` from the official dashboard download, expires in 2031,
+and is not a secret. Rotate it when Supabase changes its CA.
 
 ```bash
-npm test
-npm run lint
-npm run typecheck
-npm run build
+npm ci
+npm run db:migrate
+npm run db:seed
+npm run db:verify
+npm run test:db
 ```
 
-Current verified baseline: 17/17 Vitest tests, clean lint and typecheck, successful static production build, and HTTP 200 from the local frontend. Responsive visual browser UAT remains outstanding because no browser session was available during the last verification.
+`db:migrate` applies checked-in SQL in filename order inside a transaction and
+records checksums in the unexposed `railplan_private.migrations` table. Repeating
+it is a no-op; editing an applied migration fails. Add a new migration for changes.
+The clean, newly created hosted database replaces the old local reset gate.
+There is deliberately no command that resets the hosted project's managed schemas.
 
-## Five-Minute Product Tour
+`db:seed` replaces RailPlan demo planning facts; it is not a production seed.
+Use it only on this dedicated development project. It writes all facts in one
+transaction, loads them through a consistent read transaction, and checks parity.
+`db:verify` never skips unavailable, unseeded or mismatched data. Ordinary tests
+explicitly skip only when the database probe cannot connect.
 
-1. Select `Load sample requests`.
-2. The `Attention` filter shows conflicted or unscheduled work first.
-3. Open a conflict to inspect the affected request and declared reason.
-4. Choose a `Planning objective`, then select `Resolve conflicts`.
-5. Compare `Submitted` and `Recommended` plans and inspect changed timing.
-6. Review the affected corridor, placement reason, alternatives, and release readiness.
-7. Select `Test disruption`, apply a scenario, and replan affected work.
+Troubleshooting:
 
-## What Is Real Versus Simulated
+- Port 5432 timeout: use the dashboard's transaction pooler URI (6543).
+- Certificate failure: use the official CA; do not disable TLS verification.
+- Missing relation/night: apply migrations, then seed the dedicated project.
+- Changed digest: inspect the named section; do not bypass the assertion.
+- Edited migration: restore its original content and add a new migration.
+- Loader stalls on transaction pooling: preserve its repeatable-read transaction;
+  it binds the multi-query read to one backend and prevents mixed snapshots.
 
-| Area | Current status |
-| --- | --- |
-| Planner interface and interactions | Implemented |
-| Requests, conflict records, strategy plans, KPIs, and responses | Deterministic TypeScript fixtures |
-| Optimisation and replanning | Fixed UI timers that select fixtures |
-| Conflict validation | Limited tests only; no general validator |
-| Network view | Fixed station-code schematic |
-| Persistence | Selected strategy and locked request IDs in localStorage |
-| Backend, auth, database, live feeds, export | Not implemented |
+The Supabase connector remains authenticated to another account. Use the correct
+browser account or the project-specific database connection; do not modify
+GrowMe Hackathon, LearnGraph, or NRI_Land.
 
-Important: a strategy displaying zero declared conflicts is not proof of feasibility. All strategy fixtures retain at least the known `M-004`/`M-011` shared thermal-imaging-unit overlap. Never describe the current recommendation as independently validated or operationally safe.
+## Code map and tour
 
-## Code Map
+`packages/core/src` owns domain facts, types, validator, solver, metrics,
+alternatives and explanations. `src/store/useRailPlanStore.ts` orchestrates the
+three-step planner flow. `src/components` renders computed results.
+`src/app/api/assistant` is the single HTTP endpoint. `src/lib/db` and `scripts/db`
+implement database read-back and seed verification.
 
-| Area | Location |
-| --- | --- |
-| Page composition and top-level states | `src/components/layout/DashboardShell.tsx` |
-| Planning objective and primary actions | `src/components/controls/StrategyControls.tsx` |
-| Request triage | `src/components/requests/RequestQueue.tsx` |
-| Access timeline | `src/components/schedule/ScheduleTimeline.tsx` |
-| Conflict/request inspector and readiness | `src/components/insights/DetailsPanel.tsx`, `src/components/metrics/PlanReadinessCard.tsx` |
-| State transitions and visible schedule | `src/store/useRailPlanStore.ts` |
-| Requests and schedule fixtures | `src/data/` |
-| Domain contracts | `src/types/railplan.ts` |
-| Automated tests | `src/test/` |
+Load requests, inspect conflicts, apply repairs, generate a plan, inspect metric
+formulas, pin work, try alternatives, trigger a disruption and replan. Inputs
+are fabricated; outputs are calculated. No output certifies railway safety.
 
-## Documentation Reading Order
+## Verification and next work
 
-1. `PROJECT_BRIEF.md`
-2. `ARCHITECTURE.md`
-3. `DATA_MODEL.md`
-4. `API_CONTRACT.md`
-5. `TESTING.md`
-6. `SECURITY_REVIEW.md`
-7. `DECISIONS.md`
-8. `PROJECT_STATUS.md`
-9. `CURRENT_IMPLEMENTATION_AUDIT.md`
+Run npm test, npm run lint, npm run typecheck and npm run build. Database
+integration is an additional required gate, not replaced by ordinary test skips.
+Read `PROJECT_STATUS.md` for actual results and unresolved failures.
 
-The mathematical design is in `DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md`. Supporting papers and feature mappings are in `RAIL_SCHEDULING_RESEARCH.md`. Both are proposals/research, not implemented product claims.
-
-## Recommended Next Milestone
-
-Implement the proposed frontend-only deterministic P0 before introducing AI or a backend solver:
-
-1. Represent sectors as atomic track blocks.
-2. Add a pure TypeScript conflict validator for windows, blocks, shared teams/equipment, buffers, dependencies, and compatibility.
-3. Run it against original, strategy, disruption, lock, and alternative placements.
-4. Replace fixture KPI claims with calculated values and structured provenance.
-5. Keep the existing planner-first UI and expose exact constraint reasons.
-
-Acceptance should require every displayed recommendation to pass the independent validator, or to show an explicit infeasible/partially validated state.
-
-## Collaboration Rules
-
-- Branch from `main`; use a focused feature branch and pull request.
-- Read `AGENTS.md` and the required project documents before code changes.
-- Update `PROJECT_STATUS.md` after meaningful work and `DECISIONS.md` after product/architecture decisions.
-- Update `DATA_MODEL.md`, `API_CONTRACT.md`, `TESTING.md`, or `SECURITY_REVIEW.md` when their contracts change.
-- Never delete tests to make CI pass or present fixture metadata as calculated safety assurance.
-- Preserve the deterministic demo until a replacement decision is accepted and documented.
-
-## Sharing and Access
-
-The GitHub repository is private. The owner must grant each teammate collaborator or organisation access. Teammates should clone the repository, run `npm ci`, and use pull requests so CI and review history remain visible.
+Follow issues #4–#21 in numeric order. #4 verification is recorded in PROJECT_STATUS.md. Do not claim later
+identity, workforce, persistence or product features are implemented.

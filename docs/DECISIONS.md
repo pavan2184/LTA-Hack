@@ -1,8 +1,43 @@
 # Decisions
 
-Last updated: 2026-08-02
+Last updated: 2026-09-07
 
 ## Log
+
+### 2026-09-07 — Hosted RailPlan Dev baseline
+
+Status: Accepted by the owner choosing and creating the online project.
+
+Use project ufcdynfjfzbjvglsdaqp in pavan2184's Org, Singapore. The clean hosted
+project replaces the local Docker reset baseline. Connect via Supavisor on 6543
+because 5432 is unreachable from this network; validate the official CA and
+hostname and disable prepared statements. Load each PlanningInstance inside a
+repeatable-read transaction: this both fixes pooled multi-query reads stalling
+and prevents mixed input snapshots. Apply migrations transactionally with a
+private checksum ledger; do not reset managed hosted schemas.
+
+### 2026-09-07 — Ordered delivery and no Docker
+
+Status: Accepted by the owner's task and follow-up instruction.
+
+Implement GitHub issues #4–#21 in numeric order. Each prerequisite must pass its
+acceptance checks before dependent feature work. The owner's no-Docker direction
+supersedes #4's local Supabase CLI reset requirement. The owner selected a new
+hosted Supabase project; document the equivalent migration,
+seed, read-back and failure checks. Do not reuse unrelated projects or databases.
+
+### 2026-09-07 — Document the existing v0.4 package and database boundary
+
+Status: Accepted; records the architecture already implemented.
+
+The shared core package owns instance data, canonicalization, world derivation
+and all scheduling logic. Postgres stores inputs; dashboard outputs remain
+computed in memory. Explicit database verification fails on unavailable or
+mismatched data. Optional test-suite skips never substitute for that gate.
+
+Historical v0.1 decisions below are superseded where the 2026-08-02 engine
+replacement or v0.4 database boundary changed them.
+
 
 ### 2026-08-02 — Replace the fixtures with a real engine
 
@@ -145,11 +180,11 @@ Status: Accepted
 
 ### Deterministic P0 validation layer
 
-Status: Proposed
+Status: Implemented and superseded by the 2026-08-02 decision (historical proposal)
 
 - Add atomic track blocks, a pure TypeScript constraint validator, and calculated KPIs while retaining the frontend-only architecture.
 - Independently validate all current fixtures, locks, alternatives, and disruption responses.
-- This is the recommended next implementation milestone but has not been implemented.
+- Implemented in the shared TypeScript engine; further work follows numbered GitHub issues.
 
 ### Real optimisation solver
 

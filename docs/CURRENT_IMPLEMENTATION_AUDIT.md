@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-02
 
-Status: current code truth for RailPlan v0.2.0. This file records what the code
+Status: engine audit originally recorded for v0.2.0. Current v0.4 adds a shared core package, instance-driven engine context, planning-fact migrations/loader, and a hardened assistant route. See PROJECT_STATUS.md for verification and blockers. This file records what the code
 does, including what it still does not do. Where an earlier version of this
 document listed a gap that has since been closed, the closure is stated with the
 module that closed it.

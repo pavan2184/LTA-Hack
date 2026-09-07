@@ -1,67 +1,68 @@
 # API Contract
 
-Last updated: 2026-07-15
+Last updated: 2026-09-07 · RailPlan v0.4.0
 
-## Overview
+## POST /api/assistant
 
-RailPlan has no backend or external API. This document records the client interaction contract so a future optimisation service can replace mock modules without changing component behaviour.
+Node runtime, 30-second deployment ceiling. `src/lib/http/schemas.ts` owns the Zod
+request schema; `src/lib/http/errors.ts` owns the typed error envelope.
 
-Status: implemented client-state contract. Any network route described in future-planning documents is proposed only.
+| Field | Contract |
+| --- | --- |
+| question | Trimmed nonempty string, at most 2,000 characters |
+| strategy | balanced, max-completion, min-risk, min-changes, emergency-buffer; defaults balanced |
+| view | submitted or planned; defaults submitted |
+| locked | Array of placements; capped at number of plannable IDs, defaults empty |
+| disruptionId | Known scenario ID or null |
+| history | At most six user-only turns, each nonempty and at most 2,000 characters |
 
-## Current State Contract
+Pins require a known request ID, integer start 0–240, end 0–480, a team ID of
+1–32 characters and optional boolean `locked`. Schema bounds are not a promise
+that a pin is feasible; the validator checks the resulting plan. The array
+cap does not enforce uniqueness of pin IDs yet.
 
-- Store: `useRailPlanStore` in `src/store/useRailPlanStore.ts`.
-- Persistence key: `railplan-preferences`.
-- Persisted fields: `selectedStrategy`, `lockedRequestIds`.
-- Visible schedule: selected synchronously through `getVisibleSchedule()` from imported fixtures, then overlaid with planner locks/alternatives.
-- Async behaviour: fixed client timers only; no request, retry, timeout, HTTP error, or server state exists.
+The browser supplies plan parameters, never authoritative engine output. The
+server computes its own plan and fact set. Submitted-view handling currently
+reviews literal submitted placements; it does not replay browser repairs.
 
-## Client Actions
+Success: `{ answer, mode: "model" | "engine", notice: string | null,
+rejected: string[], model: string | null }`, with `x-request-id` response header.
+The model call has a 12-second timeout and one retry. Missing credentials,
+refusal, truncation, empty output, grounding failure or provider failure returns
+an engine answer with a notice. The numeric guard does not establish semantic
+truth of every sentence.
 
-| Action | Input and precondition | Effect | Failure behaviour |
-| --- | --- | --- | --- |
-| `loadDemo()` | None | Loads original view; clears selection, disruption, replan flag, and overrides | Cannot fail |
-| `selectRequest(id|null)` | Request or emergency ID expected | Coordinates queue, timeline, details, and map selection | Unknown IDs can produce no detail; no explicit error |
-| `selectConflict(id|null)` | Original conflict ID expected | Selects conflict and its first affected request | Unknown ID results in null request selection |
-| `changeStrategy(strategy)` | Valid `StrategyId` | Updates preferred fixture while retaining current original view until switched/optimised | TypeScript guards callers; no runtime validation |
-| `optimise()` | Demo may be loaded or unloaded | Runs three 350 ms UI steps, then selects the strategy fixture | No computation or error path |
-| `toggleLock(id)` | Visible job ID expected | Stores/removes in-session placement and lock ID | Unknown/non-visible ID can persist without a placement |
-| `acceptRecommendation(id)` | Request ID expected | Adds accepted ID and removes rejection | No runtime ID validation |
-| `rejectRecommendation(id)` | Request ID expected | Adds rejected ID and removes acceptance | No runtime ID validation |
-| `applyAlternative(requestId, alternativeId)` | Visible job and option required | Creates a local job interval override | Silently no-ops when either record is absent; no feasibility validation |
-| `triggerDisruption(id)` | Valid scenario ID | Shows disrupted state and selects first affected request | Silently no-ops for unknown ID |
-| `replan()` | Active disruption required | Waits 850 ms, then selects matching response fixture | Silently returns without a disruption; no solver error path |
-| `resetDemo()` | None | Returns to unloaded state and clears session decisions/overrides while retaining strategy and lock-ID preferences | Cannot fail |
-| `getVisibleSchedule()` | Current store state | Selects fixture, applies limited disruption metrics, then lock/alternative overlays | Always returns a schedule fixture |
+Errors: `{ error: { code, message, requestId } }`.
 
-## Current Interaction Invariants
+| HTTP | Codes |
+| --- | --- |
+| 400 | malformed_request, invalid_request |
+| 413 | payload_too_large |
+| 429 | rate_limited (also Retry-After header) |
+| 500 | engine_error |
 
-- Original view uses `originalSchedule` regardless of selected strategy.
-- Optimised view uses the selected entry in `scheduleVariants`.
-- Replanned disrupted view uses the matching `disruptionResponseSchedules` entry.
-- Unreplanned disruption keeps the base jobs and changes only selected metrics/highlighting.
-- Locks and alternatives are merged after fixture selection.
-- The merge does not recalculate conflicts, metrics, explanations, or unscheduled IDs.
-- Accept/reject records do not alter a schedule.
-- Export is not a store action and no export control is shown in the current interface.
+Current limits: the 64 KiB body check only checks declared Content-Length; a
+streamed/underdeclared body is not bounded before JSON parsing. The provisional
+in-memory limiter allows a burst of 12 and refills 12/minute, keyed by untrusted
+proxy headers. There is no authentication yet. These are documented security
+limitations, not release-ready controls; issue #5 adds identity and shared limits.
 
-## Authentication and Errors
+## Client orchestration
 
-No authentication, authorisation, headers, HTTP status codes, error schema, rate limits, retries, or network timeouts exist. Current invalid IDs generally no-op or lead to absent details instead of returning a typed error.
+`src/store/useRailPlanStore.ts` owns the requested-plan, conflict-review and
+optimized-schedule workflow. It invokes the engine rather than selecting saved
+schedule variants. Repairs change submitted placements and revalidate. Strategy
+changes, pins, alternatives and replanning recalculate results and metrics.
+`railplan-preferences` stores `strategy` and exact `locked` placements.
 
-## Future Boundary
+## Database tooling (not public HTTP endpoints)
 
-A future service may accept requests, constraints, strategy, and locked IDs and return a `ScheduleVariant`. No such route exists in this prototype, and no authentication headers or error format are required.
+`loadPlanningInstance(sql, planningNight)` returns canonical `PlanningInstance` or
+throws for an unavailable database, missing schema/night or query error.
+`npm run db:verify` fails on unavailable, unseeded or mismatched content.
+`npm run test:db` requires this verification before integration tests. Ordinary
+`npm test` explicitly skips database tests only if the connectivity probe fails;
+a reachable database with missing tables or wrong data fails.
 
-The proposed richer solver result in `DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md` adds model/constraint versions, input hash, solve status, objective vector, bound/gap, jobs, deferred reasons, conflicts, metrics, alternatives, and structured explanation facts. That JSON is a design example, not an implemented endpoint contract.
-
-Before a backend is added, this document must define:
-
-- route and version;
-- request/response models;
-- validation and error envelope;
-- solver status semantics and timeout behaviour;
-- authentication/authorisation;
-- idempotency and input hashing;
-- stale-data and constraint-version handling;
-- operational-data classification, retention, and audit requirements.
+There are no request, plan, publication, ingestion, notification or export routes
+yet. Issues #5–#21 define their ordered implementation and authorization gates.

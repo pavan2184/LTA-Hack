@@ -1,0 +1,65 @@
+# Ordered GitHub issues implementation plan
+
+**Goal:** Resolve GitHub issues #4–#21 in numeric order, satisfying each dependency before starting its consumers.
+
+**Architecture:** Retain the shared TypeScript validator as the authority. Establish local Postgres parity, then add identity, durable plans, anonymous workforce constraints, request review, and product integrations on that foundation. Keep fabricated data and non-operational labels throughout.
+
+**Spec:** https://github.com/pavan2184/LTA-Hack/issues (issue bodies and acceptance criteria, retrieved 2026-09-07).
+
+## Execution gates
+
+- [x] #4: Verify local reset/seed/load, diagnose mismatches by section, test available/unavailable database behavior, synchronize v0.4 contracts and versions. Files: `scripts/db/`, `src/lib/db/`, `src/test/instance.test.ts`, `supabase/config.toml`, package manifests, required project documents. Verify with database commands, tests, lint, typecheck, build.
+- [ ] #5: Supabase sessions, planner/contractor authorization, RLS matrix and shared token bucket; security review.
+- [ ] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
+- [ ] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
+- [ ] #8: Workforce capacity validator, solver enforcement and calculated metrics.
+- [ ] #9: Validated contractor submission lifecycle and immutable approved revisions.
+- [ ] #10: Private transcript proposals with exact evidence and bounded model access.
+- [ ] #11: Planner review, approval and source revision invalidation.
+- [ ] #12: Accessible workforce demand/capacity visualization from engine data.
+- [ ] #13: Validated, attributed local geographic snapshot, separate from safety topology.
+- [ ] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status.
+- [ ] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
+- [ ] #16: Complete role journeys and accessible adjustable dashboard.
+- [ ] #17: Release security, accessibility, responsive and end-to-end verification.
+- [ ] #18: Consented audio capture/transcription through the existing review boundary.
+- [ ] #19: Explicit provider imports with least privilege and provenance.
+- [ ] #20: Reproducible CP-SAT benchmark; retain production heuristic pending evidence.
+- [ ] #21: Document crew-identity go/no-go; no named-worker implementation before the dedicated decision.
+
+Each implementation gets tests for its behavior, a project-status update, and a security review where the issue touches identity, personal data, LLMs or external delivery. Unmet prerequisites remain explicit; do not claim or close an issue whose acceptance checks have not run successfully.
+
+## #4 findings before changes
+
+- Clean working tree on `main`; working branch `codex/ordered-issues`.
+- No root `progress.md` existed.
+- Docker was stopped. Starting it restored an unrelated `NRI_Land` stack using ports 54321/54322/54324.
+- The existing database tests then failed with missing `planning_nights`, proving they reached the unrelated database. RailPlan needs dedicated local ports; do not stop or reset the other project's containers.
+- Global CLI 2.31.4 is outdated and unpinned. Pin a project CLI for reproducible clone setup.
+- SQL orders work-class enum pairs by enum declaration order, whereas TypeScript orders them lexically. Verify/fix the constraint via a migration and real inserts.
+- The test connection is not closed after a successful suite; add bounded teardown. Add a strict database command that fails instead of skipping when required infrastructure is absent.
+
+## Owner correction — 2026-09-07
+
+No Docker. The local-Supabase reset requirement is superseded. Select a dedicated
+hosted Supabase or native PostgreSQL target and verify the equivalent migration,
+seed and read-back flow before advancing beyond #4. Image downloads stopped after
+disk exhaustion; no unrelated database may be reset or seeded.
+
+## Verification checkpoint
+
+186 tests passed; 3 database integration tests explicitly skipped. Lint, typecheck,
+production build and diff whitespace checks passed. The strict db:verify command
+failed as expected with no database. #4 is incomplete pending a dedicated
+Docker-free database target and real migration/seed/parity verification. #5–#21
+remain untouched in order. No issue has been closed or deployment performed.
+
+## Hosted baseline completed
+
+Project ufcdynfjfzbjvglsdaqp (RailPlan Dev, pavan2184's Org, Singapore) is healthy.
+Both migrations applied on a fresh hosted database; replay is idempotent.
+Seed and database digest match fnv1a:fef0c4904e890f43 for 22 requests. Full suite:
+191 passed, no skips; lint/typecheck/build passed. Review required detection of
+deleted applied migrations; fixed with three regression tests. Follow-up suite
+17 passed with live database parity and migration replay; re-review clean.
+#4 is complete under the owner's no-Docker direction. #5 is next.

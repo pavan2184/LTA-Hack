@@ -3,6 +3,8 @@ import type { LineId } from "@railplan/core/domain/network";
 import type { WorkClass } from "@railplan/core/domain/resources";
 import type { EquipmentDemand, MaintenanceRequest, Priority } from "@railplan/core/types/railplan";
 
+import type { TransactionSql } from "postgres";
+
 import type { Sql } from "./client";
 
 /**
@@ -14,9 +16,16 @@ import type { Sql } from "./client";
  * stop caring which source it came from.
  */
 export async function loadPlanningInstance(
-  sql: Sql,
+  sql: Sql | TransactionSql,
   planningNight: string,
 ): Promise<PlanningInstance> {
+  // A transaction both binds Supavisor to one backend for this multi-query
+  // read and prevents a concurrent writer from producing a mixed snapshot.
+  if ("begin" in sql) {
+    return sql.begin("isolation level repeatable read read only", (tx) =>
+      loadPlanningInstance(tx, planningNight),
+    ) as Promise<PlanningInstance>;
+  }
   const [night] = await sql<
     {
       planning_night: Date;
