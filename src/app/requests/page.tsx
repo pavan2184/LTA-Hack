@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignOut } from "@/components/auth/SignOut";
 import { RequestIntakeWorkspace } from "@/components/requests/RequestIntakeWorkspace";
+import { TranscriptDraftWorkspace } from "@/components/requests/TranscriptDraftWorkspace";
 import { workspaceActor } from "@/lib/auth/page";
 
 export default async function RequestReviewPage() {
@@ -27,6 +28,7 @@ export default async function RequestReviewPage() {
         </div>
       </header>
       <RequestIntakeWorkspace role="planner" />
+      <TranscriptDraftWorkspace manualIntake={false} />
       <footer className="border-t border-rule pt-4 text-xs">
         Fabricated inputs. Not for operational decisions.
       </footer>

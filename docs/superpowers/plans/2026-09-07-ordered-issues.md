@@ -14,7 +14,7 @@
 - [x] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
 - [x] #8: Workforce capacity validator, solver enforcement and calculated metrics.
 - [x] #9: Validated contractor submission lifecycle and immutable approved revisions.
-- [ ] #10: Private transcript proposals with exact evidence and bounded model access.
+- [x] #10: Private transcript proposals with exact evidence and bounded model access.
 - [ ] #11: Planner review, approval and source revision invalidation.
 - [ ] #12: Accessible workforce demand/capacity visualization from engine data.
 - [ ] #13: Validated, attributed local geographic snapshot, separate from safety topology.
@@ -192,3 +192,34 @@ revision and immutable original approval verified independently in SQL. Three
 desktop widths have no overflow; browser logs clean. All temporary actors/request/
 plan removed with7 history guards restored; final baseline parity unchanged.
 Preview stopped. #10 is next.
+
+## #10 implementation design
+
+Add a separate owner-private proposal boundary for pasted or UTF-8 text capped
+at64KB. An explicit extraction-and-save action explains that only verified excerpts
+and draft fields are retained. Full transcripts live only in the bounded request
+and model call. Model output has a strict partial-field schema, confidence marked
+as an estimate, missing-field flags and exact-span evidence. Unsupported fields
+stay unset; fabricated evidence rejects the result. No model-provided role,
+priority, approval, schedule or safety authority is accepted.
+
+Use the existing Anthropic provider configuration with bounded time/retries and
+a shared authenticated quota for either app role. Missing credentials return a
+safe typed unavailable response; the manual intake remains usable. Persist only
+validated private proposal revisions with actor-derived ownership and no source
+revision change. GET exposes only the caller's private drafts, including for
+planners. Editing/submitting these drafts into the human queue belongs to #11.
+
+Verify byte/encoding/empty/error cases, malicious model output/injection, exact
+quotes, unsupported fields, owner isolation, transcript absence in persistence
+and logs, and deliberate save behavior. Review schema before hosted migration,
+then run live gates, UI tests and production browser checks.
+
+## #10 completed
+
+Full328 zero skips, DB43/concurrency3, lint/typecheck/build, migration replay and
+independent reviews pass. Production browser owner-private controlled drafts,
+evidence/missing fields, missing-key503/input preservation and manual intake pass.
+No live-provider success is claimed without the model key. Responsive widths
+pass; logs clean. Two temporary owners/drafts removed,8 guards enabled, parity
+unchanged, preview stopped. #11 is next.

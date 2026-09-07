@@ -225,3 +225,31 @@ server-generated publication, scoped exact placement, immutable prior revision
 across amendment and cancellation. Cleanup removed exact temporary IDs under
 exclusive locks and restored all seven history guards before commit; final parity
 passed. Browser console clean. No production server remains running locally.
+
+## Issue #10 private transcript proposals
+
+The explicit extract-and-save action sends at most64KB of UTF-8 text to the
+configured model. Raw text is bounded in memory and excluded from database
+records and application logs. Retained evidence is short, exact text with
+server-computed offsets; unsupported values remain null and visibly incomplete.
+Model output cannot contain approval, role, priority, safety or scheduling fields.
+No proposal alters canonical planning facts or their source revision.
+
+Private drafts are scoped to the authenticated owner, including planner users.
+Organisation identity comes from the trusted profile. The intended persistence
+boundary accepts validated draft snapshots only, through private narrow functions,
+with immutable revision history. These schemas must stay outside the exposed
+Data API schemas, as with saved plans. Backend SQL/model review passed. The reviewed migration is applied and immutable.
+
+The UI treats evidence as plain React text, labels confidence as a model estimate,
+and has no submit/approve control in this issue. File selection stays local until
+the explicit save action; fatal UTF-8 decoding, byte bounds and pending-file gating
+are tested. Failed extraction retains source text for correction/retry, while
+success clears it. The manual request workspace remains independent. Six UI tests
+and a read-only review pass. Production unavailable-model and two-owner privacy checks pass.
+
+Final #10 verification:328 tests, DB43/concurrency3, lint/typecheck/build and
+independent reviews pass. Controlled owner fixtures show exact excerpts and
+missing fields; real503 preserves input and leaves manual intake usable. Live
+provider extraction remains unverified without credentials. Fixtures are removed,
+all8 immutable guards are enabled, parity is unchanged and the preview stopped.

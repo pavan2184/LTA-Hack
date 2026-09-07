@@ -218,3 +218,29 @@ active approval survives revision drafts/rejection until replacement approval or
 cancellation. The engine request carries optional `submissionRevision`; absence
 identifies the existing operator-seeded baseline. Approved request demand joins
 the same canonical workforce facts and saved-plan digest.
+
+## Private extracted proposals — issue #10
+
+`NullableRequestFields` contains all eleven contractor RequestFields keys, each
+with its original type or null. `DraftConfidence` maps the same keys to a 0–1 model
+estimate or null. `DraftProposal` adds `missingFields` and `DraftEvidence[]`.
+Evidence records field, exact quote, server-computed start/end UTF-16 offsets and
+an optional timestamp occurring literally inside that quote. Quotes are at most
+256 characters; each proposal has at most 24, each extraction at most eight drafts
+and unique retained excerpts at most 2,048 characters across the entire batch.
+Complete transcript coverage is rejected even when split across excerpts.
+
+`PrivateDraft` adds UUID, ownerId, organisationId, current version, private status,
+created/updated timestamps, model and extractorVersion. SQL derives ownership from
+the current trusted profile; contractor organisation is inferred, planners have
+null organisation. `private_drafts` points at immutable
+`private_draft_revisions`; no raw transcript or arbitrary provider-response column
+exists. Both tables use owner-only RLS with no planner override and deny direct
+authenticated writes. A narrowly granted function validates the minimized strict
+snapshot before atomic batch persistence. Authenticity against discarded input is
+verified at the server extraction boundary; SQL never receives raw source.
+
+No engine MaintenanceRequest is created and no planning-source revision changes.
+Source files, filenames, speaker identities and complete transcripts are not stored.
+A separate private `ingestion_buckets` table is owner-keyed quota state, independent
+of the planner-only assistant limiter.

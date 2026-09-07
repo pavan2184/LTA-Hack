@@ -318,3 +318,27 @@ text/blocks/demand while supplied references and intervals remain valid. Approva
 requires explicit safety confirmation of existing fabricated constraints, skills,
 team, clearance, priority and dependencies. No model-generated work becomes an
 engine input in this issue; #10/#11 extend this boundary with proposal evidence.
+
+### 2026-09-07 — Private evidence-only transcript proposals
+
+Status: Accepted for issue #10.
+
+Use raw text/plain UTF-8 so the 64 KiB limit applies to source bytes rather than
+JSON escaping or multipart overhead. Extraction explicitly includes saving only
+validated partial drafts and bounded exact excerpts; raw source is discarded and
+never sent to SQL. Keep private ownership narrower than organisation ownership,
+with no planner override until an owner explicitly submits in #11. Private draft
+revision storage remains inert with respect to request approval and planning.
+
+Use the existing Anthropic SDK and documented ANTHROPIC_API_KEY with current
+`claude-sonnet-5`, structured outputs, 12-second timeout, zero retries and SDK
+logging disabled. Model output is untrusted despite constrained JSON. Exact quotes
+are necessary but insufficient support: conservative field-specific checks keep
+unsupported facts null. Confidence remains explicitly a model estimate. No tools,
+internal scheduling fields, automated submission or source mutation are exposed.
+Missing/refused/timed-out provider paths return safe typed errors while manual
+intake remains available.
+
+Verified official provider references:
+[model IDs](https://platform.claude.com/docs/en/models/overview) and
+[structured output contract](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).

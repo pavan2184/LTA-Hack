@@ -162,3 +162,25 @@ instance reloads. An unchanged isolated run measured 2.2–6.3 seconds per lifec
 with two default-five-second timeouts observed during a slower full-suite run.
 The limit is scoped to this integration suite; no retries are added, unit-test
 limits remain unchanged, and database statements retain their ten-second timeout.
+
+## Transcript extraction verification — issue #10
+
+`ingestions.test.ts` checks exact evidence and offsets, missing facts, privileged
+schema rejection, conservative labelled numeric/resource support (IDs and human
+labels), unknown references/capacities, transcript nonretention, fatal UTF-8 and
+actual byte limits. `ingestions-model.test.ts` exercises missing credentials,
+fixed instructions/no tools, bounded time/retries, refusal/truncation/invalid output
+and safe timeout/unavailability errors through a controlled SDK boundary.
+`api.ingestions.test.ts` checks authentication-before-content, same-origin limits,
+typed errors/quota headers and private response envelopes. These controlled model
+responses do not claim live provider quality or prove universal semantic grounding.
+
+`ingestions.db.test.ts` runs rollback-only hosted fixtures with a scoped 20-second
+I/O budget. It checks exact-owner isolation against same-organisation contractors
+and planners, strict rejection of extra raw-source properties and null evidence
+field names, immutable snapshots, model/extractor provenance, quota isolation and
+unchanged planning-source revision. It is included in the required test:db gate.
+The three new live tests passed after the reviewed migration; all fixtures rolled
+back. The model key is absent in this environment, so production unavailability
+and manual fallback are verifiable; successful extraction uses controlled test
+responses and must not be described as live-provider UAT.

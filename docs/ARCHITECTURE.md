@@ -245,3 +245,33 @@ Baseline DELETE/id/night changes also check inbound approved intake dependencies
 through a private trigger. The assembled loader fails closed on missing or
 cross-night dependencies and unknown request block/team/equipment references,
 including after trusted maintenance operations that bypass ordinary row changes.
+
+## Private transcript proposals — issue #10
+
+`src/lib/ingestions` reads authenticated same-origin raw UTF-8 text with a streamed
+64 KiB byte bound. The owner explicitly requests extraction and saving of excerpts.
+A separate owner-keyed database quota permits a burst of three and refills one
+attempt per minute. Model work runs outside database transactions. Missing
+`ANTHROPIC_API_KEY` returns a typed unavailable response; manual intake remains
+independent. No new credential names or fallback identity providers are introduced.
+
+Claude Sonnet 5 receives a fixed system instruction, selection-only catalogue and
+one JSON-encoded untrusted transcript message. It has no tools or planner fields.
+Structured JSON output is independently checked with strict Zod schemas. The SDK
+has a 12-second timeout, no retries and logging explicitly off. Exceptions are
+mapped to safe codes without logging source, output or upstream error objects.
+
+Every evidence quote must match an exact source substring. The server computes
+UTF-16 offsets and checks any quoted timestamp. Field support is conservative:
+verbatim title/description, exact known references, labelled durations/windows and
+explicit count-plus-resource references. Unsupported or inconsistent facts become
+null with missing-field flags; confidence is only a model estimate. Invented
+quotes reject the whole batch. Excerpts are bounded and aggregate coverage cannot
+reconstruct the full source. The complete transcript never enters SQL or logs.
+
+Private draft pointers and immutable initial revisions contain only validated
+partial fields, estimated confidence, missing flags, retained excerpts, timestamps
+and extractor/model provenance. Reads require the exact authenticated owner,
+including for planners; organisation membership does not grant access. This store
+has no submission, approval or planning-source side effect. Issue #11 adds the
+explicit owner editing/submission journey over this private proposal boundary.

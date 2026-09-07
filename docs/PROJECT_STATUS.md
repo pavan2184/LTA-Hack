@@ -2,10 +2,32 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#9 complete; #10 next
+## Ordered issue work — #4–#10 complete; #11 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#9 is committed as `186c7a4`. #10 is implemented: owner-private transcript
+proposals with bounded UTF-8 input, exact evidence, unsupported fields unset and
+an explicit extract-and-save action. Migration `20260907093242_private_transcript_drafts.sql`
+is applied and immutable. Model calls have a12-second timeout, no retries/tools,
+strict output schema, disabled SDK logging and a private per-owner quota. Raw
+transcripts are neither stored nor logged; no private draft changes planning facts.
+
+Verification: **328 tests pass, zero skips**,33 files; required DB43 rollback tests
+and3 isolated concurrency tests pass. Lint/typecheck/build, migration replay,
+baseline parity and independent backend/UI/security reviews pass. Before application,
+a SQL null-field guard was tightened; an initial CASE syntax failure rolled back
+and was corrected before successful application. No applied migration changed.
+
+Production browser verified separately scoped contractor/planner controlled drafts,
+visible evidence and unknown fields, actual missing-key503 preserving input, and
+manual intake remaining usable. The controlled stored proposals exercise display
+and ownership; they are not live-provider extraction results. Widths1280/1440/1920
+had no overflow and browser logs were empty. Two temporary owners and two private
+drafts were removed; all8 immutable-history guards are enabled and baseline parity
+still matches22 fabricated requests. Preview stopped. The model key remains absent,
+so successful live-provider extraction is explicitly unverified. #11 is next.
 
 #9 implements separate contractor proposals, organisation-scoped draft editing,
 submission, information requests, rejection, explicit planner approval and

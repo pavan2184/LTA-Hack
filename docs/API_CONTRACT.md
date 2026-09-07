@@ -195,3 +195,35 @@ organisation UUIDs return not_found 404. Anonymous/unassigned/planner-action
 failures return 401/403; auth unavailability returns 503 without processing input.
 Catalogue teams and dependency options are returned to planners only. `scheduled`
 contains only the scoped request's current published planId, revision and times.
+
+## Transcript extraction — issue #10
+
+| Route | Input | Success |
+| --- | --- | --- |
+| POST /api/ingestions/transcript | Raw `text/plain` UTF-8 transcript, at most 65,536 actual bytes | 201 `{drafts: PrivateDraft[]}` |
+| GET /api/ingestions/drafts | None | `{drafts: PrivateDraft[]}`, latest 100 owned drafts |
+
+Both routes authenticate an assigned profile first and return no-store responses
+with x-request-id. POST checks the same Origin/Host rule as other mutations before
+reading input. `text/plain` accepts optional UTF-8 charset, rejects other encodings,
+uses a fatal decoder and rejects empty/whitespace-only text and NUL bytes. `.txt`
+uploads use the same raw body after client-side UTF-8 checks; the server checks
+actual bytes again, including dishonest Content-Length or streamed input.
+
+The POST explicitly requests extraction **and saving private drafts with excerpts**.
+Unknown proposal fields stay null; `missingFields` identifies them. Confidence is a
+per-field model estimate, not a safety or accuracy guarantee. `DraftEvidence`
+contains `{field, quote, start, end, timestamp}` with exact source offsets computed
+by the server. Internal priority, team, role/owner, approval and schedule fields
+are absent from the accepted output schema. No transcript is submitted as a
+request or added to planning inputs. Private editing/submission follows #11.
+
+Errors have `{error:{code,message,requestId}}`. Input errors are
+payload_too_large 413, invalid_encoding/empty_transcript/invalid_request 400;
+model_refused/invalid_evidence/no_proposals 422; invalid_model_output 502;
+model_timeout 504; model_unavailable/storage_unavailable 503. Existing identity
+errors remain 401/403/503. Quota returns rate_limited 429 with Retry-After seconds.
+Storage ambiguity asks the owner to reload private drafts before retrying.
+A missing model key returns 503 and does not affect structured manual intake.
+Provider timeout is 12 seconds with zero retries. No sensitive source, evidence,
+provider output or upstream error body is included in logs or error responses.

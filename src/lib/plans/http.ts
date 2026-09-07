@@ -7,7 +7,7 @@ import { apiError, newRequestId } from "@/lib/http/errors";
 import { requestLogger } from "@/lib/http/logger";
 import { PlanError } from "./input";
 /** Browser mutations are same-origin JSON. Non-browser callers may omit Origin. */
-export function assertPlanMutation(request: Request): void {
+export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   if (origin !== null) {
     let sameOrigin = false;
@@ -31,6 +31,9 @@ export function assertPlanMutation(request: Request): void {
     }
     if (!sameOrigin) throw new AuthError("forbidden");
   }
+}
+export function assertPlanMutation(request: Request): void {
+  assertSameOrigin(request);
   if (
     request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !==
     "application/json"
