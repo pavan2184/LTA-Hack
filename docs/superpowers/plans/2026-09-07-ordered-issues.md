@@ -13,7 +13,7 @@
 - [x] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
 - [x] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
 - [x] #8: Workforce capacity validator, solver enforcement and calculated metrics.
-- [ ] #9: Validated contractor submission lifecycle and immutable approved revisions.
+- [x] #9: Validated contractor submission lifecycle and immutable approved revisions.
 - [ ] #10: Private transcript proposals with exact evidence and bounded model access.
 - [ ] #11: Planner review, approval and source revision invalidation.
 - [ ] #12: Accessible workforce demand/capacity visualization from engine data.
@@ -164,3 +164,31 @@ disruption/view-switch/replan/logout and1280/1440/1920 overflow checks passed,
 no console warnings/errors. Last copy changes verified by targeted UI tests and
 fresh build. Temporary planner removed; no UAT plans created; preview stopped.
 #9 is next.
+
+## #9 implementation design
+
+Keep contractor request proposals in private scoped submissions with immutable
+revision snapshots and actor/reason history. Contractor draft edits, submit,
+needs-info responses, cancellation and proposed replacement use optimistic
+versions. Planner approval confirms team, priority, clearance, skills,
+dependencies and configured safety assumptions. Only active approved revisions
+join trusted baseline facts in the canonical loader, with stable request IDs and
+exact revision provenance. Proposed amendments preserve prior approval until
+replacement/cancellation. Approval changes stale saved plans through the shared
+source lock. Published-plan placement determines scheduled status.
+
+Build contractor and planner request workspaces with bounded fields, visible
+validation failures, immutable history and explicit approval controls. Verify
+role and organisation isolation, invalid inputs, lifecycle/version races,
+dependency integrity, source staleness, exact saved revisions, full gates and
+production browser submission/approval/revision/cancellation before proceeding.
+
+## #9 completed
+
+Full306 tests without skips, DB40/concurrency3, lint/typecheck/build, migration
+replay and independent reviews pass. Production browser save/submit/approve/
+generate/publish/revision/reload/history/cancel/logout passes. Exact published
+revision and immutable original approval verified independently in SQL. Three
+desktop widths have no overflow; browser logs clean. All temporary actors/request/
+plan removed with7 history guards restored; final baseline parity unchanged.
+Preview stopped. #10 is next.

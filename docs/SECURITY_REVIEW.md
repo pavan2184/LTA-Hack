@@ -192,3 +192,36 @@ Full284 tests, required DB34/concurrency3, lint/typecheck/build and production
 browser workflow passed. Last copy corrections passed two targeted UI tests and
 a fresh build. Browser errors/warnings empty; temporary account cleaned and
 final hosted parity unchanged.
+
+## Issue #9 contractor request intake
+
+Private request submissions and immutable revisions separate untrusted proposals
+from approved engine inputs. Server verification supplies the actor identity;
+RLS scopes contractor reads to their organisation. Narrow private mutation
+functions recheck role, organisation, allowed transition and expected version,
+then append the actor/reason/time with the new snapshot. No authenticated role
+can directly edit these tables or erase revision history. Catalogue reads expose
+only the references needed by each role; contractor scheduling reads return only
+their request's placement from the current published plan.
+
+HTTP bodies have byte/schema limits, same-origin mutation checks and field-level
+errors. SQL independently validates bounds, reference membership, completeness,
+team skills and dependency cycles. Approval requires a planner's explicit safety
+confirmation. Approved revisions retain exact provenance in saved plan facts;
+revision drafts preserve prior approval, while replacement/cancellation advances
+the planning source. No draft or submitted proposal enters solver inputs.
+
+Independent review identified a JSON dependency reference gap: baseline predecessor
+deletion/night changes could bypass intake lifecycle checks. Before applying the
+migration, a source-serialized baseline guard and assembled-instance reference
+validation were added. Live tests cover this failure path, cross-organisation
+reads/mutations, immutable history, lifecycle/version conflicts, loader inclusion,
+source staleness and exact publication-derived revisions. Review found no further
+important backend defects. Full306 tests, DB40/concurrency3 and production two-role browser verification pass.
+No new personal worker fields, external messages or model calls are introduced.
+
+Final #9 browser evidence confirms contractor submission, planner approval,
+server-generated publication, scoped exact placement, immutable prior revision
+across amendment and cancellation. Cleanup removed exact temporary IDs under
+exclusive locks and restored all seven history guards before commit; final parity
+passed. Browser console clean. No production server remains running locally.

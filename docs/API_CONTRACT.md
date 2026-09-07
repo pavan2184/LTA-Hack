@@ -83,7 +83,7 @@ throws for an unavailable database, missing schema/night or query error.
 `npm test` explicitly skips database tests only if the connectivity probe fails;
 a reachable database with missing tables or wrong data fails.
 
-There are no intake, ingestion, notification or export routes yet. Their numbered issues define the remaining implementation and authorization gates.
+Structured intake routes are documented below. Ingestion, notification and export routes remain gated by their numbered issues.
 
 ## Durable plans — issue #6
 
@@ -156,3 +156,42 @@ fresh run with unstaffed mandatory work is INFEASIBLE and cannot publish.
 Workforce metrics retain the existing MetricValue shape; violations optionally
 carry structured team/role/demand/available/shortfall evidence. Null headcounts
 mean an unknown demand definition. No workforce write API is introduced here.
+
+## Structured intake — issue #9
+
+All intake routes verify the Supabase identity and assigned profile. Contractor
+reads/writes are restricted to their organisation; planner decisions additionally
+use `requireAction(..., "approve")`. Every mutation uses same-origin JSON and the
+streamed 64 KiB limit. All objects are strict: caller identity, organisation,
+status, approval result or saved-plan output are never accepted as fields.
+
+| Route | Input | Success |
+| --- | --- | --- |
+| GET /api/requests/catalogue | None | `{catalogue: RequestCatalogue}` |
+| GET /api/requests | None | `{requests: RequestSubmission[]}`, latest 100 scoped records |
+| POST /api/requests | `{fields: RequestFields}` | 201 `{request}`; contractor organisation derived server-side |
+| GET /api/requests/:id | UUID | `{request}` including immutable revisions and status history |
+| PATCH /api/requests/:id | `{expectedVersion, fields}` | `{request}`; draft or needs_info only |
+| POST /api/requests/:id/actions | `{expectedVersion, action, reason, approval?}` | `{request}` |
+
+Actions: submit (draft/needs_info), revise (approved/rejected/cancelled), cancel
+(any non-cancelled state), needs_info/approve/reject (planner, submitted only).
+Approval requires the complete `RequestApproval` object. Reason is required for
+cancel/needs_info/approve/reject, at most 2,000 characters. Other actions reject
+approval fields. Draft title/description/blocks/workforce may be empty; submit
+requires all four. IDs are at most 64 characters, title 160, description 4,000,
+arrays at most 100, integer workforce counts 1–10,000, integer equipment units
+1–10,000 further limited to actual capacity. Duration is 1–1,440 minutes; times
+must fit the selected database night's window and preferred work must fit its
+permitted interval. Duplicate references are rejected. Sector display derives
+from selected atomic blocks.
+
+Responses are `Cache-Control: no-store` with x-request-id. Errors add
+`error.fieldErrors: Record<string,string>` to the shared code/message/requestId
+shape. Field names are e.g. title, equipment.0.units, workforce.0.count or
+approval.teamId. Invalid fields return invalid_request 400; stale expectedVersion
+returns conflict 409; unavailable actions return invalid_transition 409; foreign
+organisation UUIDs return not_found 404. Anonymous/unassigned/planner-action
+failures return 401/403; auth unavailability returns 503 without processing input.
+Catalogue teams and dependency options are returned to planners only. `scheduled`
+contains only the scoped request's current published planId, revision and times.

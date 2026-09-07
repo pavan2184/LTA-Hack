@@ -137,15 +137,16 @@ snapshot and transaction-pooler compatibility. The dedicated `/plans` workflow p
 Pages and the assistant verify the current user with `auth.getUser()`, then load
 an operator-assigned profile. Signup metadata is never authorization input.
 Missing configuration fails closed; unassigned accounts see access pending.
-Contractors receive a separate workspace pending intake in #9. The planner's
+Contractors receive a separate workspace with structured intake in #9. The planner's
 existing deterministic UI remains client-side behind the server page boundary.
 
 All application SQL goes through `withAuthenticatedTransaction`: it sets the
 transaction-local authenticated role and minimal claims derived from the verified
 user, reads the trusted profile under RLS, and closes its connection. The owner
 connection used by maintenance scripts is never the application authorization
-context. Future solve/approve/publish/resource routes must invoke `requireAction`
-and use this transaction boundary; plan generation, decision and publication endpoints now use this boundary; later intake and workforce endpoints follow their numbered issues.
+context. Plan generation, decisions, publication and request intake use this
+transaction boundary. Future resource routes must retain the same verified-role
+checks and transaction boundary.
 
 Assistant limits use a locked per-user token bucket in the private schema, shared
 across application instances. A narrowly granted private definer function checks
@@ -212,3 +213,35 @@ Automatic repair preserves locks and rejects moves that introduce a new conflict
 workforce conflict identity includes its team, role, counts and interval. The
 solver resolves mandatory custom requests from its actual input pool, so a
 staffing-blocked emergency is reported infeasible even when absent from literals.
+
+## Structured request intake — issue #9
+
+`src/lib/requests` keeps contractor proposals separate from engine inputs. Private
+submission rows point at an append-only revision/event stream. Every edit and
+transition advances an optimistic version, records the authenticated actor and
+preserves the prior snapshot. A narrow private mutation function derives the
+organisation from the trusted profile, checks the lifecycle and revalidates JSON
+against actual database references. HTTP uses the same authenticated SQL role,
+bounded JSON, same-origin rules and explicit planner approval permission as plans.
+
+Contractors receive only selection metadata through a scoped catalogue function.
+They cannot read global maintenance facts, team choices, supply or whole plans.
+Planner-only catalogue fields include teams/skills and approved dependency choices.
+Only active approved immutable revisions are appended by `loadPlanningInstance`
+to operator-seeded baseline facts. Stable `R-<submission UUID>` IDs and exact
+`submissionRevision` values enter saved facts and their digests. An approved
+revision is never materialized into mutable public maintenance request tables.
+
+Approval and active cancellation advance the shared planning-source revision under
+the existing generation/publication lock. Revising approved work leaves the old
+approved revision active until replacement approval; cancelling removes it.
+Active prerequisites cannot be cancelled or moved to another night until their
+approved dependents are revised. Scheduled status is a scoped query of the current
+publication's actual placement and exact revision, including when a newer draft
+exists. Intake status never asserts solver feasibility. The richer evidence and
+AI proposal review queue remains issue #11 after transcript proposals in #10.
+
+Baseline DELETE/id/night changes also check inbound approved intake dependencies
+through a private trigger. The assembled loader fails closed on missing or
+cross-night dependencies and unknown request block/team/equipment references,
+including after trusted maintenance operations that bypass ordinary row changes.

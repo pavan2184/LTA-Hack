@@ -110,8 +110,8 @@ Actor UUIDs deliberately have no cascading Auth foreign key: deleting an account
 must not erase the historical creator/audit identity. Audit stores only actor,
 action, plan ID, optional related ID and server timestamp. Decision reason is
 bounded to 1,000 characters. There are no raw request bodies, credentials or
-transcripts in audit. Planning facts currently mean the baseline maintenance
-requests; approved intake becomes the source when #11 implements it. All fact,
+transcripts in audit. Planning facts include baseline maintenance requests and
+active immutable intake approvals introduced in #9. All fact,
 child, resource and topology mutations conservatively stale all nights.
 
 ## Anonymous workforce — issue #7
@@ -187,3 +187,34 @@ subsequent visualizations. Crew utilisation remains a distinct metric.
 Constraint version is `constraints-v3`, solver version
 `railplan-greedy-repair-v3`, metric version `metrics-v4`, and emergency scenario
 version `emergency-set-v2`; older immutable saved results retain their versions.
+
+## Request submissions — issue #9
+
+`RequestSubmission` is a separate shared contract from `MaintenanceRequest`.
+`RequestFields` contains planningNight, title, description, workClass, blockIds,
+durationMinutes, preferredStart, earliestStart, latestEnd, equipment units and
+anonymous workforce role counts. Drafts may omit text/blocks/demand by supplying
+empty values; selected references, numeric bounds and actual night windows must
+already be valid. Submission requires title, description, blocks and workforce.
+
+`RequestApproval` explicitly confirms teamId, priority, clearanceMinutes,
+requiredSkills, dependencies, dependencyLagMinutes and safetyConfirmed. The safety
+confirmation acknowledges this prototype's fabricated work-class/topology rules;
+it is not an operational safety certification. Required skills must be covered by
+the selected team. Dependencies must reference other active approved work or
+operator baseline requests on the same night and cannot form cycles.
+
+Private `request_submissions` stores organisation ownership, current version and
+active approved version. `request_revisions` stores immutable fields, approval,
+status, actor, prior status, action, reason and timestamp for every version. Both
+have RLS reads scoped to the caller's organisation or a planner; direct writes
+are denied and history has mutation/truncate guards. Actor UUIDs deliberately do
+not cascade on Auth deletion. Draft/submitted/needs_info/approved/rejected/cancelled
+are persisted statuses; scheduled is derived from current published placements.
+
+Every mutation compares expectedVersion, atomically increments it and appends one
+revision. `revise` starts a draft from approved/rejected/cancelled work. A previous
+active approval survives revision drafts/rejection until replacement approval or
+cancellation. The engine request carries optional `submissionRevision`; absence
+identifies the existing operator-seeded baseline. Approved request demand joins
+the same canonical workforce facts and saved-plan digest.

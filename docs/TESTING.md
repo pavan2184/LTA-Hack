@@ -134,3 +134,31 @@ A baseline repair regression targets a known solvable dependency conflict and
 checks no new conflict is introduced. The former assumption that the first
 baseline conflict always has a clean single move no longer holds when workforce
 shortages are enforced. The ordinary core suite is independent of the database.
+
+## Request intake verification — issue #9
+
+`requests.test.ts` covers strict fields, incomplete drafts versus submission,
+reference validation, capacities and impossible windows. `api.requests.test.ts`
+covers authentication-before-body, field errors, forged fields, same-origin JSON,
+streamed limits, optimistic versions and explicit approval confirmation.
+`requests.db.test.ts` uses rollback-only temporary Auth/profile/organisation rows
+under the real authenticated SQL role. It exercises direct function validation,
+cross-organisation denial, append-only lifecycle history, immutable approval,
+active-revision loader integration, retained approval during revision and removal
+on cancellation. Hosted migrations must be reviewed before application. The
+unit-only suites do not prove live RLS or database transitions; the DB gate must
+run against the configured dedicated Docker-free RailPlan database.
+
+The default suite runs test files sequentially because hosted rollback fixtures
+share the global planning-source lock. Adding intake lifecycle tests exposed
+5-second timeouts in otherwise-passing plan/workforce suites under concurrent
+file execution; all 40 DB tests passed with file parallelism disabled. The
+separate concurrency suite still creates actual overlapping transactions to test
+serialization behavior. Assertions are unchanged.
+
+The hosted intake lifecycle suite has a 20-second per-test I/O budget because its
+rollback journeys contain many sequential authenticated round trips and full
+instance reloads. An unchanged isolated run measured 2.2–6.3 seconds per lifecycle,
+with two default-five-second timeouts observed during a slower full-suite run.
+The limit is scoped to this integration suite; no retries are added, unit-test
+limits remain unchanged, and database statements retain their ten-second timeout.

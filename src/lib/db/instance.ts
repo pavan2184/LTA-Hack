@@ -1,3 +1,8 @@
+import { assertRequestReferences } from "@/lib/requests/instance";
+import type {
+  RequestFields,
+  RequestApproval,
+} from "@railplan/core/types/requests";
 import { assertWorkforceInstance } from "@railplan/core/domain/workforce";
 import type {
   WorkforceRole,
@@ -233,6 +238,54 @@ export async function loadPlanningInstance(
     description: row.description,
   }));
 
+  // Only the active immutable approved revision crosses the intake boundary.
+  // The baseline 22 requests remain operator-seeded facts; drafts never become
+  // mutable public maintenance_requests rows.
+  const approved = await sql<
+    {
+      id: string;
+      version: number;
+      fields: RequestFields;
+      approval: RequestApproval;
+    }[]
+  >`
+    select s.id,r.version,r.fields,r.approval from railplan_private.request_submissions s
+    join railplan_private.request_revisions r on r.submission_id=s.id and r.version=s.active_approved_version
+    where r.status='approved' and r.fields->>'planningNight'=${planningNight} order by s.id`;
+  for (const r of approved) {
+    const f = r.fields,
+      a = r.approval,
+      id = `R-${r.id}`;
+    if (requests.some((existing) => existing.id === id))
+      throw new Error("Duplicate approved request ID");
+    requests.push({
+      id,
+      submissionRevision: r.version,
+      title: f.title,
+      shortTitle: f.title.slice(0, 48),
+      workType: f.workClass,
+      workClass: f.workClass,
+      blockIds: f.blockIds,
+      sector: f.blockIds.join(", "),
+      durationMinutes: f.durationMinutes,
+      clearanceMinutes: a.clearanceMinutes,
+      priority: a.priority,
+      teamId: a.teamId,
+      requiredSkills: a.requiredSkills,
+      equipment: f.equipment,
+      preferredStart: f.preferredStart,
+      earliestStart: f.earliestStart,
+      latestEnd: f.latestEnd,
+      mandatory: a.priority === "critical",
+      dependencies: a.dependencies,
+      dependencyLagMinutes: a.dependencyLagMinutes,
+      description: f.description,
+    });
+    workforceDemandRows.push(
+      ...f.workforce.map((d) => ({ ...d, requestId: id })),
+    );
+  }
+
   const instance = canonicalise({
     planningNight,
     workforceRoles: [...workforceRoleRows],
@@ -296,5 +349,6 @@ export async function loadPlanningInstance(
     },
   });
   assertWorkforceInstance(instance);
+  assertRequestReferences(instance);
   return instance;
 }

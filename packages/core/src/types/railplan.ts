@@ -24,6 +24,8 @@ export interface EquipmentDemand {
 
 export interface MaintenanceRequest {
   id: string;
+  /** Exact immutable intake revision, absent for operator-seeded baseline facts. */
+  submissionRevision?: number;
   title: string;
   shortTitle: string;
   workType: string;

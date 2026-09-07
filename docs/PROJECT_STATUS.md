@@ -2,10 +2,38 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#8 complete; #9 next
+## Ordered issue work — #4–#9 complete; #10 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#9 implements separate contractor proposals, organisation-scoped draft editing,
+submission, information requests, rejection, explicit planner approval and
+cancellation. Every change appends an immutable revision and audited actor/reason.
+Only active approved revisions become planning inputs; proposed amendments retain
+the previous approval until replacement or cancellation. Scheduled status derives
+from the current published plan and its exact approved revision.
+
+Migration `20260907085837_request_intake.sql` is applied and immutable. Independent
+backend review resolved a baseline dependency deletion/night-move gap before
+application; an assembled-instance check also fails closed on missing references.
+Full **306 tests pass without skips**, across28 files. Required DB gate includes
+intake and passed parity,40 rollback tests and3 isolated concurrency tests.
+Lint, typecheck, production build, migration replay and independent security/code
+review passed. Rollback files run sequentially to avoid shared-source lock queues;
+long hosted intake journeys have a scoped20-second I/O budget after measured
+network variance. Assertions and explicit concurrency tests remain intact.
+
+Production browser UAT passed contractor save/submit, planner approval, saved
+plan generation/publication, contractor published placement, revision/edit/reload,
+immutable original approval and cancellation/logout. The test plan had18 placements,
+including approved revision4 at01:15–01:30. SQL independently confirmed7 revisions,
+original approved title unchanged, and no active approval after cancellation.
+Responsive widths1280/1440/1920 had no horizontal overflow; browser logs were clean.
+Temporary2-role accounts,1 request and1 published plan were removed by exact IDs;
+all7 immutable-history guards are enabled. Cleanup retries rolled back until the
+owner lock and deferred-FK trigger handling were correct. Final baseline parity
+matches22 requests. Preview stopped; no local server is running. #10 is next.
 
 RailPlan Dev is healthy on Supabase Free in Singapore, project
 `ufcdynfjfzbjvglsdaqp`, in `pavan2184's Org`. The new empty hosted database is

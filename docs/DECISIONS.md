@@ -293,3 +293,28 @@ submitted work is repaired or the view changes. A plannedDisruptionId records
 which scenario a generated result already includes, avoiding double application
 on return to that view. Workforce figures label the unsolved preview explicitly;
 solver provenance continues to describe the original generation.
+
+### 2026-09-07 — Immutable intake revisions separate from baseline engine facts
+
+Status: Accepted for issue #9.
+
+Each request mutation appends a version snapshot with its actor/state/reason;
+current and active-approved pointers are the only mutable intake state. Contractor
+organisation is derived from the verified trusted profile. Dedicated SQL validators
+and narrow private actor-derived functions enforce references and transitions even
+when HTTP is bypassed. Only active approved revisions enter the loader, retaining
+stable IDs and exact revision provenance; operator-seeded baseline facts continue
+to round-trip unchanged when no contractor work is active.
+
+Approved replacement drafts keep the previous approved version active until a
+planner approves the replacement. Cancellation removes the active version but
+never rewrites a published artifact; scheduled status reflects the actual current
+publication revision. Approval and cancellation serialize with generation and
+publication and invalidate prior source attestations. Active prerequisite deletion
+or cross-night replacement is blocked until dependent approvals are revised.
+
+Use explicit structured blocks and derive sector labels. Drafts may have empty
+text/blocks/demand while supplied references and intervals remain valid. Approval
+requires explicit safety confirmation of existing fabricated constraints, skills,
+team, clearance, priority and dependencies. No model-generated work becomes an
+engine input in this issue; #10/#11 extend this boundary with proposal evidence.
