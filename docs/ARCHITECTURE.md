@@ -5,7 +5,7 @@ Last updated: 2026-09-07
 ## Shape
 
 A server-gated Next.js App Router workspace over a pure TypeScript planning engine, plus
-one dynamic route for the assistant. Postgres planning-facts migrations and a
+dynamic routes for the assistant and durable plan versions. Postgres planning-facts migrations and a
 seed/loader exist; the dashboard still consumes literals. Supabase email/password authentication gates planner and contractor workspaces; no live feed
 yet. The owner requires database development without Docker.
 
@@ -64,7 +64,7 @@ and one SS-4 isolation. Three rules, one answer, none of them typed in.
 
 A strategy is three deterministic levers over one solver: the order requests are
 considered in, how candidate start times are ranked, and how much separation or
-reserve the profile insists on. Nothing is stored. Two profiles running the same
+reserve the profile insists on. Profiles remain objective parameters. Two profiles running the same
 constraints differ only by those numbers, which is what makes the comparison
 meaningful rather than decorative.
 
@@ -129,7 +129,7 @@ The core package cannot import web, React or Next code; ESLint enforces this.
 facts, and `scripts/db/verify.ts` is the required non-skipping parity gate.
 The hosted RailPlan Dev project passes migration, seed and literal/database parity
 verification. The loader uses a repeatable-read transaction for a consistent
-snapshot and transaction-pooler compatibility. Plans and audits are not persisted yet.
+snapshot and transaction-pooler compatibility. The dedicated `/plans` workflow persists server-generated versions and audits; the existing dashboard remains local exploration until #16.
 
 ## Identity boundary — issue #5
 
@@ -145,9 +145,32 @@ transaction-local authenticated role and minimal claims derived from the verifie
 user, reads the trusted profile under RLS, and closes its connection. The owner
 connection used by maintenance scripts is never the application authorization
 context. Future solve/approve/publish/resource routes must invoke `requireAction`
-and use this transaction boundary; those endpoints do not exist yet.
+and use this transaction boundary; plan generation, decision and publication endpoints now use this boundary; later intake and workforce endpoints follow their numbered issues.
 
 Assistant limits use a locked per-user token bucket in the private schema, shared
 across application instances. A narrowly granted private definer function checks
 the current planner profile, chooses the caller from `auth.uid()`, and fixes the
 rate and clock server-side. Clients cannot mutate the bucket directly.
+
+## Versioned planning boundary — issue #6
+
+`src/lib/plans` accepts bounded generation parameters, loads canonical database
+facts, solves against a derived world and independently validates before saving.
+Transactions begin at repeatable read before the profile lookup. Every planning
+fact mutation advances a conservative global source revision under a shared row
+lock. Generation and publication update a separate lock generation on that row;
+this forces overlapping repeatable-read callers to retry from BEGIN instead of
+publishing from an old MVCC snapshot. Three total attempts bound retries.
+
+Runs contain immutable facts, parameters and computed output. Placements and
+deferrals are normalized. Separate append-only publication rows link superseded
+versions without editing their content. Stale publication returns a value inside
+the transaction, commits the rejection audit, then throws the typed HTTP error.
+Publication revalidates saved placements against current facts and requires
+matching full-input SHA-256, current engine versions and all mandatory work.
+
+Tables and narrowly granted write functions are in the non-exposed
+`railplan_private` schema. Authenticated SQL reads use planner RLS. Write functions
+recheck trusted planner profiles and derive actors from auth.uid(). Never add this
+schema to Supabase's exposed Data API schemas. Contractor reads remain denied
+until a later scoped delivery contract exists.

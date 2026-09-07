@@ -1,8 +1,8 @@
 # Current Implementation Audit
 
-Last updated: 2026-08-02
+Last updated: 2026-09-07
 
-Status: engine audit originally recorded for v0.2.0. Current v0.4 adds a shared core package, instance-driven engine context, planning-fact migrations/loader, and a hardened assistant route. See PROJECT_STATUS.md for verification and blockers. This file records what the code
+Status: engine audit originally recorded for v0.2.0. Current v0.4 adds a shared core package, instance-driven engine context, hosted planning facts, authenticated workspaces, durable saved plan versions/publication/audit and a hardened assistant route. See PROJECT_STATUS.md for verification and blockers. This file records what the code
 does, including what it still does not do. Where an earlier version of this
 document listed a gap that has since been closed, the closure is stated with the
 module that closed it.
@@ -35,7 +35,7 @@ and every result is re-validated before it is displayed.
 - Zustand 5 for client state; localStorage persists the chosen objective and
   exact pinned placements.
 - `@anthropic-ai/sdk` for the optional assistant, called from one route handler.
-- No database, no auth, no external data feed. One dynamic route (`/api/assistant`).
+- Supabase Auth and hosted PostgreSQL planning facts; server-generated durable versions at `/plans` and `/api/plans`. The dashboard remains local exploration pending #16. No external data feed.
 
 ## Module map
 

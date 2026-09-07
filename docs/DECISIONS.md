@@ -4,6 +4,31 @@ Last updated: 2026-09-07
 
 ## Log
 
+### 2026-09-07 — Issue #6 immutable server-generated plans
+
+Persist full canonical input facts and parameters, SHA-256 provenance and exact
+computed output. Use a dedicated saved-plan workspace while preserving the local
+exploratory dashboard until #16. The server is the only generation authority;
+clients cannot submit placements or metrics as generated results. Private tables
+and narrow authenticated write functions avoid exposing a writable snapshot RPC
+through Supabase's Data API. Contractor reads are denied until scoped delivery.
+
+Use one conservative source revision for all planning facts, including topology,
+resources and request children. Statement triggers lock and advance it before
+mutation; no-op planner updates also stale drafts. This trades extra regeneration
+for complete coverage until approved intake and finer source revisions exist.
+Create/publish transactions use repeatable read plus a separately updated lock
+generation. A row lock alone was rejected: overlapping repeatable-read first
+publications can retain a snapshot without the prior publication. Updating the
+generation forces serialization failure and a bounded full-transaction retry.
+
+Store publication supersession separately, with immutable content and append-only
+authenticated audit. Return stale rejection inside the transaction and raise HTTP
+409 after commit so its audit survives. Revalidate against current facts and
+current engine versions before publishing. Retain actor UUIDs when Auth accounts
+are deleted; account deletion must not erase historical audit.
+
+
 ### 2026-09-07 — Issue #5 trusted profiles and application RLS
 
 Use official Supabase SSR email/password sessions and verify users server-side.

@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — issues #4 and #5 complete; #6 next
+## Ordered issue work — #4–#6 complete; #7 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
@@ -93,6 +93,52 @@ failures as 503 rather than 401, with regressions. The earlier disk error was
 resolved; current production preview runs at http://127.0.0.1:3000. #5 is complete
 for the hosted workflow; #6 is next. Local Auth creation remains an explicitly
 unrun optional check. No GitHub issues have been closed yet.
+
+## Issue #6 — immutable saved plans implemented
+
+The dedicated `/plans` workspace generates server-computed durable versions from
+canonical database facts, lists/reloads the latest 20 versions per night, records
+planner decisions and publishes with independent validation and stale-source
+protection. It displays exact placements, deferrals, calculated metrics and
+provenance. The existing dashboard remains explicitly local exploration; wider
+workflow integration follows #16. No #7 workforce contracts are preimplemented.
+
+The applied migration stores private immutable runs, normalized children,
+append-only decisions/publications/audits and a global source revision. Current
+request, child, resource and topology changes conservatively stale all drafts.
+Publication supersedes with a separate immutable link; stale rejection audits
+commit before HTTP 409. Private write functions derive actor IDs from verified
+claims, planner RLS denies contractor reads, and application SQL runs with actual
+authenticated privileges. JSON/Origin/body/schema bounds guard all mutations.
+
+Review found and fixed a repeatable-read publication race before migration
+application: a separate lock generation now forces overlapping callers to retry
+from BEGIN. The true-concurrency test observed both first-publication transactions
+waiting, then proved one published version and one superseded version. Its
+committed future-night/request/actor fixtures were removed by exact-ID owner
+cleanup, with exclusive table locks and immutable triggers restored within one
+transaction. The schema remains outside exposed Supabase Data API schemas.
+
+Verification: `npm test` **245 passed, zero skipped**, across 20 files,
+including six live rollback persistence/RLS tests and seven saved-plan UI tests.
+Required `test:db` passed canonical parity for 22 requests, 26 rollback tests
+and one isolated concurrency test with cleanup. Lint, typecheck, production build
+and diff whitespace checks passed. Independent review passed after fixing the
+concurrent-publication race, stale UI state and Next.js origin handling. The origin
+guard compares the actual Host with the transport protocol, rejects malformed
+origins and scheme/port mismatches, and ignores untrusted forwarded-host headers.
+
+Production browser UAT passed sign-in, server generation, stale rejection,
+fresh generation, review note, publish, full reload, a different strategy and
+supersession, then logout. The reloaded balanced plan retained 17 placements and
+5 deferrals. A separate SQL read confirmed committed audit counts: three create,
+one decision, one stale rejection, two publish and one supersede. Browser console
+reported no errors. Exact-ID cleanup removed the three temporary plans and their
+Auth user; all six immutable-history guards were verified enabled afterward.
+Database parity still matches the original 22 fabricated requests. The production
+preview at http://127.0.0.1:3000 was stopped before the next implementation/build.
+#6 is complete; #7 is next. Existing dependency advisories and broader release
+accessibility checks remain #17 gates. No GitHub issue has been closed.
 
 ## Historical implementation record
 

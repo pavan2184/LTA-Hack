@@ -1,6 +1,6 @@
 # Security Review
 
-Last updated: 2026-09-07 · issue #5 authentication review
+Last updated: 2026-09-07 · issues #5–#6 authentication and persistence review
 
 ## Boundaries actually implemented
 
@@ -39,12 +39,12 @@ Last updated: 2026-09-07 · issue #5 authentication review
 ## Work requiring further review
 
 The implemented identity/RLS boundary is reviewed below. Further reviews cover
-immutable audit/publishing and stale sources (#6), transcript evidence/privacy/injection (#10), Telegram token handling and
+transcript evidence/privacy/injection (#10), Telegram token handling and
 scoped delivery (#14), CSV formula injection (#15), voice/import retention and
 OAuth scope (#18/#19), and named crew identity/retention/deletion (#21).
 
 Current two-role database and API regression checks pass. Production login/logout
-verification is pending its final run; accessibility and complete release review
+verification passed; accessibility and complete release review
 remain #17 gates.
 
 ## Issue #5 authentication review — 2026-09-07
@@ -84,8 +84,7 @@ passed after correcting Auth outage classification to 503 with regressions.
 Limits: role/account provisioning remains trusted operator work; no customer
 self-service signup or password recovery UI is delivered here. Supabase token
 revocation follows its access-token lifetime; getUser verifies server identity,
-not a bespoke auth.sessions revocation policy. Later plan/intake/notification/
-audit objects do not exist yet and this review makes no claim about their RLS.
+not a bespoke auth.sessions revocation policy. Later intake/notification objects do not exist yet; plan/audit boundaries are reviewed separately below.
 The assistant still handles fabricated facts and retains its documented
 semantic grounding limits. Existing npm advisories remain a release gate.
 
@@ -95,3 +94,51 @@ file and refuses existing accounts/files. Five guard tests pass; running it with
 the hosted development environment correctly refuses before any database write.
 Local Auth account creation remains unverified because no local Supabase Auth
 instance is running under the owner's no-Docker requirement.
+
+## Issue #6 persistence review — 2026-09-07
+
+- Generation accepts bounded parameters only, loads database facts in one
+  repeatable-read transaction and computes/validates server-side. Full-input
+  SHA-256 covers topology, resources and every pin field, including team/end.
+- Private snapshot/child/publication/decision/audit tables have planner-only RLS
+  SELECT grants. No authenticated direct writes, update/delete APIs or public
+  writable snapshot functions exist. Immutable triggers reject changes including
+  maintenance-role UPDATE/DELETE/TRUNCATE. Contractor reads are denied entirely.
+- Narrow private SECURITY DEFINER write functions have empty search paths,
+  revoked PUBLIC/anon execute, trusted planner checks and auth.uid-derived actors.
+  These functions accept server-computed output: **railplan_private must remain
+  absent from exposed Data API schemas**. Exposing it would remove that server
+  computation boundary. It is intentionally distinct from public RPC schemas.
+- A shared revision/generation row serializes source mutations and publication.
+  Review caught the repeatable-read stale-snapshot hole in a read-only row lock;
+  generation updates now force retries, verified with two genuinely concurrent
+  first publications. Contractor no-op writes cannot stale planner versions.
+- Publish checks source, independent validation, mandatory coverage, current
+  engine versions and saved/current full-input digests. Stale rejection audit
+  commits before returning 409. Supersession appends a link, never edits output.
+- Mutations enforce same Origin (when present) against actual Host and request
+  scheme/port, JSON content type, byte/schema
+  bounds and verified planner permission before persistence. Correlation logs
+  never include database exceptions, tokens, request payloads or decision text.
+- Actor UUIDs survive account deletion without cascading audit loss. Append-only
+  audit stores action/actor/IDs/time only. Bounded decision text is ordinary
+  planner content, never executable instructions or authorization metadata.
+
+Live rollback persistence/RLS tests and isolated committed concurrency tests
+passed. The concurrency test's privileged exact-ID cleanup locks fixture tables,
+changes trigger state only within its cleanup transaction, restores every trigger
+before commit and fails visibly if cleanup cannot complete. This is development
+test maintenance; no app API can disable triggers or erase audit history.
+
+Browser UAT found Next production normalizing `request.url` to its configured
+listen hostname. The CSRF check now uses the actual Host authority with the
+Next-derived request scheme, validates malformed authorities/origins, and ignores
+untrusted x-forwarded-host. Regressions reproduce the legitimate hostname mismatch
+and reject sibling hosts, protocol/port mismatch, opaque origins and injected
+userinfo/path/comma authorities. Deployment proxies must preserve Host.
+
+Final #6 verification: production browser generation, stale rejection, review,
+publication, reload and supersession passed. Independently read committed audits
+matched all actions. Exact-ID temporary-plan/account cleanup restored all six
+history guards. Review also verified Next.js Host normalization handling keeps
+Origin scheme/port checks and ignores caller-supplied forwarded hosts.

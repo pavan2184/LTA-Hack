@@ -48,7 +48,7 @@ and server errors, keyboard/focus/labels, non-color conflict indicators and page
 overflow at 1280×800, 1440×900 and 1920×1080. An HTTP probe is not a substitute for
 browser UAT. Record runs and skipped checks in `PROJECT_STATUS.md`.
 
-Future identity, persistence, request lifecycle, workforce and integration work
+Future request lifecycle, workforce and integration work
 must add its route/RLS/constraint tests before issue #17's complete two-role
 release suite. Current tests do not certify real railway operational safety.
 
@@ -70,3 +70,30 @@ own numbered issues introduce their tables, not by placeholder tests here.
 `auth-session.test.ts` verifies server-confirmed identity, invalid/missing/
 anonymous denial, fail-closed configuration and 503 classification for Auth
 network/service failures. `auth-seed.test.ts` checks the local-only seed guard.
+
+## Issue #6 persistence checks
+
+`plans.test.ts` verifies bounded parameters, runtime night/team/duration rules and
+full-input SHA-256 provenance. `api.plans.test.ts` covers typed auth/errors, strict
+request shapes, origin/content-type, streamed bounds and route dispatch.
+`saved-plans.test.tsx` covers the dedicated saved-plan UI with mocked HTTP.
+`plans.db.test.ts` uses real authenticated RLS and rollback fixtures for exact
+roundtrip, decisions, immutable publication/supersession, stale rejection audits,
+all source fact groups, role denial, invalid pins and infeasible publication.
+
+`npm run test:db` runs mandatory parity, rollback integration suites, then a
+separate required concurrency suite using `vitest.concurrency.config.ts`.
+`scripts/db/plan-concurrency.test.ts` is excluded from ordinary `npm test` because
+committed fixtures must not overlap rollback/parity/role tests. It creates an
+isolated future night, one cloned fabricated request and one temporary actor,
+blocks both first-publication transactions on the source row, then verifies one
+published and one superseded version after serialization retries.
+
+True cross-session tests need committed fixtures. Their owner-only cleanup takes
+ACCESS EXCLUSIVE locks with a five-second timeout, disables immutable triggers
+inside one transaction, deletes exact fixture IDs and restores triggers before
+commit. Failure rolls cleanup back and visibly fails the test. It never broadly
+deletes plans or changes RLS. The global source revision advances during fixture
+setup/cleanup, so existing unpublished demo versions become stale; actual source
+facts and published snapshots remain unchanged. All temporary Auth/plan/night/
+request fixtures are removed on success. This suite fails when DB is unavailable.

@@ -10,7 +10,7 @@
 
 - [x] #4: Verify local reset/seed/load, diagnose mismatches by section, test available/unavailable database behavior, synchronize v0.4 contracts and versions. Files: `scripts/db/`, `src/lib/db/`, `src/test/instance.test.ts`, `supabase/config.toml`, package manifests, required project documents. Verify with database commands, tests, lint, typecheck, build.
 - [x] #5: Supabase sessions, planner/contractor authorization, RLS matrix and shared token bucket; security review.
-- [ ] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
+- [x] #6: Immutable saved plan versions, audited decisions, current-source publication gate.
 - [ ] #7: Anonymous workforce types, schema, loading, seeds and canonical digests.
 - [ ] #8: Workforce capacity validator, solver enforcement and calculated metrics.
 - [ ] #9: Validated contractor submission lifecycle and immutable approved revisions.
@@ -73,3 +73,35 @@ planner, contractor and unassigned users. Anonymous and role API gates pass.
 Browser login/error rendering passes; exact-ID hosted fixture cleanup completed.
 Optional local Auth seed refuses hosted targets and remains unrun without local
 Auth, consistent with the no-Docker direction. #6 is next.
+
+## #6 implementation design
+
+Keep immutable plan facts/results, normalized placements and deferrals in the
+private schema, with planner-only RLS reads. Narrow private write functions derive
+audit actors from verified claims. Separate append-only publication links preserve
+the original run while identifying supersession. A conservative global source
+revision is locked before fact changes and publishing, so shared resource and
+request changes invalidate old drafts without racing publication. The API computes
+and independently validates from a consistent hosted snapshot; client plan output
+is never accepted. Stale rejection is a committed audit result before HTTP 409.
+
+A dedicated planner `/plans` journey generates saved versions, lists recent
+versions by night, reopens placements/deferrals/calculations/provenance, records a
+review decision and publishes. Existing local disruption scenarios remain
+exploratory until the broader product integration in #16. No contractor whole-plan
+read is enabled before scoped contractor publication work exists.
+
+Verification: unit schema/digest/pin tests, real rollback persistence/RLS/source/
+publication tests, typed route failures, component behavior, build, independent
+security review, and hosted migration replay. Verify generated -> reload -> review
+-> publish, stale rejection, supersession and immutable history before completion.
+
+## #6 completed
+
+245 tests passed, zero skips; lint/typecheck/build passed. Required DB tests26
+plus isolated concurrency1 passed. Migration replay and 22-request parity passed.
+Independent reviews resolved publication concurrency, UI stale state and Next.js
+Host/Origin normalization. Production browser save/reload/review/stale rejection/
+publish/supersede/logout passed; committed audits independently matched actions.
+Exact-ID UAT cleanup restored all six history guards. Preview server stopped.
+#7 is next.

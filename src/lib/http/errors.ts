@@ -24,7 +24,10 @@ export type ApiErrorCode =
   | "invalid_request"
   | "payload_too_large"
   | "rate_limited"
-  | "engine_error";
+  | "engine_error"
+  | "not_found"
+  | "stale_plan"
+  | "invalid_plan";
 
 const STATUS: Record<ApiErrorCode, number> = {
   unauthenticated: 401,
@@ -35,6 +38,9 @@ const STATUS: Record<ApiErrorCode, number> = {
   payload_too_large: 413,
   rate_limited: 429,
   engine_error: 500,
+  not_found: 404,
+  stale_plan: 409,
+  invalid_plan: 409,
 };
 
 export function apiError(

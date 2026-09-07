@@ -22,6 +22,7 @@ export async function withAuthenticatedTransaction<T>(
   identity: VerifiedIdentity,
   work: (tx: TransactionSql, actor: Actor) => Promise<T>,
   connection?: Sql | TransactionSql,
+  isolation: "read committed" | "repeatable read" = "read committed",
 ): Promise<T> {
   const sql = connection ?? connect();
   try {
@@ -34,7 +35,7 @@ export async function withAuthenticatedTransaction<T>(
       const actor: Actor = { id: profile.id, role: profile.role, contractorOrganisationId: profile.contractor_organisation_id };
       return work(tx, actor);
     };
-    return "begin" in sql ? await sql.begin(run) as T : await run(sql);
+    return "begin" in sql ? await sql.begin(`isolation level ${isolation}`, run) as T : await run(sql);
   } finally { if (!connection && "end" in sql) await sql.end({ timeout: 1 }); }
 }
 export async function requireActor(action?: PlannerAction): Promise<{ identity: VerifiedIdentity; actor: Actor }> {

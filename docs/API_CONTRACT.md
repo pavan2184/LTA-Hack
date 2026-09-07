@@ -43,6 +43,8 @@ Errors: `{ error: { code, message, requestId } }`.
 | 413 | payload_too_large |
 | 429 | rate_limited (also Retry-After header) |
 | 500 | engine_error |
+| 404 | not_found |
+| 409 | stale_plan, invalid_plan |
 
 Authentication precedes input processing: the Supabase Auth server verifies the
 cookie identity, then the trusted profile must be `planner`. User-supplied role,
@@ -81,5 +83,48 @@ throws for an unavailable database, missing schema/night or query error.
 `npm test` explicitly skips database tests only if the connectivity probe fails;
 a reachable database with missing tables or wrong data fails.
 
-There are no request, plan, publication, ingestion, notification or export routes
-yet. Issues #6–#21 define their ordered implementation and authorization gates.
+There are no intake, ingestion, notification or export routes yet. Their numbered issues define the remaining implementation and authorization gates.
+
+## Durable plans — issue #6
+
+All routes verify the Supabase identity and trusted planner role before processing
+input. Contractors receive 403 without plan data. Shared Zod contracts live in
+`src/lib/plans/schemas.ts`; shared output types live in `@railplan/core/types/plans`.
+POST requests require `application/json`, compare Origin to the actual Host
+authority and Next-derived request scheme (including the port), and enforce
+the streamed 64 KiB body limit. A proxy must preserve Host; untrusted
+`x-forwarded-host` is not an origin allow-list. Malformed/opaque origins fail
+closed. Non-browser clients may omit Origin. Unknown
+properties are rejected, including caller-supplied results/creator/status.
+
+| Route | Request | Success |
+| --- | --- | --- |
+| POST /api/plans | `{planningNight, strategy?, locked?}` | 201 `{plan: PlanVersion}` |
+| GET /api/plans?planningNight=YYYY-MM-DD | Valid planning night | 200 `{plans: PlanVersion[]}`, latest 20 |
+| GET /api/plans/:id | UUID | 200 `{plan: PlanVersion}` |
+| POST /api/plans/:id/publish | `{}` | 200 `{plan: PlanVersion}` |
+| POST /api/plans/:id/decisions | `{kind: "note" \| "accept" \| "reject", reason}` | 201 `{decision: PlannerDecision}` |
+
+Dates must be valid ISO dates within 2000–2100. Strategy is one of the same five
+engine IDs and defaults to balanced. Pins default to empty and are capped at 100;
+IDs/team IDs are bounded to 64 characters, start minutes 0–1440 and ends 1–2880.
+Runtime checks enforce the selected night's unique request IDs, assigned teams,
+exact duration and actual request/night window. Synchronous generation is limited
+to 100 requests, a 1,440-minute window and slots of at least five minutes.
+
+The server loads a consistent database snapshot, computes and independently
+validates the output, then stores it. `PlanVersion.validation` contains
+`independentlyValidated` and the exact violations; `objectives` is the engine's
+label/value/unit array, and `metrics` retains every formula/numerator/denominator.
+It includes placements, deferrals and provenance plus `publishState` (draft,
+published or superseded), `publishedAt` and `supersededBy`. Successful reads are
+private application data with `Cache-Control: no-store`.
+
+A missing night/version returns not_found 404. Stale drafts return stale_plan 409
+and keep an authenticated rejection audit. Publication revalidates saved data,
+requires current source, matching engine versions and all mandatory work, and
+returns invalid_plan 409 otherwise. Repeating publication of an already published
+or superseded version is idempotent and returns its existing state. Decisions are
+append-only review records, not an intake approval lifecycle or edits to a plan.
+`/plans` provides save/list/reload/decision/publish UI; local exploratory dashboard
+generations are distinct and broader workflow integration remains #16.

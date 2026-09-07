@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 
 if (existsSync(".env.local")) loadEnvFile(".env.local");
@@ -12,6 +12,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    exclude: [...configDefaults.exclude, "scripts/db/plan-concurrency.test.ts"],
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
   },

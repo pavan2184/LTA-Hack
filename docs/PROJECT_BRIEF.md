@@ -27,8 +27,7 @@ No real LTA rules, live feeds or operational safety certification are represente
 
 Postgres planning-input migrations and a TypeScript seed/loader are authored;
 verification status is in `PROJECT_STATUS.md`. The dashboard still reads literals.
-Strategy and exact pinned placements persist locally. Plans, approvals and audit
-history are not yet durable. The assistant is the only HTTP API route; Supabase identity and organisation
+Strategy and exact pinned placements persist locally. The dedicated `/plans` workflow generates durable server-computed versions from database facts, reloads their exact output, records decisions and publishes with stale-source protection and audit history. The dashboard remains a labelled local exploratory workflow; wider integration follows #16. Supabase identity and organisation
 isolation gate planner and contractor workspaces. The app runs directly in Node.js.
 The owner requires a database workflow without Docker (2026-09-07).
 

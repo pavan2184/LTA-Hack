@@ -66,9 +66,10 @@ minutes are relative to that night. Intervals are half-open. Multi-night work,
 individual rosters and timezone conversion are not implemented.
 
 The browser persists `strategy` and exact `locked` placements under
-`railplan-preferences`. Generated plans, decisions and disruptions are session
-state. Identity tables exist; there are no plan-version, request-submission, workforce,
-notification or audit tables yet. Issues #6 onward introduce those contracts.
+`railplan-preferences`. The local dashboard
+keeps exploratory generations and disruptions in session state. Dedicated saved
+plans and their decisions/publications/audits are durable. Request-submission,
+workforce and notification tables remain later issue work.
 
 ## Identity — issue #5
 
@@ -85,3 +86,27 @@ operator tooling until its own product workflow is added.
 an update timestamp. One token refills every five seconds; deletion of an auth
 user removes their bucket and profile. No prompts, tokens, passwords or email
 addresses are stored in application tables.
+
+## Immutable versions — issue #6
+
+The shared `PlanVersion` contract lives in `packages/core/src/types/plans.ts`.
+It carries planning night, source revision (decimal string), SHA-256 input digest,
+strategy, solver/constraint versions, status, objectives, calculated metrics,
+independent validation, normalized placements/deferrals, creator and creation time.
+Publication state and timestamp are derived from immutable publication records.
+
+Private tables: `planning_source` (global revision and independent lock generation),
+`planning_runs` (canonical facts, parameters and result without duplicated plan),
+`plan_placements`, `plan_deferrals`, `planner_decisions`, `plan_publications` and
+`plan_audit_events`. Placement/deferral positions preserve exact engine order.
+Published versions have no edit/delete route; database grants and immutable
+UPDATE/DELETE/TRUNCATE triggers protect all generated versions and audit history.
+Publications link to the version they supersede, leaving its snapshot intact.
+
+Actor UUIDs deliberately have no cascading Auth foreign key: deleting an account
+must not erase the historical creator/audit identity. Audit stores only actor,
+action, plan ID, optional related ID and server timestamp. Decision reason is
+bounded to 1,000 characters. There are no raw request bodies, credentials or
+transcripts in audit. Planning facts currently mean the baseline maintenance
+requests; approved intake becomes the source when #11 implements it. All fact,
+child, resource and topology mutations conservatively stale all nights.
