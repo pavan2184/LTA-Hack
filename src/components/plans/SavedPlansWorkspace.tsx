@@ -10,6 +10,7 @@ import { PlanNotifications } from "@/components/notifications/PlanNotifications"
 import { Button } from "@/components/ui/button";
 
 import { SavedPlanExports } from "./SavedPlanExports";
+import { SavedPlanReview } from "./SavedPlanReview";
 
 const strategies: [StrategyId, string][] = [
   ["balanced", "Balanced"], ["max-completion", "Maximum completion"],
@@ -116,6 +117,7 @@ export function SavedPlansWorkspace() {
           <Button variant="primary" disabled={busy || selected.publishState !== "draft" || selected.status === "INFEASIBLE" || !selected.validation.independentlyValidated} onClick={publish}>Publish this version</Button>
         </div>
         <p className="text-sm">Publication records this version as the current plan and sends scoped messages to affected contractor destinations. The server rechecks validation and whether its source data is still current. Notification failures do not undo publication.</p>
+        <SavedPlanReview key={`${selected.id}:${selected.publishState}`} planId={selected.id} />
         <dl className="grid gap-2 rounded border border-rule bg-surface p-3 text-xs sm:grid-cols-2">
           {[['Version', selected.id], ['Source revision', selected.sourceRevision], ['Input digest', selected.inputDigest],
             ['Solver', selected.solverVersion], ['Constraints', selected.constraintVersion], ['Created by', selected.createdBy],

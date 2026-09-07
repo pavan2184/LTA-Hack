@@ -156,3 +156,6 @@ it("keeps a committed publication successful while showing a notification-storag
     screen.queryByText(/There were no affected contractor organisations/),
   ).not.toBeInTheDocument();
 });
+
+// Saved snapshot visuals have real-component and combined journey coverage.
+vi.mock("@/components/plans/SavedPlanReview", () => ({ SavedPlanReview: () => null }));

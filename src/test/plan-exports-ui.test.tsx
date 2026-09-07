@@ -186,3 +186,6 @@ it("the real saved-plan workspace aborts an old export when the selected version
   expect(output.clicked).toHaveLength(0);
   expect(screen.getByRole("button", { name: "Download CSV" })).toBeEnabled();
 });
+
+// Saved snapshot visuals have real-component and combined journey coverage.
+vi.mock("@/components/plans/SavedPlanReview", () => ({ SavedPlanReview: () => null }));

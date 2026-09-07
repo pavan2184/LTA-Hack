@@ -2,10 +2,37 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#15 implemented; #16 next
+## Ordered issue work — #4–#16 implemented; #17 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#16 is implemented: planners land in saved planning with consistent role-scoped
+navigation; the interactive fabricated conflict-repair tool remains at `/sandbox`.
+Saved versions have a primary Gantt and linked queue/inspector/workforce/map built
+from immutable saved facts. Adjustable panels retain child state, persist bounded
+local preferences and support pointer/keyboard resizing with status announcements.
+
+Verification: **536 tests pass, zero skips**,62 files; DB59 rollback+4 actual
+concurrency checks, lint/typecheck/build and independent full review pass. Initial
+review found the new sandbox route missing cookie-refresh proxy coverage; the
+Next matcher regression reproduced and fixed it. Browser visual review then found
+solid MRT-coloured task bars could imply conflict status. Bars are now neutral,
+with line identity on block labels and accent selection. The new regression plus
+saved-review/combined-journey10 checks, typecheck, final build and re-review pass.
+
+The production two-role journey used only UI actions after account provisioning:
+contractor create/submit → planner review/approve revision3 → generate18 placements
+→ Gantt/inspector/map inspect → publish → explicit missing-destination notification
+failure → contractor sees01:15–01:30 revision3 → actual downloaded published JSON
+with that exact revision/slot. Contractor `/plans` access redirects to its scoped
+workspace. Pointer and keyboard resizing,2px visible focus, collapse/reload
+preference retention and1280/1440/1920 overflow checks pass. Sandbox repair,
+alternative, pin, emergency replan, engine-grounded assistant and formula inspection
+pass; unplaced mandatory work remains explicitly infeasible. Browser logs are empty.
+Two users,one request,one plan and one notification attempt were removed;13 history
+guards are enabled, baseline parity/replay pass, test sessions signed out, layout
+defaults restored and preview stopped. #17 is next.
 
 #15 is implemented: deterministic persisted-plan JSON/CSV exports, separate
 source/publication assessment, formula neutralization and authenticated downloads.

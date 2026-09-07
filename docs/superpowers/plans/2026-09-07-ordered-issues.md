@@ -20,7 +20,7 @@
 - [x] #13: Validated, attributed local geographic snapshot, separate from safety topology. Publication remains blocked by conflicting source licence notices.
 - [x] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status. Live provider success unverified without configured/authorized destination.
 - [x] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
-- [ ] #16: Complete role journeys and accessible adjustable dashboard.
+- [x] #16: Complete role journeys and accessible adjustable dashboard.
 - [ ] #17: Release security, accessibility, responsive and end-to-end verification.
 - [ ] #18: Consented audio capture/transcription through the existing review boundary.
 - [ ] #19: Explicit provider imports with least privilege and provenance.
@@ -354,3 +354,37 @@ security/docs and integration verification. No migration or publication is requi
 JSON/CSV files match saved version; superseded assessment and responsive widths pass.
 Fixtures removed,13 guards enabled,parity/replay pass,preview stopped. Read-only
 source revision function required the reviewed immutable migration above. #16 next.
+
+## #16 implementation design
+
+Make the authenticated planner landing route open saved planning, with a consistent
+role-scoped navigation sequence: request review → saved scheduling/review →
+publication/delivery/export. Contractors retain their organisation-only request,
+private proposal and published-slot workspace. Move the unchanged interactive
+fabricated conflict-repair workspace to an explicitly labeled sandbox route; it
+must never be mistaken for an approved or persisted plan.
+
+Saved versions gain a primary Gantt, request selection/inspector, workforce and
+geographic views constructed solely from the immutable #15 snapshot. Display
+current freshness/publication assessment separately, retain saved figures and
+formula explanations, and keep failures recoverable. No solver or current-fact
+substitution during inspection. Publication still performs the authoritative
+server check. Refresh the snapshot after publication without stale fetch races.
+
+A reusable adjustable panel retains children/state when collapsed, uses bounded
+versioned local layout preferences, and supports pointer and keyboard size changes.
+Queue/inspector/workforce/geography are secondary; Gantt remains primary. Stack
+panels at narrower widths and keep overflow within designated content containers.
+
+Ownership: implement_plans handles reusable layout and sandbox DashboardShell;
+request_intake handles saved snapshot visuals and their interaction tests; parent
+handles shared role navigation, routing, saved workspace integration, combined
+journey tests, status/security documentation and full browser verification. No new
+schema, provider credential or external message is required for #16. Review and
+verify #16 before starting #17.
+
+#16 verified:536fulltests,DB59+4,lint/type/build,reviews pass. Proxy matcher and
+visual colour semantics corrected after reproduced findings; final10focused+build
+and browser recheck pass. Complete two-role UI journey+download, sandbox regression,
+1280/1440/1920 widths and pointer/keyboard/persistence pass. Fixtures removed,
+13guards enabled,parity/replay pass,server stopped. #17 next.

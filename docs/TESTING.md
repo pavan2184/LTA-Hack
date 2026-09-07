@@ -274,3 +274,20 @@ facts to prove only the freshness assessment changes while saved data remains ex
 filenames, recoverable authorization/network failures and cancellation of late
 responses. Its real SavedPlansWorkspace integration proves a version change aborts
 the old download. No solver or current-facts loader is part of export generation.
+
+## Issue #16 integrated journey checks
+
+`workspace-navigation.test.tsx` verifies role-scoped navigation, server route
+redirects, unassigned-account messaging and the explicitly unsaved sandbox.
+`auth-proxy.test.ts` invokes Next's installed route matcher to verify session
+refresh on every workspace, including `/sandbox`, and static-asset exclusion.
+Adjustable panel tests cover bounded persisted preferences, pointer/keyboard
+controls and preserved child state. Saved review tests use owned request IDs and
+immutable facts to check Gantt/workforce/map/inspector selection and request races.
+
+Full production two-role UAT must create/submit/review/approve work through the
+UI, generate/inspect/publish/download the saved plan, inspect separate notification
+status and return to the contractor's scoped published slot. Verify the sandbox
+regression journey and widths1280/1440/1920, then clean exact fixture accounts and
+artifacts. Provider success, microphone consent and source rights remain separate
+verification boundaries; #16 does not silently resolve those gates.

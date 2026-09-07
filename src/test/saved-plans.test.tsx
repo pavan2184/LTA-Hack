@@ -99,3 +99,6 @@ it('clears displayed details when refreshing publication state', async () => {
   await user.click(screen.getByRole('button', { name: 'Refresh versions' }));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Publish this version' })).not.toBeInTheDocument());
 });
+
+// Saved snapshot visuals have real-component and combined journey coverage.
+vi.mock("@/components/plans/SavedPlanReview", () => ({ SavedPlanReview: () => null }));

@@ -6,7 +6,7 @@ Last updated: 2026-09-07
 
 A server-gated Next.js App Router workspace over a pure TypeScript planning engine, plus
 dynamic routes for the assistant and durable plan versions. Postgres planning-facts migrations and a
-seed/loader exist; the dashboard still consumes literals. Supabase email/password authentication gates planner and contractor workspaces; no live feed
+seed/loader exist; saved planning consumes immutable database snapshots. Supabase email/password authentication gates planner and contractor workspaces; no live feed
 yet. The owner requires database development without Docker.
 
 ```
@@ -129,7 +129,7 @@ The core package cannot import web, React or Next code; ESLint enforces this.
 facts, and `scripts/db/verify.ts` is the required non-skipping parity gate.
 The hosted RailPlan Dev project passes migration, seed and literal/database parity
 verification. The loader uses a repeatable-read transaction for a consistent
-snapshot and transaction-pooler compatibility. The dedicated `/plans` workflow persists server-generated versions and audits; the existing dashboard remains local exploration until #16.
+snapshot and transaction-pooler compatibility. The dedicated `/plans` workflow persists server-generated versions and audits; the demo sandbox remains explicitly local exploration.
 
 ## Identity boundary — issue #5
 
@@ -315,7 +315,7 @@ new demand or supply rules. Missing demand stays unknown. A shared
 `visiblePlanningInputs` adapter assembles pending disruption placements for both
 impact validation and the chart, preventing duplicate emergency work or overruns.
 The existing request selection synchronizes contributor buttons with the Gantt
-and inspector. The current dashboard remains an exploratory literal snapshot.
+and inspector. The demo sandbox remains an exploratory literal snapshot; saved review receives its own persisted world.
 
 ## Geographic context
 
@@ -325,3 +325,15 @@ Offline scripts transform a reviewed local archive; the renderer imports JSON
 and makes no map-service request. Core instances, hashes and feasibility never
 import geography. Connections reference existing fabricated block IDs; geography
 does not supply track alignment, operational possession/isolation or safety data.
+
+## Issue #16 role journeys and saved visual review
+
+Authenticated `/` routes planners to `/plans` and contractors to `/contractor`.
+Shared navigation exposes request review, saved planning and the explicitly
+fabricated `/sandbox` only to planners; every route retains server-side role checks.
+SavedPlanReview reads the existing planner-only JSON export endpoint and constructs
+a world from immutable facts for its Gantt, workforce and local geographic views.
+It never substitutes the sandbox store or regenerates feasibility. Publication
+status/source freshness are separate observations; publication still revalidates
+on the server. Saved IDs key visual selection and pending requests are cancelled
+on changes. Layout preferences are browser-local presentation data only.

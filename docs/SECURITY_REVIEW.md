@@ -324,7 +324,7 @@ missing-credential delivery and explicit retry stay separate from publication
 success. All temporary data was removed and13 history guards verified enabled.
 No live provider success is claimed.
 
-## Issue #15 export boundary — review in progress
+## Issue #15 export boundary — reviewed
 
 Global plan exports require verified planner access. Files contain saved plan facts
 and provenance, including approved descriptions, but no private transcript evidence,
@@ -338,4 +338,22 @@ file re-saved by one; [OWASP documents that limitation](https://owasp.org/www-co
 Safe UUID attachment filenames, UTF-8 content types, nosniff and private no-store
 headers prevent content/header ambiguity and shared caching. The browser aborts
 obsolete version downloads and does not download error responses. Independent
-backend/security review and final full verification are pending.
+backend/security/UI reviews,505 tests,DB59+4,lint/typecheck/build and actual
+browser JSON/CSV download inspection pass. Temporary fixtures were removed.
+
+## Issue #16 role navigation and snapshot UI — reviewed
+
+Page guards still derive roles from verified server identity. Navigation is a
+convenience, never an access-control boundary. The default planner route now opens
+saved planning; the new sandbox route has the same planner guard. Initial review
+found its missing session-refresh proxy matcher. A Next matcher regression
+reproduced both base/nested failures; adding `/sandbox/:path*` passes all9 matcher
+checks and independent re-review. No static assets were added to auth refresh.
+
+Saved visual review fetches the already planner-authorized export endpoint.
+No credentials, approved content or identities are written to local layout storage.
+No new endpoint, DB grant, provider send or safety authority is introduced.
+Obsolete snapshot requests must be cancelled/ignored; remote failures stay visible
+without replacing saved content with demo literals. Independent full review and re-review are clean.536 full tests,DB59+4 and
+production two-role UI journey pass. Final colour-only correction passed10 focused
+checks/typecheck/build and visual recheck. No live external provider calls were made.

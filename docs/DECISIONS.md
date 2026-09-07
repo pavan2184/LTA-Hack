@@ -456,3 +456,17 @@ change stored data. CSV consumers differ and may strip escaping during re-save, 
 no universal safe round-trip claim is made. See [OWASP CSV Injection](https://owasp.org/www-community/attacks/CSV_Injection).
 Downloads are planner-only, private/no-store attachments. Switching the selected
 saved version aborts an outstanding download; an error preserves the plan view.
+
+### 2026-09-07 — Issue #16 persisted planning is the planner landing workspace
+
+Make saved planning the default and share role-scoped navigation with intake and
+review. Preserve the complete existing interactive conflict-repair tool at a
+clearly labeled demo sandbox route. Its local edits cannot masquerade as approved
+requests, saved versions or publications. Saved visual review uses the immutable
+export snapshot and explicit world/context, with independent persisted feasibility
+and calculations. Workforce interval projection may derive from those saved
+inputs; it is not a new validation authority. No schema/provider change is needed.
+
+Use a versioned, bounded local preference record for presentation only. Panel
+collapse preserves child state; pointer and keyboard controls expose the same
+size bounds. Gantt remains primary and narrower screens stack secondary panels.

@@ -7,6 +7,7 @@ import { PlanToolbar } from "@/components/controls/PlanToolbar";
 import { DisruptionDialog } from "@/components/disruption/DisruptionDialog";
 import { RequestInspector } from "@/components/insights/RequestInspector";
 import { ViolationPanel } from "@/components/insights/ViolationPanel";
+import { PlanningPanels } from "@/components/layout/PlanningPanels";
 import { SolverBar } from "@/components/layout/SolverBar";
 import { RequestQueue } from "@/components/requests/RequestQueue";
 import { BlockTimeline } from "@/components/schedule/BlockTimeline";
@@ -145,30 +146,25 @@ function Workspace() {
 
       <PlanSignals />
 
-      <div className="grid min-w-0 gap-2.5 lg:grid-cols-[248px_minmax(0,1fr)] 2xl:grid-cols-[248px_minmax(0,1fr)_368px]">
-        <div className="flex min-h-0 flex-col lg:max-h-[calc(100vh-260px)]">
-          <RequestQueue />
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-2.5">
-          <WorkforceTimeline />
-          <BlockTimeline />
-          <GeographicNetworkView />
+      <PlanningPanels
+        preferenceKey="railplan-demo-layout"
+        queue={<RequestQueue />}
+        primary={<BlockTimeline />}
+        workforce={<WorkforceTimeline />}
+        geography={<GeographicNetworkView />}
+        belowPrimary={
           <div className="grid gap-2.5 xl:grid-cols-2">
             <ViolationPanel />
-            <section className="grid content-start gap-2.5">
-              <SecondaryFigures />
-            </section>
+            <section className="grid content-start gap-2.5"><SecondaryFigures /></section>
           </div>
-        </div>
-
-        <div className="flex min-h-0 flex-col gap-2.5 lg:col-span-2 2xl:col-span-1">
-          <RequestInspector />
-          <div className="min-h-[300px]">
-            <PlannerAssistant />
+        }
+        inspector={
+          <div className="min-w-0 space-y-2.5">
+            <RequestInspector />
+            <div className="min-h-[300px]"><PlannerAssistant /></div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <ScenarioTesting />
 
