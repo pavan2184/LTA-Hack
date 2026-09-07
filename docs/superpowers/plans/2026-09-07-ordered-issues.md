@@ -18,7 +18,7 @@
 - [x] #11: Planner review, approval and source revision invalidation.
 - [x] #12: Accessible workforce demand/capacity visualization from engine data.
 - [x] #13: Validated, attributed local geographic snapshot, separate from safety topology. Publication remains blocked by conflicting source licence notices.
-- [ ] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status.
+- [x] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status. Live provider success unverified without configured/authorized destination.
 - [ ] #15: Authorized saved-plan JSON/CSV exports with formula neutralization.
 - [ ] #16: Complete role journeys and accessible adjustable dashboard.
 - [ ] #17: Release security, accessibility, responsive and end-to-end verification.
@@ -296,3 +296,38 @@ independent code/security review and production selection/emergency/label/respon
 checks pass. No runtime map API dependency; no feasibility change. Temporary users
 removed, parity unchanged, preview stopped. Licence clearance is unconfirmed and
 public redistribution/deployment remains blocked; technical dependencies allow #14.
+
+## #14 implementation design
+
+Publication creates a durable, immutable outbox in the same transaction as the
+published version. Compare immutable old/new saved request placements, ownership
+and revision facts; notify only affected contractor organisations, including
+removed/deferred work. Unowned fabricated baseline requests have no recipient.
+Each message contains exact version/night/request/time/sector and the prototype
+disclaimer, with no unrelated organisation data or private transcript evidence.
+
+Only verified planners configure numeric chat IDs or explicitly test/retry.
+Versioned configuration guards lost updates; saving a destination does not send.
+Append-only attempt claims/results make sent success permanent; concurrent claims
+serialize, abandoned claims become visibly unknown, and ambiguous retries require
+explicit duplicate-risk acknowledgement. Superseded unsent schedules are not sent.
+Initial bounded dispatch happens after publication commits (8 workers,16-second
+start budget; each provider call at most8 seconds). Remaining pending rows stay
+visible for explicit retry, without a hidden scheduler. Provider failures never
+roll back publication. Upstream credentials/descriptions/URLs are never logged
+or returned. Message text is deterministic plain text,1–4096 UTF-16 units without
+silent truncation; oversize payloads fail visibly without sending.
+
+Backend agent owns migration/service/routes/shared contract/DB tests. Frontend
+agent owns destination settings, scoped message/history and retry UI with tests.
+Parent owns bounded server-only transport, adversarial transport tests, security
+review and full verification. No real Telegram message is authorized during agent
+verification; no bot token/destination is configured. Controlled-provider success
+and real missing-credential behavior are separate evidence. Live delivery remains
+unverified until the owner supplies credentials and authorizes a recipient.
+
+#14 verification:474 zero skips,DB56+4,lint/typecheck/build,independent reviews,
+production planner configure/publish/failure/retry and contractor own-slot/scope
+checks pass. New corrective migration fixed runtime SQL alias collision; UI late
+retry guard fixed reproduced stale-config race. Temporary data removed,13 guards
+enabled,parity/replay pass,server stopped. No live Telegram calls. #15 next.

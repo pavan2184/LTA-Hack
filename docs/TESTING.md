@@ -237,3 +237,24 @@ for map/timeline/inspector selection and disruption clearing. The isolation test
 changes a map coordinate and confirms fresh engine facts, digest, placements and
 validation remain unchanged. Production UAT verifies those connected views and
 three desktop widths with clean browser logs.
+
+## Issue #14 notification verification
+
+`telegram.test.ts` uses controlled fetch to exercise fixed-host plain-text sends,
+matching message/chat acknowledgements, token/chat/text rejection,1–4096 length,
+provider rejections,429 retry delay, network/5xx/timeout ambiguity, stalled body
+consumption and64KiB response bounds. No test contacts Telegram.
+
+`notification-ui.test.tsx` and `notification-workspace.test.tsx` cover versioned
+configuration without automatic sends, missing-bot feedback, separate explicit test,
+sent/in-flight/superseded/retry-time guards, ambiguous retry acknowledgement,
+stale async plan responses and publication success despite notification warnings.
+Existing saved-plan regressions remain in `saved-plans.test.tsx`.
+
+`notification-concurrency.test.ts` is part of the isolated committed-fixture gate.
+It holds the exact delivery row, observes two independent claim calls waiting in
+Postgres, releases the row, then asserts one attempt/provider call and permanent
+known-success deduplication. The injected provider is controlled. Exact-organisation
+cleanup restores all four notification history guards transactionally; no planning
+facts are mutated. Required schema application and final gate results are recorded
+in PROJECT_STATUS rather than interpreting absent-table failures as skips.

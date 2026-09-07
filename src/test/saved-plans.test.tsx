@@ -4,6 +4,10 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { SavedPlansWorkspace } from '@/components/plans/SavedPlansWorkspace';
 import { solve } from '@railplan/core/engine/solve';
 
+// Notification HTTP behavior and publish integration have their own real-component suites.
+vi.mock('@/components/notifications/PlanNotifications', () => ({ PlanNotifications: () => null }));
+vi.mock('@/components/notifications/NotificationSettings', () => ({ NotificationSettings: () => null }));
+
 const result = solve({ strategy: 'balanced' });
 const saved = {
   id: '6c494154-2b92-4890-8b8a-8a522254fe42', planningNight: '2026-09-16',

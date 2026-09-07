@@ -72,7 +72,7 @@ The browser persists `strategy` and exact `locked` placements under
 `railplan-preferences`. The local dashboard
 keeps exploratory generations and disruptions in session state. Dedicated saved
 plans and their decisions/publications/audits are durable. Request-submission
-and notification workflows remain later issue work.
+and notification workflows are documented below; exports remain issue #15.
 
 ## Identity — issue #5
 
@@ -272,3 +272,43 @@ submission-scoped RLS and a mutation/truncate guard. It introduces no raw transc
 column. Private proposal rows remain owner-only even after the deliberate snapshot
 is shared. A submitted request starts at revision 1 with action submit_proposal;
 subsequent planner actions append ordinary request revisions.
+
+## Durable Telegram outbox — issue #14
+
+All five notification tables live in non-exposed `railplan_private`, with
+planner-only SELECT RLS. Authenticated callers have no direct write grants;
+narrow fixed-search-path functions recheck trusted planner identity and derive the
+actor. No Telegram token is persisted in these tables.
+
+- `notification_configurations`: one current nullable numeric chat ID per
+  organisation, optimistic version and last actor/time.
+- `notification_configuration_events`: immutable prior/new chat, version and
+  authenticated actor/time for every configuration change.
+- `notification_deliveries`: immutable organisation-scoped message, publication
+  FK/night or test configuration version, unique deduplication key, creator/time.
+- `notification_attempts`: immutable numbered claim, delivery FK, authenticated
+  actor, saved destination at claim time and start timestamp; at most 20 attempts.
+- `notification_results`: immutable one-result-per-attempt, Telegram message ID
+  **or** allowlisted error code/ambiguity, bounded retry delay and result timestamp.
+
+A publication INSERT trigger compares the new and superseded immutable plan
+snapshots. It resolves `R-<submission UUID>` ownership through the protected request
+submission and exact approved revision, and compares only that request's revision,
+sector, assigned team and schedule state/times. Stable sorted messages include
+removed work using previous provenance. Baseline operator-seeded requests have no
+contractor ownership and are excluded. The outbox and publication commit together;
+external delivery cannot execute in the trigger or roll publication back.
+
+A per-delivery row lock serializes claims. Success in **any** attempt permanently
+prevents another claim, including a late successful result from a previously
+unknown attempt. Pending claims cannot be retried for 60 seconds; an abandoned
+claim is derived as unknown, with no automatic resend. Explicit acknowledged
+retries append a new claim. Attempt/result/configuration histories cannot be
+updated, deleted or truncated, even through ordinary owner SQL. Delivery state is
+a read-time projection of those histories, with superseded unsent work blocked.
+
+The message is frozen at publication; the destination is selected from current
+trusted configuration at each claim, allowing an explicit retry after correcting
+a missing destination. Test delivery keys contain the configuration version, and
+configuration reads expose only that version's test. Neither notification work nor
+chat changes advance planning-source revision or alter a saved engine result.

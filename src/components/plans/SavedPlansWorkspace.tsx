@@ -5,6 +5,8 @@ import type { PlanVersion } from "@railplan/core/types/plans";
 import type { StrategyId } from "@railplan/core/types/railplan";
 import { PLANNING_NIGHT } from "@railplan/core/data/requests";
 import { formatClock } from "@railplan/core/engine/intervals";
+import { NotificationSettings } from "@/components/notifications/NotificationSettings";
+import { PlanNotifications } from "@/components/notifications/PlanNotifications";
 import { Button } from "@/components/ui/button";
 
 const strategies: [StrategyId, string][] = [
@@ -24,6 +26,7 @@ async function request<T>(url: string, body?: unknown): Promise<T> {
 }
 
 export function SavedPlansWorkspace() {
+  const [showSettings, setShowSettings] = useState(false);
   const [night, setNight] = useState(PLANNING_NIGHT);
   const [strategy, setStrategy] = useState<StrategyId>("balanced");
   const [plans, setPlans] = useState<PlanVersion[]>([]);
@@ -32,6 +35,7 @@ export function SavedPlansWorkspace() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [notificationWarning, setNotificationWarning] = useState<{ planId: string; message: string } | null>(null);
   const [reason, setReason] = useState("");
   const [kind, setKind] = useState<"note" | "accept" | "reject">("note");
   const [refresh, setRefresh] = useState(0);
@@ -60,7 +64,8 @@ export function SavedPlansWorkspace() {
     setNotice("Plan generated and saved. Review it before publishing.");
   });
   const publish = () => selected && run(async () => {
-    const { plan } = await request<{ plan: PlanVersion }>(`/api/plans/${selected.id}/publish`, {});
+    const { plan, notificationsWarning } = await request<{ plan: PlanVersion; notificationsWarning?: string | null }>(`/api/plans/${selected.id}/publish`, {});
+    setNotificationWarning(notificationsWarning ? { planId: plan.id, message: notificationsWarning } : null);
     setSelected(plan);
     setPlans(items => items.map(item => item.id === plan.id ? plan : plan.publishState === "published" && item.publishState === "published"
       ? { ...item, publishState: "superseded", supersededBy: plan.id } : item));
@@ -72,6 +77,8 @@ export function SavedPlansWorkspace() {
   });
 
   return <div className="space-y-6">
+    <Button aria-expanded={showSettings} onClick={() => setShowSettings(value => !value)}>{showSettings ? "Close notification settings (discard unsaved edits)" : "Notification settings"}</Button>
+    {showSettings && <NotificationSettings />}
     <section className="rounded border border-rule bg-surface p-4" aria-label="Generate a saved plan">
       <p className="mb-4 text-sm text-ink-700">Generate from the current approved planning inputs. Each version keeps its original schedule, calculations and review history.</p>
       <div className="flex flex-wrap items-end gap-4">
@@ -106,7 +113,7 @@ export function SavedPlansWorkspace() {
             <p className="text-sm">{selected.status} · <span className="capitalize">{selected.publishState}</span></p></div>
           <Button variant="primary" disabled={busy || selected.publishState !== "draft" || selected.status === "INFEASIBLE" || !selected.validation.independentlyValidated} onClick={publish}>Publish this version</Button>
         </div>
-        <p className="text-sm">Publication records this version as the current plan. The server rechecks validation and whether its source data is still current.</p>
+        <p className="text-sm">Publication records this version as the current plan and sends scoped messages to affected contractor destinations. The server rechecks validation and whether its source data is still current. Notification failures do not undo publication.</p>
         <dl className="grid gap-2 rounded border border-rule bg-surface p-3 text-xs sm:grid-cols-2">
           {[['Version', selected.id], ['Source revision', selected.sourceRevision], ['Input digest', selected.inputDigest],
             ['Solver', selected.solverVersion], ['Constraints', selected.constraintVersion], ['Created by', selected.createdBy],
@@ -134,6 +141,7 @@ export function SavedPlansWorkspace() {
           {!selected.deferred.length && <p className="text-sm">No deferred requests.</p>}
           <ul className="space-y-2 text-sm">{selected.deferred.map(d => <li key={d.requestId}><strong>{d.requestId}</strong>: {d.reason}</li>)}</ul>
         </section>
+        <PlanNotifications planId={selected.id} publishState={selected.publishState} warning={notificationWarning?.planId === selected.id ? notificationWarning.message : null} />
         <form onSubmit={e => { e.preventDefault(); void decision(); }} className="space-y-3 rounded border border-rule p-4">
           <h3 className="font-semibold">Record a review decision</h3>
           <p className="text-xs">Review decisions stay in the history and do not change the saved schedule.</p>

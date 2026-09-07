@@ -413,3 +413,27 @@ Coordinates, display projection and source metadata stay outside core facts,
 hashes, solver and validator imports. Map selection uses the same request/block
 IDs as the Gantt/inspector. Nearby means same/adjacent demo blocks, not a new
 geographic safety distance. No live map/tile/API calls are made by the renderer.
+
+## 2026-09-07 — Issue #14 durable publication notification boundary
+
+Create the contractor-scoped outbox atomically with publication, then dispatch
+outside that transaction. Delivery failure must never undo a published plan.
+Use immutable payloads and append-only attempts, serialized claims, permanent
+success deduplication and explicit retry. Network/server/timeout uncertainty is
+visible as ambiguous; a planner must acknowledge duplicate risk before retrying.
+Telegram has no client idempotency key for sendMessage, so exactly-once external
+delivery cannot be promised across a crash after send and before recording success.
+
+The destination comes only from planner-managed, versioned organisation settings
+at claim time; it is retained in attempt history. Contractor inputs cannot choose
+recipients. Saved configuration sends nothing. Limit each deterministic scoped
+plain-text message to4096 UTF-16 units, fail oversized messages visibly, disable
+link previews and never include private intake evidence. Fixed HTTPS Telegram
+requests have no redirects, no retries, bounded response size and8-second deadline.
+Initial publication dispatch has8 workers and16-second start budget; large batches
+may remain pending for explicit retry. Unsent superseded schedules are blocked.
+
+[Telegram's official sendMessage contract](https://core.telegram.org/bots/api#sendmessage)
+and [response parameters](https://core.telegram.org/bots/api#responseparameters)
+were checked on2026-09-07. No provider credentials or authorized destination exist
+for live verification. Tests use controlled transports; no real message is sent.

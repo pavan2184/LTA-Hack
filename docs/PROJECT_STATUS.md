@@ -2,10 +2,38 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#13 implemented; #14 next
+## Ordered issue work — #4–#14 implemented; #15 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#14 is implemented: immutable contractor-scoped publication outbox, versioned
+planner-managed destinations and explicit audited retry. Publication commits
+before delivery attempts; missing credentials, rejections, rate limits and unknown
+outcomes remain visible. Confirmed success is never resent. Unsent superseded
+plans cannot be dispatched. Baseline fabricated requests without an organisation
+have no notification recipient. The bot token stays server-only.
+
+Verification: **474 tests pass, zero skips**,53 files; required DB56 rollback
+and4 isolated concurrency checks pass. Lint/typecheck/build and independent
+transport, SQL, service/API and UI reviews pass. Live tests found a claim-function
+alias collision; new migration `20260907130903_notification_claim_aliases.sql`
+corrects it without editing applied `20260907125221_telegram_publication_outbox.sql`.
+A delayed retry response/destination-change race was reproduced and fixed with
+configuration-version and test-ID guards. Two actual overlapping claim calls
+produce exactly one attempt/provider invocation; successful retries send nothing.
+
+Production browser checks passed destination save with zero deliveries, visible
+missing-bot state, successful publication with a separate credential failure,
+exact scoped message/time/sector, explicit retry/attempt history and contractor
+own-slot visibility with planner-route denial. Widths1280/1440/1920 had no overflow;
+680px visual inspection was readable and browser logs were empty. Browser bundles
+contain no Telegram transport/token-variable references. Two temporary users,
+one approved request, one published plan and its notification/configuration history
+were removed; all13 history guards are enabled. Baseline parity and migration
+replay pass; preview stopped. No real Telegram messages were sent. Live success
+requires configured credentials and an authorized destination; it remains unverified.
+#15 is next.
 
 #13 is implemented and technically verified: a strict, attributed local snapshot
 of fifteen station points, reproducible from the official March2026 polygon

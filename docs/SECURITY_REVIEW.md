@@ -295,3 +295,31 @@ clear source redistribution rights: the DataMall open-data page conflicts with t
 archive’s internal-use notice. The snapshot, map and documentation retain that
 conflict; public deployment/redistribution requires source-permission resolution.
 No external request to LTA or public publication has been performed.
+
+## Issue #14 Telegram boundary
+
+The server transport uses a fixed HTTPS host/path with a constrained token, numeric
+52-bit chat identifier, plain text, disabled link previews, no redirects/retries,
+8-second whole-response deadline and64KiB response cap. It never emits raw
+provider descriptions, exceptions or token-bearing URLs. Confirmed success requires
+an integer message ID and matching destination; timeouts/network/5xx or malformed
+acknowledgements are ambiguous. Tests use controlled responses only.
+
+The publication boundary creates immutable scoped payloads transactionally,
+then records append-only claims/results outside publication. Role checks and narrow
+SQL functions derive actors and destinations; the client cannot supply send content,
+recipient or provider status. Known success blocks every future resend. Abandoned
+claims and uncertain outcomes require explicit duplicate-risk acknowledgement.
+Config changes are versioned and audited. Independent migration/service/API/transport
+and UI reviews pass. Live rollback7 tests cover organisation scoping, planner RLS,
+versioned config, immutable history, abandonment/late success,429 and supersession.
+A real two-connection overlap test confirms one claim/provider call and no resend
+of known success. A PL/pgSQL alias collision discovered by live tests was fixed in
+new migration `20260907130903_notification_claim_aliases.sql`; the previously
+applied migration is untouched. A delayed UI retry response is applied only to the
+same configuration version and test ID; a reproduced regression covers the race.
+Full474 tests,requiredDB56+4,lint/typecheck/build and production two-role checks
+pass. Browser bundles have no Telegram transport/token-variable references;
+missing-credential delivery and explicit retry stay separate from publication
+success. All temporary data was removed and13 history guards verified enabled.
+No live provider success is claimed.

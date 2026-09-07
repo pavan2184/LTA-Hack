@@ -83,7 +83,7 @@ throws for an unavailable database, missing schema/night or query error.
 `npm test` explicitly skips database tests only if the connectivity probe fails;
 a reachable database with missing tables or wrong data fails.
 
-Structured intake routes are documented below. Ingestion, notification and export routes remain gated by their numbered issues.
+Structured intake, ingestion and notification routes are documented below. Export routes remain gated by issue #15.
 
 ## Durable plans — issue #6
 
@@ -260,3 +260,68 @@ needs_info edits, approval, rejection, cancellation or replacement. Existing
 /api/requests/:id/actions supplies all planner decisions and rejects incomplete
 approval. Rejected-to-draft reversal and every cancellation invalidate old plan
 source attestations, in addition to approval and approved replacement.
+
+## Telegram publication notifications — issue #14
+
+All configuration, delivery and retry routes verify an assigned **planner** before
+processing input. Contractors receive 403; no whole-plan or notification data is
+exposed through these routes. Mutations require the shared same-origin JSON and
+streamed 64 KiB bound. IDs are UUIDs; unknown fields are rejected. All responses
+are `Cache-Control: no-store` and carry `x-request-id`.
+
+| Route | Input | Success |
+| --- | --- | --- |
+| GET /api/notifications/configurations | None | `{configurations: NotificationConfiguration[], botConfigured: boolean}` |
+| PUT /api/notifications/configurations/:organisationId | `{expectedVersion, chatId: string \| null}` | `{configuration}` |
+| POST /api/notifications/configurations/:organisationId/test | `{expectedVersion}` | `{delivery: NotificationDelivery}` |
+| GET /api/plans/:id/notifications | None | `{deliveries: NotificationDelivery[]}` |
+| POST /api/notifications/:id/retry | `{acknowledgeDuplicateRisk?: boolean}` | `{delivery}` |
+
+`expectedVersion` is a nonnegative PostgreSQL integer: zero means not configured.
+A chat ID is a canonical nonzero signed integer string with at most 52 significant
+bits; channel names, zero, fractional values and leading zeroes are rejected.
+Null deliberately disables the destination. The token is the server-only
+`TELEGRAM_BOT_TOKEN`; it is never a configuration field. The configuration response
+includes organisation ID/name, saved chat/version, actor/time and `lastTest` for
+**that configuration version** only. A test is deduplicated by organisation and
+configuration version; retry its failed delivery explicitly rather than creating
+repeated tests for the same version. The test uses a fixed prototype message.
+
+Publication still returns `{plan}`, now with `notificationsWarning: string | null`.
+An atomic database trigger queues one deterministic message per affected
+organisation, comparing its owned approved request revisions/placements against
+the previous publication for the same night. It includes added, changed, removed
+and deferred work; unrelated organisations and the unowned operator-seeded baseline
+receive no message. Messages include the exact version UUID, night, request IDs,
+time/deferral/removal, sector and prototype disclaimer. Raw transcripts and private
+proposal evidence are never included.
+
+External sending starts **after publication commits**. Up to eight sends run at
+once; no new send starts after the initial 16-second budget. Unstarted deliveries
+remain pending for explicit action. This is a bounded initial delivery pass, not a
+background scheduler. Each Telegram transport has an eight-second timeout and no
+automatic retries. Messages over 4096 UTF-16 code units become failed
+`invalid_message`; they are not silently truncated or split. Ordinary provider
+failure is a 200 delivery response with `status: failed`. A notification storage
+failure after publication returns the published plan plus a sanitized warning;
+it cannot undo or misreport publication.
+
+Delivery records expose `pending | sent | failed`, exact message text/deduplication
+key, organisation/plan/night/kind, attempt count, Telegram message ID, creation,
+last-attempt and sent timestamps, sanitized error code/message, `nextRetryAt`,
+`ambiguous`, `inFlight`, and append-only attempt history. Each attempt records its
+actor, trusted saved destination and start/result timestamps. Any recorded success
+permanently prevents resend. An unfinished claim becomes visibly unknown after
+60 seconds. Unknown/ambiguous outcomes require explicit duplicate-risk
+acknowledgement before retry; the UI must ask the planner to check the destination.
+Unsent notifications for superseded plans cannot be dispatched. New retry claims
+use current saved configuration, never a caller-supplied recipient.
+
+Errors use `{error:{code,message,requestId}}`: invalid_request 400, not_found 404,
+conflict/duplicate_risk/delivery_in_progress/retry_later/attempt_limit/
+configuration_changed/superseded_plan 409, storage_unavailable 503, plus shared
+identity/body errors. The delivery's provider failure codes are missing_chat,
+missing_credentials, invalid_chat, invalid_message, rejected, rate_limited,
+unavailable and ambiguous. Provider descriptions, token-bearing URLs and raw
+exceptions never enter responses, audit rows or logs. A rate-limited attempt
+retains the bounded provider retry delay and rejects an early explicit retry.

@@ -18,6 +18,9 @@ vi.mock("@/lib/plans/service", () => ({
   publishPlan: mocks.publish,
   recordDecision: mocks.decision,
 }));
+vi.mock("@/lib/notifications/service", () => ({
+  dispatchPlanNotifications: vi.fn(),
+}));
 const id = "fd8d3e80-c056-4ab2-a6b4-2f76c569b665";
 const context = { params: Promise.resolve({ id }) };
 const request = (body: unknown) =>
