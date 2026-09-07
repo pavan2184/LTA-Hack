@@ -2,10 +2,32 @@
 
 Last updated: 2026-09-07
 
-## Ordered issue work — #4–#10 complete; #11 next
+## Ordered issue work — #4–#11 complete; #12 next
 
 Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
 order and then required no Docker. No GitHub issue has been closed yet.
+
+#10 is committed as `c48974e`. #11 is complete: owner-private proposal edits,
+explicit submission into the shared request review queue, immutable source and
+revision evidence, and rejection-reversal/cancellation source invalidation.
+Migration `20260907114117_unified_request_review.sql` is applied and immutable.
+
+Verification: **346 tests pass, zero skips**,38 files; required DB49 rollback
+and3 isolated concurrency tests pass. Lint/typecheck/build, independent backend/UI
+review, migration replay and baseline parity pass. Cross-boundary tests cover
+source-inert private edits/submission, exactly one approved engine revision,
+immutable original evidence, and stale plans after approval, rejection reopening
+and cancellation.
+
+Production browser verification passed contractor private edit/save/explicit
+submission, planner original evidence review and approval, and saved generation
+with18 placements including the approved request at01:15–01:30. The original
+model-attributed title stays in revision1; edited current fields show human
+attribution. Owner-private lists stayed separate. Widths1280/1920 had no document
+overflow and browser logs were empty. Both temporary users, both private drafts,
+one submitted request and one generated plan were removed; history guards restored,
+parity unchanged and preview stopped. Live model extraction remains unverified
+without a key. #12 is next.
 
 #9 is committed as `186c7a4`. #10 is implemented: owner-private transcript
 proposals with bounded UTF-8 input, exact evidence, unsupported fields unset and

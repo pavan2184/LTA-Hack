@@ -15,7 +15,7 @@
 - [x] #8: Workforce capacity validator, solver enforcement and calculated metrics.
 - [x] #9: Validated contractor submission lifecycle and immutable approved revisions.
 - [x] #10: Private transcript proposals with exact evidence and bounded model access.
-- [ ] #11: Planner review, approval and source revision invalidation.
+- [x] #11: Planner review, approval and source revision invalidation.
 - [ ] #12: Accessible workforce demand/capacity visualization from engine data.
 - [ ] #13: Validated, attributed local geographic snapshot, separate from safety topology.
 - [ ] #14: Publication notification outbox, scoped Telegram delivery and explicit retry status.
@@ -223,3 +223,28 @@ evidence/missing fields, missing-key503/input preservation and manual intake pas
 No live-provider success is claimed without the model key. Responsive widths
 pass; logs clean. Two temporary owners/drafts removed,8 guards enabled, parity
 unchanged, preview stopped. #11 is next.
+
+## #11 implementation design
+
+Extend private proposals with owner-only edits and one explicit, atomic submission
+into the existing request lifecycle. Nullable fields retain missing-information
+state. Human changes lose model confidence/current evidence attribution while
+original evidence remains in immutable history. Private edits and submission append
+actor/state/reason records; expected versions prevent overwrites and duplicate
+submissions. Contractor organisation comes from the trusted profile; planner-owned
+proposals require an explicit valid organisation selection.
+
+Submission deliberately shares the final proposal, evidence and revision history
+with the chosen organisation and planners, via an immutable source snapshot scoped
+to the request. Other private material remains owner-only. The unified review UI
+shows source/evidence, missing data, history and validation beside manual requests.
+Existing planner-only approval confirms complete engine and safety fields, adds
+one active immutable revision to canonical facts and stales prior plans. Preserve
+source invalidation for approval/replacement/cancellation and add rejection-reversal
+invalidation. No transcript survives into source history.
+
+Verify owner/org boundaries, nullable editing, confidence attribution, immutable
+history, version conflicts, single atomic submission, field completion, planner
+roles, exact engine revision and stale saved plans. Run the full gates and a real
+two-role browser edit → submit → review → approve journey using controlled private
+proposals, without claiming live model extraction.

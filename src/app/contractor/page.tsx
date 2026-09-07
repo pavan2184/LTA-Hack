@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { SignOut } from "@/components/auth/SignOut";
 import { workspaceActor } from "@/lib/auth/page";
-import { RequestIntakeWorkspace } from "@/components/requests/RequestIntakeWorkspace";
-import { TranscriptDraftWorkspace } from "@/components/requests/TranscriptDraftWorkspace";
+import { RequestWorkspaces } from "@/components/requests/RequestWorkspaces";
 export default async function Contractor() {
   const actor = await workspaceActor();
   if (!actor || actor.role !== "contractor") redirect("/");
@@ -19,8 +18,7 @@ export default async function Contractor() {
         </div>
         <SignOut />
       </header>
-      <RequestIntakeWorkspace role="contractor" />
-      <TranscriptDraftWorkspace />
+      <RequestWorkspaces role="contractor" />
       <footer className="border-t border-rule pt-4 text-xs">
         Fabricated inputs. Not for operational decisions.
       </footer>

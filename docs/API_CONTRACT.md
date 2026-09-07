@@ -227,3 +227,36 @@ Storage ambiguity asks the owner to reload private drafts before retrying.
 A missing model key returns 503 and does not affect structured manual intake.
 Provider timeout is 12 seconds with zero retries. No sensitive source, evidence,
 provider output or upstream error body is included in logs or error responses.
+
+## Owner draft editing, explicit submission and unified review — issue #11
+
+| Route | Input | Success |
+| --- | --- | --- |
+| GET /api/ingestions/drafts/:id | UUID | `{draft: PrivateDraftDetail}` owned detail/history |
+| PATCH /api/ingestions/drafts/:id | `{expectedVersion, fields: NullableRequestFields, reason}` | `{draft: PrivateDraftDetail}` |
+| POST /api/ingestions/drafts/:id/submit | `{expectedVersion, reason, organisationId?}` | `{draft: PrivateDraftDetail, request: RequestSubmission}` |
+
+All use verified identity, bounded strict same-origin JSON and no-store responses.
+Reason is trimmed nonempty, at most 2,000 characters; expectedVersion is positive
+and bounded to a PostgreSQL integer. Edit requests cannot contain evidence,
+confidence, manualFields, lifecycle state or ownership. Unknown fields stay null;
+blank title/description normalize to null. Validation rejects invalid supplied
+references/counts/windows, and detail validationErrors names incomplete fields.
+
+Only the exact owner may edit or submit private status. Contractor submit rejects
+caller organisationId and derives the trusted profile organisation; if that differs
+from the draft's original nonnull organisation, submission is forbidden. A planner
+owner must select a known organisation from the planner-only catalogue's
+organisations array. Submitting deliberately shares fields, retained evidence and
+revision history. One expectedVersion check, unique link and transaction prevent
+partial or duplicate submission. Later edits use the structured request workflow.
+
+Review mutations use the existing request error envelope, including fieldErrors:
+invalid_request 400, forbidden 403, not_found 404 for another owner's draft, and
+conflict/invalid_transition 409. Private histories stop at 100 revisions with a
+field-level error. Request detail includes proposalSource (or null for a manual
+request); request lists may omit it. That snapshot remains immutable across later
+needs_info edits, approval, rejection, cancellation or replacement. Existing
+/api/requests/:id/actions supplies all planner decisions and rejects incomplete
+approval. Rejected-to-draft reversal and every cancellation invalidate old plan
+source attestations, in addition to approval and approved replacement.

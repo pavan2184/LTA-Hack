@@ -1,3 +1,4 @@
+import type { RequestProposalSource } from "./ingestions";
 import type { WorkClass } from "../domain/resources";
 import type { EquipmentDemand, Priority } from "./railplan";
 export type RequestStatus =
@@ -49,6 +50,8 @@ export interface RequestRevision {
   createdAt: string;
 }
 export interface RequestSubmission {
+  /** Included on detail reads; omitted from lightweight lists. */
+  proposalSource?: RequestProposalSource | null;
   id: string;
   organisationId: string;
   organisationName: string;
@@ -69,6 +72,7 @@ export interface RequestSubmission {
   updatedAt: string;
 }
 export interface RequestCatalogue {
+  organisations?: { id: string; name: string }[];
   nights: {
     planningNight: string;
     startMinute: number;

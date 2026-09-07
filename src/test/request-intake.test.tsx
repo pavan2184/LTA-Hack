@@ -377,3 +377,94 @@ describe("structured request intake", () => {
     expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
   });
 });
+
+describe("submitted transcript provenance", () => {
+  it("shows immutable evidence and manual attribution beside separate planner controls", async () => {
+    const source = {
+      draftId: "draft-source",
+      submittedRevision: 3,
+      submittedAt: "2026-09-07T00:00:00Z",
+      submittedBy: "owner",
+      fields,
+      confidence: { title: 0.8 },
+      manualFields: ["description"],
+      evidence: [
+        {
+          field: "title",
+          quote: "Inspection source quote",
+          timestamp: "00:12",
+          start: 0,
+          end: 23,
+        },
+      ],
+      model: "test-model",
+      extractorVersion: "transcript-v1",
+      revisions: [
+        {
+          version: 1,
+          action: "extract",
+          status: "private",
+          actorId: "owner",
+          reason: "Extracted",
+          createdAt: "2026-09-07T00:00:00Z",
+          fields: { ...fields, description: null },
+          confidence: { title: 0.8 },
+          manualFields: [],
+          evidence: [
+            {
+              field: "title",
+              quote: "Original retained quote",
+              start: 0,
+              end: 23,
+              timestamp: null,
+            },
+          ],
+          model: "test-model",
+          extractorVersion: "transcript-v1",
+        },
+      ],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/requests/catalogue")
+          return Response.json({ catalogue });
+        if (url === "/api/requests")
+          return Response.json({
+            requests: [{ ...request, status: "submitted" }],
+          });
+        return Response.json({
+          request: { ...request, status: "submitted", proposalSource: source },
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    render(<RequestIntakeWorkspace role="planner" />);
+    await user.click(
+      await screen.findByRole("button", { name: "Open Inspection" }),
+    );
+    const provenance = await screen.findByRole("region", {
+      name: "Submitted proposal provenance",
+    });
+    expect(
+      within(provenance).getByText("Inspection source quote", {
+        selector: "blockquote",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(provenance).getByText("Manual · human supplied"),
+    ).toBeInTheDocument();
+    await user.click(within(provenance).getByText(/Revision 1/));
+    expect(
+      within(provenance).getByText("Original retained quote", {
+        selector: "blockquote",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Planner confirmation" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Approve request" }),
+    ).toBeInTheDocument();
+  });
+});

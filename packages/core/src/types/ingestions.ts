@@ -33,11 +33,43 @@ export interface DraftProposal {
 export interface PrivateDraft extends DraftProposal {
   id: string;
   version: number;
-  status: "private";
+  status: "private" | "submitted";
+  submittedRequestId: string | null;
+  manualFields: RequestFieldKey[];
   ownerId: string;
   organisationId: string | null;
   createdAt: string;
   updatedAt: string;
   model: string;
   extractorVersion: string;
+}
+
+export interface PrivateDraftRevision extends DraftProposal {
+  version: number;
+  manualFields: RequestFieldKey[];
+  action: "extract" | "edit" | "submit";
+  actorId: string;
+  fromStatus: null | "private";
+  status: "private" | "submitted";
+  reason: string;
+  createdAt: string;
+  model: string;
+  extractorVersion: string;
+}
+export interface PrivateDraftDetail extends PrivateDraft {
+  revisions: PrivateDraftRevision[];
+  validationErrors: Record<string, string>;
+}
+export interface RequestProposalSource {
+  draftId: string;
+  submittedRevision: number;
+  submittedAt: string;
+  submittedBy: string;
+  fields: RequestFields;
+  confidence: DraftConfidence;
+  evidence: DraftEvidence[];
+  manualFields: RequestFieldKey[];
+  model: string;
+  extractorVersion: string;
+  revisions: PrivateDraftRevision[];
 }

@@ -80,6 +80,7 @@ export async function getRequestCatalogue(
 async function read(
   tx: TransactionSql,
   id: string,
+  includeSource = true,
 ): Promise<RequestSubmission> {
   const [s] = await tx<
     {
@@ -110,6 +111,11 @@ async function read(
     }[]
   >`
  select version,status,fields,approval,action,from_status as "fromStatus",actor_id as "actorId",reason,created_at as "createdAt" from railplan_private.request_revisions where submission_id=${id} order by version`;
+  const sourceRows = includeSource
+    ? await tx<
+        { source: NonNullable<RequestSubmission["proposalSource"]> }[]
+      >`select source from railplan_private.request_proposal_sources where submission_id=${id}`
+    : [];
   const current = rows.find((r) => r.version === s.version)!;
   const revisions: RequestRevision[] = rows.map((r) => ({
     version: r.version,
@@ -129,6 +135,7 @@ async function read(
   }));
   return {
     ...s,
+    ...(includeSource ? { proposalSource: sourceRows[0]?.source ?? null } : {}),
     status: current.status,
     fields: current.fields,
     approval: current.approval,
@@ -158,7 +165,7 @@ export async function listRequests(
         }[]
       >`select id from railplan_private.request_submissions order by updated_at desc,id desc limit 100`;
       const result: RequestSubmission[] = [];
-      for (const row of rows) result.push(await read(tx, row.id));
+      for (const row of rows) result.push(await read(tx, row.id, false));
       return result;
     },
     connection,

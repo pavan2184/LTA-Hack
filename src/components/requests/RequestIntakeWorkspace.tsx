@@ -9,6 +9,8 @@ import type {
   RequestSubmission,
 } from "@railplan/core/types/requests";
 
+import { ProposalEvidence, ProposalHistory } from "./ProposalEvidence";
+
 type ApprovalForm = Omit<RequestApproval, "safetyConfirmed"> & {
   safetyConfirmed: boolean;
 };
@@ -90,9 +92,27 @@ function emptyFields(catalogue: RequestCatalogue): RequestFields {
   };
 }
 
-export function RequestIntakeWorkspace({ role }: { role: UserRole }) {
+export function RequestIntakeWorkspace({
+  role,
+  incomingRequests = [],
+}: {
+  role: UserRole;
+  incomingRequests?: RequestSubmission[];
+}) {
   const [catalogue, setCatalogue] = useState<RequestCatalogue | null>(null);
   const [requests, setRequests] = useState<RequestSubmission[]>([]);
+  const newerIncoming = incomingRequests.filter(
+    (incoming) =>
+      !requests.some(
+        (row) => row.id === incoming.id && row.version >= incoming.version,
+      ),
+  );
+  const visibleRequests = [
+    ...newerIncoming,
+    ...requests.filter(
+      (row) => !newerIncoming.some((incoming) => incoming.id === row.id),
+    ),
+  ];
   const [selected, setSelected] = useState<RequestSubmission | null>(null);
   const [fields, setFields] = useState<RequestFields | null>(null);
   const [approval, setApproval] = useState<ApprovalForm>(initialApproval);
@@ -330,10 +350,10 @@ export function RequestIntakeWorkspace({ role }: { role: UserRole }) {
       )}
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside aria-label="Your requests" className="min-w-0 space-y-2">
-          {!busy && !requests.length && (
+          {!busy && !visibleRequests.length && (
             <p className="text-sm text-ink-500">No requests yet.</p>
           )}
-          {requests.map((request) => (
+          {visibleRequests.map((request) => (
             <button
               key={request.id}
               className={`w-full min-w-0 break-words [overflow-wrap:anywhere] border p-3 text-left text-sm ${selected?.id === request.id ? "border-accent bg-sunk" : "border-rule bg-surface"}`}
@@ -576,6 +596,32 @@ export function RequestIntakeWorkspace({ role }: { role: UserRole }) {
                   Submit for review
                 </button>
               </div>
+            )}
+            {selected?.proposalSource && (
+              <section
+                aria-label="Submitted proposal provenance"
+                className="min-w-0 space-y-3 border-t border-rule pt-4"
+              >
+                <h3 className="font-semibold">Submitted proposal provenance</h3>
+                <p className="text-sm">
+                  Immutable proposal {selected.proposalSource.draftId} ·
+                  revision {selected.proposalSource.submittedRevision} · Shared{" "}
+                  {selected.proposalSource.submittedAt} by{" "}
+                  {selected.proposalSource.submittedBy}.
+                </p>
+                <p className="text-sm">
+                  This records the submitted proposal. Later request changes and
+                  planner decisions are separate. Model estimates and excerpts
+                  do not establish feasibility or safety.
+                </p>
+                <ProposalEvidence
+                  proposal={selected.proposalSource}
+                  manualFields={selected.proposalSource.manualFields}
+                />
+                <ProposalHistory
+                  revisions={selected.proposalSource.revisions}
+                />
+              </section>
             )}
             {selected && !contractor && selected.status === "submitted" && (
               <fieldset

@@ -253,3 +253,29 @@ independent reviews pass. Controlled owner fixtures show exact excerpts and
 missing fields; real503 preserves input and leaves manual intake usable. Live
 provider extraction remains unverified without credentials. Fixtures are removed,
 all8 immutable guards are enabled, parity is unchanged and the preview stopped.
+
+## Issue #11 human review boundary — implementation review
+
+Owner-only private edits must append history and preserve unknown fields. Human
+changes remove current model confidence/evidence attribution, while the original
+excerpts remain in immutable revisions. Explicit submission is the only operation
+that shares the proposal and saved history with an organisation and planners;
+other private drafts remain isolated. Optimistic versions make the submission
+atomic and prevent duplicate request creation. Contractor organisation is trusted
+profile data; planner submissions require an explicit valid organisation choice.
+
+The submitted request's source snapshot is immutable and scoped through request
+access. Evidence remains labelled as its original source, even when the request
+is later corrected. Approval remains a separate planner-only operation, requiring
+all request and safety fields. Only an active approved revision joins canonical
+facts. Source invalidation must also cover rejected-request reopening and
+cancellation, so saved plans cannot bypass these human decisions.
+
+The cross-boundary regressions now pass: private edit and submission leave planning
+inputs unchanged; approval adds exactly one revision; approval, rejection reopening
+and cancellation stale saved plans. Independent backend and UI reviews found no
+important remaining issues. Full346 tests, DB49/concurrency3 and production two-role
+browser verification pass. The browser confirms human attribution, original evidence
+history, explicit sharing and separate approval. Controlled fabricated proposals
+were used; no live model-success claim is made. Temporary records were removed,
+history guards restored, parity verified and preview stopped.

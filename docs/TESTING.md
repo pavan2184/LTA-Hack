@@ -184,3 +184,20 @@ The three new live tests passed after the reviewed migration; all fixtures rolle
 back. The model key is absent in this environment, so production unavailability
 and manual fallback are verifiable; successful extraction uses controlled test
 responses and must not be described as live-provider UAT.
+
+## Proposal review verification — issue #11
+
+`review-drafts.test.ts` checks nullable edit normalization, missing fields and
+forged provenance rejection. `api.review-drafts.test.ts` checks authenticated
+same-origin edit/submit boundaries, expected versions and detail envelopes.
+`review-drafts.db.test.ts` exercises owner-only edits, original immutable evidence,
+manual-field support clearing, incomplete submission refusal, one-time atomic
+sharing, organisation scope and reassignment denial, and deliberate planner
+organisation selection. It uses the scoped 20-second hosted I/O budget.
+
+`review-integration.db.test.ts` owns the full private-edit → explicit-submit →
+planner-approve → exact immutable engine revision → plan-source invalidation
+journey. Both new DB files are included in the required test:db gate. Migration
+syntax was verified in an intentionally rolled-back PostgreSQL transaction before
+review/application. The focused four live proposal-review cases passed with all
+fixtures rolled back. No provider key is needed to test this human review boundary.

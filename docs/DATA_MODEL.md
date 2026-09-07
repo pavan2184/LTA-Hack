@@ -244,3 +244,31 @@ No engine MaintenanceRequest is created and no planning-source revision changes.
 Source files, filenames, speaker identities and complete transcripts are not stored.
 A separate private `ingestion_buckets` table is owner-keyed quota state, independent
 of the planner-only assistant limiter.
+
+## Reviewed proposals and shared source snapshots — issue #11
+
+PrivateDraft status is private or submitted, with submittedRequestId and
+manualFields. PrivateDraftDetail adds immutable revisions and current
+validationErrors. A PrivateDraftRevision carries the partial field snapshot,
+confidence, missing fields, evidence, manual fields, actor, action, prior/new
+status, reason, timestamp and original model/extractor provenance. Existing initial
+revisions retain their original data; newly nullable metadata is interpreted as
+extract by the original owner, private status and no manual fields.
+
+Private draft edits accept only nullable contractor fields. The server recomputes
+manual fields, missing flags, evidence and confidence; callers cannot supply these
+provenance fields. Empty required blocks/workforce remain incomplete; empty
+equipment is an explicit known absence. Submission requires every field nonnull
+and the complete structured contractor validation, but does not invent or grant
+planner scheduling fields. Owner/version checks and unique links prevent duplicate
+submission. Contractor organisation reassignment requires a new appropriately
+owned proposal rather than silently sharing prior organisation material.
+
+`private_drafts.submitted_request_id` links the owner view to its submitted request.
+`request_proposal_sources` contains one immutable RequestProposalSource per request
+and draft, including final fields/evidence/confidence/manual fields, submitted
+revision/actor/time and complete retained revision history. The source table has
+submission-scoped RLS and a mutation/truncate guard. It introduces no raw transcript
+column. Private proposal rows remain owner-only even after the deliberate snapshot
+is shared. A submitted request starts at revision 1 with action submit_proposal;
+subsequent planner actions append ordinary request revisions.

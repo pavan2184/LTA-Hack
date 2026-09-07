@@ -275,3 +275,33 @@ and extractor/model provenance. Reads require the exact authenticated owner,
 including for planners; organisation membership does not grant access. This store
 has no submission, approval or planning-source side effect. Issue #11 adds the
 explicit owner editing/submission journey over this private proposal boundary.
+
+## Explicit proposal sharing and review — issue #11
+
+Owner-private proposals can be edited with expectedVersion and a reason. Nullable
+fields remain unknown until the owner supplies them; blank text normalizes to
+null. Changed fields become manual, lose current model confidence and supporting
+quotes, and retain their original extraction evidence in immutable history.
+Existing extraction revisions are never rewritten: nullable audit metadata reads
+with original-owner/extract/private fallbacks for the pre-review records.
+
+Explicit submission is one transaction: verify current owner/version, validate all
+contractor fields, derive the contractor organisation (or require a planner's
+explicit known-organisation choice), append a private submit revision, create one
+submitted RequestSubmission and store an immutable source snapshot. A changed
+contractor organisation cannot silently inherit an old organisation's draft for
+sharing. Submission shares retained fields, evidence and revision history with the
+selected organisation and planners; other private material remains owner-only.
+
+`request_proposal_sources` is readable through submission RLS, not through broader
+private-draft access. Request detail reads include the immutable source snapshot;
+list reads omit the heavy bundle. The ordinary submitted-request review lifecycle
+then owns needs_info/rejection/approval and subsequent manual changes. Evidence
+remains explicitly original proposal evidence if later request fields change.
+Only complete approved request revisions cross the existing engine boundary.
+
+Private edits/submission only advance lock generation for coherent catalogue
+checks; they do not alter planning input provenance. Every cancellation and
+rejected-to-draft reversal now increments the planning source, alongside approval
+and approved replacement, exactly once per successful transition. Private history
+is capped at 100 revisions to bound the deliberately shared snapshot.

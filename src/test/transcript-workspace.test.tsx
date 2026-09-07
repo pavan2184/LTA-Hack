@@ -26,6 +26,8 @@ const draft = {
   id: "draft-1",
   version: 1,
   status: "private",
+  manualFields: [],
+  submittedRequestId: null,
   ownerId: "owner",
   organisationId: null,
   fields,

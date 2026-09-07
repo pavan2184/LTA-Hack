@@ -342,3 +342,29 @@ intake remains available.
 Verified official provider references:
 [model IDs](https://platform.claude.com/docs/en/models/overview) and
 [structured output contract](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).
+
+### 2026-09-07 — Share an immutable proposal snapshot only on explicit submission
+
+Status: Accepted for issue #11.
+
+Keep private owner edits separate from the organisation-scoped submitted request.
+Editing appends a private revision; changed values become manual with null model
+confidence and no current model quote. Original evidence remains in immutable
+history. New nullable audit columns allow historical extraction rows to retain
+unchanged contents, with read-time original-owner defaults.
+
+Explicit submission atomically creates a submitted request, appends the private
+submit revision and freezes a source snapshot visible to its organisation and
+planners. The UI must explain that fields, retained evidence and revision history
+will be shared. Private storage itself never gains a planner read override.
+Contractors cannot select an organisation or silently submit a previous
+organisation's draft after reassignment. Planner-owned drafts require deliberate
+organisation selection. A private draft may submit once, guarded by its current
+version and unique database links, and retains at most 100 immutable revisions.
+
+Approval remains a separate authenticated planner action requiring every engine
+field and safety confirmation. Private drafts and explicit submission do not
+change planning facts. Conservatively invalidate source attestations for every
+cancellation and rejected-to-draft reversal, even without an active approval,
+alongside existing approval and replacement invalidation. Every successful change
+keeps the authenticated actor, prior/new state, revision and reason.

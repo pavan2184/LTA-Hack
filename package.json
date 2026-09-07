@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/db/seed.ts",
     "db:verify": "node --env-file-if-exists=.env.local --import tsx scripts/db/verify.ts",
-    "test:db": "npm run db:verify && vitest run src/test/instance.test.ts src/test/auth.db.test.ts src/test/plans.db.test.ts src/test/workforce.db.test.ts src/test/requests.db.test.ts src/test/ingestions.db.test.ts && vitest run --config vitest.concurrency.config.ts",
+    "test:db": "npm run db:verify && vitest run src/test/instance.test.ts src/test/auth.db.test.ts src/test/plans.db.test.ts src/test/workforce.db.test.ts src/test/requests.db.test.ts src/test/ingestions.db.test.ts src/test/review-drafts.db.test.ts src/test/review-integration.db.test.ts && vitest run --config vitest.concurrency.config.ts",
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/db/migrate.ts",
     "db:provision-user": "node --env-file-if-exists=.env.local --import tsx scripts/db/provision-user.ts",
     "db:seed-auth-local": "node --env-file-if-exists=.env.local --import tsx scripts/db/seed-auth-users.ts"

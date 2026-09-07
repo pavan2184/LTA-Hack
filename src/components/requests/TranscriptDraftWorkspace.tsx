@@ -1,51 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  REQUEST_FIELD_KEYS,
-  type PrivateDraft,
-  type RequestFieldKey,
-  type NullableRequestFields,
-} from "@railplan/core/types/ingestions";
+import { type PrivateDraft } from "@railplan/core/types/ingestions";
 import {
   decodeTranscriptBytes,
   MAX_TRANSCRIPT_BYTES,
 } from "./transcript-input";
-const labels: Record<RequestFieldKey, string> = {
-  planningNight: "Planning night",
-  title: "Title",
-  description: "Description",
-  workClass: "Work class",
-  blockIds: "Track blocks",
-  durationMinutes: "Duration",
-  preferredStart: "Preferred start",
-  earliestStart: "Earliest start",
-  latestEnd: "Latest end",
-  equipment: "Equipment",
-  workforce: "Workforce",
-};
+import type { RequestSubmission } from "@railplan/core/types/requests";
+import type { UserRole } from "@railplan/core/types/auth";
+import { PrivateDraftEditor } from "./PrivateDraftEditor";
+import { ProposalEvidence, proposalLabels as labels } from "./ProposalEvidence";
 const button =
   "rounded border border-rule-strong px-3 py-2 text-sm hover:bg-sunk disabled:opacity-50";
-function valueLabel(
-  key: RequestFieldKey,
-  value: NullableRequestFields[RequestFieldKey],
-): string {
-  if (value === null) return "Needs information";
-  if (Array.isArray(value))
-    return (
-      value
-        .map((v) =>
-          typeof v === "string"
-            ? v
-            : "equipmentId" in v
-              ? `${v.equipmentId}: ${v.units} units`
-              : `${v.roleId}: ${v.count} people`,
-        )
-        .join(", ") || "None explicitly stated"
-    );
-  if (typeof value === "number")
-    return `${value} minutes${key === "durationMinutes" ? "" : " after midnight"}`;
-  return value;
-}
 async function result(response: Response): Promise<PrivateDraft[]> {
   const body = await response.json().catch(() => null);
   if (!response.ok)
@@ -59,9 +24,14 @@ async function result(response: Response): Promise<PrivateDraft[]> {
 }
 export function TranscriptDraftWorkspace({
   manualIntake = true,
+  role = "contractor",
+  onSubmitted,
 }: {
   manualIntake?: boolean;
+  role?: UserRole;
+  onSubmitted?: (request: RequestSubmission) => void;
 }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<PrivateDraft[]>([]);
   const [transcript, setTranscript] = useState("");
   const [loading, setLoading] = useState(true);
@@ -167,8 +137,10 @@ export function TranscriptDraftWorkspace({
           save the full transcript.
         </p>
         <p className="mt-2 text-sm text-ink-700">
-          Only you can see these private drafts. They are not submitted,
-          approved or scheduled.{" "}
+          Only you can see a private draft until you explicitly submit it.
+          Submission shares its fields, evidence and saved revision history with
+          the selected organisation and planners; it does not approve or
+          schedule work.{" "}
           {manualIntake
             ? "Use the manual request form above when extraction is unavailable."
             : "You can continue reviewing submitted requests above when extraction is unavailable."}
@@ -268,6 +240,20 @@ export function TranscriptDraftWorkspace({
           No private transcript drafts yet.
         </p>
       )}
+      {selectedId && (
+        <PrivateDraftEditor
+          key={selectedId}
+          id={selectedId}
+          role={role}
+          onClose={() => setSelectedId(null)}
+          onSaved={(saved) =>
+            setDrafts((current) =>
+              current.map((row) => (row.id === saved.id ? saved : row)),
+            )
+          }
+          onSubmitted={onSubmitted}
+        />
+      )}
       <div className="space-y-4">
         {drafts.map((draft) => (
           <article
@@ -279,48 +265,28 @@ export function TranscriptDraftWorkspace({
                 {draft.fields.title ?? "Untitled proposal"}
               </h3>
               <p className="text-xs text-ink-500">
-                Private · version {draft.version} · Saved {draft.createdAt}
+                {draft.status === "submitted" ? "Submitted" : "Private"} ·
+                version {draft.version} · Saved {draft.createdAt}
               </p>
             </header>
             <p className="text-sm">
               {draft.missingFields.length
                 ? `${draft.missingFields.length} fields need information: ${draft.missingFields.map((k) => labels[k]).join(", ")}.`
-                : "All proposal fields have supporting evidence. Planner scheduling and safety review is still required."}
+                : "All proposal fields are supplied. Check evidence and manual attribution; planner scheduling and safety review is still required."}
             </p>
-            <dl className="grid gap-3 md:grid-cols-2">
-              {REQUEST_FIELD_KEYS.map((key) => (
-                <div
-                  key={key}
-                  className="min-w-0 rounded border border-rule p-3"
-                >
-                  <dt className="text-sm font-semibold">{labels[key]}</dt>
-                  <dd className="mt-1 whitespace-pre-wrap text-sm">
-                    {valueLabel(key, draft.fields[key])}
-                  </dd>
-                  {draft.fields[key] !== null &&
-                    draft.confidence[key] != null && (
-                      <dd className="mt-1 text-xs text-ink-500">
-                        {Math.round(draft.confidence[key]! * 100)}% confidence ·
-                        model estimate
-                      </dd>
-                    )}
-                  {draft.evidence
-                    .filter((e) => e.field === key)
-                    .map((e, index) => (
-                      <dd key={index} className="mt-2">
-                        <blockquote className="border-l-2 border-accent pl-2 text-sm">
-                          {e.quote}
-                        </blockquote>
-                        {e.timestamp && (
-                          <p className="mt-1 text-xs text-ink-500">
-                            Transcript timestamp: {e.timestamp}
-                          </p>
-                        )}
-                      </dd>
-                    ))}
-                </div>
-              ))}
-            </dl>
+            <ProposalEvidence
+              proposal={draft}
+              manualFields={draft.manualFields}
+            />
+            <button
+              className={button}
+              disabled={busy || selectedId !== null}
+              onClick={() => setSelectedId(draft.id)}
+            >
+              {draft.status === "submitted"
+                ? "Review submitted proposal"
+                : "Review private draft"}
+            </button>
             <p className="text-xs text-ink-500">
               Confidence estimates do not determine feasibility or replace
               planner review.
