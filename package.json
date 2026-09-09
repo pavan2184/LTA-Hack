@@ -62,7 +62,7 @@
     "tailwindcss": "4.3.2",
     "tsx": "^4.23.5",
     "typescript": "6.0.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "postcss": "8.5.28"

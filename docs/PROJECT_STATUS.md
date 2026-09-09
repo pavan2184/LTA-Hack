@@ -1,16 +1,34 @@
 # Project Status
 
-Last updated: 2026-09-07
+Last updated: 2026-09-09
 
 ## Ordered issue work — #4–#16 implemented; #17 in progress
 
-Working branch: `codex/ordered-issues`. The owner requested #4–#21 in numeric
-order and then required no Docker. No GitHub issue has been closed yet.
+Working branch: `codex/remaining-issues`, based on `1c8d999`. The owner requested
+#4–#21 in numeric order and requires hosted Supabase without Docker. Existing
+fixes through #17's implementation were pushed to `main` at the owner's request.
+On September 9, #4–#16 were independently rechecked and closed in numeric order;
+#1–#3 were already merged pull requests. #17 remains open; #18–#21 have not started.
 
-#16 is committed as `abf3d47`. #17 implementation and automated release checks
-pass; actual VoiceOver and native browser-zoom checks remain pending. Enabling
-VoiceOver would interrupt the owner's active desktop, so approval was requested
-and has not yet been received. #17 stays unchecked; #18–#21 have not started.
+The owner approved the actual VoiceOver check on September 9. The macOS switch
+was enabled, but automation could not obtain the reader's caption panel or an
+actual spoken phrase. DOM/AX labels therefore remain supporting evidence only;
+the spoken screen-reader check is unverified. VoiceOver was confirmed off after
+the attempt. Native Chrome zoom was observed changing devicePixelRatio from 2 to 2.2
+and viewport width 1470 to 1336, then restored to 2/1470. This confirms native zoom
+control, but is not a completed 200% workflow check. No temporary app accounts or
+persisted fixtures were created during this attempt; the preview was stopped.
+
+The September 9 audit found GHSA-82fw-gwwq-j7x9 in Vitest 4.1.10 and its mocker.
+Vitest is now pinned to 4.1.11, with compatible development-toolchain refreshes
+(Vite 8.2.2 and Rolldown 1.2.7). Independent lock review confirms all production
+dependency entries are unchanged; npm audit reports zero findings. The focused
+accessibility/notification suite passes 37 tests. Patch verification also passes:
+582 tests across 65 files (zero skips, including the 59 rollback DB checks),
+4 actual-concurrency checks, 4 production HTTP E2E checks, lint, typecheck and
+Next16.3.4 build. E2E uses controlled providers and cleans its hosted fixtures.
+The seed/hash rehearsal and geographic-source results below were verified on
+September9 before this development-only patch; they were not redundantly rerun.
 
 Fresh verification: **582 tests pass, zero skips,65 files**; required DB59 rollback
 and4 actual-concurrency checks; lint/typecheck/Next16.3.4 production build pass.

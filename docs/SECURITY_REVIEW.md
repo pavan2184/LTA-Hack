@@ -1,6 +1,6 @@
 # Security Review
 
-Last updated: 2026-09-07 · issues #5–#8 authentication, persistence and workforce review
+Last updated: 2026-09-09 · issues #5–#17 security and release review
 
 ## Boundaries actually implemented
 
@@ -398,5 +398,25 @@ returns after dismissal. Saved Gantt selection has a2px focus outline and the
 CC label computes to rgb(135,83,0). Missing-AI assistant answers retain input
 focus and populate the named live region; transcript errors preserve entered
 text. Browser error/warning logs are empty. These do not establish actual spoken
-screen-reader behavior or native browser zoom. Approval to briefly enable global
-VoiceOver in a separate Chrome window remains pending; #17 is not marked complete.
+screen-reader behavior or native browser zoom at that milestone.
+
+September 9 follow-up: owner approval was received and VoiceOver was enabled in
+a separate Chrome test window. Native accessibility access to VoiceOver timed out;
+its caption panel and last-spoken-phrase command did not produce observable speech
+evidence. No spoken output is claimed. VoiceOver was subsequently confirmed off.
+Native Chrome zoom changed DPR2→2.2 and viewport1470→1336, then was restored;
+a complete 200% workflow remains unverified. #17 remains open.
+
+The fresh September 9 audit identified moderate GHSA-82fw-gwwq-j7x9 in the Vitest
+mock plugin. Pinning Vitest 4.1.11 and refreshing compatible development tooling
+clears the advisory: npm audit reports zero findings. Independent lock review
+confirms no production dependency entries changed. npm 11.3.0 initially failed
+inside Arborist with a null `edgesOut`; npm 11.19.1 completed the installation
+without changing global npm. The focused accessibility/notification 37 tests pass.
+Vite emits an informational warning about a future config-loader default; no
+warning suppression or unrelated application/configuration changes were added.
+Full patch verification passes: 582 tests/65 files including the 59 rollback DB
+checks, 4 actual-concurrency checks, 4 production HTTP E2E checks, lint, typecheck
+and production build. E2E uses controlled providers, verifies sensitive-log guards
+and removes its temporary hosted fixtures. No actual provider sends or deployments
+were performed. The seed/hash rehearsal remains the pre-patch September9 result.
