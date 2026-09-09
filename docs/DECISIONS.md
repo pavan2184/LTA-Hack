@@ -494,3 +494,17 @@ bounded allowlisted usage metadata; provider exceptions and model output stay ou
 of logs. Accessibility checks distinguish component assertions, rendered keyboard
 and zoom behavior, and actual screen-reader observations. Public deployment remains
 subject to the separately documented geographic-source licence conflict.
+
+## 2026-09-09 — Protected Vercel prototype deployment
+
+At the owner's explicit request, deploy the current verified application before
+continuing remaining issues. Use Pavan's verified Vercel account, Node24.x and
+Singapore functions, with the existing hosted RailPlan Dev transaction pooler.
+Keep TLS verification and the app's session/RLS/Origin checks unchanged. Vercel
+account protection stays enabled; this is not source-licence clearance or a claim
+of operational readiness. Optional provider credentials remain absent.
+
+Commit an explicit Next.js preset and `npm ci` so creation through the CLI cannot
+leave the deployment on the generic framework preset. Exclude local environment
+and agent scratch files from source uploads. Database credentials go through
+stdin into Vercel's production secret store, never CLI arguments or Git.

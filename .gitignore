@@ -20,3 +20,4 @@ tsconfig.tsbuildinfo
 
 # Random credentials from the explicitly loopback-only auth demo seed.
 .railplan-local-demo.json
+.vercel

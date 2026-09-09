@@ -2,6 +2,40 @@
 
 Last updated: 2026-09-09
 
+## Vercel deployment — 2026-09-09
+
+Deployed and promoted at the owner's request, under the verified account
+`pavanmadhup-1254` and team `pavanmadhup-1254s-projects`. No deployment or mutation
+was made in Ayush's account. Project `railplan` is
+`prj_cu87fVlWwHlXQZ0rVoQLAkjiYqJy`; deployment
+`dpl_9C4v4LsGz14XQb2B31s5by8SdkSZ` is READY (production).
+
+URL: https://railplan-pavanmadhup-1254s-projects.vercel.app
+
+Vercel account protection is enabled: unauthenticated external HTTP redirects to
+Vercel SSO before the app's own login. Application access still requires a
+provisioned RailPlan account. This deployment does not clear the geographic-source
+licence conflict or complete #17's spoken-reader/200% workflow verification.
+
+The deployed application is commit `8cbebb1` plus the new Vercel configuration:
+Next.js preset, locked `npm ci`, Node24.x and Singapore (`sin1`) function region.
+The remote production build passed. Source upload excludes local env files,
+agent scratch files and local build artifacts; the public Supabase CA is included.
+Production has the two public Supabase settings and a server-only secret
+`DATABASE_URL` for the existing RailPlan Dev project. Local credentials remain
+ignored with mode0600. AI and Telegram credentials are absent.
+
+Live verification passed: browser sign-in/out, saved-plan display (17 placements,
+5 deferrals), real hosted planner/contractor access, catalogue read, independently
+validated feasible plan generation, JSON export, contractor403 denials and
+cross-origin403 rejection. Browser error/warning logs and Vercel runtime error
+scan were empty. One temporary probe initially asserted the wrong heading wording;
+correcting the probe to the rendered planner navigation passed without app edits.
+Two temporary users, their organisation and one draft plan were removed. The
+22-request canonical digest remains `fnv1a:8c4a9050cfea5e8b`. No real provider send,
+plan publication or local preview server was involved. Deployment did not use Git
+integration or push the current branch; subsequent releases can use the linked CLI.
+
 ## Ordered issue work — #4–#16 implemented; #17 in progress
 
 Working branch: `codex/remaining-issues`, based on `1c8d999`. The owner requested

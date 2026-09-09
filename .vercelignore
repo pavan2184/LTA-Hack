@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.next
+node_modules
+.superpowers
+.antigravity
+.claude
+.cursor
+tsconfig.tsbuildinfo
+.railplan-local-demo.json
+secrets
+config/credentials.json
+**/.DS_Store
