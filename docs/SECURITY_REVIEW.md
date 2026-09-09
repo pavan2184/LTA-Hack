@@ -420,3 +420,23 @@ checks, 4 actual-concurrency checks, 4 production HTTP E2E checks, lint, typeche
 and production build. E2E uses controlled providers, verifies sensitive-log guards
 and removes its temporary hosted fixtures. No actual provider sends or deployments
 were performed. The seed/hash rehearsal remains the pre-patch September9 result.
+
+## Owner-requested shared demo accounts — 2026-09-09
+
+Two explicit owner-requested shared accounts use separate random passwords and
+server-owned profile roles. The contractor has a dedicated organisation; the
+planner can review/generate/publish within the prototype. Roles remain derived
+from the database, not editable user metadata. Creation refused existing emails,
+used an atomic trusted-operator transaction and retained normal RLS and history
+guards. Both accounts authenticated through hosted Auth and reached the correct
+workspace on the public production domain. Contractor planner-API denial and
+cross-origin mutation denial passed; sessions used for verification were signed out.
+
+Shared-account audit events identify the account, not the individual teammate.
+Reserved demo email identifiers have no inbox; password resets are operator-managed.
+Use individual identities before relying on personal attribution or real data.
+Account passwords and the separately requested Supabase env export are stored only
+in ignored mode0600 files under `secrets/`, excluded from deployment uploads. The
+env export contains no Vercel OIDC token. App logins grant no Supabase/Vercel console
+access. The public domain was an existing production alias, discovered through
+Vercel's authenticated alias API; no protection setting or bypass link was changed.

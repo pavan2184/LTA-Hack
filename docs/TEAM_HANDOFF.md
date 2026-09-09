@@ -146,3 +146,16 @@ success and a freshly recreated Supabase/Auth project are not claimed.
 Do not publish the geographic snapshot until its conflicting source reuse notices
 are resolved. No real Telegram recipients or model credentials are needed for the
 controlled-provider suite. A public deployment has not been performed.
+
+## Shared teammate demo access — owner-requested September9
+
+The owner subsequently requested persistent shared demo logins. Two accounts now
+exist (planner and contractor), with independent random passwords and a dedicated
+contractor organisation. The default bootstrap remains unchanged. Obtain their
+credentials from the owner's ignored `secrets/railplan-team-signin.txt`; do not
+commit them. Use https://railplan-nine.vercel.app/login, which requires app login
+but no Vercel account. Shared actions are attributed to the shared identity, and
+the reserved demo email addresses have no inbox for password recovery.
+
+The separate `secrets/railplan-supabase.env` export contains privileged backend
+connection settings and public Auth configuration. It is not needed to use the app.

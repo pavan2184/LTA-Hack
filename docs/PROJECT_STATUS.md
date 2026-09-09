@@ -10,11 +10,13 @@ was made in Ayush's account. Project `railplan` is
 `prj_cu87fVlWwHlXQZ0rVoQLAkjiYqJy`; deployment
 `dpl_9C4v4LsGz14XQb2B31s5by8SdkSZ` is READY (production).
 
-URL: https://railplan-pavanmadhup-1254s-projects.vercel.app
+Public URL: https://railplan-nine.vercel.app
 
-Vercel account protection is enabled: unauthenticated external HTTP redirects to
-Vercel SSO before the app's own login. Application access still requires a
-provisioned RailPlan account. This deployment does not clear the geographic-source
+The public production domain reaches the RailPlan login without Vercel sign-in
+(HTTP200); unauthenticated app APIs still return401. The previously shared team
+alias, `railplan-pavanmadhup-1254s-projects.vercel.app`, remains protected by Vercel
+SSO. Both aliases resolve to the same verified deployment. No deployment-protection
+settings were disabled. Application access requires a provisioned RailPlan account. This deployment does not clear the geographic-source
 licence conflict or complete #17's spoken-reader/200% workflow verification.
 
 The deployed application is commit `8cbebb1` plus the new Vercel configuration:
@@ -35,6 +37,30 @@ Two temporary users, their organisation and one draft plan were removed. The
 22-request canonical digest remains `fnv1a:8c4a9050cfea5e8b`. No real provider send,
 plan publication or local preview server was involved. Deployment did not use Git
 integration or push the current branch; subsequent releases can use the linked CLI.
+
+## Owner-requested teammate access — 2026-09-09
+
+Created two persistent shared demo accounts at the owner's request, one planner
+and one contractor in a separate teammate-demo organisation. Existing accounts
+were not replaced. Both use independent random passwords and confirmed demo login
+identifiers in the reserved `.example` domain. These are not email inboxes;
+password recovery is operator-managed. Shared-account actions cannot identify
+which teammate performed them. Planner access includes demo approval/publication;
+contractor access remains organisation-scoped. No database or Vercel administration
+access is granted by these app logins.
+
+Both roles passed real hosted password authentication and their correct workspace
+on the public production URL. Contractor access to planner APIs and cross-origin
+planner mutations were rejected with403. Verification sessions were signed out;
+the two requested accounts remain for the team. No request or plan fixture was
+created for this account check. Credentials are only in ignored, owner-readable
+`secrets/railplan-team-demo.json` and `secrets/railplan-team-signin.txt`.
+
+The owner separately requested Supabase environment values. Only `DATABASE_URL`
+and the two documented `NEXT_PUBLIC_SUPABASE_*` variables were copied to ignored
+mode0600 `secrets/railplan-supabase.env`; the unrelated Vercel OIDC token was
+excluded. The database URL is a privileged backend credential, separate from the
+teammate app login file. Neither file is committed or included in Vercel uploads.
 
 ## Ordered issue work — #4–#16 implemented; #17 in progress
 
