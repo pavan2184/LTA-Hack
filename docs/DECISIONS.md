@@ -508,3 +508,13 @@ Commit an explicit Next.js preset and `npm ci` so creation through the CLI canno
 leave the deployment on the generic framework preset. Exclude local environment
 and agent scratch files from source uploads. Database credentials go through
 stdin into Vercel's production secret store, never CLI arguments or Git.
+
+## 2026-09-09 — Direct teammate access to RailPlan URLs
+
+The owner subsequently requested that teammates access the deployment URL without
+logging into the owner's Vercel account. Disable Vercel Authentication for the
+RailPlan project only. The application login and server-enforced planner/contractor
+roles remain the access boundary. Verified anonymously on both production aliases:
+login200, private API401, workspace307 to the app login. This supersedes the earlier
+choice to retain Vercel Authentication; it does not clear the geographic-source
+licence issue or change the prototype's non-operational status.

@@ -12,11 +12,13 @@ was made in Ayush's account. Project `railplan` is
 
 Public URL: https://railplan-nine.vercel.app
 
-The public production domain reaches the RailPlan login without Vercel sign-in
-(HTTP200); unauthenticated app APIs still return401. The previously shared team
-alias, `railplan-pavanmadhup-1254s-projects.vercel.app`, remains protected by Vercel
-SSO. Both aliases resolve to the same verified deployment. No deployment-protection
-settings were disabled. Application access requires a provisioned RailPlan account. This deployment does not clear the geographic-source
+At the owner's subsequent explicit request, Vercel Authentication was disabled
+for the RailPlan project (`ssoProtection: null`). Both the public domain and
+`railplan-pavanmadhup-1254s-projects.vercel.app` now reach the RailPlan login
+without a Vercel account (anonymous HTTP200). Anonymous `/api/requests` still
+returns401 and `/plans` redirects to the app's `/login`. Both aliases resolve to
+the same verified deployment. App session, role and RLS checks remain unchanged;
+application access requires a provisioned RailPlan account. This deployment does not clear the geographic-source
 licence conflict or complete #17's spoken-reader/200% workflow verification.
 
 The deployed application is commit `8cbebb1` plus the new Vercel configuration:

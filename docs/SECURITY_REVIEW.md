@@ -440,3 +440,15 @@ in ignored mode0600 files under `secrets/`, excluded from deployment uploads. Th
 env export contains no Vercel OIDC token. App logins grant no Supabase/Vercel console
 access. The public domain was an existing production alias, discovered through
 Vercel's authenticated alias API; no protection setting or bypass link was changed.
+
+## Owner-requested removal of Vercel sign-in — 2026-09-09
+
+The owner explicitly requested access to the team deployment URL without using
+their Vercel account. After verifying CLI identity and project ownership, only
+RailPlan's `ssoProtection` setting was changed from `all_except_custom_domains`
+to null. This removes Vercel Authentication for this project's deployments. It
+does not change app authentication, profile roles, database RLS or other projects.
+Anonymous requests to both production aliases now return200 for `/login`,401 for
+`/api/requests`, and307 to RailPlan `/login` for `/plans`; no Vercel SSO redirect
+remains. No redeploy, database mutation, credential disclosure or bypass link was
+needed. This supersedes the initial deployment's retained Vercel-login gate.
