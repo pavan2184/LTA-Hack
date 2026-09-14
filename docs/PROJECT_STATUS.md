@@ -87,3 +87,23 @@ qualified the research demo duration. Source pages 24–25 were visually checked
 all 51 pages were text-extracted. No application code or existing work was removed.
 Documentation checks cover archive fidelity, local links, PDF checksum, ignored
 source placement and whitespace. Application tests were not rerun for these docs.
+
+## Product intent and README — 2026-09-15
+
+Expanded PROJECT_BRIEF.md with the planner's problem, two user roles, intended
+request-to-publication experience, scope boundaries and measurable success criteria.
+Reworked the root README using Best-README-Template's structure: product overview,
+workflow diagram, stack, setup, usage, verification, roadmap, contribution guidance,
+licence status, contact and acknowledgments. The rule list now includes all 13
+current rules; shared setup documentation states the installed test-tool Node minimum.
+No application implementation or existing uncommitted feature work changed.
+
+Read-only checks confirmed PS1's public challenge wording, GitHub #17–#21 open,
+#4–#16 closed, and HTTP 200 on the hosted login page. This checks link availability,
+not authenticated application behavior or deployment freshness. The website and
+participant pack disagree on some session times; the event context retains the
+pack table and records that discrepancy for organizer confirmation.
+
+Documentation validation covers Markdown rendering, navigation/relative links,
+script/environment names, encoded rule coverage, staged scope and preservation of
+unrelated work. Application tests were not rerun for documentation-only changes.

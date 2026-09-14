@@ -1,10 +1,10 @@
 # Teammate Handoff
 
-Last updated: 2026-09-07 · RailPlan v0.4.0
+Last updated: 2026-09-15 · RailPlan v0.4.0
 
 ## Run the application without Docker
 
-Use Node.js 22 and npm. From a fresh clone:
+Use Node.js 22.13+ on the 22.x line, or 24.x, with npm. From a fresh clone:
 
 ```bash
 npm ci
@@ -26,8 +26,8 @@ https://supabase.com/dashboard/project/ufcdynfjfzbjvglsdaqp
 No Docker is used. Create `.env.local` (Git-ignored, owner-only permissions) and
 set the existing `DATABASE_URL` to the project's connection URI, percent-encoding
 the password. Never commit credentials. Database scripts and Vitest load this
-file automatically; exported environment values take precedence. Use Node 22.9+
-for `--env-file-if-exists` support.
+file automatically; exported environment values take precedence. The scripts require `--env-file-if-exists`; the installed test tooling sets
+the higher Node minimum documented above.
 
 The verified endpoint uses transaction pooling on port 6543. Port 5432 times out
 on this Mac's current network. `connect()` disables prepared statements and uses
@@ -145,7 +145,8 @@ success and a freshly recreated Supabase/Auth project are not claimed.
 
 Do not publish the geographic snapshot until its conflicting source reuse notices
 are resolved. No real Telegram recipients or model credentials are needed for the
-controlled-provider suite. A public deployment has not been performed.
+controlled-provider suite. See PROJECT_STATUS.md for the dated public deployment
+record and its difference from the current local workspace.
 
 ## Shared teammate demo access — owner-requested September9
 

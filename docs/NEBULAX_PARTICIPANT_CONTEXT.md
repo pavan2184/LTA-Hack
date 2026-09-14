@@ -16,9 +16,15 @@ pack contains an event access PIN. This summary omits credentials. Preserve the
 original for maps, floor plans, screenshot instructions and support contacts.
 
 The pack supplies submission details missing from the 9 September website research.
-Later organizer notices may supersede it; none were checked in this task. Its
+Later organizer notices may supersede it. Its
 requirements do not supply authoritative railway constraints or approve dataset
 redistribution. Product implementation truth lives in [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
+Website cross-check on 2026-09-15 confirmed the PS1 problem and mission wording.
+The [public event schedule](https://nebulax.com.sg/) differs from the supplied pack
+on some session times, including the finalist announcement. The table below remains
+a record of the pack, not a resolution of that discrepancy. Confirm session times
+through organizer updates; both sources give the 19 September 16:00 submission deadline.
 
 ## Challenge framing and PS1 source excerpt
 
