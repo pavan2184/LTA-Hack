@@ -20,6 +20,42 @@ Later organizer notices may supersede it; none were checked in this task. Its
 requirements do not supply authoritative railway constraints or approve dataset
 redistribution. Product implementation truth lives in [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
+## Challenge framing and PS1 source excerpt
+
+Added 2026-09-15 from text supplied directly by the user, attributed to
+[the Nebula X PS1 page](https://nebulax.com.sg/#ps-1). Wording is preserved below;
+formatting is normalized. This excerpt was not independently fetched in this update
+and is separate from the participant PDF.
+
+> Singapore's rail network moves *millions* every day. Now its time to build intelligence *for the future of railway*.
+>
+> The people who keep the network running are embracing new opportunities as they manage an evolving railway. With ageing assets, a changing workforce, and limited maintenance windows, we are building a smarter network that can sense, predict, and manage itself, creating a more reliable and resilient railway for the future.
+>
+> This September, we are inviting students to join us in building the railway of the future!
+>
+> **PS1 MAINTENANCE**
+>
+> **AI Maintenance Scheduler**
+>
+> Explore this problem statement
+>
+> **Smarter planning *better outcomes***
+>
+> THE PROBLEM
+>
+> **Scheduling riddle with conflicting requests**
+>
+> Our assets needs constant maintenance, upgrades and renewals which are all squeezed into short engineering hours when services pause, flooding schedulers with competing track requests. Juggling sector availability, work compatibility and engineer availability, conflicts are common and resolving them means tedious meetings and manual coordination.
+
+Product interpretation: the core PS1 problem is reconciling competing maintenance,
+upgrade and renewal requests within limited engineering access. Sector availability,
+work compatibility and engineer availability are explicit concerns; reducing manual
+coordination is the intended benefit. Ageing assets and a changing workforce explain
+the wider motivation. The event's sense/predict/manage ambition does not itself
+require RailPlan to build predictive maintenance or autonomous operational control.
+No additional technical rules, dataset guarantees or implementation authorization
+are inferred from this excerpt.
+
 ## Submission requirements for PS1 (pages 24–27)
 
 **Deadline: Saturday 19 September 2026, 16:00. No extension; early submission allowed.**

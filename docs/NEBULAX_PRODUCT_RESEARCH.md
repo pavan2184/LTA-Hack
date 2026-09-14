@@ -19,6 +19,10 @@ This is a product recommendation, not evidence that Singapore operators will ado
 
 ## 1. NebulaX challenge index
 
+The user-supplied [challenge framing and PS1 excerpt](NEBULAX_PARTICIPANT_CONTEXT.md#challenge-framing-and-ps1-source-excerpt)
+is preserved separately, including ageing assets, workforce change and the manual
+coordination problem. Added 2026-09-15; distinct from the dated site research below.
+
 The official site identifies PS1 as maintenance scheduling. Its problem is competition for limited engineering access, with sector availability, work compatibility and engineer availability creating coordination work. The requested capabilities are conflict detection, clear warnings, alternatives and automated scheduling. The listed possible inputs are “MRT stations locations API” and “Key Considerations for Planning.” Neither label links to a dataset or document in the inspected page HTML.[^1]
 
 | Site section | Relevant information | Product implication |
