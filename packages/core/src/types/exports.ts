@@ -43,6 +43,7 @@ export interface PlanExport {
   };
   parameters: {
     planningNight: string;
+    basedOnPlanId?: string;
     strategy: StrategyId;
     locked: Placement[];
   };

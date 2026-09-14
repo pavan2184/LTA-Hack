@@ -9,35 +9,50 @@ import { Figure } from "@/components/shared/Figure";
 import { WorkforceChart } from "@/components/schedule/WorkforceChart";
 import { GeographicRailMap } from "@/components/network/GeographicRailMap";
 import { PlanningPanels } from "@/components/layout/PlanningPanels";
+import { revisionEngineMatches } from "@/lib/plans/revision";
+import { PlanRevisionEditor } from "./PlanRevisionEditor";
 
 const button =
   "rounded border border-rule-strong px-2 py-1 text-sm hover:bg-sunk focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const interval = (p: { startMinute: number; endMinute: number }) =>
   `${formatClock(p.startMinute)}–${formatClock(p.endMinute)}`;
 
-/** Review saved facts and results. This component never solves or validates. */
-export function SavedPlanReview({ planId }: { planId: string }) {
+interface ReviewProps {
+  planId: string;
+  onSaveRevision?: (parameters: PlanExport["parameters"]) => Promise<void>;
+  busy?: boolean;
+  onStatus?: (status: { planId: string; stale: boolean }) => void;
+  onRevisionChange?: (revising: boolean) => void;
+}
+/** Saved visualizations remain immutable; revision proposals are separate. */
+export function SavedPlanReview({ planId, onSaveRevision, busy = false, onRevisionChange, onStatus }: ReviewProps) {
   const [refresh, setRefresh] = useState(0);
+  const [revising, setRevising] = useState(false);
+  const changeRevision = (value: boolean) => {
+    setRevising(value);
+    onRevisionChange?.(value);
+  };
   return (
     <section
       aria-label="Saved version visual review"
       className="min-w-0 space-y-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Saved version visual review</h2>
+        <h2 className="text-lg font-semibold">Review the schedule</h2>
         <button
           className={button}
+          disabled={busy || revising}
           onClick={() => setRefresh((value) => value + 1)}
         >
           Refresh saved review/status
         </button>
       </div>
-      <LoadSavedReview key={`${planId}:${refresh}`} planId={planId} />
+      <LoadSavedReview key={`${planId}:${refresh}`} planId={planId} onSaveRevision={onSaveRevision} busy={busy} revising={revising} onRevisionChange={changeRevision} onStatus={onStatus} />
     </section>
   );
 }
 
-function LoadSavedReview({ planId }: { planId: string }) {
+function LoadSavedReview({ planId, onSaveRevision, busy, revising, onRevisionChange, onStatus }: ReviewProps & { revising: boolean }) {
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "error" }
@@ -60,7 +75,10 @@ function LoadSavedReview({ planId }: { planId: string }) {
           !snapshot.facts
         )
           throw new Error("Unexpected saved review");
-        if (active) setState({ kind: "ready", snapshot });
+        if (active) {
+          setState({ kind: "ready", snapshot });
+          onStatus?.({ planId, stale: snapshot.assessment.stale });
+        }
       } catch {
         if (active) setState({ kind: "error" });
       }
@@ -69,7 +87,7 @@ function LoadSavedReview({ planId }: { planId: string }) {
       active = false;
       controller.abort();
     };
-  }, [planId]);
+  }, [planId, onStatus]);
   if (state.kind === "loading")
     return <p role="status">Loading saved version…</p>;
   if (state.kind === "error")
@@ -79,10 +97,10 @@ function LoadSavedReview({ planId }: { planId: string }) {
         access, then refresh saved review/status.
       </p>
     );
-  return <SnapshotReview snapshot={state.snapshot} />;
+  return <SnapshotReview snapshot={state.snapshot} onSaveRevision={onSaveRevision} busy={busy} revising={revising} onRevisionChange={onRevisionChange} />;
 }
 
-function SnapshotReview({ snapshot }: { snapshot: PlanExport }) {
+function SnapshotReview({ snapshot, onSaveRevision, busy = false, revising, onRevisionChange }: { snapshot: PlanExport; revising: boolean } & Omit<ReviewProps, "planId">) {
   const world = useMemo(() => buildWorld(snapshot.facts), [snapshot.facts]);
   const context = useMemo(() => ({ world }), [world]);
   const plan = useMemo<Plan>(
@@ -90,78 +108,24 @@ function SnapshotReview({ snapshot }: { snapshot: PlanExport }) {
     [snapshot],
   );
   const [selectedRequestId, selectRequest] = useState<string | null>(null);
+  const localEngineMatches = revisionEngineMatches(snapshot);
   const { assessment, provenance } = snapshot;
   const selection = { snapshot, world, selectedRequestId, selectRequest };
   return (
     <div className="min-w-0 space-y-4">
-      <div className="space-y-2 border-l-4 border-signal-amber bg-sunk p-3 text-sm">
-        <p className="font-semibold">{snapshot.notice}</p>
-        <p>
-          Immutable saved placements and planning facts. Status is observed when
-          loaded; refresh to check it again. No scheduling or validation is
-          rerun.
-        </p>
-        <p>
-          Publication: {assessment.publicationState} · Saved solver status:{" "}
-          {provenance.status}
-        </p>
-        {assessment.publicationState === "draft" && (
-          <p>Draft version: this plan has not been published.</p>
-        )}
-        {assessment.publicationState === "superseded" && (
-          <p>
-            Superseded version: a later version was published for this night.
-          </p>
-        )}
-        {assessment.sourceFreshness === "stale" && (
-          <p>
-            Source stale: saved revision {provenance.sourceRevision}; observed
-            current revision {assessment.currentSourceRevision}. All views below
-            retain the saved facts.
-          </p>
-        )}
-        {!assessment.engineVersionMatch && (
-          <p>
-            Saved solver or constraint version differs from the current engine.
-          </p>
-        )}
-        {provenance.status === "INFEASIBLE" && (
-          <p>
-            Infeasible saved result: these placements are not a feasible
-            schedule.
-          </p>
-        )}
-        <p>
-          Saved independent validation:{" "}
-          {snapshot.validation.independentlyValidated ? "passed" : "failed"}.
-          This is a recorded prototype result, not safety approval.
-        </p>
-      </div>
-      <details className="break-words text-sm">
-        <summary className="cursor-pointer font-medium">
-          Saved provenance and parameters
-        </summary>
-        <dl className="mt-2 space-y-1">
-          {Object.entries({
-            "Plan ID": provenance.planId,
-            "Planning night": provenance.planningNight,
-            "Input digest": provenance.inputDigest,
-            "Source revision": provenance.sourceRevision,
-            "Generated at": provenance.generatedAt,
-            "Solver version": provenance.solverVersion,
-            "Constraint version": provenance.constraintVersion,
-            Strategy: snapshot.parameters.strategy,
-            "Saved solve duration": `${provenance.solveMs} ms`,
-            "Saved candidate count": provenance.candidatesEvaluated,
-            "Pinned input placements": snapshot.parameters.locked.length,
-          }).map(([label, value]) => (
-            <div key={label}>
-              <dt className="inline font-medium">{label}: </dt>
-              <dd className="inline">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </details>
+      {(assessment.stale || assessment.publicationState === "superseded" || provenance.status === "INFEASIBLE") && <p className="rounded border border-signal-amber bg-sunk p-3 text-sm" role="status">
+        {assessment.stale ? "Planning inputs changed. Create a fresh draft above before publishing." : assessment.publicationState === "superseded" ? "A newer schedule has been published. Open the current version from history." : "This schedule has unresolved blockers. Review the conflicts and unscheduled work before publishing."}
+      </p>}
+      {onSaveRevision && <div className="space-y-3">
+        <button className={button} disabled={busy || !localEngineMatches || assessment.stale || assessment.publicationState === "superseded"}
+          aria-expanded={revising} onClick={() => onRevisionChange?.(!revising)}>
+          {revising ? "Discard revision preview" : "Review conflicts and revise"}
+        </button>
+        {(assessment.stale || assessment.publicationState === "superseded") && <p className="text-sm">Generate or open a current version before revising.</p>}
+        {!localEngineMatches && <p className="text-sm">Reload the page to use the current planning engine before revising.</p>}
+        {revising && <PlanRevisionEditor snapshot={snapshot} selectedRequestId={selectedRequestId}
+          selectRequest={selectRequest} onSave={onSaveRevision} busy={busy} />}
+      </div>}
       <PlanningPanels
         preferenceKey="railplan-saved-layout"
         queue={<SavedQueue {...selection} />}
@@ -198,8 +162,79 @@ function SnapshotReview({ snapshot }: { snapshot: PlanExport }) {
             />
           </div>
         }
-        belowPrimary={<SavedResults snapshot={snapshot} />}
+        belowPrimary={<details className="rounded border border-rule p-3"><summary className="cursor-pointer text-sm font-medium">Schedule metrics and validation findings</summary><div className="mt-4"><SavedResults snapshot={snapshot} /></div></details>}
       />
+      <details open={assessment.stale || assessment.publicationState === "superseded" || provenance.status === "INFEASIBLE"}
+        className="space-y-2 rounded border border-rule bg-sunk p-3 text-sm">
+        <summary className="cursor-pointer font-medium">{assessment.stale ? "Planning inputs have changed — review this version" : provenance.status === "INFEASIBLE" ? "This schedule has unresolved blockers" : assessment.publicationState === "superseded" ? "A newer schedule has been published" : "Saved version details and validation"}</summary>
+        <p className="font-semibold">{snapshot.notice}</p>
+        <p>
+          Immutable saved placements and planning facts. Status is observed when
+          loaded; refresh to check it again. Saved results are not recalculated.
+        </p>
+        <p>
+          Publication: {assessment.publicationState} · Saved solver status:{" "}
+          {provenance.status}
+        </p>
+        {assessment.publicationState === "draft" && (
+          <p>Draft version: this plan has not been published.</p>
+        )}
+        {assessment.publicationState === "superseded" && (
+          <p>
+            Superseded version: a later version was published for this night.
+          </p>
+        )}
+        {assessment.sourceFreshness === "stale" && (
+          <p>
+            Create a fresh draft above to use the current approved work before publishing.
+            Source stale: saved revision {provenance.sourceRevision}; observed
+            current revision {assessment.currentSourceRevision}. All views below
+            retain the saved facts.
+          </p>
+        )}
+        {!assessment.engineVersionMatch && (
+          <p>
+            Saved solver or constraint version differs from the current engine.
+          </p>
+        )}
+        {provenance.status === "INFEASIBLE" && (
+          <p>
+            Infeasible saved result: these placements are not a feasible
+            schedule.
+          </p>
+        )}
+        <p>
+          Saved independent validation:{" "}
+          {snapshot.validation.independentlyValidated ? "passed" : "failed"}.
+          This is a recorded prototype result, not safety approval.
+        </p>
+      </details>
+      <details className="break-words text-sm">
+        <summary className="cursor-pointer font-medium">
+          Saved provenance and parameters
+        </summary>
+        <dl className="mt-2 space-y-1">
+          {Object.entries({
+            "Plan ID": provenance.planId,
+            "Planning night": provenance.planningNight,
+            "Input digest": provenance.inputDigest,
+            "Source revision": provenance.sourceRevision,
+            "Generated at": provenance.generatedAt,
+            "Solver version": provenance.solverVersion,
+            "Constraint version": provenance.constraintVersion,
+            Strategy: snapshot.parameters.strategy,
+            "Saved solve duration": `${provenance.solveMs} ms`,
+            "Saved candidate count": provenance.candidatesEvaluated,
+            "Pinned input placements": snapshot.parameters.locked.length,
+            ...(snapshot.parameters.basedOnPlanId ? { "Based on version": snapshot.parameters.basedOnPlanId } : {}),
+          }).map(([label, value]) => (
+            <div key={label}>
+              <dt className="inline font-medium">{label}: </dt>
+              <dd className="inline">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
     </div>
   );
 }

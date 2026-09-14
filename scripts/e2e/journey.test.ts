@@ -22,6 +22,9 @@ import {
   fakeTelegramToken,
 } from "./server";
 import { transcriptTitle } from "./provider-policy.mjs";
+import { buildWorld } from "@railplan/core/domain/world";
+import { findAlternatives } from "@railplan/core/engine/alternatives";
+import { previewRevision } from "../../src/lib/plans/revision";
 
 async function login(user: FixtureUser, deadline: number) {
   const cookies = new Map<string, string>();
@@ -330,7 +333,13 @@ describe("production HTTP collaborative journey with controlled external provide
         409,
         "stale_plan",
       );
-      const { plan } = await planner.json<{ plan: PlanVersion }>(
+      await expectError(
+        await planner.request("/api/plans", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ planningNight: fixture.night, basedOnPlanId: beforeIntake.id }),
+        }), 409, "stale_plan",
+      );
+      let { plan } = await planner.json<{ plan: PlanVersion }>(
         "/api/plans",
         "POST",
         { planningNight: fixture.night, strategy: "balanced", locked: [] },
@@ -343,9 +352,25 @@ describe("production HTTP collaborative journey with controlled external provide
           approved.some((request) => row.requestId === `R-${request.id}`),
         ),
       ).toHaveLength(2);
-      const draftExport = await planner.json<PlanExport>(
+      let draftExport = await planner.json<PlanExport>(
         `/api/plans/${plan.id}/export?format=json`,
       );
+      const base = plan;
+      const chosenId = `R-${approved[0].id}`;
+      const alternative = findAlternatives(plan, chosenId, { world: buildWorld(draftExport.facts) }).alternatives[0];
+      expect(alternative).toBeDefined();
+      const locked = [{ requestId: chosenId, teamId: draftExport.facts.requests.find(r => r.id === chosenId)!.teamId,
+        startMinute: alternative.startMinute, endMinute: alternative.endMinute, locked: true }];
+      const preview = previewRevision(draftExport, locked);
+      expect(preview.feasible).toBe(true);
+      ({ plan } = await planner.json<{ plan: PlanVersion }>("/api/plans", "POST", {
+        planningNight: fixture.night, strategy: "balanced", basedOnPlanId: base.id, locked,
+      }, 201));
+      expect(plan.placements).toEqual(preview.result.plan.placements);
+      expect(plan.placements).toContainEqual(locked[0]);
+      expect((await planner.json<{ plan: PlanVersion }>(`/api/plans/${base.id}`)).plan).toEqual(base);
+      draftExport = await planner.json<PlanExport>(`/api/plans/${plan.id}/export?format=json`);
+      expect(draftExport.parameters.basedOnPlanId).toBe(base.id);
       for (const request of approved) {
         const engine = draftExport.facts.requests.filter(
           (row) => row.id === `R-${request.id}`,

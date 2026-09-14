@@ -181,6 +181,21 @@ export async function createPlan(
       const facts = canonicalise(
         await loadPlanningInstance(tx, input.planningNight),
       );
+      if (input.basedOnPlanId) {
+        const base = await read(tx, input.basedOnPlanId);
+        // Check under the same source lock/snapshot as the new solve. Never
+        // silently apply a reviewed change to different facts or engine rules.
+        if (
+          base.plan.planningNight !== input.planningNight ||
+          base.plan.sourceRevision !== revision ||
+          base.plan.publishState === "superseded" ||
+          base.plan.solverVersion !== SOLVER_VERSION ||
+          base.plan.constraintVersion !== CONSTRAINT_VERSION ||
+          planInputDigest(facts, base.row.parameters) !== base.row.input_digest ||
+          planInputDigest(base.row.facts, base.row.parameters) !== base.row.input_digest
+        ) throw new PlanError("stale_plan",
+          "The reviewed version is no longer current. Generate a fresh plan and review the changes again.");
+      }
       // A bounded prototype workload. Larger datasets require a background solve
       // budget and are rejected before invoking the synchronous heuristic.
       if (

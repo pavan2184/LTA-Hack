@@ -198,6 +198,7 @@ describe("saved snapshot visual review", () => {
         signal: expect.any(AbortSignal),
       }),
     );
+    await userEvent.click(screen.getByText("Schedule metrics and validation findings"));
     await userEvent.click(
       screen.getByRole("button", {
         name: "Show how Saved placed is calculated",

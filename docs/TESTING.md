@@ -341,3 +341,27 @@ fragment error; bound UUID arrays fixed it and exact recovery restored all13
 history guards. Private-schema probing uses a nonmutating RPC with Content-Profile,
 which returns406/PGRST106; REST root discovery instead requires a secret key and
 is not evidence of schema exposure. No app authorization rule was relaxed.
+
+## Saved revision regression coverage — 2026-09-09
+
+`plan-revision.test.tsx` uses real approved snapshot facts and the shared engine to
+check requested conflict evidence, exact alternative pins, impossible pin blocking,
+unpin recovery, retained edits on failed save, browser engine mismatch and stale
+version guards. The real workspace prevents publication/navigation during preview.
+Plan schema/digest tests cover optional parent IDs. Hosted rollback tests cover
+planner-only linked creation, immutable parent, exact publication/export pins and
+stale/superseded rejection. The production HTTP journey chooses an alternative for
+approved intake, compares its preview to the saved result and carries that revision
+through publication, contractor scope and JSON export. Provider responses in this
+suite are controlled and fixture artifacts are removed by exact IDs.
+
+## Guided workflow checks — 2026-09-09
+
+Check initial latest-version selection, collapsed history/technical records, keyboard
+focus into publication, and recovery when refreshing into a newer version. Request
+view switching must retain manual edits and transcript text, exclude hidden-panel
+controls from browser focus, and reveal the shared queue after proposal submission.
+Dirty request navigation must remain disabled until save/action/discard; unrecorded
+review notes cannot carry into another plan. Unsaved destination edits must survive
+night changes and version refresh. Browser checks verify native disclosure and focus;
+jsdom role queries alone do not reliably model closed-details visibility.

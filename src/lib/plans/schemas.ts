@@ -9,6 +9,7 @@ export const planIdSchema = z.uuid();
 export const createPlanSchema = z
   .object({
     planningNight: planningNightSchema,
+    basedOnPlanId: planIdSchema.optional(),
     strategy: z
       .enum([
         "balanced",

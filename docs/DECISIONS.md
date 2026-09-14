@@ -542,3 +542,31 @@ roles remain the access boundary. Verified anonymously on both production aliase
 login200, private API401, workspace307 to the app login. This supersedes the earlier
 choice to retain Vercel Authentication; it does not clear the geographic-source
 licence issue or change the prototype's non-operational status.
+
+## 2026-09-09 — Connect validated repair to immutable saved planning
+
+Implement the first recommendation from the NebulaX research using the current
+engine and approved saved facts. Use exact pins, original requested-conflict
+evidence and a complete placement/deferral diff. Choosing an alternative can move
+other unpinned work during re-solve; expose those changes before a separate save.
+Do not mutate an approved request or existing saved version to represent a choice.
+
+Reuse POST /api/plans with optional basedOnPlanId, checked under the existing
+source/publication lock. Keep the parent in immutable JSON parameters and its
+digest, avoiding a migration. Reject stale/superseded bases; block local previews
+from mismatched browser engine versions. Saving creates a draft; publication
+remains explicit and independently guarded. This does not introduce a new solver,
+operator rule set, named-worker model or change the remaining release gates.
+
+## 2026-09-09 — Make the next planner action visible
+
+Organize existing functionality into prepare the night, review/adjust, and publish/
+notify. Resume the latest returned version, with explicit draft/publication status;
+keep history and technical records accessible through native disclosure. Preserve
+existing routes, data contracts, solver behavior and immutable publication checks.
+
+Separate manual requests from optional meeting-note extraction visually while
+keeping both mounted. Protect local request navigation and plan review notes from
+silent edit loss; keep delivery settings outside the selected-plan mount boundary.
+This is a usability improvement, not proof of intuitive use: validate first-time
+completion with representative users before making usability or time-saving claims.

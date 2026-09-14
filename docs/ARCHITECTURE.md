@@ -382,3 +382,36 @@ Assistant API calls apply the shared Origin/Host JSON mutation guard before quot
 and retain deterministic fallback. Application logging never serializes prompt,
 provider exception, ungrounded token or arbitrary usage metadata; only fixed
 events, counts and bounded numeric usage cross the log boundary.
+
+## Saved conflict review and revision — 2026-09-09
+
+`PlanRevisionEditor` keeps unsaved pins separate from the immutable saved visual
+review. `previewRevision` uses the existing solver/validator and explicit saved
+facts; requested-time conflicts use `buildSubmittedPlan`. Alternatives hold other
+placements fixed while being assessed; choosing one pins it and re-solves the night,
+so the full before/after list is shown. There is no new scheduler or database schema.
+
+Local solver/constraint versions must match the snapshot before preview. Source
+freshness is an observation until save; the server checks the referenced base and
+recomputes in the existing serialized source transaction. Save failure retains
+choices; success opens the new draft. Publication and workspace navigation are
+unavailable during revision, keeping unsaved proposals distinct from saved results.
+
+## Guided planning presentation — 2026-09-09
+
+Saved planning resumes the latest version returned by the existing list endpoint.
+Preparation, schedule review and publication/delivery form a linear page with a
+keyboard-focus handoff to publication. Night setup collapses after a current draft
+is loaded. The saved review reports its observed stale state to the workspace,
+which opens fresh-draft controls and disables publication; the server remains
+authoritative. Native details disclose version history,
+metrics and technical records; stale, superseded and infeasible snapshot details
+open automatically. No backend lifecycle, validation or authorization is changed.
+
+Request intake and meeting-note extraction use mutually exclusive visible panels
+that remain mounted, preserving edits and submitted-request queue reconciliation.
+The submitted-proposal link returns to the request view without selecting over an
+unrelated manual draft. Dirty request forms block their own open/new/refresh actions
+until saved, completed or discarded. Review notes block plan version changes until
+recorded/discarded. Notification settings remain mounted outside plan selection.
+These guards cover workspace controls, not cross-page or browser navigation.
