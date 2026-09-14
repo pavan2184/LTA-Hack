@@ -26,10 +26,12 @@ export function TranscriptDraftWorkspace({
   manualIntake = true,
   role = "contractor",
   onSubmitted,
+  onViewRequests,
 }: {
   manualIntake?: boolean;
   role?: UserRole;
   onSubmitted?: (request: RequestSubmission) => void;
+  onViewRequests?: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<PrivateDraft[]>([]);
@@ -142,8 +144,8 @@ export function TranscriptDraftWorkspace({
           the selected organisation and planners; it does not approve or
           schedule work.{" "}
           {manualIntake
-            ? "Use the manual request form above when extraction is unavailable."
-            : "You can continue reviewing submitted requests above when extraction is unavailable."}
+            ? "Use Your requests to enter work manually when extraction is unavailable."
+            : "Use Review requests to continue reviewing work when extraction is unavailable."}
         </p>
       </header>
       <fieldset disabled={busy} className="space-y-3">
@@ -252,6 +254,7 @@ export function TranscriptDraftWorkspace({
             )
           }
           onSubmitted={onSubmitted}
+          onViewRequests={onViewRequests}
         />
       )}
       <div className="space-y-4">

@@ -159,3 +159,20 @@ it("keeps a committed publication successful while showing a notification-storag
 
 // Saved snapshot visuals have real-component and combined journey coverage.
 vi.mock("@/components/plans/SavedPlanReview", () => ({ SavedPlanReview: () => null }));
+
+it('preserves unsaved destination edits when the schedule is refreshed or the night changes', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => Response.json(
+    url.includes('configurations') ? { configurations: [{ organisationId: 'org', organisationName: 'Alpha', chatId: null, version: 0, updatedAt: null, updatedBy: null, lastTest: null }], botConfigured: false }
+      : url.startsWith('/api/plans?') ? { plans: [saved] } : { plan: saved })));
+  render(<SavedPlansWorkspace />);
+  await screen.findByText(`Schedule for ${saved.planningNight}`);
+  await userEvent.click(screen.getByText('Contractor delivery settings'));
+  await userEvent.click(screen.getByRole('button', { name: 'Notification settings' }));
+  await userEvent.type(await screen.findByLabelText('Telegram chat ID'), '-100123');
+  await userEvent.click(screen.getByText(/^Version history/));
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh versions' }));
+  await screen.findByText(`Schedule for ${saved.planningNight}`);
+  expect(screen.getByLabelText('Telegram chat ID')).toHaveValue('-100123');
+  await userEvent.clear(screen.getByLabelText('Planning night'));
+  expect(screen.getByLabelText('Telegram chat ID')).toHaveValue('-100123');
+});

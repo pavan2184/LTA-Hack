@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { UserRole } from "@railplan/core/types/auth";
 import type {
@@ -125,6 +126,15 @@ export function RequestIntakeWorkspace({
   const editable =
     contractor &&
     (!selected || ["draft", "needs_info"].includes(selected.status));
+  const dirty = Boolean(fields && catalogue && (
+    JSON.stringify(fields) !== JSON.stringify(selected?.fields ?? emptyFields(catalogue)) ||
+    JSON.stringify(approval) !== JSON.stringify(selected?.approval ?? initialApproval) || reason.trim()
+  ));
+  function discardEdits() {
+    setFields(selected?.fields ?? null);
+    setApproval(selected?.approval ?? initialApproval);
+    setReason(""); setError(""); setFieldErrors({});
+  }
   const report = (cause: unknown) => {
     setError(
       cause instanceof Error
@@ -301,13 +311,13 @@ export function RequestIntakeWorkspace({
             : "Review submitted work and confirm the scheduling fields before approval. Approval adds an immutable revision to planning inputs."}
         </p>
         <div className="flex gap-2">
-          <button className={button} disabled={busy} onClick={refresh}>
+          <button className={button} disabled={busy || dirty} onClick={refresh}>
             Refresh requests
           </button>
           {contractor && (
             <button
               className={button}
-              disabled={busy || !catalogue?.nights.length}
+              disabled={busy || dirty || !catalogue?.nights.length}
               onClick={() => {
                 setSelected(null);
                 setFields(emptyFields(catalogue!));
@@ -323,6 +333,10 @@ export function RequestIntakeWorkspace({
           )}
         </div>
       </div>
+      {dirty && <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-signal-amber bg-sunk p-3 text-sm" role="status">
+        <p>Unsaved changes. Save or complete this request before opening another.</p>
+        <button className={button} disabled={busy} onClick={discardEdits}>Discard unsaved changes</button>
+      </div>}
       {busy && (
         <p role="status" className="text-sm">
           Loading request data…
@@ -343,6 +357,12 @@ export function RequestIntakeWorkspace({
           )}
         </div>
       )}
+      {selected?.status === "approved" && !contractor && <div className="rounded border border-rule bg-accent-soft p-4">
+        <p className="font-semibold">Ready for scheduling</p>
+        <p className="mt-1 text-sm">This request is approved. Generate a new schedule to include it.</p>
+        <Link href="/plans" className="mt-2 inline-block text-sm font-medium underline underline-offset-4">Continue to scheduling →</Link>
+      </div>}
+      {selected?.status === "submitted" && contractor && <p className="text-sm">Sent for review. Your planner will confirm the details before scheduling; your published time will appear here.</p>}
       {notice && (
         <p role="status" className="text-sm text-signal-green">
           {notice}
@@ -357,7 +377,7 @@ export function RequestIntakeWorkspace({
             <button
               key={request.id}
               className={`w-full min-w-0 break-words [overflow-wrap:anywhere] border p-3 text-left text-sm ${selected?.id === request.id ? "border-accent bg-sunk" : "border-rule bg-surface"}`}
-              disabled={busy}
+              disabled={busy || dirty}
               aria-label={`Open ${request.fields.title || "Untitled draft"}`}
               aria-pressed={selected?.id === request.id}
               onClick={() => open(request.id)}

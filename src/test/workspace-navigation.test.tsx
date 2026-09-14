@@ -26,7 +26,7 @@ it("provides planner journey links and marks the current workspace", () => {
     "href",
     "/requests",
   );
-  expect(screen.getByRole("link", { name: "Saved plans" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Schedule" })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -45,7 +45,7 @@ it("does not offer planner-wide workspaces to contractors", () => {
     "page",
   );
   expect(
-    screen.queryByRole("link", { name: "Saved plans" }),
+    screen.queryByRole("link", { name: "Schedule" }),
   ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("link", { name: "Demo sandbox" }),

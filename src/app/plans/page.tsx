@@ -19,13 +19,11 @@ export default async function SavedPlansPage() {
             <p className="text-xs uppercase tracking-widest">
               RailPlan · Non-operational prototype
             </p>
-            <h1 className="mt-2 text-3xl font-semibold">Saved plans</h1>
+            <h1 className="mt-2 text-3xl font-semibold">Plan the night</h1>
           </div>
         </header>
         <p className="text-sm text-ink-700">
-          Review approved requests, generate a saved schedule, inspect its
-          timeline, then publish. Contractor delivery status and exports stay
-          with each version.
+          Build a draft, review the jobs and any unscheduled work, then publish the schedule.
         </p>
         <SavedPlansWorkspace />
         <footer className="border-t border-rule pt-4 text-xs">

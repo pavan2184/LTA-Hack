@@ -468,3 +468,15 @@ describe("submitted transcript provenance", () => {
     ).toBeInTheDocument();
   });
 });
+
+it("preserves manual edits until saved or explicitly discarded before request navigation", async () => {
+  stub(() => Response.json({ request }));
+  render(<RequestIntakeWorkspace role="contractor" />);
+  await userEvent.click(await screen.findByRole("button", { name: /Open Inspection/ }));
+  await userEvent.type(screen.getByLabelText("Title"), " changed");
+  for (const name of ["New request", "Refresh requests", "Open Inspection"]) expect(screen.getByRole("button", { name })).toBeDisabled();
+  expect(screen.getByLabelText("Title")).toHaveValue("Inspection changed");
+  await userEvent.click(screen.getByRole("button", { name: "Discard unsaved changes" }));
+  expect(screen.getByLabelText("Title")).toHaveValue("Inspection");
+  expect(screen.getByRole("button", { name: "New request" })).toBeEnabled();
+});

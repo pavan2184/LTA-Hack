@@ -24,7 +24,7 @@ export default async function RequestReviewPage() {
         </header>
         <p className="text-sm text-ink-700">
           Review submitted requests and their source evidence. Approval makes
-          the exact revision available to Saved plans; later changes require a
+          the request available for scheduling; later changes require a
           new plan.
         </p>
         <RequestWorkspaces role="planner" />
