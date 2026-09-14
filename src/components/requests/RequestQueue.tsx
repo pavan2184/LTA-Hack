@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock, Search, TriangleAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { categoryTone } from "@/components/insights/ViolationPanel";
 import { requests } from "@railplan/core/data/requests";
@@ -15,12 +15,13 @@ import {
 } from "@railplan/core/engine/conflicts";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { cn } from "@/lib/utils";
-import { useRailPlanStore } from "@/store/useRailPlanStore";
+import {
+  useRailPlanStore,
+  type SandboxRequestFilter,
+} from "@/store/useRailPlanStore";
 import type { MaintenanceRequest } from "@railplan/core/types/railplan";
 
-type FilterId = "attention" | "all" | "mandatory" | "pinned" | ConflictCategory;
-
-const baseFilters: { id: FilterId; label: string }[] = [
+const baseFilters: { id: SandboxRequestFilter; label: string }[] = [
   { id: "attention", label: "Needs action" },
   { id: "all", label: "All" },
   { id: "mandatory", label: "Mandatory" },
@@ -44,8 +45,10 @@ const corridorText: Record<string, string> = {
 };
 
 export function RequestQueue() {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterId>("attention");
+  const query = useRailPlanStore((state) => state.requestQuery);
+  const setQuery = useRailPlanStore((state) => state.setRequestQuery);
+  const filter = useRailPlanStore((state) => state.requestFilter);
+  const setFilter = useRailPlanStore((state) => state.setRequestFilter);
 
   const result = useRailPlanStore((state) => state.activeResult());
   const selectedRequestId = useRailPlanStore((state) => state.selectedRequestId);

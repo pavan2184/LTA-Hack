@@ -1,6 +1,6 @@
 # Testing Plan
 
-Last updated: 2026-09-07 · RailPlan v0.4.0
+Last updated: 2026-09-14 · RailPlan v0.4.0
 
 ## Automated coverage
 
@@ -10,6 +10,18 @@ resource/window/safety/dependency rules, instance-driven validation, all five
 strategies, independent final validation, calculated metric formulas, repairs,
 alternatives, grounded assistant responses and HTTP validation/fallback behavior.
 The dashboard suite exercises planner interactions against real engine output.
+
+`sandbox-subpages.test.tsx` covers all six semantic header links, nested active
+page state, the deep-link introduction gate, workflow availability, client-remount
+retention for request/conflict/workforce interval/assistant state, actor-change
+isolation, stale assistant-response invalidation, reset behavior and the exact
+limited persistence payload. `sandbox-page-content.test.tsx` records the content
+assignment for every focused route module. `planning-panels.test.tsx` verifies the focused
+queue/inspector and workforce/geography compositions retain their adjustable
+controls, including the rendered inspector column variable, while the existing
+all-panel and saved-review behavior remains covered.
+`workspace-navigation.test.tsx` applies the planner authorization assertion to the
+shared sandbox layout.
 
 `src/test/instance.test.ts` checks canonicalization, meaningful digest changes,
 loaded database/literal parity and rollback-isolated drift detection. Database
@@ -52,7 +64,9 @@ Exercise load → conflict inspection → single/all repairs → generation → 
 alternative → disruption/replan → assistant and formula inspection. Check console
 and server errors, keyboard/focus/labels, non-color conflict indicators and page
 overflow at 1280×800, 1440×900 and 1920×1080. An HTTP probe is not a substitute for
-browser UAT. Record runs and skipped checks in `PROJECT_STATUS.md`.
+browser UAT. The split sandbox additionally checks semantic link navigation,
+active-page styling, visible keyboard focus and no page overflow at 640, 1280,
+1440 and 1920 CSS pixels. Record runs and skipped checks in `PROJECT_STATUS.md`.
 
 Future request lifecycle, workforce and integration work
 must add its route/RLS/constraint tests before issue #17's complete two-role

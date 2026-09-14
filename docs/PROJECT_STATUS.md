@@ -1,6 +1,46 @@
 # Project Status
 
-Last updated: 2026-09-09
+Last updated: 2026-09-14
+
+## Sandbox subpage split — 2026-09-14
+
+The planner-only fabricated sandbox now has six focused App Router pages:
+Overview, Requests, Conflicts, Schedule, Resources and Scenarios. One shared
+`/sandbox` layout performs the planner role check and renders workspace navigation,
+the exploratory-data warning and client shell. The RailPlan header exposes all six
+pages as semantic links with `aria-current`; its horizontal overflow is contained
+on narrow screens. The load introduction remains the gate for direct links.
+
+Workflow controls, objective, repairs/generation, solver provenance, disruption
+impact and replan outcomes, reset/progress and footer remain shared on every loaded
+page. Plan, selection, repair, pin, objective and disruption state survive client
+navigation in the existing store. Request/conflict filters, workforce selection
+and assistant conversation/draft/pending state now use transient store fields that
+reset with the sandbox and are excluded from local persistence. The persistence
+contract remains objective strategy plus exact locked placements. Focused request
+and resource layouts reuse `railplan-demo-layout`; the default saved-plan panel
+composition is unchanged. The transient slice is keyed to the server-confirmed
+planner, is hidden while the identity changes, and rejects assistant responses
+that finish after reset or an actor switch. Focused route modules also avoid the
+old all-page client entry point.
+
+Verification: the full Vitest run passes **550 tests across 58 files**. Nine
+hosted-database files (**50 tests**) explicitly skipped because the isolated
+worktree has no database environment file; no database, API or schema behavior
+changed. Lint, typecheck and the Next 16.3.4 production build pass, and the build
+lists all six sandbox routes. Its route manifests are distinct and contain no
+legacy all-page test fixture. Targeted route/content/state/panel/auth and legacy
+dashboard regressions pass, including actor transition, stale assistant response,
+exact persistence and retained interval-selection checks. Live planner UAT at
+`http://localhost:3010` covered
+the deep-link load gate, all six active links, repair, schedule generation,
+request selection, workforce filter retention, disruption impact/replan,
+assistant retention and reset. Widths 640, 1280, 1440 and 1920 had no document
+overflow; keyboard navigation showed a 2px focus outline. The final request-page
+check measured the inspector at 368px, then 480px after its End-key resize, while
+document width stayed bounded. There were no fresh browser warnings/errors or
+active framework error dialogs. The local development server remains running on
+port 3010 for review.
 
 ## Vercel deployment — 2026-09-09
 

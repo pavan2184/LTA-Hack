@@ -15,6 +15,7 @@ import {
 } from "./layout-preferences";
 export interface PlanningPanelsProps {
   preferenceKey: string;
+  variant?: "all" | "requests" | "resources";
   queue: ReactNode;
   primary: ReactNode;
   inspector: ReactNode;
@@ -27,6 +28,7 @@ export function PlanningPanels(props: PlanningPanelsProps) {
 }
 function PanelLayout({
   preferenceKey,
+  variant = "all",
   queue,
   primary,
   inspector,
@@ -86,23 +88,34 @@ function PanelLayout({
       {storageWarning && (
         <p className="text-xs text-ink-700">{storageWarning}</p>
       )}
-      <div
-        data-planning-grid
-        style={dimensions}
-        className="grid min-w-0 items-start gap-2.5 lg:grid-cols-[var(--queue-width)_minmax(0,1fr)] 2xl:grid-cols-[var(--queue-width)_minmax(0,1fr)_var(--inspector-width)]"
-      >
-        <AdjustablePanel
-          id="queue"
-          title="Queue"
-          axis="width"
-          preference={layout.panels.queue}
-          onChange={change("queue")}
+      {variant === "requests" && (
+        <div
+          data-planning-grid
+          style={dimensions}
+          className="grid min-w-0 items-start gap-2.5 lg:grid-cols-[var(--queue-width)_var(--inspector-width)] lg:justify-between"
         >
-          {queue}
-        </AdjustablePanel>
-        <div className="min-w-0 space-y-2.5">
-          {primary}
-          {belowPrimary}
+          <AdjustablePanel
+            id="queue"
+            title="Queue"
+            axis="width"
+            preference={layout.panels.queue}
+            onChange={change("queue")}
+          >
+            {queue}
+          </AdjustablePanel>
+          <AdjustablePanel
+            id="inspector"
+            title="Inspector"
+            axis="width"
+            preference={layout.panels.inspector}
+            onChange={change("inspector")}
+          >
+            {inspector}
+          </AdjustablePanel>
+        </div>
+      )}
+      {variant === "resources" && (
+        <div data-planning-grid className="min-w-0 space-y-2.5">
           <AdjustablePanel
             id="workforce"
             title="Workforce"
@@ -122,18 +135,57 @@ function PanelLayout({
             {geography}
           </AdjustablePanel>
         </div>
-        <div className="min-w-0 lg:col-span-2 2xl:col-span-1">
+      )}
+      {variant === "all" && (
+        <div
+          data-planning-grid
+          style={dimensions}
+          className="grid min-w-0 items-start gap-2.5 lg:grid-cols-[var(--queue-width)_minmax(0,1fr)] 2xl:grid-cols-[var(--queue-width)_minmax(0,1fr)_var(--inspector-width)]"
+        >
           <AdjustablePanel
-            id="inspector"
-            title="Inspector"
+            id="queue"
+            title="Queue"
             axis="width"
-            preference={layout.panels.inspector}
-            onChange={change("inspector")}
+            preference={layout.panels.queue}
+            onChange={change("queue")}
           >
-            {inspector}
+            {queue}
           </AdjustablePanel>
+          <div className="min-w-0 space-y-2.5">
+            {primary}
+            {belowPrimary}
+            <AdjustablePanel
+              id="workforce"
+              title="Workforce"
+              axis="height"
+              preference={layout.panels.workforce}
+              onChange={change("workforce")}
+            >
+              {workforce}
+            </AdjustablePanel>
+            <AdjustablePanel
+              id="geography"
+              title="Geography"
+              axis="height"
+              preference={layout.panels.geography}
+              onChange={change("geography")}
+            >
+              {geography}
+            </AdjustablePanel>
+          </div>
+          <div className="min-w-0 lg:col-span-2 2xl:col-span-1">
+            <AdjustablePanel
+              id="inspector"
+              title="Inspector"
+              axis="width"
+              preference={layout.panels.inspector}
+              onChange={change("inspector")}
+            >
+              {inspector}
+            </AdjustablePanel>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

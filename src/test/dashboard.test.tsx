@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { SandboxLegacyDashboard } from "@/test/fixtures/SandboxLegacyDashboard";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 import {
   buildDisruptionInputs,
@@ -10,6 +11,14 @@ import {
 } from "@railplan/core/data/disruptions";
 import { computeMetrics } from "@railplan/core/engine/metrics";
 import { ruleCatalogue, validate } from "@railplan/core/engine/validate";
+
+function PlannerWorkspace() {
+  return (
+    <DashboardShell>
+      <SandboxLegacyDashboard />
+    </DashboardShell>
+  );
+}
 
 function resetStore() {
   localStorage.clear();
@@ -63,7 +72,7 @@ describe("planner workspace", () => {
 
   it("shows workforce arithmetic separately from crew concurrency and refreshes it after solving", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     expect(screen.getByText("Crew utilisation")).toBeInTheDocument();
     const workforce =
@@ -122,7 +131,7 @@ describe("planner workspace", () => {
 
   it("refreshes scenario workforce figures on view changes without applying a solved overrun twice", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     await generateSchedule(user);
     act(() => useRailPlanStore.getState().triggerDisruption("work-overrun"));
@@ -154,7 +163,7 @@ describe("planner workspace", () => {
   });
 
   it("opens on a statement of the problem, not a marketing page", async () => {
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     expect(screen.getByText(new RegExp(`${Object.keys(ruleCatalogue).length} rules over atomic track blocks`))).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       /22 maintenance requests\. One four-hour window\. 12 track blocks\./,
@@ -166,7 +175,7 @@ describe("planner workspace", () => {
 
   it("frames the page as requests, then conflicts, then a schedule", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     const steps = screen.getAllByRole("listitem");
@@ -179,7 +188,7 @@ describe("planner workspace", () => {
 
   it("derives conflicts from the requested times rather than declaring them", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     expect(screen.getByText(/Nobody typed this list/i)).toBeInTheDocument();
@@ -198,7 +207,7 @@ describe("planner workspace", () => {
 
   it("names the minutes a conflict is broken in, not just the jobs", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     const worst = useRailPlanStore.getState().submitted!.violations[0];
@@ -219,7 +228,7 @@ describe("planner workspace", () => {
 
   it("offers a resolution that was validated before it was offered", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     // This pair has a clean workforce repair. The worst conflict cannot be
@@ -253,7 +262,7 @@ describe("planner workspace", () => {
 
   it("works the whole conflict list down when asked, and says what is left", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     const before = useRailPlanStore.getState().submitted!.violations.length;
@@ -277,7 +286,7 @@ describe("planner workspace", () => {
 
   it("solves, then reports its own verification and provenance", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     await generateSchedule(user);
 
@@ -299,7 +308,7 @@ describe("planner workspace", () => {
 
   it("shows the arithmetic behind a headline figure on request", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     await user.click(
@@ -314,7 +323,7 @@ describe("planner workspace", () => {
 
   it("labels the one estimated figure as an assumption", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     await generateSchedule(user);
 
@@ -337,7 +346,7 @@ describe("planner workspace", () => {
 
   it("measures the schedule against the requests as submitted, not against its own fixes", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     const submitted = useRailPlanStore.getState().baselineConflicts;
@@ -363,7 +372,7 @@ describe("planner workspace", () => {
 
   it("explains a placement with the rules that fire at the requested time", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     await generateSchedule(user);
 
@@ -379,7 +388,7 @@ describe("planner workspace", () => {
 
   it("re-solves when a placement is pinned, so figures cannot drift from the plan", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     await generateSchedule(user);
 
@@ -410,7 +419,7 @@ describe("planner workspace", () => {
 
   it("keeps scenario testing secondary to the scheduling workflow", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
     await generateSchedule(user);
     const beforeWorkforce =
@@ -457,7 +466,7 @@ describe("planner workspace", () => {
 
   it("never presents a number without a way to check it", async () => {
     const user = userEvent.setup();
-    render(<DashboardShell />);
+    render(<PlannerWorkspace />);
     await loadRequests(user);
 
     const fx = screen.getAllByRole("button", { name: /how .* is calculated/i });

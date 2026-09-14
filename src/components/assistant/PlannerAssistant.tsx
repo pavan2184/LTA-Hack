@@ -1,20 +1,13 @@
 "use client";
 
 import { CornerDownLeft } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import type { AssistantResponse } from "@/app/api/assistant/route";
 import type { ApiError } from "@/lib/http/errors";
 import { suggestedQuestions } from "@/lib/assistant/deterministic";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-
-interface Turn {
-  role: "user" | "assistant";
-  content: string;
-  mode?: AssistantResponse["mode"];
-  notice?: string | null;
-}
 
 /**
  * Planner assistant.
@@ -26,11 +19,14 @@ interface Turn {
  * assistant gets terser, never less accurate.
  */
 export function PlannerAssistant() {
-  const [turns, setTurns] = useState<Turn[]>([]);
-  const [input, setInput] = useState("");
-  const [pending, setPending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const turns = useRailPlanStore((state) => state.assistantTurns);
+  const input = useRailPlanStore((state) => state.assistantInput);
+  const pending = useRailPlanStore((state) => state.assistantPending);
+  const setInput = useRailPlanStore((state) => state.setAssistantInput);
+  const setPending = useRailPlanStore((state) => state.setAssistantPending);
+  const appendTurn = useRailPlanStore((state) => state.appendAssistantTurn);
   const strategy = useRailPlanStore((state) => state.strategy);
   const view = useRailPlanStore((state) => state.view);
   const locked = useRailPlanStore((state) => state.locked);
@@ -56,7 +52,10 @@ export function PlannerAssistant() {
       .filter((turn) => turn.role === "user")
       .slice(-6)
       .map((turn) => ({ role: "user" as const, content: turn.content }));
-    setTurns((current) => [...current, { role: "user", content: trimmed }]);
+    const requestEpoch = useRailPlanStore.getState().assistantRequestEpoch;
+    const requestIsCurrent = () =>
+      useRailPlanStore.getState().assistantRequestEpoch === requestEpoch;
+    appendTurn({ role: "user", content: trimmed });
     setInput("");
     setPending(true);
 
@@ -76,37 +75,36 @@ export function PlannerAssistant() {
 
       if (!response.ok) {
         const failure = (await response.json().catch(() => null)) as ApiError | null;
-        setTurns((current) => [
-          ...current,
-          {
-            role: "assistant",
-            content:
-              failure?.error.message ??
-              "The assistant could not answer that. The plan and its figures are unaffected.",
-            mode: "engine",
-            notice: failure ? `Reference ${failure.error.requestId}` : null,
-          },
-        ]);
+        if (!requestIsCurrent()) return;
+        appendTurn({
+          role: "assistant",
+          content:
+            failure?.error.message ??
+            "The assistant could not answer that. The plan and its figures are unaffected.",
+          mode: "engine",
+          notice: failure ? `Reference ${failure.error.requestId}` : null,
+        });
         return;
       }
 
       const data = (await response.json()) as AssistantResponse;
-      setTurns((current) => [
-        ...current,
-        { role: "assistant", content: data.answer, mode: data.mode, notice: data.notice },
-      ]);
+      if (!requestIsCurrent()) return;
+      appendTurn({
+        role: "assistant",
+        content: data.answer,
+        mode: data.mode,
+        notice: data.notice,
+      });
     } catch {
-      setTurns((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content: "The assistant could not be reached. The plan and its figures are unaffected.",
-          mode: "engine",
-          notice: null,
-        },
-      ]);
+      if (!requestIsCurrent()) return;
+      appendTurn({
+        role: "assistant",
+        content: "The assistant could not be reached. The plan and its figures are unaffected.",
+        mode: "engine",
+        notice: null,
+      });
     } finally {
-      setPending(false);
+      if (requestIsCurrent()) setPending(false);
     }
   };
 

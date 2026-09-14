@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { WorkspaceNavigation } from "@/components/layout/WorkspaceNavigation";
 import Home from "@/app/page";
-import Sandbox from "@/app/sandbox/page";
+import SandboxLayout from "@/app/sandbox/layout";
 const { actor } = vi.hoisted(() => ({ actor: vi.fn() }));
 vi.mock("@/lib/auth/page", () => ({ workspaceActor: actor }));
 vi.mock("next/navigation", () => ({
@@ -68,10 +68,12 @@ it("keeps unassigned identities at an explicit access-pending page", async () =>
   ).not.toBeInTheDocument();
 });
 it("enforces planner access for the sandbox and labels its unsaved demo inputs", async () => {
-  actor.mockResolvedValue({ role: "contractor" });
-  await expect(Sandbox()).rejects.toThrow("redirect:/");
-  actor.mockResolvedValue({ role: "planner" });
-  render(await Sandbox());
+  actor.mockResolvedValue({ id: "contractor-one", role: "contractor" });
+  await expect(
+    SandboxLayout({ children: <div>Overview page</div> }),
+  ).rejects.toThrow("redirect:/");
+  actor.mockResolvedValue({ id: "planner-one", role: "planner" });
+  render(await SandboxLayout({ children: <div>Overview page</div> }));
   expect(
     screen.getByText(/Sandbox changes are exploratory/),
   ).toBeInTheDocument();

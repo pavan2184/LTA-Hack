@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated: 2026-09-07
+Last updated: 2026-09-14
 
 ## Shape
 
@@ -337,6 +337,36 @@ It never substitutes the sandbox store or regenerates feasibility. Publication
 status/source freshness are separate observations; publication still revalidates
 on the server. Saved IDs key visual selection and pending requests are cancelled
 on changes. Layout preferences are browser-local presentation data only.
+
+## Sandbox route composition
+
+The fabricated planner sandbox is split into six App Router pages: `/sandbox`,
+`/sandbox/requests`, `/sandbox/conflicts`, `/sandbox/schedule`,
+`/sandbox/resources` and `/sandbox/scenarios`. A single server layout checks the
+planner role, renders the shared workspace navigation and warning, and mounts one
+client `DashboardShell`. The shell owns the introduction/load gate, RailPlan page
+navigation, three-step workflow, solver controls and provenance, scenario outcome,
+reset, progress and footer. Route children provide only the focused content area.
+This keeps deep links authorized and useful before loading without duplicating the
+workspace boundary on every page. Each route imports its own focused component,
+so requests, conflicts, schedule, resources and scenario UI are not all forced
+through one monolithic client entry point.
+
+Solver results, selection, repairs, pins, objective and disruption remain in the
+existing Zustand store, so client navigation does not reconstruct a plan. Request
+and conflict filters, workforce filter/interval selection, and assistant
+conversation/draft/pending state are transient fields in that same in-memory
+store. Reset clears them and the persistence partial deliberately excludes them;
+only objective strategy and exact locked placements survive a reload. The shared
+layout keys that transient slice to the server-confirmed planner identity, hides
+the client workspace during an identity transition, and invalidates any assistant
+reply still in flight when reset or an actor change clears the conversation.
+
+`PlanningPanels` retains the existing `railplan-demo-layout` preference store and
+adds focused request and resource compositions. The default composition used by
+saved-plan review is unchanged. Queue/inspector width controls and
+workforce/geography height controls therefore share the existing bounded browser
+preference record across the new pages.
 
 ## Issue #17 release harness and log boundary
 
