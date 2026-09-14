@@ -14,6 +14,7 @@ Read `PROJECT_BRIEF.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `API_CONTRACT.md`,
 - `DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md`: historical design and further roadmap.
 - `RAIL_SCHEDULING_RESEARCH.md`: research, not operational validation.
 - `NEBULAX_PRODUCT_RESEARCH.md`: challenge index, rail/port comparisons, current-product gaps and proposed demo/pilot priorities.
+- `PRODUCT_ADOPTION_REVIEW.md`: 2026-09-15 adoption review of the built product; journey friction, prioritised proposals and an adoption test. Proposals, not accepted scope.
 - `superpowers/plans/2026-09-07-ordered-issues.md`: issue execution gates.
 
 The inputs are fabricated; schedules, conflicts, metrics, alternatives and
