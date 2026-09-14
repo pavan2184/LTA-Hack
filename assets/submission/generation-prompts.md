@@ -1,0 +1,16 @@
+# Generation record
+
+Created 2026-09-15 using the built-in image_gen tool. Original conceptual campaign artwork based on RailPlan's CSS palette and product brief; no external map assets or screenshots supplied.
+
+## railplan-devpost-cover.png
+
+Use case: ads-marketing. Create a polished final Devpost project cover for RailPlan, 1536x1024 landscape 3:2. Premium Swiss editorial transport design, warm paper #edebe6, near black #14161a, disciplined red #d42e12, green #009645 and orange #fa9e0d rail accents. Large exquisitely typeset headline upper left exactly "RailPlan", subheading exactly "Make the most of every engineering night." Small footer exactly "Rail-maintenance planning prototype". Lower two thirds: a beautiful original tactile architectural miniature of three parallel abstract railway tracks becoming an orderly scheduling timeline, precision rails, cream rectangular work blocks aligned in staggered slots, thin red green orange strips, subtle long shadows and printed fine grid. Communicate competing maintenance work becoming a clear plan. Refined composition, generous negative space, strong thumbnail legibility, not a dashboard screenshot. No station geography, no real maps, no operator or event logos, no fabricated performance statistics, no people, no extra text. This is conceptual campaign artwork not evidence of real infrastructure.
+
+## railplan-video-social-wide.png
+
+Use case: ads-marketing. Create final RailPlan video title / social banner, 1792x1024 landscape approx 16:9. Swiss editorial transport campaign design. Warm paper #edebe6 background, near-black #14161a typography, tiny rail-line red #d42e12 green #009645 orange #fa9e0d accents. Left half generous empty margin and exact large title "RailPlan", exact subtitle split across two lines "Competing requests." and "One explainable plan." Small footer "Rail-maintenance planning prototype". Right half a premium tactile miniature sculptural railway scheduling composition: three parallel rails seen in refined oblique orthographic view transition into neat staggered cream rectangular task blocks on a fine planning grid, restrained coloured edge accents and soft realistic shadows. Editorial, sober, precise, sophisticated. Large text readable at thumbnail size. No fake software UI, real map, station names, official logos, numerical results, badges, people or other text. Original conceptual artwork.
+
+## railplan-social-square.png
+
+Use case: ads-marketing. Create final square 1024x1024 social launch card for RailPlan. Cohesive premium Swiss editorial transport design: warm paper #edebe6, near-black #14161a, sparing rail-line red #d42e12 green #009645 orange #fa9e0d. At top large exact wordmark "RailPlan". Beneath exact headline on two lines "Plan the work." "Explain the trade-offs." Middle and lower half original refined tactile miniature of three parallel railway rails transitioning into staggered cream schedule blocks on a fine grid; oblique orthographic camera, precision objects, soft shadows, high craft, generous margins. Bottom small exact footer "Rail-maintenance planning prototype". No official brand marks, real maps, geographic data, fabricated metrics, fake screenshot, people, or additional text. Conceptual campaign art with excellent legibility.
+
