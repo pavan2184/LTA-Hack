@@ -5,7 +5,7 @@ import nextTypescript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTypescript,
-  globalIgnores([".next/**", "coverage/**", "next-env.d.ts"]),
+  globalIgnores([".next/**", "coverage/**", "next-env.d.ts", ".claude/worktrees/**"]),
   {
     // The dependency arrow points one way, and now something checks it.
     //

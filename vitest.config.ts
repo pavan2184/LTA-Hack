@@ -19,6 +19,7 @@ export default defineConfig({
       ...configDefaults.exclude,
       "scripts/db/*-concurrency.test.ts",
       "scripts/e2e/**",
+      ".claude/worktrees/**",
     ],
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
