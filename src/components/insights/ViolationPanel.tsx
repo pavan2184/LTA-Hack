@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { requestById } from "@railplan/core/data/requests";
@@ -63,7 +63,8 @@ export function ViolationPanel() {
   const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
   const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
 
-  const [filter, setFilter] = useState<ConflictCategory | "all">("all");
+  const filter = useRailPlanStore((state) => state.conflictFilter);
+  const setFilter = useRailPlanStore((state) => state.setConflictFilter);
 
   const violations = useMemo(
     () => (activeDisruptionId && !hasReplanned ? disruptionImpact : (result?.violations ?? [])),

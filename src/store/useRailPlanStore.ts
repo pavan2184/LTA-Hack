@@ -13,6 +13,7 @@ import {
   explainPlacement,
   type PlacementExplanation,
 } from "@railplan/core/engine/explain";
+import type { ConflictCategory } from "@railplan/core/engine/conflicts";
 import {
   recommendResolution,
   repairPlan,
@@ -42,6 +43,25 @@ export type PlanView = "submitted" | "planned";
 
 /** Progress stages surfaced while the solver runs. Each is a real phase. */
 export type SolveStage = "idle" | "validating" | "solving" | "verifying";
+
+export type SandboxRequestFilter =
+  | "attention"
+  | "all"
+  | "mandatory"
+  | "pinned"
+  | ConflictCategory;
+
+export interface SandboxAssistantTurn {
+  role: "user" | "assistant";
+  content: string;
+  mode?: "model" | "engine";
+  notice?: string | null;
+}
+
+export interface SandboxWorkforceView {
+  filter: { teamId: string; roleId: string } | null;
+  selection: { basis: string; start: number } | null;
+}
 
 interface RailPlanState {
   loaded: boolean;
@@ -87,6 +107,17 @@ interface RailPlanState {
    */
   disruptionPlacements: Placement[];
 
+  /** Page-level controls retained only while this browser visit is active. */
+  requestQuery: string;
+  requestFilter: SandboxRequestFilter;
+  conflictFilter: ConflictCategory | "all";
+  workforceView: SandboxWorkforceView;
+  assistantTurns: SandboxAssistantTurn[];
+  assistantInput: string;
+  assistantPending: boolean;
+  assistantRequestEpoch: number;
+  sandboxActorId: string | null;
+
   load: () => Promise<void>;
   buildPlan: () => Promise<void>;
   setView: (view: PlanView) => void;
@@ -106,6 +137,14 @@ interface RailPlanState {
   replan: () => Promise<void>;
   clearDisruption: () => Promise<void>;
   reset: () => void;
+  setRequestQuery: (query: string) => void;
+  setRequestFilter: (filter: SandboxRequestFilter) => void;
+  setConflictFilter: (filter: ConflictCategory | "all") => void;
+  setWorkforceView: (view: SandboxWorkforceView) => void;
+  setAssistantInput: (input: string) => void;
+  setAssistantPending: (pending: boolean) => void;
+  appendAssistantTurn: (turn: SandboxAssistantTurn) => void;
+  beginSandboxSession: (actorId: string) => void;
 
   activeResult: () => SolveResult | null;
   alternativesFor: (requestId: string) => {
@@ -183,6 +222,15 @@ export const useRailPlanStore = create<RailPlanState>()(
       disruptionImpact: [],
       disruptionMetrics: null,
       disruptionPlacements: [],
+      requestQuery: "",
+      requestFilter: "attention",
+      conflictFilter: "all",
+      workforceView: { filter: null, selection: null },
+      assistantTurns: [],
+      assistantInput: "",
+      assistantPending: false,
+      assistantRequestEpoch: 0,
+      sandboxActorId: null,
 
       load: async () => {
         set({ stage: "validating" });
@@ -428,7 +476,7 @@ export const useRailPlanStore = create<RailPlanState>()(
       },
 
       reset: () =>
-        set({
+        set((state) => ({
           loaded: false,
           view: "submitted",
           selectedRequestId: null,
@@ -446,7 +494,40 @@ export const useRailPlanStore = create<RailPlanState>()(
           disruptionImpact: [],
           disruptionMetrics: null,
           disruptionPlacements: [],
-        }),
+          requestQuery: "",
+          requestFilter: "attention",
+          conflictFilter: "all",
+          workforceView: { filter: null, selection: null },
+          assistantTurns: [],
+          assistantInput: "",
+          assistantPending: false,
+          assistantRequestEpoch: state.assistantRequestEpoch + 1,
+        })),
+
+      setRequestQuery: (requestQuery) => set({ requestQuery }),
+      setRequestFilter: (requestFilter) => set({ requestFilter }),
+      setConflictFilter: (conflictFilter) => set({ conflictFilter }),
+      setWorkforceView: (workforceView) => set({ workforceView }),
+      setAssistantInput: (assistantInput) => set({ assistantInput }),
+      setAssistantPending: (assistantPending) => set({ assistantPending }),
+      appendAssistantTurn: (turn) =>
+        set((state) => ({ assistantTurns: [...state.assistantTurns, turn] })),
+      beginSandboxSession: (actorId) =>
+        set((state) =>
+          state.sandboxActorId === null || state.sandboxActorId === actorId
+            ? { sandboxActorId: actorId }
+            : {
+                sandboxActorId: actorId,
+                requestQuery: "",
+                requestFilter: "attention",
+                conflictFilter: "all",
+                workforceView: { filter: null, selection: null },
+                assistantTurns: [],
+                assistantInput: "",
+                assistantPending: false,
+                assistantRequestEpoch: state.assistantRequestEpoch + 1,
+              },
+        ),
 
       activeResult: () => {
         const state = get();

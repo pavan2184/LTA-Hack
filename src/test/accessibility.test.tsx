@@ -3,6 +3,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { SandboxLegacyDashboard } from "@/test/fixtures/SandboxLegacyDashboard";
 import { PlannerAssistant } from "@/components/assistant/PlannerAssistant";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 
@@ -32,7 +33,11 @@ it.each(["Escape", "Cancel", "Apply to this plan"])(
   "restores keyboard focus after closing the disruption dialog with %s",
   async (action) => {
     await useRailPlanStore.getState().load();
-    render(<DashboardShell />);
+    render(
+      <DashboardShell>
+        <SandboxLegacyDashboard />
+      </DashboardShell>,
+    );
     const user = userEvent.setup();
     const trigger = screen.getByRole("button", { name: "Test a disruption" });
     trigger.focus();

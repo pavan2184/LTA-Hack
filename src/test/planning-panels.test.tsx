@@ -39,6 +39,59 @@ function Fixture({
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 describe("adjustable planning panels", () => {
+  it("focuses the request layout on the queue and inspector", () => {
+    const { container } = render(
+      <PlanningPanels
+        preferenceKey="focused-request-layout"
+        variant="requests"
+        queue={<p>Focused queue</p>}
+        primary={<p>Hidden timeline</p>}
+        inspector={<p>Focused inspector</p>}
+        workforce={<p>Hidden workforce</p>}
+        geography={<p>Hidden geography</p>}
+      />,
+    );
+
+    expect(screen.getByText("Focused queue")).toBeInTheDocument();
+    expect(screen.getByText("Focused inspector")).toBeInTheDocument();
+    expect(screen.queryByText("Hidden timeline")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hidden workforce")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hidden geography")).not.toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Queue width" })).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Inspector width" })).toBeInTheDocument();
+
+    const grid = container.querySelector<HTMLElement>("[data-planning-grid]")!;
+    fireEvent.input(screen.getByRole("slider", { name: "Inspector width" }), {
+      target: { value: "480" },
+    });
+    expect(grid.style.getPropertyValue("--inspector-width")).toBe("480px");
+    expect(grid).toHaveClass(
+      "lg:grid-cols-[var(--queue-width)_var(--inspector-width)]",
+    );
+  });
+
+  it("focuses the resource layout on adjustable workforce and geography panels", () => {
+    render(
+      <PlanningPanels
+        preferenceKey="focused-resource-layout"
+        variant="resources"
+        queue={<p>Hidden queue</p>}
+        primary={<p>Hidden timeline</p>}
+        inspector={<p>Hidden inspector</p>}
+        workforce={<p>Focused workforce</p>}
+        geography={<p>Focused geography</p>}
+      />,
+    );
+
+    expect(screen.getByText("Focused workforce")).toBeInTheDocument();
+    expect(screen.getByText("Focused geography")).toBeInTheDocument();
+    expect(screen.queryByText("Hidden queue")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hidden timeline")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hidden inspector")).not.toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Workforce height" })).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Geography height" })).toBeInTheDocument();
+  });
+
   it("keeps the Gantt before secondary panels and preserves mounted inputs through collapse", async () => {
     const { container } = render(<Fixture />);
     const user = userEvent.setup();
@@ -182,9 +235,16 @@ describe("defensive layout decoding", () => {
 
 it("integrates the real dashboard with Gantt first and retained workforce selection", async () => {
   const { DashboardShell } = await import("@/components/layout/DashboardShell");
+  const { SandboxLegacyDashboard } = await import(
+    "@/test/fixtures/SandboxLegacyDashboard"
+  );
   const { useRailPlanStore } = await import("@/store/useRailPlanStore");
   useRailPlanStore.getState().reset();
-  render(<DashboardShell />);
+  render(
+    <DashboardShell>
+      <SandboxLegacyDashboard />
+    </DashboardShell>,
+  );
   const user = userEvent.setup();
   await user.click(
     screen.getByRole("button", { name: "Load the submitted requests" }),

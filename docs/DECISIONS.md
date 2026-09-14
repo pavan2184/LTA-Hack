@@ -1,8 +1,32 @@
 # Decisions
 
-Last updated: 2026-09-07
+Last updated: 2026-09-14
 
 ## Log
+
+### 2026-09-14 — Split the local sandbox by planning task
+
+Status: Accepted by the owner and implemented.
+
+Expose Overview, Requests, Conflicts, Schedule, Resources and Scenarios as six
+planner-only App Router pages under one `/sandbox` layout. Keep authorization,
+the fabricated-data warning and all workflow controls in shared chrome so direct
+links cannot bypass the sandbox boundary and every page can generate, repair,
+inspect provenance, replan or reset. Horizontal header scrolling is the narrow
+screen behavior; the document itself must not overflow.
+
+Keep plan and disruption state in the existing client store across navigation.
+Promote page controls that must survive navigation—filters, workforce selection
+and assistant conversation/draft/pending state—to a transient store slice, but do
+not add them to persisted preferences. Reset and reload clear that slice; the
+existing persistence promise remains exactly objective strategy plus locked
+placements. Reuse the existing bounded panel-layout preference record for focused
+request and resource panels, leaving saved-plan presentation behavior unchanged.
+Key transient state to the server-confirmed planner identity: clear it before the
+workspace is revealed to a different planner and invalidate any assistant reply
+that completes after reset or an identity transition. Give every route a focused
+component entry rather than shipping the legacy all-panel composition to each
+subpage.
 
 
 ### 2026-09-07 — Workforce is a hard aggregate constraint (#8)
