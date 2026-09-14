@@ -88,6 +88,32 @@ all 51 pages were text-extracted. No application code or existing work was remov
 Documentation checks cover archive fidelity, local links, PDF checksum, ignored
 source placement and whitespace. Application tests were not rerun for these docs.
 
+## Product adoption review — 2026-09-15
+
+Recorded [PRODUCT_ADOPTION_REVIEW.md](PRODUCT_ADOPTION_REVIEW.md): a candid
+assessment of whether planners and contractors would choose the built product.
+Verdict: not yet. Evidence is labelled Observed (live sandbox run), Code, Docs
+or Assumption; no planner or contractor was interviewed.
+
+Main findings: conflict repair, alternatives and pins exist only in the sandbox
+over fabricated requests while `/plans` generates with empty pins; the as-submitted
+view reports 30 conflicts for roughly ten distinct clashes because one collision
+surfaces as block, team and workforce rows; Balanced and Maximum completion both
+place 17 of 22 with the five deferred jobs hidden from the post-solve Conflicts
+page; 13 of 17 placed jobs moved (735 minutes total) with no contractor response
+path; intake uses minutes-after-midnight and block checkboxes; one seeded night
+and no way to create another; the contractor's outcome is a single line and a
+UUID-based Telegram message; the sandbox loses its loaded state on refresh.
+
+Ten prioritised proposals (including removals) and a 45-minute adoption test
+protocol are recorded. The three recommended next changes are: one planning path
+on approved data, root-cause conflict grouping with deferred work in the primary
+result, and a contractor-readable published schedule with acknowledgement. These
+are proposals; they do not change the numbered issue order or authorize
+implementation. The review used a temporary unauthenticated preview route that
+was removed; the worktree contains only documentation changes. Application tests
+were not rerun.
+
 ## Product intent and README — 2026-09-15
 
 Expanded PROJECT_BRIEF.md with the planner's problem, two user roles, intended
