@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { categoryTone } from "@/components/insights/ViolationPanel";
 import { Button } from "@/components/ui/button";
 import { requests } from "@railplan/core/data/requests";
-import { summariseConflicts } from "@railplan/core/engine/conflicts";
+import { groupConflicts, summariseConflicts } from "@railplan/core/engine/conflicts";
 import { strategyList } from "@railplan/core/engine/strategies";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
@@ -36,8 +36,10 @@ export function PlanToolbar() {
   const clearSuggestions = useRailPlanStore((state) => state.clearSuggestions);
   const selectViolation = useRailPlanStore((state) => state.selectViolation);
 
+  // Counted as clashes, not rule findings: one collision that breaks the block,
+  // crew and staffing rules is one problem for the planner to resolve.
   const requestedConflicts = useMemo(
-    () => summariseConflicts(submitted?.violations ?? []),
+    () => summariseConflicts(groupConflicts(submitted?.violations ?? []).map((group) => group.primary)),
     [submitted],
   );
 
@@ -45,7 +47,7 @@ export function PlanToolbar() {
   const pinnedCount = Object.keys(locked).length;
   const appliedCount = Object.keys(overrides).length;
   const profile = strategyList.find((item) => item.id === strategy) ?? strategyList[0];
-  const plannedConflicts = planned?.violations.filter((v) => v.severity === "critical").length ?? 0;
+  const plannedConflicts = groupConflicts(planned?.violations.filter((v) => v.severity === "critical") ?? []).length;
 
   return (
     <section className="border border-rule bg-surface">

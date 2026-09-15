@@ -1,3 +1,4 @@
+import { groupConflicts } from "./conflicts";
 import { emergencyScenarios, EMERGENCY_SET_VERSION } from "../data/emergencyScenarios";
 import { literalWorld, type PlanningWorld } from "../domain/world";
 import { isFeasible, validate, type ValidationContext } from "../engine/validate";
@@ -41,6 +42,30 @@ function metric(
   note: string,
 ): MetricValue {
   return { key, label, value, unit, numerator, denominator, formula, note };
+}
+
+/**
+ * Clashes rather than rule findings.
+ *
+ * The validator's count is honest but inflated for a planner: one collision
+ * breaks the block, the crew and the staffing rule at once. This counts the
+ * distinct clashes and keeps the raw finding count as its denominator.
+ */
+export function conflictsMetric(violations: Violation[]): MetricValue {
+  const critical = violations.filter((v) => v.severity === "critical");
+  const groups = groupConflicts(critical);
+  return metric(
+    "conflicts",
+    "Conflicts",
+    groups.length,
+    "count",
+    groups.length,
+    critical.length,
+    "distinct clashes (same requests, overlapping minutes) / critical rule findings",
+    groups.length === critical.length
+      ? "Each clash breaks exactly one rule."
+      : `${critical.length} rule findings collapse to ${groups.length} clashes: one collision often breaks the block, crew and staffing rules at the same time.`,
+  );
 }
 
 /**

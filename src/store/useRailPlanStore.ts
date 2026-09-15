@@ -13,7 +13,7 @@ import {
   explainPlacement,
   type PlacementExplanation,
 } from "@railplan/core/engine/explain";
-import type { ConflictCategory } from "@railplan/core/engine/conflicts";
+import { groupConflicts, type ConflictCategory } from "@railplan/core/engine/conflicts";
 import {
   recommendResolution,
   repairPlan,
@@ -244,8 +244,8 @@ export const useRailPlanStore = create<RailPlanState>()(
           plannedDisruptionId: null,
           overrides: {},
           lastRepair: [],
-          baselineConflicts: submitted.violations.filter(
-            (v) => v.severity === "critical",
+          baselineConflicts: groupConflicts(
+            submitted.violations.filter((v) => v.severity === "critical"),
           ).length,
           stage: "idle",
           lastSolveMs: submitted.solveMs,

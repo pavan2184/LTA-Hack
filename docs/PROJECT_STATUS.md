@@ -52,7 +52,8 @@ A passing controlled provider test does not prove live extraction quality or del
 - Geographic-source redistribution permission remains unresolved, including for
   submission artifacts. Existing deployment does not establish rights clearance.
 - No new live-provider success, user study or measured planner-time saving is
-  claimed. The displayed time-saving estimate still assumes 12 minutes per conflict.
+  claimed. The time-saving tile was removed on 2026-09-15 pending a measured
+  baseline; the assumed 12 minutes per conflict remains only in the core function.
 - Hosted development database; no Docker. Preserve existing user work and use
   `.env.example` for configuration names. Credentials stay in ignored `secrets/`.
 
@@ -96,6 +97,28 @@ qualified the research demo duration. Source pages 24–25 were visually checked
 all 51 pages were text-extracted. No application code or existing work was removed.
 Documentation checks cover archive fidelity, local links, PDF checksum, ignored
 source placement and whitespace. Application tests were not rerun for these docs.
+
+## Conflicts by root cause, unplaced work first (P2) — 2026-09-15
+
+Implemented the adoption review's second recommendation. The core engine gains
+`groupConflicts`, which collapses findings naming the same requests over
+overlapping minutes into one clash with the rules it breaks listed beneath, and
+`conflictsMetric`, which counts clashes with the raw finding count as its
+denominator. The sandbox conflict panel, toolbar, baseline and overview tiles and
+the saved-plan revision editor now count and list clashes. The planner-time-saved
+tile is removed from the overview; the function remains in the core package for
+a measured baseline. "Work without a slot" now sits beneath the conflicts on the
+sandbox Conflicts page after a solve and above the saved-plan review panels, with
+each row opening the request in the inspector.
+
+Verification (worktree without database configuration): typecheck and lint clean;
+`npm test` 570 passed, 52 skipped (database integration files skip without a
+connection; no database or service code changed). New coverage: core grouping
+collapses the M-008/M-014 block, crew and staffing findings into one clash with
+the merged 01:00–02:15 window and is stable across re-validation; the sandbox
+toolbar counts clashes and shows "Also breaks"; no estimated figure remains on
+the overview; the saved review and revision editor list unplaced work and open
+it in the inspector. No browser run for this change.
 
 ## Join the halves (P1) — 2026-09-15
 

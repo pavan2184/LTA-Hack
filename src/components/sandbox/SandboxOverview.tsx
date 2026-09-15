@@ -6,7 +6,7 @@ import { SandboxPageHeading } from "@/components/sandbox/SandboxPageHeading";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 import { PLANNING_NIGHT, WINDOW_END } from "@railplan/core/data/requests";
 import { formatClock } from "@railplan/core/engine/intervals";
-import { plannerTimeSavedMetric } from "@railplan/core/engine/metrics";
+import { conflictsMetric } from "@railplan/core/engine/metrics";
 
 export function SandboxOverview() {
   return (
@@ -39,24 +39,21 @@ export function PlanSignals() {
   if (!result) return null;
 
   const metrics = result.metrics;
-  const remaining = metrics.violations.value;
+  // Clashes, not rule findings: the same collision breaking three rules is one
+  // problem. The raw finding count stays inside the formula for inspection.
+  const conflicts = conflictsMetric(result.violations);
 
   if (view === "submitted") {
     return (
-      <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+      <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
         <Figure
           metric={{ ...metrics.placed, label: "Requests received" }}
           secondary={`for ${PLANNING_NIGHT}, 00:00-${formatClock(WINDOW_END)}`}
         />
         <Figure
-          metric={metrics.conflictedRequests}
-          secondary={`of ${metrics.conflictedRequests.denominator} requests`}
-          tone={metrics.conflictedRequests.value ? "red" : "green"}
-        />
-        <Figure
-          metric={metrics.violations}
-          secondary={metrics.violations.value ? "planner action required" : "validator found none"}
-          tone={metrics.violations.value ? "red" : "green"}
+          metric={conflicts}
+          secondary={conflicts.value ? `across ${metrics.conflictedRequests.value} of ${metrics.conflictedRequests.denominator} requests` : "validator found none"}
+          tone={conflicts.value ? "red" : "green"}
         />
         <Figure metric={metrics.teamUtilisation} secondary="crew minutes against rostered shifts" />
         <Figure metric={metrics.blockUtilisation} secondary="block-minutes against the window" />
@@ -65,15 +62,10 @@ export function PlanSignals() {
   }
 
   return (
-    <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+    <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
       <Figure
-        metric={metrics.violations}
-        secondary={`down from ${baselineConflicts} in the requests as submitted`}
-        tone={remaining ? "red" : "green"}
-      />
-      <Figure
-        metric={metrics.placed}
-        secondary={`${result.plan.deferred.length} without a slot`}
+        metric={{ ...metrics.placed, label: "Requests with a slot" }}
+        secondary={result.plan.deferred.length ? `${result.plan.deferred.length} without a slot · see Conflicts` : "every request placed"}
         tone={result.plan.deferred.length ? "amber" : "green"}
       />
       <Figure
@@ -82,12 +74,13 @@ export function PlanSignals() {
         tone={metrics.criticalPlaced.value < metrics.criticalPlaced.denominator ? "red" : "green"}
       />
       <Figure
-        metric={metrics.movement}
-        secondary={`${metrics.movement.denominator} of ${result.plan.placements.length} jobs moved`}
+        metric={conflicts}
+        secondary={`down from ${baselineConflicts} in the requests as submitted`}
+        tone={conflicts.value ? "red" : "green"}
       />
       <Figure
-        metric={plannerTimeSavedMetric(baselineConflicts, remaining)}
-        secondary="estimated · see the formula"
+        metric={metrics.movement}
+        secondary={`${metrics.movement.denominator} of ${result.plan.placements.length} jobs moved`}
       />
     </section>
   );
