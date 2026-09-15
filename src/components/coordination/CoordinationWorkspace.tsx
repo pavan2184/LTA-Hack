@@ -13,6 +13,7 @@ import type {
   CoordinationCase,
   CoordinationCasePage,
   CoordinationChange,
+  OrganisationConfirmation,
   CoordinationProposal,
 } from "@railplan/core/types/coordination";
 import type { RequestCatalogue } from "@railplan/core/types/requests";
@@ -196,6 +197,10 @@ export function CoordinationWorkspace({
   const opener = useRef<HTMLElement | null>(null);
   const epoch = useRef(0);
   const controller = useRef<AbortController | null>(null);
+  const previewEpoch = useRef(0);
+  const previewController = useRef<AbortController | null>(null);
+  const selectionEpoch = useRef(0);
+  const selectedId = useRef<string | null>(null);
   const initialSelectionPending = useRef(true);
   const applyAttempt = useRef<{ signature: string; key: string } | null>(null);
 
@@ -223,6 +228,14 @@ export function CoordinationWorkspace({
 
   const choose = useCallback((coordinationCase: CoordinationCase, force = false) => {
     if (!force && !mayLeave()) return;
+    if (selectedId.current !== coordinationCase.id) {
+      selectionEpoch.current += 1;
+      selectedId.current = coordinationCase.id;
+      previewEpoch.current += 1;
+      previewController.current?.abort();
+      setBusy("");
+      setSavedPlanId(null);
+    }
     setSelected(coordinationCase);
     setProposalRevision(coordinationCase.viewedRevision);
     if (coordinationCase.scope === "planner") {
@@ -278,20 +291,23 @@ export function CoordinationWorkspace({
       const requestedInitial = initialSelectionPending.current
         ? initialCaseId
         : undefined;
-      let nextSelection =
-        next.cases.find((item) => item.id === requestedInitial) ??
-        next.cases.find((item) => item.id === selected?.id) ??
-        next.cases[0] ??
-        null;
-      if (!nextSelection && requestedInitial) {
+      let requestedSelection = next.cases.find(
+        (item) => item.id === requestedInitial,
+      );
+      if (!requestedSelection && requestedInitial) {
         const detail = await request<{ case: CoordinationCase }>(
           `/api/coordination/${encodeURIComponent(requestedInitial)}`,
           undefined,
           abort.signal,
         );
-        nextSelection = detail.case;
+        requestedSelection = detail.case;
         setPage({ ...next, cases: [detail.case, ...next.cases] });
       }
+      const nextSelection =
+        requestedSelection ??
+        next.cases.find((item) => item.id === selected?.id) ??
+        next.cases[0] ??
+        null;
       initialSelectionPending.current = false;
       if (nextSelection) choose(nextSelection, true);
       else setSelected(null);
@@ -325,17 +341,64 @@ export function CoordinationWorkspace({
     return () => window.removeEventListener("popstate", selectFromHistory);
   }, [choose, page?.cases, selected?.id]);
 
+  const loadMore = async () => {
+    if (!page?.nextCursor || busy) return;
+    const ticket = ++epoch.current;
+    controller.current?.abort();
+    const abort = new AbortController();
+    controller.current = abort;
+    setBusy("Loading more coordination cases…");
+    setError("");
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value && (role === "planner" || key !== "ownerId")) query.set(key, value);
+    }
+    query.set("cursor", page.nextCursor);
+    try {
+      const next = await request<CoordinationCasePage>(
+        `/api/coordination?${query}`,
+        undefined,
+        abort.signal,
+      );
+      if (ticket !== epoch.current || abort.signal.aborted) return;
+      setPage((current) => {
+        if (!current) return next;
+        const known = new Set(current.cases.map((item) => item.id));
+        return {
+          ...current,
+          cases: [
+            ...current.cases,
+            ...next.cases.filter((item) => !known.has(item.id)),
+          ],
+          nextCursor: next.nextCursor,
+          owners: next.owners ?? current.owners,
+        };
+      });
+    } catch (cause) {
+      if (ticket === epoch.current && !abort.signal.aborted) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "More coordination cases could not be loaded.",
+        );
+      }
+    } finally {
+      if (ticket === epoch.current && !abort.signal.aborted) setBusy("");
+    }
+  };
+
   const mutate = async (command: Command, keepErrorLocal = false) => {
     if (!selected || busy) return;
+    const targetCaseId = selected.id;
+    const targetSelectionEpoch = selectionEpoch.current;
     setBusy("Saving coordination action…");
     setError("");
     setNotice("");
     try {
       const result = await request<CoordinationActionResult>(
-        `/api/coordination/${encodeURIComponent(selected.id)}/actions`,
+        `/api/coordination/${encodeURIComponent(targetCaseId)}/actions`,
         command,
       );
-      setSelected(result.case);
       setPage((current) =>
         current
           ? {
@@ -346,6 +409,11 @@ export function CoordinationWorkspace({
             }
           : current,
       );
+      if (
+        selectedId.current !== targetCaseId ||
+        selectionEpoch.current !== targetSelectionEpoch
+      ) return;
+      setSelected(result.case);
       if (result.appliedPlanId) setSavedPlanId(result.appliedPlanId);
       setProposalRevision(result.case.viewedRevision);
       if (result.case.scope === "planner") {
@@ -363,10 +431,17 @@ export function CoordinationWorkspace({
       );
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "The action failed.";
-      if (!keepErrorLocal) setError(message);
+      if (
+        !keepErrorLocal &&
+        selectedId.current === targetCaseId &&
+        selectionEpoch.current === targetSelectionEpoch
+      ) setError(message);
       throw cause;
     } finally {
-      setBusy("");
+      if (
+        selectedId.current === targetCaseId &&
+        selectionEpoch.current === targetSelectionEpoch
+      ) setBusy("");
     }
   };
 
@@ -393,8 +468,54 @@ export function CoordinationWorkspace({
   const currentProposal = plannerCase?.proposals.find(
     (item) => item.revision === plannerCase.currentRevision,
   );
+  const confirmationCase = useMemo(() => {
+    if (!plannerCase || !displayedProposal) return selected;
+    if (displayedProposal.revision === plannerCase.viewedRevision) {
+      return plannerCase;
+    }
+    const organisationIds = Array.from(
+      new Set(
+        displayedProposal.changes.flatMap((change) =>
+          change.organisationId ? [change.organisationId] : [],
+        ),
+      ),
+    );
+    const confirmations: OrganisationConfirmation[] = organisationIds.map(
+      (organisationId) => {
+        const event = plannerCase.events
+          .filter(
+            (item) =>
+              item.revision === displayedProposal.revision &&
+              item.organisationId === organisationId &&
+              (item.action === "approve" || item.action === "request-changes"),
+          )
+          .toSorted((left, right) =>
+            right.createdAt.localeCompare(left.createdAt),
+          )[0];
+        return {
+          organisationId,
+          revision: displayedProposal.revision,
+          status:
+            event?.action === "approve"
+              ? "approved"
+              : event?.action === "request-changes"
+                ? "changes-requested"
+                : "pending",
+          ...(event?.confirmedAt ? { confirmedAt: event.confirmedAt } : {}),
+          ...(event?.note ? { note: event.note } : {}),
+        };
+      },
+    );
+    return {
+      ...plannerCase,
+      viewedRevision: displayedProposal.revision,
+      confirmations,
+      changes: displayedProposal.changes,
+    };
+  }, [displayedProposal, plannerCase, selected]);
   const canApply =
     !!plannerCase &&
+    displayedProposal?.revision === plannerCase.currentRevision &&
     plannerCase.state === "open" &&
     currentProposal?.state === "proposed" &&
     !currentProposal.stale &&
@@ -474,6 +595,16 @@ export function CoordinationWorkspace({
               <span className="planner-muted mt-1 block text-xs">{item.planningNight} · {item.state}{item.overdue ? " · Overdue" : ""}</span>
             </button>
           ))}
+          {page?.nextCursor && (
+            <button
+              type="button"
+              className="planner-button w-full"
+              disabled={!!busy}
+              onClick={() => void loadMore()}
+            >
+              Load more cases
+            </button>
+          )}
         </section>
         {selected && (
           <section className="space-y-5 rounded border border-rule bg-sunk p-4" aria-label="Coordination case detail">
@@ -508,20 +639,30 @@ export function CoordinationWorkspace({
                   <h3 className="font-semibold">Complete proposal changes</h3>
                   {displayedProposal.changes.length === 0 ? <p>No placement or deferral changes.</p> : displayedProposal.changes.map((item) => <ChangeCard key={`${item.requestId}-${item.kind}`} change={item} organisationName={item.organisationId ? names.get(item.organisationId) : undefined} planner />)}
                 </section>
-                <OrganisationConfirmations coordinationCase={selected} role="planner" organisationNames={names} disabled={!!busy || displayedProposal.revision !== selected.currentRevision} onAction={(action) => mutate(action, true)} />
+                <OrganisationConfirmations coordinationCase={confirmationCase ?? selected} role="planner" organisationNames={names} disabled={!!busy || displayedProposal.revision !== selected.currentRevision} onAction={(action) => mutate(action, true)} />
                 <section className="space-y-3 rounded border border-rule bg-surface p-4">
                   <h3 className="font-semibold">Create proposal revision</h3>
                   <p className="planner-muted text-sm">Preview with the existing analysis service. RailPlan saves only a new immutable, server-validated proposal revision.</p>
-                  <label className="block text-sm">Source plan ID<input className="planner-field mt-1 block w-full font-mono" value={revisionSource} onChange={(event) => { setRevisionSource(event.target.value); setRevisionPreview(null); }} /></label>
-                  <label className="block text-sm">Planning objective<select className="planner-field mt-1 block w-full" value={revisionStrategy} onChange={(event) => { setRevisionStrategy(event.target.value); setRevisionPreview(null); }}>{strategyList.map((strategy) => <option key={strategy.id} value={strategy.id}>{strategy.label}</option>)}</select></label>
+                  <label className="block text-sm">Source plan ID<input className="planner-field mt-1 block w-full font-mono" value={revisionSource} onChange={(event) => { previewEpoch.current += 1; previewController.current?.abort(); setBusy((current) => current === "Validating proposal preview…" ? "" : current); setRevisionSource(event.target.value); setRevisionPreview(null); }} /></label>
+                  <label className="block text-sm">Planning objective<select className="planner-field mt-1 block w-full" value={revisionStrategy} onChange={(event) => { previewEpoch.current += 1; previewController.current?.abort(); setBusy((current) => current === "Validating proposal preview…" ? "" : current); setRevisionStrategy(event.target.value); setRevisionPreview(null); }}>{strategyList.map((strategy) => <option key={strategy.id} value={strategy.id}>{strategy.label}</option>)}</select></label>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className="planner-button" disabled={!!busy || !revisionSource} onClick={() => {
                       if (!currentProposal) return;
+                      const ticket = ++previewEpoch.current;
+                      previewController.current?.abort();
+                      const abort = new AbortController();
+                      previewController.current = abort;
                       setBusy("Validating proposal preview…"); setError("");
-                      void request<PlanPreview>(`/api/plans/${encodeURIComponent(revisionSource)}/analysis`, { operation: "preview", strategy: revisionStrategy, locked: currentProposal.parameters.locked })
-                        .then(setRevisionPreview)
-                        .catch((cause) => setError(cause instanceof Error ? cause.message : "Preview failed."))
-                        .finally(() => setBusy(""));
+                      void request<PlanPreview>(`/api/plans/${encodeURIComponent(revisionSource)}/analysis`, { operation: "preview", strategy: revisionStrategy, locked: currentProposal.parameters.locked }, abort.signal)
+                        .then((preview) => {
+                          if (ticket === previewEpoch.current && !abort.signal.aborted) setRevisionPreview(preview);
+                        })
+                        .catch((cause) => {
+                          if (ticket === previewEpoch.current && !abort.signal.aborted) setError(cause instanceof Error ? cause.message : "Preview failed.");
+                        })
+                        .finally(() => {
+                          if (ticket === previewEpoch.current && !abort.signal.aborted) setBusy("");
+                        });
                     }}>Preview proposal revision</button>
                     <button type="button" className="planner-button primary" disabled={!!busy || !revisionPreview || revisionPreview.stale || revisionPreview.result.status === "INFEASIBLE"} onClick={() => runMutation({ action: "revise", expectedVersion: selected.version, sourcePlanId: revisionSource, parameters: { planningNight: selected.planningNight, strategy: revisionStrategy, locked: revisionPreview!.parameters.locked } })}>Save new proposal revision</button>
                   </div>

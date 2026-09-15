@@ -212,6 +212,32 @@ describe("planner coordination", () => {
     expect(screen.getByText(/Approval recorded for revision 1/)).toBeInTheDocument();
   });
 
+  it("aligns historical confirmation evidence and disables Apply on an older revision", async () => {
+    const first = plannerCase();
+    const revisionOne = { ...first.proposals[0], state: "superseded" as const };
+    const revisionTwo = {
+      ...first.proposals[0],
+      revision: 2,
+      createdAt: "2026-09-15T01:00:00Z",
+    };
+    const revised = plannerCase({
+      version: 3,
+      currentRevision: 2,
+      viewedRevision: 2,
+      proposals: [revisionOne, revisionTwo],
+      confirmations: [{ organisationId: orgId, revision: 2, status: "pending" }],
+      events: [{ id: "70000000-0000-4000-8000-000000000001", action: "approve", revision: 1, actorId: ownerId, createdAt: "2026-09-15T00:30:00Z", note: "Approved in meeting", organisationId: orgId, confirmedAt: "2026-09-15T00:20:00Z" }],
+    });
+    vi.stubGlobal("fetch", workspaceFetch(revised));
+    const user = userEvent.setup();
+    render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
+    await user.click(await screen.findByRole("button", { name: "Revision 1" }));
+
+    expect(screen.getByRole("button", { name: "Apply proposal" })).toBeDisabled();
+    expect(within(screen.getByRole("region", { name: "Organisation confirmations" })).getByText("Organisation approved")).toBeInTheDocument();
+    expect(screen.queryByText("Pending organisation approval")).not.toBeInTheDocument();
+  });
+
   it("retains the confirmation note when the API rejects the mutation", async () => {
     vi.stubGlobal("fetch", workspaceFetch(plannerCase(), () => json({ error: { message: "This case changed. Reload before trying again." } }, { status: 409 })));
     const user = userEvent.setup();
@@ -257,6 +283,61 @@ describe("planner coordination", () => {
     await screen.findByRole("link", { name: new RegExp(appliedPlanId.slice(0, 8)) });
     expect(keys).toHaveLength(2);
     expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("does not accept a delayed preview for revision inputs changed in flight", async () => {
+    let resolvePreview!: (response: Response) => void;
+    const pendingPreview = new Promise<Response>((resolve) => {
+      resolvePreview = resolve;
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/requests/catalogue") return json({ catalogue: { organisations: [] } });
+      if (url.endsWith("/analysis")) return pendingPreview;
+      if (url.startsWith("/api/coordination")) return json({ cases: [plannerCase()], nextCursor: null, owners: [] });
+      throw new Error(`Unexpected URL ${url} ${init?.method ?? "GET"}`);
+    }));
+    const user = userEvent.setup();
+    render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
+    const source = await screen.findByRole("textbox", { name: "Source plan ID" });
+    await user.click(screen.getByRole("button", { name: "Preview proposal revision" }));
+    await user.clear(source);
+    await user.type(source, sourcePlanId.replace(/1$/, "9"));
+    await act(async () => {
+      resolvePreview(json({
+        operation: "preview",
+        result: plannerResult,
+        parameters: { planningNight: "2026-09-16", strategy: "balanced", locked: [] },
+        basis: { planId: sourcePlanId },
+        stale: false,
+      }));
+    });
+
+    expect(screen.getByRole("button", { name: "Save new proposal revision" })).toBeDisabled();
+    expect(screen.queryByText(/^Preview:/)).not.toBeInTheDocument();
+  });
+
+  it("does not restore a prior case when its delayed mutation finishes after navigation", async () => {
+    const other = plannerCase({ id: otherCaseId, selectedRequestIds: ["M-002"] });
+    let resolveMutation!: (response: Response) => void;
+    const pendingMutation = new Promise<Response>((resolve) => {
+      resolveMutation = resolve;
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/requests/catalogue") return json({ catalogue: { organisations: [] } });
+      if (url.includes("/actions")) return pendingMutation;
+      if (url.startsWith("/api/coordination")) return json({ cases: [plannerCase(), other], nextCursor: null, owners: [] });
+      throw new Error(`Unexpected URL ${url}`);
+    }));
+    const user = userEvent.setup();
+    render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
+    await user.click(await screen.findByRole("button", { name: "Apply proposal" }));
+    await user.click(screen.getByRole("button", { name: `Open coordination case ${otherCaseId}` }));
+    await act(async () => {
+      resolveMutation(json({ case: plannerCase({ version: 2 }) }));
+    });
+
+    expect(screen.getByRole("button", { name: `Open coordination case ${otherCaseId}` })).toHaveAttribute("aria-pressed", "true");
+    expect(new URL(window.location.href).searchParams.get("case")).toBe(otherCaseId);
   });
 
   it("protects an edited revision across Back and reselects the URL case after confirmation", async () => {
@@ -312,6 +393,30 @@ describe("contractor coordination", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Reload the case");
     expect(note).toHaveValue("Please keep the earlier access window");
   });
+
+  it("loads the next scoped case page without changing the selected case", async () => {
+    const first = contractorCase();
+    const second = { ...contractorCase(), id: otherCaseId };
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      if (url === `/api/coordination?cursor=${caseId}`) {
+        return json({ cases: [second], nextCursor: null });
+      }
+      if (url === "/api/coordination") {
+        return json({ cases: [first], nextCursor: caseId });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    }));
+    const user = userEvent.setup();
+    render(<CoordinationWorkspace role="contractor" initialCaseId={caseId} />);
+    const selectedButton = await screen.findByRole("button", { name: `Open coordination case ${caseId}` });
+    await user.click(screen.getByRole("button", { name: "Load more cases" }));
+
+    expect(await screen.findByRole("button", { name: `Open coordination case ${otherCaseId}` })).toBeInTheDocument();
+    expect(selectedButton).toHaveAttribute("aria-pressed", "true");
+    expect(urls).toContain(`/api/coordination?cursor=${caseId}`);
+  });
 });
 
 describe("exact saved-plan coordination", () => {
@@ -366,5 +471,26 @@ describe("exact saved-plan coordination", () => {
     render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
     expect(await screen.findByRole("heading", { name: new RegExp(caseId.slice(0, 8)) })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: `Open coordination case ${caseId}` })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("fetches an exact direct-link case that is absent from a nonempty first page", async () => {
+    const firstPageCase = plannerCase({ id: otherCaseId, selectedRequestIds: ["M-002"] });
+    const requested = plannerCase();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/requests/catalogue") {
+        return json({ catalogue: { organisations: [], nights: [], blocks: [], workClasses: [], equipment: [], roles: [] } });
+      }
+      if (url === `/api/coordination/${caseId}`) return json({ case: requested });
+      if (url.startsWith("/api/coordination")) {
+        return json({ cases: [firstPageCase], nextCursor: otherCaseId, owners: [] });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    }));
+
+    render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
+
+    expect(await screen.findByRole("heading", { name: new RegExp(caseId.slice(0, 8)) })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `Open coordination case ${caseId}` })).toHaveAttribute("aria-pressed", "true");
+    expect(window.location.search).toContain(`case=${caseId}`);
   });
 });
