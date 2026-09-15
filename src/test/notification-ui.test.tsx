@@ -41,6 +41,18 @@ const configuration: NotificationConfiguration = {
 };
 afterEach(() => vi.unstubAllGlobals());
 describe("Telegram configuration", () => {
+  it("preserves an edited destination when leaving or reloading is cancelled", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ configurations: [configuration], botConfigured: true })));
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    render(<NotificationSettings />);
+    const input = await screen.findByLabelText("Telegram chat ID");
+    await userEvent.type(input, "-100123");
+    const leave = new Event("workspace-before-leave", { cancelable: true });
+    window.dispatchEvent(leave);
+    expect(leave.defaultPrevented).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: "Reload settings (discard unsaved edits)" }));
+    expect(screen.getByLabelText("Telegram chat ID")).toHaveValue("-100123");
+  });
   it("saves a numeric destination with its version without sending, then explicitly tests the saved version", async () => {
     const calls: { url: string; body: unknown; method: string | undefined }[] =
       [];

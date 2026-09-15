@@ -97,6 +97,24 @@ async function open() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("private draft editing and explicit sharing", () => {
+  it("preserves transcript text when draft URL selection props change", async () => {
+    setup(() => Response.json({ draft }));
+    const { rerender } = render(<TranscriptDraftWorkspace role="contractor" />);
+    await screen.findByRole("button", { name: "Review private draft" });
+    await userEvent.type(screen.getByLabelText("Meeting transcript"), "Private unsaved meeting notes");
+    rerender(<TranscriptDraftWorkspace role="contractor" selectedDraftId="draft-1" />);
+    await screen.findByLabelText("Proposal title");
+    expect(screen.getByLabelText("Meeting transcript")).toHaveValue("Private unsaved meeting notes");
+  });
+  it("directly loads a private draft and links its exact submitted request", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/ingestions/drafts") return Response.json({ drafts: [] });
+      if (url === "/api/requests/catalogue") return Response.json({ catalogue });
+      return Response.json({ draft: { ...draft, status: "submitted", submittedRequestId: "request-1" } });
+    }));
+    render(<TranscriptDraftWorkspace role="planner" selectedDraftId="draft-1" requestHref="/requests?planningNight=2026-09-16&plan=saved&planRequest=M-001" />);
+    expect(await screen.findByRole("link", { name: /Open submitted request/ })).toHaveAttribute("href", "/requests?planningNight=2026-09-16&plan=saved&planRequest=M-001&request=request-1");
+  });
   it("keeps unknowns null, saves a manual revision, then submits only the saved version", async () => {
     const calls: { url: string; body: Record<string, unknown> }[] = [];
     const submitted = vi.fn();
@@ -165,7 +183,7 @@ describe("private draft editing and explicit sharing", () => {
     await user.click(
       screen.getByRole("button", { name: "Submit proposal for review" }),
     );
-    await screen.findByText(/Submitted request: request-1/);
+    expect(await screen.findByRole("link", { name: /Open submitted request request-1/ })).toHaveAttribute("href", "/contractor?request=request-1");
     expect(calls[1].body).toEqual({
       expectedVersion: 2,
       reason: "Share for planner review",
@@ -299,7 +317,7 @@ describe("private draft editing and explicit sharing", () => {
   });
 });
 
-it("updates the shared request queue after submission while keeping an unrelated manual draft", async () => {
+it("guards unrelated manual work and hands a submitted proposal to its exact request", async () => {
   const { RequestWorkspaces } = await import(
     "@/components/requests/RequestWorkspaces"
   );
@@ -338,20 +356,29 @@ it("updates the shared request queue after submission while keeping an unrelated
         });
       if (url === "/api/requests/catalogue")
         return Response.json({ catalogue });
+      if (url.startsWith("/api/coordination"))
+        return Response.json({ cases: [], hasMore: false, nextCursor: null });
       if (url === "/api/requests" && !init?.method)
         return Response.json({ requests: [] });
+      if (url === "/api/requests/request-1") return Response.json({ request: sharedRequest });
       if (url === "/api/ingestions/drafts")
         return Response.json({ drafts: [draft] });
       return Response.json({ draft });
     }),
   );
-  render(<RequestWorkspaces role="contractor" />);
+  const manual = render(<RequestWorkspaces role="contractor" />);
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "New request" }));
   await user.type(
     screen.getByLabelText("Title"),
     "Unrelated unsaved manual work",
   );
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  await user.click(screen.getByRole("link", { name: "Private transcript drafts" }));
+  expect(screen.getByLabelText("Title")).toHaveValue("Unrelated unsaved manual work");
+  confirm.mockRestore();
+  manual.unmount();
+  const privateWorkspace = render(<RequestWorkspaces role="contractor" drafts />);
   await open();
   await user.type(
     screen.getByLabelText("Proposal decision reason"),
@@ -360,10 +387,8 @@ it("updates the shared request queue after submission while keeping an unrelated
   await user.click(
     screen.getByRole("button", { name: "Submit proposal for review" }),
   );
-  expect(
-    await screen.findByRole("button", { name: "Open Shared proposal" }),
-  ).toBeInTheDocument();
-  expect(screen.getByLabelText("Title")).toHaveValue(
-    "Unrelated unsaved manual work",
-  );
+  expect(await screen.findByRole("link", { name: "Open submitted request request-1" })).toHaveAttribute("href", "/contractor?request=request-1");
+  privateWorkspace.unmount();
+  render(<RequestWorkspaces role="contractor" selectedRequestId="request-1" />);
+  expect(await screen.findByLabelText("Title")).toHaveValue("Shared proposal");
 });

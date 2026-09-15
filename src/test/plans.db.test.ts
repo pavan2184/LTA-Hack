@@ -15,6 +15,7 @@ import {
   recordDecision,
 } from "@/lib/plans/service";
 import { PLANNING_NIGHT } from "@railplan/core/data/requests";
+import { getPlanExport } from "@/lib/exports/service";
 const sql = connect();
 const reachable = await sql`select 1`.then(
   () => true,
@@ -55,6 +56,39 @@ async function fixture(
 describe.skipIf(!reachable)(
   "durable plans under real authenticated SQL (rollback)",
   () => {
+    it("saves chosen pins as a new linked version and preserves them through publication and export", async () => {
+      await fixture(async (tx, planner, contractor) => {
+        const first = await createPlan(planner, input, tx);
+        const pin = { ...first.placements[0], locked: true };
+        const revision = { ...input, basedOnPlanId: first.id, locked: [pin] };
+        await expect(createPlan(contractor, revision, tx)).rejects.toMatchObject({ code: "forbidden" });
+        const next = await createPlan(planner, revision, tx);
+        expect(next.id).not.toBe(first.id);
+        expect(next.placements).toContainEqual(pin);
+        expect(await getPlan(planner, first.id, tx)).toEqual(first);
+        await publishPlan(planner, next.id, tx);
+        const exported = await getPlanExport(planner, next.id, tx);
+        expect(exported.parameters).toMatchObject({ basedOnPlanId: first.id, locked: [pin] });
+        expect(exported.assessment.publicationState).toBe("published");
+        expect(exported.placements.find(p => p.requestId === pin.requestId)).toMatchObject(pin);
+      });
+    });
+    it("rejects stale or superseded revision bases without creating another saved run", async () => {
+      await fixture(async (tx, planner) => {
+        const first = await createPlan(planner, input, tx);
+        await publishPlan(planner, first.id, tx);
+        const second = await createPlan(planner, input, tx);
+        await publishPlan(planner, second.id, tx);
+        const before = await listPlans(planner, PLANNING_NIGHT, tx);
+        await expect(createPlan(planner, { ...input, basedOnPlanId: first.id }, tx))
+          .rejects.toMatchObject({ code: "stale_plan" });
+        await tx`update public.workforce_availability set people_count=people_count+1
+          where planning_night=${PLANNING_NIGHT} and team_id='T-TRK'`;
+        await expect(createPlan(planner, { ...input, basedOnPlanId: second.id }, tx))
+          .rejects.toMatchObject({ code: "stale_plan" });
+        expect(await listPlans(planner, PLANNING_NIGHT, tx)).toEqual(before);
+      });
+    });
     it("never publishes a fresh plan that cannot staff mandatory work", async () => {
       await fixture(async (tx, planner) => {
         await withAuthenticatedTransaction(planner, async (db) => {

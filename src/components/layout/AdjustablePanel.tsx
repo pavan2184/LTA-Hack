@@ -13,6 +13,7 @@ export interface AdjustablePanelProps {
   preference: PanelPreference;
   onChange: (preference: PanelPreference, announcement: string) => void;
   children: ReactNode;
+  compact?: boolean;
 }
 export function AdjustablePanel({
   id,
@@ -21,6 +22,7 @@ export function AdjustablePanel({
   preference,
   onChange,
   children,
+  compact = false,
 }: AdjustablePanelProps) {
   const bodyId = useId();
   const limits = panelLimits[id];
@@ -31,6 +33,7 @@ export function AdjustablePanel({
   return (
     <section
       aria-label={`${title} panel`}
+      data-compact-panel={compact ? id : undefined}
       className="min-w-0 rounded border border-rule bg-surface"
     >
       <header className="flex flex-wrap items-center justify-between gap-1 border-b border-rule px-2 py-1.5">
@@ -61,14 +64,15 @@ export function AdjustablePanel({
           style={
             axis === "height"
               ? { height: preference.size }
-              : id === "queue"
+                : id === "queue" && !compact
                 ? { height: "max(420px, calc(100vh - 300px))" }
                 : undefined
           }
         >
           {children}
         </div>
-        <div className="space-y-1 border-t border-rule px-2 py-2">
+        <details open={compact ? undefined : true} className="panel-size-controls space-y-1 border-t border-rule px-2 py-2">
+          <summary className={compact ? "cursor-pointer text-xs text-accent" : "hidden"}>Adjust {id} width</summary>
           <label className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             {title} {axis}
             <input
@@ -107,7 +111,7 @@ export function AdjustablePanel({
               ? " Width applies when docked beside the timeline."
               : ""}
           </p>
-        </div>
+        </details>
       </div>
     </section>
   );

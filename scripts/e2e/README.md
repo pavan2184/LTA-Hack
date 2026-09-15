@@ -32,7 +32,7 @@ the new exact immutable request revisions and workforce demand.
 
 The server stops before cleanup even when an assertion fails. Cleanup selects
 exact newly provisioned UUIDs, locks affected tables, temporarily disables and
-restores all 13 immutable-history guards in one transaction, checks the guards,
+restores all 17 immutable-history guards in one transaction, checks the guards,
 and removes fixture users/organisations. Source revision advances monotonically;
 it is never reset to an older value. No transcript or credentials are written to
 disk. A mode-0600 temporary recovery manifest contains only user/organisation
@@ -41,6 +41,16 @@ if cleanup fails or the process is forcibly terminated. The original test error
 and cleanup failure are both retained. Stop other writers before recovering exact
 IDs with the same cleanup helper; never delete by broad email prefix or reset the
 database.
+
+The coordination journey uses its own unused future night and cloned anonymous
+workforce supply, plus two organisation-owned HTTP submissions. It checks complete
+impact, pending Apply, planner-recorded confirmation, scoped lists and guessed IDs,
+revision reset, exact replay, historical summaries, and publication despite unresolved
+confirmation. Provider counts remain zero for this journey. Cleanup removes the
+exact fixture coordination applications/events/participants/proposals/cases before
+plans and organisations, then deletes its owned night. The recovery manifest also
+records that owned night. Ordinary historical E2E still uses its original guarded
+baseline night. Both suites run serially, never beside other database tests.
 
 The default `npm test` excludes this suite. Provider isolation checks can run
 alone without starting a server or touching the database:

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { UserRole } from "@railplan/core/types/auth";
 import type {
   RequestApproval,
@@ -10,6 +11,9 @@ import type {
 } from "@railplan/core/types/requests";
 
 import { ProposalEvidence, ProposalHistory } from "./ProposalEvidence";
+import { useUnsavedChanges, writeSelection } from "@/lib/navigation/useUnsavedChanges";
+import { ClockTimeField, readableTime } from "./ClockTimeField";
+import { RequestStatusSummary } from "./RequestStatusSummary";
 
 type ApprovalForm = Omit<RequestApproval, "safetyConfirmed"> & {
   safetyConfirmed: boolean;
@@ -17,7 +21,7 @@ type ApprovalForm = Omit<RequestApproval, "safetyConfirmed"> & {
 const control =
   "w-full rounded border border-rule-strong bg-surface px-3 py-2 text-sm disabled:bg-sunk disabled:text-ink-700";
 const button =
-  "rounded border border-rule-strong px-3 py-2 text-sm hover:bg-sunk disabled:opacity-50";
+  "planner-button";
 const initialApproval: ApprovalForm = {
   teamId: "",
   priority: "medium",
@@ -72,10 +76,10 @@ async function api<T>(
     );
   return data as T;
 }
-function emptyFields(catalogue: RequestCatalogue): RequestFields {
-  const night = catalogue.nights[0];
+function emptyFields(catalogue: RequestCatalogue, planningNight?: string): RequestFields {
+  const night = planningNight ? catalogue.nights.find((n) => n.planningNight === planningNight) : catalogue.nights[0];
   return {
-    planningNight: night?.planningNight ?? "",
+    planningNight: night?.planningNight ?? planningNight ?? "",
     title: "",
     description: "",
     workClass: catalogue.workClasses[0],
@@ -92,13 +96,21 @@ function emptyFields(catalogue: RequestCatalogue): RequestFields {
   };
 }
 
-export function RequestIntakeWorkspace({
-  role,
-  incomingRequests = [],
-}: {
+type RequestIntakeProps = {
   role: UserRole;
   incomingRequests?: RequestSubmission[];
-}) {
+  planningNight?: string;
+  selectedRequestId?: string;
+};
+export function RequestIntakeWorkspace(props: RequestIntakeProps) {
+  return <RequestIntakeContent key={props.planningNight ?? "all"} {...props} />;
+}
+function RequestIntakeContent({
+  role,
+  incomingRequests = [],
+  planningNight,
+  selectedRequestId,
+}: RequestIntakeProps) {
   const [catalogue, setCatalogue] = useState<RequestCatalogue | null>(null);
   const [requests, setRequests] = useState<RequestSubmission[]>([]);
   const newerIncoming = incomingRequests.filter(
@@ -107,23 +119,45 @@ export function RequestIntakeWorkspace({
         (row) => row.id === incoming.id && row.version >= incoming.version,
       ),
   );
-  const visibleRequests = [
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [nightFilter, setNightFilter] = useState("");
+  const [organisationFilter, setOrganisationFilter] = useState("");
+  const loadedRequests = [
     ...newerIncoming,
     ...requests.filter(
       (row) => !newerIncoming.some((incoming) => incoming.id === row.id),
     ),
-  ];
+  ].filter((row) => !planningNight || row.fields.planningNight === planningNight);
+  const visibleRequests = loadedRequests.filter((row) =>
+    (statusFilter === "all" || (statusFilter === "action"
+      ? (role === "contractor" ? ["draft", "needs_info"].includes(row.status) : row.status === "submitted")
+      : row.status === statusFilter)) &&
+    (!nightFilter || row.fields.planningNight === nightFilter) &&
+    (!organisationFilter || row.organisationId === organisationFilter) &&
+    [row.id, row.fields.title, row.organisationName, ...row.fields.blockIds].join(" ").toLowerCase().includes(search.trim().toLowerCase()),
+  );
   const [selected, setSelected] = useState<RequestSubmission | null>(null);
   const [fields, setFields] = useState<RequestFields | null>(null);
   const [approval, setApproval] = useState<ApprovalForm>(initialApproval);
   const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(true);
+  const [dependenciesReviewed, setDependenciesReviewed] = useState(false);
+  const [publicationConfirmed, setPublicationConfirmed] = useState(false);
+  const [organisationId, setOrganisationId] = useState("");
+  const [working, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const busy = working || loading;
+  const [mutating, setMutating] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   const contractor = role === "contractor";
+  const baseline = useRef("");
+  const requestEpoch = useRef(0);
+  const dirty = fields !== null && JSON.stringify({ fields, approval, reason, organisationId }) !== baseline.current;
+  const mayLeave = useUnsavedChanges(dirty || mutating || dependenciesReviewed || publicationConfirmed);
+  const listUrl = planningNight ? `/api/requests?planningNight=${encodeURIComponent(planningNight)}` : "/api/requests";
   const editable =
-    contractor &&
     (!selected || ["draft", "needs_info"].includes(selected.status));
   const report = (cause: unknown) => {
     setError(
@@ -137,7 +171,7 @@ export function RequestIntakeWorkspace({
     let cancelled = false;
     Promise.all([
       api<{ catalogue: RequestCatalogue }>("/api/requests/catalogue"),
-      api<{ requests: RequestSubmission[] }>("/api/requests"),
+      api<{ requests: RequestSubmission[] }>(listUrl),
     ])
       .then(([c, r]) => {
         if (!cancelled) {
@@ -149,18 +183,62 @@ export function RequestIntakeWorkspace({
         if (!cancelled) report(cause);
       })
       .finally(() => {
-        if (!cancelled) setBusy(false);
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [listUrl]);
   function select(request: RequestSubmission) {
+    baseline.current = JSON.stringify({ fields: request.fields, approval: request.approval ?? initialApproval, reason: "", organisationId: request.organisationId });
+    setOrganisationId(request.organisationId);
     setSelected(request);
     setFields(request.fields);
     setApproval(request.approval ?? initialApproval);
     setReason("");
+    setDependenciesReviewed(false); setPublicationConfirmed(false);
+    writeSelection("request", request.id);
   }
+  function startNew(c: RequestCatalogue) {
+    const nextFields = emptyFields(c, planningNight);
+    baseline.current = JSON.stringify({ fields: nextFields, approval: initialApproval, reason: "", organisationId: "" });
+    setSelected(null);
+    setFields(nextFields);
+    setOrganisationId("");
+    setApproval(initialApproval);
+    setReason("");
+    setDependenciesReviewed(false); setPublicationConfirmed(false);
+    setError("");
+    setFieldErrors({});
+    setNotice("");
+    writeSelection("request", "new");
+  }
+  useEffect(() => {
+    let cancelled = false;
+    const load = (id: string | null) => {
+      const epoch = ++requestEpoch.current;
+      setMutating(false);
+      if (!id) { setSelected(null); setFields(null); setBusy(false); return; }
+      setBusy(true);
+      if (id === "new") {
+        api<{ catalogue: RequestCatalogue }>("/api/requests/catalogue")
+          .then(({ catalogue: c }) => { if (!cancelled && epoch === requestEpoch.current) startNew(c); })
+          .catch((cause) => { if (!cancelled && epoch === requestEpoch.current) { setSelected(null); setFields(null); report(cause); } })
+          .finally(() => { if (!cancelled && epoch === requestEpoch.current) setBusy(false); });
+        return;
+      }
+      api<{ request: RequestSubmission }>(`/api/requests/${encodeURIComponent(id)}`)
+        .then(({ request }) => { if (!cancelled && epoch === requestEpoch.current) select(request); })
+        .catch((cause) => { if (!cancelled && epoch === requestEpoch.current) { setSelected(null); setFields(null); report(cause); } })
+        .finally(() => { if (!cancelled && epoch === requestEpoch.current) setBusy(false); });
+    };
+    load(selectedRequestId ?? null);
+    const pop = () => load(new URLSearchParams(window.location.search).get("request"));
+    window.addEventListener("popstate", pop);
+    return () => { cancelled = true; window.removeEventListener("popstate", pop); };
+  // startNew uses only the night context; form edits must not rerun selection loading.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRequestId, planningNight]);
   function accept(request: RequestSubmission) {
     setRequests((current) => [
       request,
@@ -168,46 +246,66 @@ export function RequestIntakeWorkspace({
     ]);
     select(request);
   }
-  async function perform(work: () => Promise<void>) {
+  async function perform(work: () => Promise<void>, mutation = true) {
+    const epoch = requestEpoch.current;
     setBusy(true);
+    setMutating(mutation);
     setError("");
     setFieldErrors({});
     setNotice("");
     try {
       await work();
     } catch (cause) {
-      report(cause);
+      if (epoch === requestEpoch.current) report(cause);
     } finally {
-      setBusy(false);
+      if (epoch === requestEpoch.current) { setBusy(false); setMutating(false); }
     }
   }
   async function open(id: string) {
+    if (!mayLeave()) return;
+    const epoch = ++requestEpoch.current;
     await perform(async () => {
       const data = await api<{ request: RequestSubmission }>(
-        `/api/requests/${id}`,
+        `/api/requests/${encodeURIComponent(id)}`,
       );
-      select(data.request);
-    });
+      if (epoch === requestEpoch.current) select(data.request);
+    }, false);
   }
   async function refresh() {
+    if (!mayLeave()) return;
+    const epoch = ++requestEpoch.current;
     await perform(async () => {
       const [c, r] = await Promise.all([
         api<{ catalogue: RequestCatalogue }>("/api/requests/catalogue"),
-        api<{ requests: RequestSubmission[] }>("/api/requests"),
+        api<{ requests: RequestSubmission[] }>(listUrl),
       ]);
+      if (epoch !== requestEpoch.current) return;
       setCatalogue(c.catalogue);
       setRequests(r.requests);
-      setSelected(null);
-      setFields(null);
-    });
+      const id = selected?.id ?? selectedRequestId ?? new URLSearchParams(window.location.search).get("request");
+      if (id === "new") startNew(c.catalogue);
+      else if (id) {
+        const data = await api<{ request: RequestSubmission }>(`/api/requests/${encodeURIComponent(id)}`);
+        if (epoch === requestEpoch.current) select(data.request);
+      }
+    }, false);
   }
   async function save(): Promise<RequestSubmission> {
+    if (!contractor && !selected && !organisationId)
+      throw new IntakeError("Choose a contractor organisation.", { organisationId: "Choose a contractor organisation." });
+    const missingTimes = Object.fromEntries(
+      (["preferredStart", "earliestStart", "latestEnd"] as const)
+        .filter((key) => !Number.isFinite(fields?.[key]))
+        .map((key) => [key, "Enter a clock time before saving."]),
+    );
+    if (Object.keys(missingTimes).length) throw new IntakeError("Enter a clock time for each required time field.", missingTimes);
+    const epoch = requestEpoch.current;
     const data = await api<{ request: RequestSubmission }>(
       selected ? `/api/requests/${selected.id}` : "/api/requests",
-      selected ? { expectedVersion: selected.version, fields } : { fields },
+      selected ? { expectedVersion: selected.version, fields } : { fields, ...(!contractor ? { organisationId } : {}) },
       selected ? "PATCH" : "POST",
     );
-    accept(data.request);
+    if (epoch === requestEpoch.current) accept(data.request);
     return data.request;
   }
   async function action(
@@ -219,10 +317,14 @@ export function RequestIntakeWorkspace({
       | "approve"
       | "reject",
   ) {
+    const epoch = requestEpoch.current;
     await perform(async () => {
       // Submitting includes the current form, so unsaved corrections cannot be lost.
       const current = action === "submit" && editable ? await save() : selected;
       if (!current) throw new IntakeError("Save a draft first.");
+      const carry = action === "approve" && !current.activeApprovedRevision && current.carryForward?.requiresReview !== false ? current.carryForward : null;
+      if (carry && (!dependenciesReviewed || (carry.publication && !publicationConfirmed)))
+        throw new IntakeError("Review target-night dependencies and confirm any published-source retirement before approval.");
       const data = await api<{ request: RequestSubmission }>(
         `/api/requests/${current.id}/actions`,
         {
@@ -230,10 +332,13 @@ export function RequestIntakeWorkspace({
           action,
           reason,
           ...(action === "approve" ? { approval } : {}),
+          ...(carry ? { carryForward: { expectedWorkVersion: carry.expectedWorkVersion, dependenciesReviewed: true, ...(carry.publication ? { publication: carry.publication } : {}) } } : {}),
         },
       );
-      accept(data.request);
-      setNotice(`Request is now ${labelStatus(data.request.status)}.`);
+      if (epoch === requestEpoch.current) {
+        accept(data.request);
+        setNotice(`Request is now ${labelStatus(data.request.status)}.`);
+      }
     });
   }
   const field = (
@@ -294,28 +399,25 @@ export function RequestIntakeWorkspace({
   }
   return (
     <section className="space-y-5" aria-label="Maintenance request intake">
+      {planningNight && <p className="text-sm">Requests for engineering night {planningNight}. <Link className="underline" href="/requests">Clear night filter</Link></p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-2xl text-sm text-ink-700">
           {contractor
             ? "Propose maintenance work for your organisation. A planner reviews scheduling and safety fields before approval."
-            : "Review submitted work and confirm the scheduling fields before approval. Approval adds an immutable revision to planning inputs."}
+            : "Create work for a contractor organisation or review submitted requests. Only approval adds a revision to planning inputs; saving or submitting does not schedule work."}
         </p>
         <div className="flex gap-2">
           <button className={button} disabled={busy} onClick={refresh}>
             Refresh requests
           </button>
-          {contractor && (
+          {(
             <button
               className={button}
               disabled={busy || !catalogue?.nights.length}
               onClick={() => {
-                setSelected(null);
-                setFields(emptyFields(catalogue!));
-                setApproval(initialApproval);
-                setError("");
-                setFieldErrors({});
-                setNotice("");
-                setReason("");
+                if (!mayLeave()) return;
+                ++requestEpoch.current;
+                startNew(catalogue!);
               }}
             >
               New request
@@ -350,8 +452,33 @@ export function RequestIntakeWorkspace({
       )}
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside aria-label="Your requests" className="min-w-0 space-y-2">
+          <label className="block text-sm">Search request inbox
+            <input type="search" className={control} value={search} placeholder="Title, ID, block or organisation" onChange={(event) => setSearch(event.target.value)} />
+          </label>
+          <label className="block text-sm">Request status
+            <select className={control} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="all">All statuses</option><option value="action">Needs your action</option>
+              <option value="submitted">Awaiting review</option><option value="needs_info">Changes requested</option>
+              <option value="draft">Draft</option><option value="approved">Approved</option>
+              <option value="rejected">Rejected</option><option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+          {!planningNight && <label className="block text-sm">Filter by night
+            <select className={control} value={nightFilter} onChange={(event) => setNightFilter(event.target.value)}>
+              <option value="">All loaded nights</option>
+              {[...new Set(loadedRequests.map((row) => row.fields.planningNight))].sort().map((night) => <option key={night}>{night}</option>)}
+            </select>
+          </label>}
+          {!contractor && <label className="block text-sm">Filter by organisation
+            <select className={control} value={organisationFilter} onChange={(event) => setOrganisationFilter(event.target.value)}>
+              <option value="">All loaded organisations</option>
+              {[...new Map(loadedRequests.map((row) => [row.organisationId, row.organisationName])).entries()].map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
+          </label>}
+          <p className="text-xs text-ink-500" aria-live="polite">Showing {visibleRequests.length} of {loadedRequests.length} loaded requests. The inbox loads up to 100 recent records.</p>
+          {(search || statusFilter !== "all" || nightFilter || organisationFilter) && <button className={button} onClick={() => { setSearch(""); setStatusFilter("all"); setNightFilter(""); setOrganisationFilter(""); }}>Clear filters</button>}
           {!busy && !visibleRequests.length && (
-            <p className="text-sm text-ink-500">No requests yet.</p>
+            <p className="text-sm text-ink-500">{loadedRequests.length ? "No requests match these filters." : "No requests yet."}</p>
           )}
           {visibleRequests.map((request) => (
             <button
@@ -388,27 +515,24 @@ export function RequestIntakeWorkspace({
                   {labelStatus(selected.status)} · Version {selected.version}
                 </p>
               )}
-              {selected?.activeApprovedRevision !== null &&
-                selected?.activeApprovedRevision !== undefined && (
-                  <p className="mt-2 text-sm">
-                    Approved revision {selected.activeApprovedRevision} remains
-                    the planning input until it is replaced or cancelled.
-                  </p>
-                )}
-              {selected?.scheduled && (
-                <p className="mt-2 text-sm">
-                  Scheduled in published plan {selected.scheduled.planId}:{" "}
-                  {clock(selected.scheduled.startMinute)}–
-                  {clock(selected.scheduled.endMinute)} (revision{" "}
-                  {selected.scheduled.revision}).
-                </p>
-              )}
+              {selected && <RequestStatusSummary request={selected} role={role} />}
+              {selected && !visibleRequests.some((row) => row.id === selected.id) && <p className="text-sm text-ink-500">The selected request is outside this inbox view. Its details and any edits remain open.</p>}
             </header>
             <fieldset
               disabled={busy || !editable}
               className="min-w-0 space-y-4"
             >
               <legend className="mb-3 font-semibold">Proposed work</legend>
+              {!contractor && !selected && <label className="block text-sm">
+                Contractor organisation
+                <select {...errorAttributes("organisationId", "Contractor organisation")} className={`${control} mt-1`} value={organisationId} onChange={(event) => setOrganisationId(event.target.value)}>
+                  <option value="">Choose an organisation</option>
+                  {catalogue.organisations?.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
+                </select>
+                {errorFor("organisationId")}
+                <span className="mt-1 block text-xs text-ink-500">Saved drafts are shared with this organisation. Submit for review, then approve before scheduling.</span>
+              </label>}
+              {selected && <p className="text-sm">Contractor organisation: {selected.organisationName}</p>}
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-sm">
                   Planning night
@@ -418,6 +542,7 @@ export function RequestIntakeWorkspace({
                     value={fields.planningNight}
                     onChange={(e) => field("planningNight", e.target.value)}
                   >
+                    {!catalogue.nights.some((n) => n.planningNight === fields.planningNight) && <option value={fields.planningNight}>{fields.planningNight} · unavailable</option>}
                     {catalogue.nights.map((n) => (
                       <option key={n.planningNight} value={n.planningNight}>
                         {n.planningNight} · {clock(n.startMinute)}–
@@ -493,14 +618,16 @@ export function RequestIntakeWorkspace({
                 {errorFor("blockIds")}
               </fieldset>
               <p className="text-xs text-ink-500">
-                Times below are minutes after midnight on the planning night: 60
-                = 01:00, 240 = 04:00.
+                Enter clock times (HH:MM) relative to planning date {fields.planningNight} in SGT.
+                Choose “Next day” only when the time falls after that date.
               </p>
               <div className="grid gap-4 sm:grid-cols-3">
-                {input("Preferred start (minutes)", "preferredStart")}
-                {input("Earliest start (minutes)", "earliestStart")}
-                {input("Latest end (minutes)", "latestEnd")}
+                {([ ["Preferred start", "preferredStart"], ["Earliest start", "earliestStart"], ["Latest end", "latestEnd"] ] as const).map(([label, key]) => <div key={key}>
+                  <ClockTimeField label={label} value={fields[key]} onChange={(value) => field(key, value ?? Number.NaN)} invalid={errorsFor(key).length > 0} describedBy={errorsFor(key).length ? errorId(key) : undefined} />
+                  {errorFor(key)}
+                </div>)}
               </div>
+              <p className="text-sm text-ink-700">Preferred {readableTime(fields.preferredStart)}–{readableTime(fields.preferredStart + fields.durationMinutes)} · Flexible between {readableTime(fields.earliestStart)} and {readableTime(fields.latestEnd)}.</p>
               <fieldset
                 {...errorAttributes("equipment")}
                 className="min-w-0 rounded border border-rule p-3"
@@ -589,7 +716,7 @@ export function RequestIntakeWorkspace({
                   Save draft
                 </button>
                 <button
-                  className={button}
+                  className={`${button} primary`}
                   disabled={busy}
                   onClick={() => action("submit")}
                 >
@@ -597,6 +724,21 @@ export function RequestIntakeWorkspace({
                 </button>
               </div>
             )}
+            {selected?.carryForward && <section className="space-y-3 border-t border-rule pt-4" aria-label="Carry-forward review">
+              <h3 className="font-semibold">Carry-forward review</h3>
+              <p>Linked work from {selected.carryForward.sourceNight} for review on {selected.carryForward.targetNight}. Approval and publication are separate steps.</p>
+              {!contractor && <>
+                <p>Original dependencies require a target-night decision. Remove or replace incompatible references using the normal planner fields below.</p>
+                {selected.carryForward.originalDependencies?.length ? <ul>{selected.carryForward.originalDependencies.map(id => <li key={id}>{id}</li>)}</ul> : <p>No original dependencies.</p>}
+                {selected.status === "submitted" && !selected.activeApprovedRevision && selected.carryForward.requiresReview !== false && <>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={dependenciesReviewed} onChange={event => setDependenciesReviewed(event.target.checked)} />I reviewed and resolved target-night dependencies</label>
+                  {selected.carryForward.publication && <>
+                    <p>This approval retires work in published plan <a className="planner-link" href={`/plans?plan=${selected.carryForward.publication.planId}`}>{selected.carryForward.publication.planId}</a>{selected.carryForward.publication.submissionRevision ? `, request revision ${selected.carryForward.publication.submissionRevision}` : " (operator-seeded version)"}. Historical plan facts remain unchanged.</p>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={publicationConfirmed} onChange={event => setPublicationConfirmed(event.target.checked)} />I confirm retirement of this exact published source</label>
+                  </>}
+                </>}
+              </>}
+            </section>}
             {selected?.proposalSource && (
               <section
                 aria-label="Submitted proposal provenance"
@@ -823,7 +965,7 @@ export function RequestIntakeWorkspace({
                   {!contractor && selected.status === "submitted" && (
                     <>
                       <button
-                        className={button}
+                        className={`${button} primary`}
                         disabled={
                           busy ||
                           !approval.teamId ||

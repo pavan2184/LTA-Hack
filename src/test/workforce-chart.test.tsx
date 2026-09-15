@@ -93,6 +93,21 @@ async function values() {
   return screen.getByRole("table", { name: "Workforce interval values" });
 }
 describe("workforce chart", () => {
+  it("collapses workforce by default and retains filters across keyboard expansion", async () => {
+    render(<WorkforceChart {...fixture()} compact onSelectRequest={vi.fn()} />);
+    expect(screen.queryByRole("img", { name: /Workforce overview/ })).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "Workforce availability" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    toggle.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByLabelText("Workforce team")).toBeVisible();
+    await userEvent.selectOptions(screen.getByLabelText("Workforce team"), "T-B");
+    await userEvent.click(toggle);
+    expect(screen.getByLabelText("Workforce team")).not.toBeVisible();
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(toggle);
+    expect(screen.getByLabelText("Workforce team")).toHaveValue("T-B");
+  });
   it("shows exact demand, supply, signed remaining and textual shortages without aggregating pairs", async () => {
     render(<WorkforceChart {...fixture()} onSelectRequest={vi.fn()} />);
     expect(screen.getByLabelText("Workforce team")).toHaveValue("T-A");

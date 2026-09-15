@@ -1,4 +1,5 @@
 import type { TransactionSql } from "postgres";
+import type { Actor } from "@railplan/core/types/auth";
 import type { Sql } from "@/lib/db/client";
 import type {
   RequestCatalogue,
@@ -14,6 +15,7 @@ import {
   type VerifiedIdentity,
 } from "@/lib/auth/session";
 import { requireAction } from "@/lib/auth/permissions";
+import { planningNightSchema } from "@/lib/plans/schemas";
 import {
   createRequestSchema,
   updateRequestSchema,
@@ -38,14 +40,14 @@ export class RequestError extends Error {
 type Connection = Sql | TransactionSql;
 async function transaction<T>(
   identity: VerifiedIdentity,
-  work: (tx: TransactionSql) => Promise<T>,
+  work: (tx: TransactionSql, actor: Actor) => Promise<T>,
   connection?: Connection,
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       return await withAuthenticatedTransaction(
         identity,
-        (tx) => work(tx),
+        (tx, actor) => work(tx, actor),
         connection,
         "repeatable read",
       );
@@ -117,6 +119,9 @@ async function read(
       >`select source from railplan_private.request_proposal_sources where submission_id=${id}`
     : [];
   const current = rows.find((r) => r.version === s.version)!;
+  const carryRows = includeSource
+    ? await tx<{ source: RequestSubmission["carryForward"] }[]>`select railplan_private.read_carry_forward(${id}::uuid) as source`
+    : [];
   const revisions: RequestRevision[] = rows.map((r) => ({
     version: r.version,
     status: r.status,
@@ -136,6 +141,7 @@ async function read(
   return {
     ...s,
     ...(includeSource ? { proposalSource: sourceRows[0]?.source ?? null } : {}),
+    ...(includeSource ? { carryForward: carryRows[0]?.source ?? null } : {}),
     status: current.status,
     fields: current.fields,
     approval: current.approval,
@@ -155,7 +161,9 @@ export async function getRequest(
 export async function listRequests(
   identity: VerifiedIdentity,
   connection?: Connection,
+  planningNight?: string,
 ) {
+  if (planningNight !== undefined) planningNightSchema.parse(planningNight);
   return transaction(
     identity,
     async (tx) => {
@@ -163,7 +171,10 @@ export async function listRequests(
         {
           id: string;
         }[]
-      >`select id from railplan_private.request_submissions order by updated_at desc,id desc limit 100`;
+      >`select s.id from railplan_private.request_submissions s
+        join railplan_private.request_revisions r on r.submission_id=s.id and r.version=s.current_version
+        where (${planningNight ?? null}::text is null or r.fields->>'planningNight'=${planningNight ?? null})
+        order by s.updated_at desc,s.id desc limit 100`;
       const result: RequestSubmission[] = [];
       for (const row of rows) result.push(await read(tx, row.id, false));
       return result;
@@ -179,6 +190,7 @@ async function mutate(
   fields: RequestFields | null,
   approval: RequestApproval | null,
   reason: string,
+  organisationId?: string,
 ) {
   if (fields) {
     const errors = validateFields(fields, await catalogue(tx), false);
@@ -189,7 +201,7 @@ async function mutate(
         errors,
       );
   }
-  const [row] = await tx<
+  const [row] = await (organisationId === undefined ? tx<
     {
       result: {
         id?: string;
@@ -197,7 +209,8 @@ async function mutate(
         fieldErrors?: Record<string, string>;
       };
     }[]
-  >`select railplan_private.mutate_request(${id}::uuid,${version}::integer,${operation},${tx.json(fields as never)},${tx.json(approval as never)},${reason}) as result`;
+  >`select railplan_private.mutate_request(${id}::uuid,${version}::integer,${operation},${tx.json(fields as never)},${tx.json(approval as never)},${reason}) as result`
+    : tx<{ result: { id?: string; code?: RequestError["code"]; fieldErrors?: Record<string, string> } }[]>`select railplan_private.create_planner_request(${organisationId}::uuid,${tx.json(fields as never)}) as result`);
   if (row.result.code)
     throw new RequestError(
       row.result.code,
@@ -218,13 +231,20 @@ export async function createRequest(
   identity: VerifiedIdentity,
   raw: {
     fields: RequestFields;
+    organisationId?: string;
   },
   connection?: Connection,
 ) {
   const input = createRequestSchema.parse(raw);
   return transaction(
     identity,
-    (tx) => mutate(tx, null, null, "create", input.fields, null, ""),
+    (tx, actor) => {
+      if (actor.role === "contractor" && input.organisationId !== undefined)
+        throw new RequestError("forbidden", "Contractors cannot choose another organisation.");
+      if (actor.role === "planner" && !input.organisationId)
+        throw new RequestError("invalid_request", "Choose a contractor organisation.", { organisationId: "Choose a contractor organisation." });
+      return mutate(tx, null, null, "create", input.fields, null, "", input.organisationId);
+    },
     connection,
   );
 }
@@ -269,7 +289,7 @@ export async function actOnRequest(
         input.expectedVersion,
         input.action,
         null,
-        input.approval ?? null,
+        input.approval ? { ...input.approval, ...(input.carryForward ? { carryForward: input.carryForward } : {}) } : null,
         input.reason,
       );
     },

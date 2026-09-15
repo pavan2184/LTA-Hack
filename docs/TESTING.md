@@ -1,8 +1,188 @@
 # Testing Plan
 
+## Reviewed carry-forward verification — 2026-09-15
+
+Task 3 review correction adds source revision3 → prepare target → same-night source
+reapproval6 → old target conflict → fresh same-target draft → successful approval.
+Assertions retain the original preparation byte-for-byte, original-key retry ID,
+seeded-null dedupe and one active occurrence. The real-session double-preparation
+race repeats after source reapproval and requires one new shared target identity.
+Both tests reproduced the stale-ID failure before the additive SQL correction;
+fix-specific outputs are appended to the Task 3 report:24/24 related DB tests in
+47.65s,13/13 independent races in69.69s, lint/typecheck and22-request parity passed.
+The controller owns the fresh full-suite gate after the review correction.
+
+Real rollback coverage includes inert/duplicate draft preparation, explicit seeded
+organisation, configured later-night bounds (including historical dates), target
+window/dependency validation, active inbound retirement guards, exact/stale source
+publication confirmation, immutable seed/snapshots, source revision invalidation,
+contractor allowlists and direct-function/RLS denial. Normal mapped reapproval,
+cancellation/latest restoration and original cancelled-source compatibility are
+covered; direct same-submission cross-night approval and old retired duplicates
+are rejected.
+
+Four independent-session races exercise double preparation, two target approvals,
+approval against publication, and publication retry. The new race helper counts
+only its exact distinct backend PIDs waiting on the source lock. Committed fixtures
+use dedicated Dev, isolated IDs/nights and exact cleanup with 21 history guards.
+Run DB/concurrency/HTTP/browser work serially. Review preimages use `.snapshot`
+suffixes so Vitest cannot discover old tests as executable verification inputs.
+
+Fresh integrated `npm test`: 774/774 across 93 files (190.02s). Fresh lint,
+typecheck and production build passed. Required DB rollback: 84/84 across 14 files
+(94.46s), with baseline parity `fnv1a:8c4a9050cfea5e8b` / 22 requests. Final
+concurrency: 13/13 (five files, 59.59s). Authenticated HTTP: 6/6 (two files, 62.65s).
+Real browser verified exact published-source review, target approval/generation,
+pending-coordination Apply/publication, scheduled backlog, failed-refresh recovery,
+history/reload, keyboard focus and 390px mobile layout plus contractor scoping.
+Fixture cleanup verified 21 guards and unchanged baseline parity. VoiceOver/full
+manual accessibility and 1440/1920px sweeps were not rerun in Task 3. Detailed
+outputs, screenshots and initial failures are in PROJECT_STATUS and Task 3 report.
+
+## Deferred-work persistence verification — 2026-09-15
+
+The new pure suite covers distinct-night corrections, SGT calendar-date overdue
+boundaries, scheduled-but-unresolved state, missing data and bounded commands.
+Rollback DB checks cover inert drafts, exact saved-deferral validation, replay
+identity/conflicts, automatic publication and same-night correction/removal,
+historical-record precedence, trusted assignment, lifecycle reasons, source-inert
+metadata, bounded catalogues/cursors, linked UUID identity and actor retention.
+Contractor tests invoke the granted SQL read function directly and verify its
+allowlist, operator/foreign denial, raw-table RLS and immutable history guards.
+
+Observed gates: 5 pure + 4 HTTP tests, 7 real rollback DB tests; the initial focused
+publication/outbox bundle passed 29 tests before the two extra DB cases were added.
+All 9 existing independent-session concurrency checks pass. Fixture cleanup now
+includes the three new history guards and exact owned backlog foreign keys before
+plan/request deletion; all 20 history guards are restored. Baseline read-back parity
+remains fnv1a:8c4a9050cfea5e8b (22 requests). Typecheck and scoped lint pass.
+
+Supabase security advisors was attempted but the connector denied project access.
+Read-only SQL inspection instead verified new-table RLS, no direct authenticated
+writes, fixed helper search paths and revoked anonymous/internal EXECUTE grants.
+This is not a claim that hosted advisors passed. Carry-forward concurrency and
+new backlog browser/production-HTTP journeys belong to their subsequent tasks.
+
+Task 1 review fix regression extends complete publication omission with a fresh-key
+historical record. RED observed open/count1 instead of open/count0; after additive
+SQL correction, all 22 deferred/plans/outbox DB regressions pass and the new note
+survives. Baseline parity and 20/20 enabled history guards were rechecked afterward.
+
+## Coordination verification — 2026-09-15
+
+`test:db` now includes the five rollback coordination cases. The required serial
+gate first verifies the unchanged 22-request baseline, then runs 70 rollback/
+integration checks, followed by independent-session concurrency tests.
+The completed serial DB gate passed all 70 integration and 9 concurrency tests.
+`scripts/db/coordination-concurrency.test.ts` observes distinct PostgreSQL backends
+waiting on source/case locks before releasing them. Five cases cover revision
+versus approval, double Apply with identical and different retry keys, workforce
+fact mutation before Apply, and mutation waiting behind Apply. Assertions require
+one linked plan, exact reviewed confirmation revision, zero stale application and
+refusal to publish a draft whose source changes afterward.
+
+The production HTTP suite adds an isolated two-organisation coordination journey:
+complete full-plan changes, pending Apply, recorded approval, own-only list/detail,
+guessed foreign UUID denial, planner-note exclusion, contractor change requests,
+revision reset, historical applied-plan summaries, retry identity, close and
+non-blocking publication. Its provider counters remain zero; the existing separate
+controlled Anthropic/Telegram journey remains intact. The suite has five tests
+including three provider-policy checks. Cleanup checks exact users, organisations,
+requests, cases, plans and owned night are absent, with all 17 history guards on.
+
+Regressions reproduced and fixed owner/deadline-only unsaved exits and omitted
+contractor case URL context. Final affected UI/navigation coverage passes 62 tests
+in eight files. Browser checks cover actual keyboard creation/Apply/confirmation,
+Escape focus return, own/foreign contractor case reload, signed-out return context,
+native unsaved-owner Back Cancel/Accept, revision reset, historical summary and
+publication review, 1440px desktop and 390px mobile without horizontal overflow.
+Browser console/page errors were empty. No screen-reader, genuine token-expiry
+wait, live provider send or deployment is claimed by this coordination run.
+
+Sandbox timeline drag regressions: real-store previews remain nonmutating, Apply
+uses independently validated solver output, Undo restores exact result/pins and
+stale actions cannot overwrite a changed strategy/disruption. Guards cover grid,
+handback, pins and forced emergency work. Component tests exercise pointer snapping,
+linked bars, Escape, keyboard proposals, Apply/Cancel and Undo. Existing saved-panel
+tests retain selection-only behavior. Browser checks exercise a real pointer drag,
+preview, Apply and Undo with runtime-console inspection.
+
+Planner manual creation coverage (2026-09-15): request-intake tests exercise
+`request=new`, linked-night defaults, organisation validation, unsaved organisation
+protection and submit-to-exact-request selection. Saved-plan and return-path tests
+cover Add request context and safe login restoration. Authenticated rollback SQL
+tests cover planner attribution, shared organisation visibility, cross-org denial,
+contractor override rejection, missing/unknown organisations, anonymous denial and
+fixed function search path. The production HTTP journey also creates and submits
+a planner request and checks the contractor boundary without approving that draft.
+
+Shared sandbox component regressions exercise deferred/mandatory filtering through
+the real planner queue, selection into the sandbox inspector, and emergency bars
+appearing before replanning and disappearing after clear. Existing saved inspector
+and timeline tests cover the other consumer of shared presentation. Browser checks
+must compare the actual queue/timeline/inspector, not merely colours or headings.
+
+Sandbox visual-alignment regression checks the generated draft's deferred count
+and calculation disclosure, the “Generate draft schedule” action, and the absence
+of publication controls. Browser checks cover four summary columns on desktop,
+stacked mobile controls, white surfaces, timeline/header tab separation and
+keyboard expansion of the workforce section.
+
+Workforce disclosure regressions cover collapsed-by-default chart visibility,
+keyboard activation, aria-expanded, retained team filters across close/reopen and
+sandbox tab switches. Browser checks must additionally confirm that collapsed
+context panels release their reserved height back to the timeline in both views.
+
+## Request UX priority regressions — 2026-09-15
+
+Clock input tests cover explicit next-day roundtrips, unknown versus midnight,
+integer-minute save payloads and blocking cleared required fields. Inbox tests
+cover role-specific action filtering, search/clear recovery and preservation of
+the selected detail while hidden by filters. Status tests distinguish corrections
+to a new revision from an older published slot and retain planner-only plan links.
+Browser checks with an empty live inbox do not substitute for populated form or
+contractor submission UAT; these remain separate from component coverage.
+
+## Site-wide navigation regressions — 2026-09-15
+
+After deployment, inspect computed body background and primary-button gradient in
+the live browser. New headings alone do not prove the current stylesheet shipped:
+the 2026-09-15 cached build served an old beige theme until a no-cache rebuild.
+
+Home regressions cover planner/contractor action boundaries, access-pending users,
+shared Home navigation and night/version/request handoffs with arbitrary query
+content excluded. Desktop/mobile checks cover the six-step guide and draft link.
+
+Coverage includes shared planner/contractor navigation, selected-night/version
+retention through sandbox and history, exact request and private-draft deep links,
+late selection responses, submission-to-intake and saved-plan-to-intake handoffs,
+scoped published-plan links, empty/missing records, unsaved form/review/transcript/
+notification state, pre-traversal Back cancellation, approved traversal without
+duplicate prompts, older-browser popstate fallback and logout protection. Login tests verify
+role-resolved destinations, failure-context retention and rejection of external,
+encoded, malformed or non-workspace redirects. Proxy tests include new child routes.
+
+Compact context panels retain workforce filters when switching to geography.
+Existing engine-driven sandbox repair, pinning, emergency, disruption and staffing
+regressions remain in the full suite. Browser release checks cover white/blue
+computed colours, responsive overflow, direct route reload, link handoffs, keyboard
+focus, dirty Back and both roles. Controlled-provider production HTTP E2E remains
+separate from live provider delivery and visual/browser verification.
+
 Last updated: 2026-09-07 · RailPlan v0.4.0
 
 ## Automated coverage
+
+Connected workspace regressions (2026-09-14) cover queue search/counts, clearance
+lanes, deferred exclusion, inspector selection races, preview/save separation,
+dirty navigation, publication gating and same-night version comparisons. Migrated
+saved journey/export/notification tests retain their original persistence and
+delivery assertions. `planner-analysis.db.test.ts` is included in the required
+database gate: rollback checks verify exact counts beyond 100 submissions, cursor
+ties, a current publication older than the first page, unchanged source revision
+and lock generation, planner RLS and guarded saves. Analysis route tests cover
+strict bodies, origin/auth order and sanitized errors. Existing engine and
+two-role production HTTP E2E suites remain unchanged.
 
 Vitest runs pure engine tests in `packages/core/src/test` and application tests
 in `src/test`. Coverage includes interval boundaries, topology and adjacency,

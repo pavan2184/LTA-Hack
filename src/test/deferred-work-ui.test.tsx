@@ -83,6 +83,61 @@ it("preserves metadata after mutation errors and cancelled navigation", async ()
   expect(screen.getByLabelText("Work owner")).toHaveValue(secondOwner);
 });
 
+it("exposes lifecycle conflict feedback inside the dialog and reloads without losing its reason", async () => {
+  const user = userEvent.setup();
+  const commands: Record<string, unknown>[] = [];
+  let releaseFailure: ((response: Response) => void) | undefined;
+  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.endsWith("/actions")) {
+      commands.push(JSON.parse(String(init?.body)));
+      if (commands.length === 1) return new Promise<Response>(resolve => { releaseFailure = resolve; });
+      return Response.json({ workItem: item({ version: 9, state: "completed" }) });
+    }
+    if (url === `/api/deferred-work/${id}`) return Response.json({ workItem: item({ version: commands.length ? 8 : 7, state: commands.length ? "scheduled" : "open" }) });
+    return Response.json(page());
+  }));
+  render(<DeferredWorkWorkspace role="planner" />);
+  await user.click(await screen.findByRole("button", { name: "Mark completed" }));
+  const dialog = screen.getByRole("dialog");
+  await user.type(within(dialog).getByLabelText("Reason"), "Inspection confirmed on site");
+  await user.click(within(dialog).getByRole("button", { name: "Save action" }));
+  expect(within(dialog).getByRole("status")).toHaveTextContent("Saving work item");
+  await act(async () => releaseFailure!(Response.json({ error: { message: "This work item changed. Reload before trying again." } }, { status: 409 })));
+  expect(within(dialog).getByRole("alert")).toHaveTextContent("This work item changed");
+  expect(within(dialog).getByLabelText("Reason")).toHaveValue("Inspection confirmed on site");
+  await user.click(within(dialog).getByRole("button", { name: "Reload current work" }));
+  await waitFor(() => expect(within(dialog).getByRole("status")).toHaveTextContent("scheduled · Version 8"));
+  expect(within(dialog).getByLabelText("Reason")).toHaveValue("Inspection confirmed on site");
+  expect(commands).toHaveLength(1);
+  await user.click(within(dialog).getByRole("button", { name: "Save action" }));
+  await waitFor(() => expect(commands[1]).toEqual({ action: "complete", expectedVersion: 8, note: "Inspection confirmed on site" }));
+  expect(await screen.findByText(/Saved work item/)).toBeVisible();
+});
+
+it("keeps failed lifecycle recovery accessible and retains the reason until discard is confirmed", async () => {
+  const user = userEvent.setup();
+  let savingAttempted = false;
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (url.endsWith("/actions")) { savingAttempted = true; return Response.json({ error: { message: "Work action unavailable" } }, { status: 503 }); }
+    if (savingAttempted) return Response.json({ error: { message: "Work reload unavailable" } }, { status: 503 });
+    return Response.json(url === `/api/deferred-work/${id}` ? { workItem: item() } : page());
+  }));
+  render(<DeferredWorkWorkspace role="planner" />);
+  await user.click(await screen.findByRole("button", { name: "Escalate work" }));
+  const dialog = screen.getByRole("dialog");
+  await user.type(within(dialog).getByLabelText("Reason"), "Needs planner attention");
+  await user.click(within(dialog).getByRole("button", { name: "Save action" }));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("Work action unavailable");
+  await user.click(within(dialog).getByRole("button", { name: "Reload current work" }));
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("Work reload unavailable");
+  expect(within(dialog).getByLabelText("Reason")).toHaveValue("Needs planner attention");
+  await user.keyboard("{Escape}");
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(within(dialog).getByLabelText("Reason")).toHaveValue("Needs planner attention");
+});
+
 it("uses applied overdue and repeated filters for subsequent cursor pages", async () => {
   const user = userEvent.setup();
   const queries: string[] = [];

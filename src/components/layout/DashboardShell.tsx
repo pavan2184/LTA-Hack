@@ -5,12 +5,11 @@ import { useState } from "react";
 import { PlannerAssistant } from "@/components/assistant/PlannerAssistant";
 import { PlanToolbar } from "@/components/controls/PlanToolbar";
 import { DisruptionDialog } from "@/components/disruption/DisruptionDialog";
-import { RequestInspector } from "@/components/insights/RequestInspector";
+import { SandboxRequestInspector } from "./SandboxRequestInspector";
 import { ViolationPanel } from "@/components/insights/ViolationPanel";
 import { PlanningPanels } from "@/components/layout/PlanningPanels";
 import { SolverBar } from "@/components/layout/SolverBar";
-import { RequestQueue } from "@/components/requests/RequestQueue";
-import { BlockTimeline } from "@/components/schedule/BlockTimeline";
+import { SandboxPlannerPanel } from "./SandboxPlannerPanels";
 import { WorkforceTimeline } from "@/components/schedule/WorkforceTimeline";
 import { GeographicNetworkView } from "@/components/network/GeographicNetworkView";
 import { Figure } from "@/components/shared/Figure";
@@ -19,7 +18,7 @@ import { disruptionById } from "@railplan/core/data/disruptions";
 import { PLANNING_NIGHT, requestById, requests, SLOT_MINUTES, WINDOW_END } from "@railplan/core/data/requests";
 import { trackBlocks } from "@railplan/core/domain/network";
 import { formatClock } from "@railplan/core/engine/intervals";
-import { plannerTimeSavedMetric } from "@railplan/core/engine/metrics";
+import { conflictsMetric } from "@railplan/core/engine/metrics";
 import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
 
@@ -28,7 +27,7 @@ export function DashboardShell() {
   const stage = useRailPlanStore((state) => state.stage);
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="sandbox-shell planner-shell">
       <TopBar />
       {loaded ? <Workspace /> : <Landing />}
       {stage !== "idle" && <SolveOverlay />}
@@ -41,11 +40,11 @@ function TopBar() {
   const reset = useRailPlanStore((state) => state.reset);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-rule-strong bg-surface">
-      <div className="mx-auto flex h-11 max-w-[1720px] items-center gap-4 px-4">
+    <div className="sandbox-heading">
+      <div className="flex flex-wrap w-full items-center gap-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-[14px] font-semibold tracking-tight text-ink-900">RailPlan</span>
-          <span className="text-[11px] text-ink-500">Overnight engineering planning</span>
+          {loaded ? <h1 className="text-[29px] font-semibold tracking-tight text-ink-900">Demo sandbox</h1> : <span className="text-xl font-semibold tracking-tight text-ink-900">Demo sandbox</span>}
+          <span className="max-w-lg text-sm text-ink-500">Practise scheduling, repair conflicts and test disruptions with fabricated requests. Nothing here changes saved plans.</span>
         </div>
         <div className="ml-auto flex items-center gap-4 text-[11px] text-ink-500">
           <span className="hidden font-mono sm:inline">
@@ -58,7 +57,7 @@ function TopBar() {
           )}
         </div>
       </div>
-    </header>
+    </div>
   );
 }
 
@@ -118,9 +117,9 @@ function Workspace() {
   const unresolved = disruptionImpact.filter((item) => item.severity === "critical");
 
   return (
-    <main className="mx-auto max-w-[1720px] space-y-2.5 px-4 py-3">
+    <main className="sandbox-workspace space-y-3">
+      <PlanSignals />
       <PlanToolbar />
-      <SolverBar />
 
       {scenario && !hasReplanned && (
         <section className="border border-signal-red bg-signal-red-soft px-3 py-2.5">
@@ -144,35 +143,35 @@ function Workspace() {
 
       {scenario && hasReplanned && <ReplanOutcome title={scenario.title} />}
 
-      <PlanSignals />
-
       <PlanningPanels
+        compactContext
         preferenceKey="railplan-demo-layout"
-        queue={<RequestQueue />}
-        primary={<BlockTimeline />}
-        workforce={<WorkforceTimeline />}
+        queue={<SandboxPlannerPanel kind="queue" />}
+        primary={(tabs) => <SandboxPlannerPanel kind="timeline" headerActions={tabs} />}
+        workforce={<WorkforceTimeline compact />}
         geography={<GeographicNetworkView />}
         belowPrimary={
           <div className="grid gap-2.5 xl:grid-cols-2">
-            <ViolationPanel />
-            <section className="grid content-start gap-2.5"><SecondaryFigures /></section>
+            <div id="sandbox-conflicts" tabIndex={-1}><ViolationPanel /></div>
+            <section id="sandbox-calculations" tabIndex={-1} aria-label="Calculated metrics" className="grid content-start gap-2.5"><SecondaryFigures /></section>
           </div>
         }
         inspector={
-          <div className="min-w-0 space-y-2.5">
-            <RequestInspector />
-            <div className="min-h-[300px]"><PlannerAssistant /></div>
+          <div className="sandbox-shared-inspector min-w-0 space-y-2.5">
+            <SandboxRequestInspector />
+            <details className="sandbox-assistant"><summary>Ask about this plan</summary><div className="min-h-[300px]"><PlannerAssistant /></div></details>
           </div>
         }
       />
 
       <ScenarioTesting />
+      <SolverBar />
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-3 text-[11px] text-ink-500">
         <span>
           Fabricated data. Encodes no LTA operating rule. Not for operational decisions.
         </span>
-        <span>Human approval required before any plan is released.</span>
+        <span>Sandbox results cannot be published. Use Night overview for saved planning.</span>
       </footer>
     </main>
   );
@@ -187,16 +186,20 @@ function Workspace() {
  */
 function PlanSignals() {
   const result = useRailPlanStore((state) => state.activeResult());
-  const baselineConflicts = useRailPlanStore((state) => state.baselineConflicts);
+  const baselineConflicts = useRailPlanStore((state) => state.baselineClashes);
+  const disruptionImpact = useRailPlanStore((state) => state.disruptionImpact);
+  const activeDisruptionId = useRailPlanStore((state) => state.activeDisruptionId);
+  const hasReplanned = useRailPlanStore((state) => state.hasReplanned);
   const view = useRailPlanStore((state) => state.view);
   if (!result) return null;
 
   const metrics = result.metrics;
-  const remaining = metrics.violations.value;
+  const conflicts = conflictsMetric(activeDisruptionId && !hasReplanned ? disruptionImpact : result.violations);
+  const remaining = conflicts.value;
 
   if (view === "submitted") {
     return (
-      <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+      <section aria-label="Plan signals" className="sandbox-summary grid grid-cols-2 lg:grid-cols-4">
         <Figure
           metric={{ ...metrics.placed, label: "Requests received" }}
           secondary={`for ${PLANNING_NIGHT}, 00:00-${formatClock(WINDOW_END)}`}
@@ -207,23 +210,17 @@ function PlanSignals() {
           tone={metrics.conflictedRequests.value ? "red" : "green"}
         />
         <Figure
-          metric={metrics.violations}
-          secondary={metrics.violations.value ? "planner action required" : "validator found none"}
-          tone={metrics.violations.value ? "red" : "green"}
+          metric={conflicts}
+          secondary={remaining ? "planner action required" : "validator found none"}
+          tone={remaining ? "red" : "green"}
         />
-        <Figure metric={metrics.teamUtilisation} secondary="crew minutes against rostered shifts" />
-        <Figure metric={metrics.blockUtilisation} secondary="block-minutes against the window" />
+        <Figure metric={metrics.criticalPlaced} secondary="mandatory work in requested placements" />
       </section>
     );
   }
 
   return (
-    <section aria-label="Plan signals" className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
-      <Figure
-        metric={metrics.violations}
-        secondary={`down from ${baselineConflicts} in the requests as submitted`}
-        tone={remaining ? "red" : "green"}
-      />
+    <section aria-label="Plan signals" className="sandbox-summary grid grid-cols-2 lg:grid-cols-4">
       <Figure
         metric={metrics.placed}
         secondary={`${result.plan.deferred.length} without a slot`}
@@ -234,14 +231,8 @@ function PlanSignals() {
         secondary={`of ${metrics.criticalPlaced.denominator} mandatory requests`}
         tone={metrics.criticalPlaced.value < metrics.criticalPlaced.denominator ? "red" : "green"}
       />
-      <Figure
-        metric={metrics.movement}
-        secondary={`${metrics.movement.denominator} of ${result.plan.placements.length} jobs moved`}
-      />
-      <Figure
-        metric={plannerTimeSavedMetric(baselineConflicts, remaining)}
-        secondary="estimated · see the formula"
-      />
+      <Figure metric={{ key: "deferred", label: "Deferred for review", value: result.plan.deferred.length, unit: "count", numerator: result.plan.deferred.length, denominator: metrics.placed.denominator, formula: "Count of requests deferred by this run", note: "Deferred requests have no slot in this demo draft." }} tone={result.plan.deferred.length ? "amber" : "green"} />
+      <Figure metric={conflicts} secondary={`compared with ${baselineConflicts} in the requests as submitted`} tone={remaining ? "red" : "green"} />
     </section>
   );
 }
@@ -336,7 +327,6 @@ function ReplanOutcome({ title }: { title: string }) {
 
 function SecondaryFigures() {
   const result = useRailPlanStore((state) => state.activeResult());
-  const view = useRailPlanStore((state) => state.view);
   const disruptionMetrics = useRailPlanStore((state) => state.disruptionMetrics);
   if (!result) return null;
   const metrics = result.metrics;
@@ -344,16 +334,9 @@ function SecondaryFigures() {
 
   return (
     <div className="grid auto-rows-min grid-cols-2 gap-2.5">
-      {view === "submitted" ? (
-        <Figure metric={metrics.movement} secondary={`${metrics.movement.denominator} jobs moved`} />
-      ) : (
-        <Figure metric={metrics.blockUtilisation} />
-      )}
-      {view === "submitted" ? (
-        <Figure metric={metrics.criticalPlaced} secondary="mandatory work in this plan" />
-      ) : (
-        <Figure metric={metrics.teamUtilisation} />
-      )}
+      <Figure metric={metrics.movement} secondary={`${metrics.movement.denominator} jobs moved`} />
+      <Figure metric={metrics.blockUtilisation} />
+      <Figure metric={metrics.teamUtilisation} />
       <Figure metric={metrics.equipmentUtilisation} />
       <Figure metric={workforce.workforceUtilisation} secondary={disruptionMetrics ? "disruption impact before replanning" : "people-minutes against role availability"} />
       <Figure

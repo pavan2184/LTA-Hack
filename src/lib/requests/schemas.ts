@@ -55,7 +55,7 @@ export const approvalSchema = z
     safetyConfirmed: z.literal(true),
   })
   .strict();
-export const createRequestSchema = z.object({ fields: fieldsSchema }).strict();
+export const createRequestSchema = z.object({ fields: fieldsSchema, organisationId: z.uuid().optional() }).strict();
 export const updateRequestSchema = z
   .object({
     expectedVersion: z.number().int().min(1).max(2147483647),
@@ -75,6 +75,11 @@ export const actionSchema = z
     ]),
     reason: z.string().trim().max(2000),
     approval: approvalSchema.optional(),
+    carryForward: z.object({
+      expectedWorkVersion: z.number().int().min(1).max(2147483646),
+      dependenciesReviewed: z.literal(true),
+      publication: z.object({ planId: z.uuid(), submissionRevision: z.number().int().positive().nullable() }).strict().optional(),
+    }).strict().optional(),
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -93,7 +98,7 @@ export const actionSchema = z
         path: ["approval"],
         message: "Complete the planner fields.",
       });
-    if (v.action !== "approve" && v.approval)
+    if (v.action !== "approve" && (v.approval || v.carryForward))
       ctx.addIssue({
         code: "custom",
         path: ["approval"],

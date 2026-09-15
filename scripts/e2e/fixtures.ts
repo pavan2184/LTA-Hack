@@ -19,6 +19,14 @@ const history = [
     "planner_decisions",
     "plan_publications",
     "plan_audit_events",
+    "coordination_proposals",
+    "coordination_participants",
+    "coordination_events",
+    "coordination_applications",
+    "work_item_events",
+    "work_item_submissions",
+    "work_item_mutations",
+    "carry_forward_preparations",
   ].map((table) => [table, "immutable_history"]),
   ["request_revisions", "immutable_request_history"],
   ["private_draft_revisions", "immutable_private_draft_history"],
@@ -36,8 +44,9 @@ export interface E2EFixture {
   users: FixtureUser[];
   night: string;
   recoveryPath: string;
+  ownedNight?: boolean;
 }
-export async function createFixture(): Promise<E2EFixture> {
+export async function createFixture(options: { isolatedNight?: boolean } = {}): Promise<E2EFixture> {
   let target: URL;
   try {
     target = new URL(process.env.DATABASE_URL ?? "");
@@ -75,24 +84,31 @@ export async function createFixture(): Promise<E2EFixture> {
   );
   let recoveryWritten = false;
   try {
-    const [{ planning_night: night }] =
+    const [{ planning_night: baselineNight }] =
       await sql`select planning_night::text from public.planning_nights order by planning_night limit 1`;
+    const night = options.isolatedNight ? (await sql`select d::date::text as night from generate_series('2098-01-01'::date,'2098-12-31'::date,'1 day') d where not exists(select 1 from public.planning_nights n where n.planning_night=d::date) limit 1`)[0]?.night : baselineNight;
+    if (!night) throw new Error("No isolated fixture night available");
     const [guard] = await sql`select
       (select count(*)::int from railplan_private.plan_publications p join railplan_private.planning_runs r on r.id=p.plan_id where r.planning_night=${night}::date) publications,
-      (select count(*)::int from railplan_private.request_submissions where active_approved_version is not null) approved`;
-    if (guard.publications || guard.approved)
+      (select count(*)::int from railplan_private.request_submissions where active_approved_version is not null) approved,
+      (select count(*)::int from railplan_private.work_items w where w.source_night=${night}::date or exists(select 1 from railplan_private.work_item_submissions l where l.work_item_id=w.id and l.planning_night=${night}::date)) backlog`;
+    if (!options.isolatedNight && (guard.publications || guard.approved || guard.backlog))
       throw new Error(
-        "E2E refuses a night with existing publication or approved user intake",
+        "E2E refuses a night with existing publication, backlog or approved user intake",
       );
     // An interrupted process can be cleaned from these exact IDs. Passwords,
     // sessions, transcript text and provider keys never enter this manifest.
     await writeFile(
       recoveryPath,
-      JSON.stringify({ orgs, userIds: users.map((user) => user.id) }),
+      JSON.stringify({ orgs, userIds: users.map((user) => user.id), ...(options.isolatedNight ? { ownedNight: night } : {}) }),
       { mode: 0o600, flag: "wx" },
     );
     recoveryWritten = true;
     await sql.begin(async (tx) => {
+      if (options.isolatedNight) {
+        await tx`insert into public.planning_nights select ${night}::date,window_start_minute,window_end_minute,slot_minutes,minutes_per_block_hop,inter_line_transfer_minutes from public.planning_nights where planning_night=${baselineNight}::date`;
+        await tx`insert into public.workforce_availability select ${night}::date,team_id,role_id,start_minute,end_minute,people_count from public.workforce_availability where planning_night=${baselineNight}::date`;
+      }
       for (let i = 0; i < orgs.length; i++)
         await tx`insert into public.contractor_organisations(id,name) values(${orgs[i]},${`E2E isolated organisation ${i + 1}`})`;
       for (const user of users) {
@@ -103,7 +119,7 @@ export async function createFixture(): Promise<E2EFixture> {
         await tx`insert into public.profiles(id,role,contractor_organisation_id) values(${user.id},${user.role},${user.org})`;
       }
     });
-    return { sql, orgs, users, night: String(night), recoveryPath };
+    return { sql, orgs, users, night: String(night), recoveryPath, ownedNight: options.isolatedNight };
   } catch (error) {
     let cleanupFailed = false;
     if (recoveryWritten) {
@@ -132,9 +148,10 @@ export async function cleanupFixture(fixture: E2EFixture) {
     ids = users.map((user) => user.id);
   try {
     await sql.begin(async (tx) => {
+      await tx`set local lock_timeout='5s'`;
       await tx`update railplan_private.planning_source set lock_generation=lock_generation+1 where singleton`;
       await tx.unsafe(
-        `lock table ${[...history.map(([table]) => table), "request_submissions", "private_drafts", "notification_configurations"].map((table) => `railplan_private.${table}`).join(",")} in access exclusive mode`,
+        `lock table ${[...history.map(([table]) => table), "coordination_cases", "work_items", "work_item_active_occurrences", "request_submissions", "private_drafts", "notification_configurations"].map((table) => `railplan_private.${table}`).join(",")} in access exclusive mode`,
       );
       const runs =
         await tx`select id from railplan_private.planning_runs where created_by = any(${ids}::uuid[])`;
@@ -146,6 +163,12 @@ export async function cleanupFixture(fixture: E2EFixture) {
           `alter table railplan_private.${table} disable trigger ${trigger}`,
         );
       // Everything selected here belongs to exact newly provisioned IDs. No reset/seed or broad delete.
+      for (const table of ["carry_forward_preparations", "work_item_active_occurrences", "work_item_events", "work_item_mutations", "work_item_submissions"])
+        await tx.unsafe(`delete from railplan_private.${table} where work_item_id in(select id from railplan_private.work_items where created_by = any($1::uuid[]))`, [ids]);
+      await tx`delete from railplan_private.work_items where created_by = any(${ids}::uuid[])`;
+      for (const table of ["coordination_applications", "coordination_events", "coordination_participants", "coordination_proposals"])
+        await tx.unsafe(`delete from railplan_private.${table} where case_id in(select id from railplan_private.coordination_cases where created_by = any($1::uuid[]))`, [ids]);
+      await tx`delete from railplan_private.coordination_cases where created_by = any(${ids}::uuid[])`;
       await tx`delete from railplan_private.notification_results where attempt_id in(select a.id from railplan_private.notification_attempts a join railplan_private.notification_deliveries d on d.id=a.delivery_id where d.organisation_id = any(${orgs}::uuid[]))`;
       await tx`delete from railplan_private.notification_attempts where delivery_id in(select id from railplan_private.notification_deliveries where organisation_id = any(${orgs}::uuid[]))`;
       await tx`delete from railplan_private.notification_deliveries where organisation_id = any(${orgs}::uuid[])`;
@@ -170,6 +193,8 @@ export async function cleanupFixture(fixture: E2EFixture) {
       await tx`delete from railplan_private.private_drafts where owner_id = any(${ids}::uuid[])`;
       await tx`delete from railplan_private.request_revisions where submission_id in(select id from railplan_private.request_submissions where organisation_id = any(${orgs}::uuid[]))`;
       await tx`delete from railplan_private.request_submissions where organisation_id = any(${orgs}::uuid[])`;
+      if (fixture.ownedNight)
+        await tx`delete from public.planning_nights where planning_night=${fixture.night}::date`;
       await tx`set constraints all immediate`;
       for (const [table, trigger] of history)
         await tx.unsafe(
@@ -180,23 +205,29 @@ export async function cleanupFixture(fixture: E2EFixture) {
       await tx`delete from auth.users where id = any(${ids}::uuid[])`;
       await tx`delete from public.contractor_organisations where id = any(${orgs}::uuid[])`;
     });
-    await assertCleanup(sql, ids, orgs);
+    await assertCleanup(sql, ids, orgs, fixture.ownedNight ? fixture.night : undefined);
     await unlink(fixture.recoveryPath);
   } finally {
     await sql.end({ timeout: 1 });
   }
 }
-async function assertCleanup(sql: Sql, ids: string[], orgs: string[]) {
+async function assertCleanup(sql: Sql, ids: string[], orgs: string[], ownedNight?: string) {
   const [remaining] =
     await sql`select (select count(*)::int from auth.users where id = any(${ids}::uuid[])) users,
-    (select count(*)::int from public.contractor_organisations where id = any(${orgs}::uuid[])) organisations`;
+    (select count(*)::int from public.contractor_organisations where id = any(${orgs}::uuid[])) organisations,
+    (select count(*)::int from railplan_private.planning_runs where created_by = any(${ids}::uuid[])) plans,
+    (select count(*)::int from railplan_private.coordination_cases where created_by = any(${ids}::uuid[])) cases,
+    (select count(*)::int from railplan_private.work_items where created_by = any(${ids}::uuid[])) backlog,
+    (select count(*)::int from railplan_private.request_submissions where organisation_id = any(${orgs}::uuid[])) requests,
+    (select count(*)::int from public.planning_nights where planning_night=${ownedNight ?? null}::date) nights`;
   const guards =
     await sql`select tgname,tgenabled from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
     where n.nspname='railplan_private' and tgname in('immutable_history','immutable_request_history','immutable_private_draft_history','immutable_request_proposal_source','immutable_notification_history')`;
   if (
     remaining.users ||
     remaining.organisations ||
-    guards.length !== 13 ||
+    remaining.plans || remaining.cases || remaining.backlog || remaining.requests || remaining.nights ||
+    guards.length !== history.length ||
     guards.some((row) => row.tgenabled !== "O")
   )
     throw new Error("E2E exact fixture cleanup verification failed");

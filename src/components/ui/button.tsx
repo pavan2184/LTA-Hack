@@ -9,9 +9,9 @@ type Size = "sm" | "md";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-ink-900 text-white border-ink-900 hover:bg-ink-700 hover:border-ink-700 disabled:bg-ink-400 disabled:border-ink-400",
+    "rail-button-primary text-white border-accent disabled:opacity-50",
   default:
-    "bg-surface text-ink-900 border-rule-strong hover:bg-sunk disabled:text-ink-400 disabled:hover:bg-surface",
+    "bg-surface text-accent border-rule-strong hover:bg-sunk disabled:text-ink-400 disabled:hover:bg-surface",
   quiet:
     "bg-transparent text-ink-700 border-transparent hover:bg-sunk disabled:text-ink-400 disabled:hover:bg-transparent",
   danger: "bg-signal-red text-white border-signal-red hover:brightness-110 disabled:opacity-50",
@@ -32,7 +32,7 @@ export function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-sm border font-medium transition-colors disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center rounded-md border font-medium transition-colors disabled:cursor-not-allowed",
         variants[variant],
         sizes[size],
         className,

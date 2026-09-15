@@ -6,7 +6,7 @@ import { useRailPlanStore } from "@/store/useRailPlanStore";
 import { visiblePlanningInputs } from "@/store/visible-planning-inputs";
 import { WorkforceChart } from "./WorkforceChart";
 
-export function WorkforceTimeline() {
+export function WorkforceTimeline({ compact = false }: { compact?: boolean }) {
   const result = useRailPlanStore((state) => state.activeResult());
   const activeDisruptionId = useRailPlanStore(
     (state) => state.activeDisruptionId,
@@ -30,6 +30,7 @@ export function WorkforceTimeline() {
 
   return (
     <WorkforceChart
+      compact={compact}
       plan={inputs?.plan ?? null}
       context={inputs?.context ?? {}}
       loading={stage !== "idle"}

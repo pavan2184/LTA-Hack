@@ -5,6 +5,14 @@ import { createPlanSchema } from "@/lib/plans/schemas";
 import { planInputDigest, validatePlanParameters } from "@/lib/plans/input";
 
 describe("durable plan input contract", () => {
+  it("accepts UUID revision provenance without changing the solver input digest", () => {
+    const facts = buildInstanceFromLiterals();
+    const original = createPlanSchema.parse({ planningNight: facts.planningNight });
+    const revised = createPlanSchema.parse({ ...original, basedOnPlanId: "11111111-1111-4111-8111-111111111111" });
+    expect(revised).toHaveProperty("basedOnPlanId", "11111111-1111-4111-8111-111111111111");
+    expect(planInputDigest(facts, revised)).toBe(planInputDigest(facts, original));
+    expect(createPlanSchema.safeParse({ ...original, basedOnPlanId: "invalid" }).success).toBe(false);
+  });
   it("changes saved-plan provenance for workforce supply or demand, independent of row order", () => {
     const facts = buildInstanceFromLiterals();
     const input = createPlanSchema.parse({ planningNight: facts.planningNight });

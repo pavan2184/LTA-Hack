@@ -10,6 +10,7 @@ import {
 } from "@railplan/core/data/disruptions";
 import { computeMetrics } from "@railplan/core/engine/metrics";
 import { ruleCatalogue, validate } from "@railplan/core/engine/validate";
+import { groupConflicts } from "@railplan/core/engine/conflicts";
 
 function resetStore() {
   localStorage.clear();
@@ -48,7 +49,7 @@ async function loadRequests(user: ReturnType<typeof userEvent.setup>) {
 
 async function generateSchedule(user: ReturnType<typeof userEvent.setup>) {
   const button = screen.getByRole("button", {
-    name: /generate optimal schedule/i,
+    name: /generate draft schedule/i,
   });
   await waitFor(() => expect(button).toBeEnabled());
   await user.click(button);
@@ -60,6 +61,74 @@ async function generateSchedule(user: ReturnType<typeof userEvent.setup>) {
 
 describe("planner workspace", () => {
   beforeEach(resetStore);
+
+  it("opens the grouped row when a non-headline rule is selected and retains every finding", async () => {
+    const user = userEvent.setup();
+    render(<DashboardShell />);
+    await loadRequests(user);
+    const findings = useRailPlanStore.getState().submitted!.violations;
+    const group = groupConflicts(findings).find(g => g.requestIds.join(",") === "M-008,M-014")!;
+    const secondary = group.violations.find(v => v.id !== group.primary.id)!;
+    act(() => useRailPlanStore.getState().selectViolation(secondary.id));
+    const details = within(screen.getByRole("list", { name: "Rules involved in this clash" }));
+    expect(details.getAllByRole("listitem")).toHaveLength(group.violations.length);
+    for (const finding of group.violations) expect(details.getByText(finding.detail)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`${findings.length} rule findings`))).toBeInTheDocument();
+  });
+
+  it("retains mandatory request filtering in the shared demo queue", async () => {
+    const user = userEvent.setup();
+    render(<DashboardShell />);
+    await loadRequests(user);
+    await user.selectOptions(screen.getByLabelText("Additional request filter"), "mandatory");
+    const queue = within(screen.getByRole("region", { name: "Demo request queue" }));
+    expect(queue.getAllByRole("listitem")).toHaveLength(5);
+    expect(queue.queryByRole("button", { name: /M-001/ })).not.toBeInTheDocument();
+    expect(queue.getByRole("button", { name: /M-008/ })).toBeVisible();
+  });
+
+  it("links the shared queue's deferred filter to sandbox request details", async () => {
+    const user = userEvent.setup();
+    render(<DashboardShell />);
+    await loadRequests(user);
+    await generateSchedule(user);
+    const queue = within(screen.getByRole("region", { name: "Demo request queue" }));
+    await user.click(queue.getByRole("button", { name: /^Deferred 5$/ }));
+    expect(queue.getAllByRole("listitem")).toHaveLength(5);
+    await user.click(queue.getByRole("button", { name: /M-004/ }));
+    const inspector = within(screen.getByRole("region", { name: "Demo request inspector" }));
+    expect(inspector.getByRole("heading", { name: "Third rail thermal scan" })).toBeVisible();
+    expect(inspector.getByText("Deferred", { exact: true })).toBeVisible();
+    expect(inspector.queryByRole("button", { name: /publish/i })).not.toBeInTheDocument();
+  });
+
+  it("draws forced emergency work in the shared timeline before replanning", async () => {
+    const user = userEvent.setup();
+    render(<DashboardShell />);
+    await loadRequests(user);
+    await generateSchedule(user);
+    act(() => useRailPlanStore.getState().triggerDisruption("track-fault"));
+    const timeline = within(screen.getByRole("region", { name: "Demo block Gantt" }));
+    const emergency = timeline.getAllByRole("button", { name: /^Select EM-001 on/ });
+    await user.click(emergency[0]);
+    expect(useRailPlanStore.getState().selectedRequestId).toBe("EM-001");
+    expect(screen.getByText(/read-only scenario details/)).toBeVisible();
+    await act(async () => useRailPlanStore.getState().clearDisruption());
+    expect(timeline.queryByRole("button", { name: /^Select EM-001 on/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the generated draft's deferrals in the primary summary without publication actions", async () => {
+    const user = userEvent.setup();
+    render(<DashboardShell />);
+    await loadRequests(user);
+    await user.click(screen.getByRole("button", { name: "Generate draft schedule" }));
+    await waitFor(() => expect(useRailPlanStore.getState().planned).not.toBeNull());
+    const summary = within(screen.getByRole("region", { name: "Plan signals" }));
+    await user.click(summary.getByRole("button", { name: "Show how Deferred for review is calculated" }));
+    expect(summary.getByText("Count of requests deferred by this run")).toBeVisible();
+    expect(summary.getByText("5 / 22")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /publish/i })).not.toBeInTheDocument();
+  });
 
   it("shows workforce arithmetic separately from crew concurrency and refreshes it after solving", async () => {
     const user = userEvent.setup();
@@ -188,10 +257,10 @@ describe("planner workspace", () => {
     expect(submitted?.status).toBe("INFEASIBLE");
     expect(submitted!.violations.length).toBeGreaterThan(10);
 
-    // The summary counts the same findings the engine produced, by category.
+    // Multiple rule findings for the same clash count once, consistently.
     const banner = screen.getByText(/conflicts detected across/i);
     expect(banner).toHaveTextContent(
-      new RegExp(`${submitted!.violations.length} conflicts detected across`),
+      new RegExp(`${groupConflicts(submitted!.violations).length} conflicts detected across`),
     );
     expect(screen.getByText(/sector overlaps/)).toBeInTheDocument();
   });
@@ -312,27 +381,16 @@ describe("planner workspace", () => {
     ).toBeInTheDocument();
   });
 
-  it("labels the one estimated figure as an assumption", async () => {
+  it("shows calculated scheduling metrics without claiming unmeasured planner time savings", async () => {
     const user = userEvent.setup();
     render(<DashboardShell />);
     await loadRequests(user);
     await generateSchedule(user);
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", {
-          name: /how planner time saved is calculated/i,
-        }),
-      ).toBeInTheDocument(),
-    );
-    await user.click(
-      screen.getByRole("button", {
-        name: /how planner time saved is calculated/i,
-      }),
-    );
-    expect(
-      screen.getByText(/assumption, not a measurement/i),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /how planner time saved is calculated/i })).not.toBeInTheDocument();
+    const calculations = within(screen.getByRole("region", { name: "Calculated metrics" }));
+    expect(calculations.getAllByRole("button", { name: /show how .* is calculated/i }).length).toBeGreaterThan(5);
+    expect(calculations.queryByText(/estimated · see the formula/)).not.toBeInTheDocument();
   });
 
   it("measures the schedule against the requests as submitted, not against its own fixes", async () => {
@@ -340,7 +398,7 @@ describe("planner workspace", () => {
     render(<DashboardShell />);
     await loadRequests(user);
 
-    const submitted = useRailPlanStore.getState().baselineConflicts;
+    const submitted = useRailPlanStore.getState().baselineClashes;
     expect(submitted).toBeGreaterThan(10);
 
     await user.click(
@@ -351,12 +409,12 @@ describe("planner workspace", () => {
       { timeout: 5000 },
     );
     // Accepting suggestions must not move the bar the schedule is judged against.
-    expect(useRailPlanStore.getState().baselineConflicts).toBe(submitted);
+    expect(useRailPlanStore.getState().baselineClashes).toBe(submitted);
 
     await generateSchedule(user);
     expect(
       screen.getByText(
-        new RegExp(`down from ${submitted} in the requests as submitted`),
+        new RegExp(`compared with ${submitted} in the requests as submitted`),
       ),
     ).toBeInTheDocument();
   });

@@ -5,8 +5,8 @@
  *
  * Two ideas hold this together.
  *
- * 1. A warm paper ground under cool near-black ink. The slight temperature
- *    disagreement is what stops a light UI reading as flat grey card soup.
+ * 1. Neutral white panels under near-black ink, with restrained grey rules
+ *    and the approved blue actions and pale-blue selection treatment.
  *
  * 2. Chroma comes from the domain, not from a UI kit. The three corridor
  *    colours are the actual Singapore MRT line colours — North-South red,
@@ -19,17 +19,17 @@
  * has touched. Nothing else is allowed to be coloured.
  */
 @theme {
-  --color-paper: #edebe6;
+  --color-paper: #ffffff;
   --color-surface: #ffffff;
-  --color-sunk: #e3e0d8;
+  --color-sunk: #f0f1f3;
 
   --color-ink-900: #14161a;
   --color-ink-700: #3a4048;
   --color-ink-500: #505861;
   --color-ink-400: #59616a;
 
-  --color-rule: #d7d3ca;
-  --color-rule-strong: #b6b0a4;
+  --color-rule: #d5d8dc;
+  --color-rule-strong: #b9c0c9;
 
   /* Status. Saturated enough to separate at a glance, dark enough to pass
      contrast as text on white. */
@@ -41,8 +41,8 @@
   --color-signal-green-soft: #e2f4e9;
 
   /* Selection, pins, and anything the planner decided. */
-  --color-accent: #1257a8;
-  --color-accent-soft: #e6eefa;
+  --color-accent: #004ba5;
+  --color-accent-soft: #e1edfc;
 
   /*
    * Conflict categories.
@@ -102,12 +102,15 @@
  */
 :root {
   color-scheme: light;
+  --planner-blue: var(--color-accent);
+  --rail-primary: linear-gradient(#0055b8, #01489b);
+  --rail-panel: linear-gradient(110deg, #ffffff, #fbfbfb);
+  --rail-selected: linear-gradient(#dcecff, #cae0fc);
 }
 
 html,
 body {
   min-height: 100%;
-  overflow-x: hidden;
 }
 
 body {
@@ -133,8 +136,8 @@ body {
 /* Timeline gridlines: one per 30 minutes, heavier at the hour. */
 .tl-grid {
   background-image:
-    linear-gradient(to right, rgba(110, 104, 92, 0.3) 1px, transparent 1px),
-    linear-gradient(to right, rgba(110, 104, 92, 0.13) 1px, transparent 1px);
+    linear-gradient(to right, rgba(100, 110, 125, 0.2) 1px, transparent 1px),
+    linear-gradient(to right, rgba(100, 110, 125, 0.1) 1px, transparent 1px);
   background-size:
     25% 100%,
     12.5% 100%;

@@ -74,6 +74,9 @@ describe("deferred-work real authenticated rollback persistence", { timeout: 300
     const reopened = await getWorkItem(p, work.id, tx);
     expect(reopened).toMatchObject({ state: "open", deferredCount: 0 });
     expect(reopened.events?.at(-1)?.kind).toBe("removed");
+    const historical = await recordDeferral(p, { ...record(source.id), reason: "Retain original deferral evidence after removal" }, tx);
+    expect(historical).toMatchObject({ state: "open", deferredCount: 0 });
+    expect(historical.events?.at(-1)).toMatchObject({ kind: "record", note: "Retain original deferral evidence after removal" });
   }));
   it("preserves lifecycle reasons, source revision and trusted owner reassignment", () => fixture(async (tx, p, c) => {
     const source = await createPlan(p, parameters, tx);
@@ -127,12 +130,14 @@ describe("deferred-work real authenticated rollback persistence", { timeout: 300
     await expect(tx.savepoint(async s => { await s`update railplan_private.work_item_events set note=note where work_item_id=${first.id}`; })).rejects.toMatchObject({ code: "42501" });
   }));
   it("provides bounded owner/night catalogues and filters without modifying planning metadata", () => fixture(async (tx, p, c) => {
+    await tx`insert into public.planning_nights select '2097-09-17'::date,window_start_minute,window_end_minute,slot_minutes,minutes_per_block_hop,inter_line_transfer_minutes from public.planning_nights where planning_night=${PLANNING_NIGHT}`;
     const source = await createPlan(p, parameters, tx);
     const first = await recordDeferral(p, record(source.id), tx);
     const second = await recordDeferral(p, record(source.id, "M-019"), tx);
     await tx`reset role`;
     const [basis] = await tx`select revision,lock_generation from railplan_private.planning_source`;
-    const proposed = await actOnWorkItem(p, first.id, { action: "propose-night", expectedVersion: first.version, planningNight: PLANNING_NIGHT, note: "Review this configured target" }, tx);
+    await expect(actOnWorkItem(p, first.id, { action: "propose-night", expectedVersion: first.version, planningNight: PLANNING_NIGHT, note: "Same night is not carry-forward" }, tx)).rejects.toMatchObject({ code: "invalid_request" });
+    const proposed = await actOnWorkItem(p, first.id, { action: "propose-night", expectedVersion: first.version, planningNight: "2097-09-17", note: "Review this configured target" }, tx);
     expect(proposed.flags.awaitingTargetNightReview).toBe(true);
     await expect(actOnWorkItem(p, first.id, { action: "propose-night", expectedVersion: proposed.version, planningNight: "2099-12-30", note: "Unknown target" }, tx)).rejects.toMatchObject({ code: "invalid_request" });
     const page = await listWorkItems(p, { ownerId: p.id, limit: 1, missingDue: "true" }, tx);

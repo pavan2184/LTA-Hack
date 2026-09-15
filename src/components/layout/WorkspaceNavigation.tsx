@@ -1,52 +1,74 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { UserRole } from "@railplan/core/types/auth";
 import { SignOut } from "@/components/auth/SignOut";
 
-type Workspace = "requests" | "plans" | "sandbox" | "contractor";
+type Workspace = "home" | "requests" | "plans" | "coordination" | "deferred" | "sandbox" | "contractor" | "history" | "settings";
 export function WorkspaceNavigation({
   role,
   current,
+  planningNight,
+  planId,
+  requestId,
+  accountControl,
 }: {
   role: UserRole;
   current: Workspace;
+  planningNight?: string | null;
+  planId?: string | null;
+  requestId?: string | null;
+  accountControl?: ReactNode;
 }) {
+  const destination = (path: string) => {
+    const query = new URLSearchParams();
+    if (planningNight) query.set(path === "/requests" ? "planningNight" : "night", planningNight);
+    if (planId) query.set("plan", planId);
+    if (requestId) query.set(path === "/requests" ? "planRequest" : "request", requestId);
+    return `${path}${query.size ? `?${query}` : ""}`;
+  };
   const links: { id: Workspace; title: string; href: string }[] =
     role === "planner"
       ? [
-          { id: "requests", title: "Request review", href: "/requests" },
-          { id: "plans", title: "Saved plans", href: "/plans" },
-          { id: "sandbox", title: "Demo sandbox", href: "/sandbox" },
+          { id: "home", title: "Home", href: destination("/") },
+          { id: "plans", title: "Night overview", href: destination("/plans") },
+          { id: "coordination", title: "Coordination", href: destination("/plans/coordination") },
+          { id: "deferred", title: "Deferred work", href: destination("/plans/deferred") },
+          { id: "requests", title: "Request review", href: destination("/requests") },
+          { id: "history", title: "Plan history", href: destination("/plans/history") },
+          { id: "sandbox", title: "Demo sandbox", href: destination("/sandbox") },
         ]
-      : [{ id: "contractor", title: "Your requests", href: "/contractor" }];
+      : [{ id: "home", title: "Home", href: "/" }, { id: "contractor", title: "Your requests", href: "/contractor" }];
   return (
-    <div className="border-b border-rule bg-surface">
+    <header className="workspace-header">
       <a
         href="#workspace"
         className="sr-only focus:not-sr-only focus:inline-block focus:p-3 focus:outline-2 focus:outline-accent"
       >
         Skip to workspace
       </a>
-      <div className="mx-auto flex max-w-[1720px] flex-wrap items-center gap-3 px-4 py-3">
-        <span className="text-sm font-semibold">RailPlan</span>
+      <div className="workspace-header-inner">
+        <Link className="workspace-brand" href={role === "planner" ? destination("/") : "/"}>RailPlan</Link>
         <nav
           aria-label={`${role === "planner" ? "Planner" : "Contractor"} workspaces`}
-          className="flex min-w-0 flex-wrap gap-2 text-sm"
+          className="workspace-nav"
         >
           {links.map((link) => (
             <Link
               key={link.id}
               href={link.href}
               aria-current={current === link.id ? "page" : undefined}
-              className="rounded px-3 py-2 underline underline-offset-4 hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold"
+              className="workspace-nav-link"
             >
               {link.title}
             </Link>
           ))}
         </nav>
-        <div className="ml-auto">
-          <SignOut />
+        <div className="workspace-account">
+          <span className="workspace-prototype">Prototype</span>
+          {role === "planner" && <Link className="workspace-settings" href={destination("/settings/notifications")} aria-current={current === "settings" ? "page" : undefined}>Notification settings</Link>}
+          {accountControl ?? <SignOut />}
         </div>
       </div>
-    </div>
+    </header>
   );
 }

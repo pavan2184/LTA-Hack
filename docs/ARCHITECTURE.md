@@ -1,5 +1,162 @@
 # Architecture
 
+## Reviewed carry-forward — 2026-09-15
+
+Preparation creates a linked ordinary intake draft atomically through the existing
+planner-create validation path. The draft is not planning input. Original fields
+and dependencies remain immutable review metadata; incompatible target references
+must still be resolved by ordinary approval validation. Source retirement rejects
+active inbound dependencies and requires an exact current publication/version
+confirmation. A review acknowledgement does not bypass either guard.
+
+All intake mutation entrypoints now acquire source → work item → linked submissions
+(sorted UUID) locks. One explicit active-occurrence mapping suppresses retired
+seeded requests and their workforce demand without deleting operator rows or old
+saved facts. Mapping changes invalidate source revision; preparation and backlog
+metadata do not. Previously retired submissions cannot reactivate duplicate work.
+The latest cancelled occurrence can be explicitly revised/submitted/approved on the
+same night; moving it across nights requires reviewed carry-forward.
+
+Planner-only preparation uses trusted catalogue choices and a retry-stable command.
+It retains the saved draft link when refresh fails. Contractor request/detail DTOs
+contain only scoped linkage, not original fields, publication confirmation or the
+planner-only active night. Coordination organisation responses stay informational.
+
+## Deferred-work persistence — 2026-09-15
+
+The private backlog records durable intake UUID identity (including reserved
+carry-forward links) or night-qualified operator request identity. Draft generation
+is inert. Explicit historical recording verifies an exact saved deferral; an INSERT
+trigger records publication outcomes in the same transaction as publication/outbox.
+Replacement publications append corrections. Current same-night publication takes
+precedence over later historical recording. Counts derive distinct effective nights.
+
+Planner metadata and explicit lifecycle commands use optimistic item versions and
+append audit events without changing planning-source revision or lock generation.
+Source recording/publication preserve source-before-item lock order. Scheduled is a
+read projection of current published placements; linked intake must still have the
+exact active approved revision. Completion/cancellation remain explicit lifecycle
+state and survive later publications. Task 3 must add the operator-seeded retirement
+guard when implementing approved carry-forward; its current source identity remains
+active until that workflow exists.
+
+Contractor DTOs are built from an explicit SQL allowlist. Raw private tables remain
+planner-only under RLS; contractor results omit source plan links, owner/actor IDs,
+versions and planner history. Configured-night and trusted-owner catalogues are
+bounded. No backlog feature sends messages or changes solver feasibility.
+
+## Versioned coordination — 2026-09-15
+
+Planner coordination proposals reuse immutable saved facts and the ordinary
+server analysis/solver. Full-plan change derivation includes every changed
+placement or deferral, resolving contractor ownership from the saved submission
+UUID and exact approved revision. Only an explicit Apply generates and links a
+new saved draft. Apply locks source before case, re-solves current facts, compares
+reviewed result/impact digests, and stores the plan/application atomically.
+Publication remains a separate feasibility/source check. Organisation confirmation
+is informational and never a publication permission or solver constraint.
+
+Case mutations use expectedVersion; confirmation targets an exact revision.
+Revision appends new proposal/participant snapshots with pending confirmations,
+preserving previous events and applied-plan links. Same-input creation and exact
+Apply retries are idempotent. Contractor reads use a narrow organisation-scoped
+projection; global proposals, planner notes and other organisations never enter
+their DTOs. Planner-only table RLS remains enabled in the non-exposed schema.
+
+The planner workspace links exact cases from validated saved-plan alternatives;
+its owner/deadline, lifecycle notes and proposal edits use the shared unsaved guard.
+Historical applied-plan summaries show viewedRevision, independently of the latest
+proposal. Contractor ordinary request pages carry the exact case through login
+and reload; private draft pages omit coordination context. A missing scoped case
+reports the read error without falling back to another case. The separate HTTP
+fixture harness now removes coordination FKs before
+planning runs and verifies all 17 history guards after exact cleanup.
+
+## Sandbox timeline dragging — 2026-09-15
+
+Shared timeline pointer/keyboard handlers emit proposals only when the sandbox
+supplies an optional callback. All linked bars show the same snapped time offset;
+saved timelines remain selection-only. Sandbox previews use the existing solver
+with the proposed pin and current disruption inputs. Explicit Apply swaps the
+complete validated result, so all metrics/panels and assistant pin replay remain
+consistent. Preview and single-step Undo are memory-only and guarded against
+changes to the current result, view, strategy, pins or disruption. Applying uses
+the existing browser-local pin persistence; Undo restores the previous pins.
+Only generated drafts are draggable; pinned and scenario-forced work stays fixed.
+
+Planner manual intake: Night overview's Add request opens the existing request
+workspace at `request=new`, retaining night/version/queue selection for the return
+link. The intake editor requires an organisation for planner creation; the server
+checks the trusted profile and invokes the narrow private planner-create function.
+Contractor creation still derives its organisation from its profile. Both produce
+audited draft revisions; only later approval contributes planning inputs.
+
+## Shared sandbox presentation — 2026-09-15
+
+Sandbox now renders `PlannerQueue` and `PlannerTimeline`, the same presentational
+components as Night overview, through `SandboxPlannerPanel`. That adapter reads
+only literal demo facts and `visiblePlanningInputs`, including forced emergency
+placements, changed handback and closed blocks. It never loads a saved plan from
+the URL. Optional timeline conflict overlays do not alter saved-plan rendering.
+`PlannerRequestHeader` shares request identity and time presentation; saved analysis
+remains server-scoped while sandbox inspection and slot actions use the demo store.
+Sandbox-specific filters, repairs, scenarios and adjustable panels remain available.
+
+## Shared website shell and navigation — 2026-09-15
+
+The authenticated root `/` is now a role-aware workflow guide, reachable through
+Home and the RailPlan brand. It explains preparation, submission, review,
+scheduling, publication and tracking without exposing planner actions to contractors.
+Existing post-login workspace destinations and direct links remain unchanged.
+Home carries only supported night/version/request context into its action links.
+Each working page opens with a brief description of its purpose.
+
+All workspaces use the shared role-aware navigation and global white/blue theme,
+including body-level dialog portals. `/plans/history` and `/settings/notifications`
+are dedicated planner-only views; private drafts have separate `/requests/drafts`
+and `/contractor/drafts` routes. Request and draft detail IDs are URL-addressable
+and read through existing scoped APIs, independently of bounded list results.
+Submitted proposals link to their exact request; saved approved work links back
+to intake; only planners get links to whole published plans.
+
+Navigation carries night/version/engine-selection context (using `planRequest`
+beside intake's own `request` ID). Sandbox query context is only a return address:
+its solver still consumes the separate fabricated store. Compact workforce/map
+panels retain their mounted state, with queue/inspector size controls preserved.
+Unsaved UI state stays in React memory, never URLs or local storage. Cancelable
+Navigation API traversal events protect edited forms and previews before native
+history changes; capture-phase click/pop guards support other browsers. The older
+popstate fallback restores the current entry, replacing the forward branch on
+cancellation. Cross-document exits retain the native beforeunload warning.
+
+Login accepts an allowlisted local return destination, filters it to navigation
+identifiers, and resolves the authenticated role on the server before redirecting.
+Every new page retains its own role gate; proxy coverage includes nested contractor
+and settings paths. No schema, solver, RLS or public API changes are involved.
+
+## Connected planner workspace — 2026-09-14
+
+`/plans` now composes an exception-first night overview with request queue,
+clearance-aware block timeline and persistent desktop inspector. Narrow screens
+use accessible queue/inspector dialogs. Workforce, geography and calculated-metric
+views share the selected request. The exact saved export remains the display
+snapshot; its labels and facts are never replaced with current intake data.
+
+`plans/overview.ts` reads batched summaries, configured nights, exact pending count
+and the independent current publication in an authenticated repeatable-read
+transaction. `plans/analysis.ts` uses saved facts with the existing core engine for
+inspection, unsaved pin/objective previews and five-objective comparison. These
+read-only operations use the source observation function, not its mutation lock.
+Optional generation guards bind a preview to source, engine and normalized input
+digest; only a fresh server solve can create an immutable saved version.
+
+Client state explicitly separates saved snapshots from unsaved previews. Async
+operations carry abort/epoch guards; failed post-mutation reloads retain the exact
+saved ID and a recovery action instead of showing an old version as new. Navigation
+requires discarding an unsaved preview. History and comparisons use cursor-paged
+summaries and exact saved exports. Publication retains its existing commit/outbox/
+bounded-dispatch semantics, with a review dialog and separate delivery results.
+
 Last updated: 2026-09-07
 
 ## Shape

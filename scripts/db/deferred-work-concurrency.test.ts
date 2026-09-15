@@ -62,6 +62,17 @@ describe("deferred-work independent-session races", { timeout: 90000 }, () => {
       expect(new Set(ids).size).toBe(1);
       expect(await f.sql`select submission_id from railplan_private.carry_forward_preparations where work_item_id=${s.item.id}`).toHaveLength(1);
       expect((await getRequest(s.planner, ids[0])).activeApprovedRevision).toBeNull();
+      await actOnRequest(s.planner, s.draft.id, { action: "revise", expectedVersion: 3, reason: "" });
+      await actOnRequest(s.planner, s.draft.id, { action: "submit", expectedVersion: 4, reason: "" });
+      await actOnRequest(s.planner, s.draft.id, { action: "approve", expectedVersion: 5, reason: "Reapprove original before retry race", approval });
+      const refreshedCommand = { ...command, expectedVersion: (await getWorkItem(s.planner, s.item.id)).version!, idempotencyKey: randomUUID() };
+      const refreshed = await overlap(f, [1, 2].map(() => tx => prepareCarryForward(s.planner, s.item.id, refreshedCommand, tx)));
+      expect(refreshed.every(r => r.status === "fulfilled")).toBe(true);
+      const refreshedIds = refreshed.flatMap(r => r.status === "fulfilled" ? [r.value.requestId] : []);
+      expect(new Set(refreshedIds).size).toBe(1);
+      expect(refreshedIds[0]).not.toBe(ids[0]);
+      expect(await prepareCarryForward(s.planner, s.item.id, command)).toEqual({ requestId: ids[0] });
+      expect(await f.sql`select source_submission_version from railplan_private.carry_forward_preparations where work_item_id=${s.item.id} order by source_submission_version`).toEqual([{ source_submission_version: 3 }, { source_submission_version: 6 }]);
     } finally { await cleanupFixture(f); await cleanupFixture(target); }
   });
   it("two target approvals cannot leave two active approved occurrences", async () => {

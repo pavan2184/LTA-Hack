@@ -122,48 +122,32 @@ it("the real saved-plan workspace aborts an old export when the selected version
   const { SavedPlansWorkspace } =
     await import("@/components/plans/SavedPlansWorkspace");
   const nextId = "120c95e7-5349-4b6f-81e4-3a227a92097f";
-  const plan = (planId: string) => ({
-    id: planId,
-    planningNight: "2026-09-16",
-    sourceRevision: "1",
-    inputDigest: "saved-digest",
-    strategy: "balanced",
-    solverVersion: "saved-solver",
-    constraintVersion: "saved-rules",
-    status: "INFEASIBLE",
-    objectives: [],
-    metrics: {},
-    validation: { independentlyValidated: false, violations: [] },
-    placements: [],
-    deferred: [],
-    createdBy: "planner",
-    createdAt: "2026-09-07T01:00:00Z",
-    publishState: "draft",
-    publishedAt: null,
-    supersededBy: null,
-  });
+  const { plannerVersion, plannerExport, plannerOverview, plannerInspection } = await import("./fixtures/planner-workspace");
+  const plan = (planId: string) => plannerVersion({ id: planId });
+  window.history.replaceState(null, "", "/plans");
   let completeOld!: (response: Response) => void;
   let oldSignal: AbortSignal | undefined;
   const fetcher = vi
     .fn()
     .mockImplementation((url: string, init?: RequestInit) => {
-      if (url.startsWith("/api/plans?"))
+      if (url.endsWith("/analysis")) return Promise.resolve(plannerInspection(url, init));
+      if (url.startsWith("/api/plans/overview"))
         return Promise.resolve(
-          new Response(JSON.stringify({ plans: [plan(id), plan(nextId)] })),
+          Response.json(plannerOverview([plan(id), plan(nextId)])),
         );
-      if (url === `/api/plans/${id}/export?format=json`) {
+      if (url === `/api/plans/${id}/export?format=json` && init?.method === "GET") {
         oldSignal = init?.signal as AbortSignal;
         return new Promise<Response>((resolve) => {
           completeOld = resolve;
         });
       }
-      if (url === `/api/plans/${id}`)
+      if (url === `/api/plans/${id}/export?format=json`)
         return Promise.resolve(
-          new Response(JSON.stringify({ plan: plan(id) })),
+          Response.json(plannerExport(plan(id))),
         );
-      if (url === `/api/plans/${nextId}`)
+      if (url === `/api/plans/${nextId}/export?format=json`)
         return Promise.resolve(
-          new Response(JSON.stringify({ plan: plan(nextId) })),
+          Response.json(plannerExport(plan(nextId))),
         );
       throw new Error("Unexpected fixture URL");
     });
@@ -171,17 +155,16 @@ it("the real saved-plan workspace aborts an old export when the selected version
   const output = downloads();
   render(<SavedPlansWorkspace />);
   const user = userEvent.setup();
-  await user.click(
-    await screen.findByRole("button", { name: `Open version ${id}` }),
-  );
+  await user.click(await screen.findByRole("button", { name: "Version details" }));
   await user.click(
     await screen.findByRole("button", { name: "Download JSON" }),
   );
-  await user.click(
-    screen.getByRole("button", { name: `Open version ${nextId}` }),
-  );
+  await user.click(screen.getByRole("button", { name: "Close" }));
+  await user.click(screen.getByRole("button", { name: "Switch version" }));
+  await user.click(screen.getByRole("button", { name: `Open version ${nextId}` }));
   await waitFor(() => expect(oldSignal?.aborted).toBe(true));
   completeOld(new Response('{"old":"version"}'));
+  await user.click(await screen.findByRole("button", { name: "Version details" }));
   await screen.findByText(nextId);
   expect(output.clicked).toHaveLength(0);
   expect(screen.getByRole("button", { name: "Download CSV" })).toBeEnabled();

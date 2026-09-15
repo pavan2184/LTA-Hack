@@ -53,6 +53,16 @@ beforeEach(() => {
   mocks.catalogue.mockResolvedValue({ roles: [] });
 });
 describe("request HTTP boundary", () => {
+  it("passes a validated night filter to the scoped server list and preserves all-night reads", async () => {
+    const { GET } = await import("@/app/api/requests/route");
+    expect((await GET(new Request("http://localhost/api/requests?planningNight=2026-08-03"))).status).toBe(200);
+    expect(mocks.list).toHaveBeenLastCalledWith({ id: "verified" }, undefined, "2026-08-03");
+    expect((await GET()).status).toBe(200);
+    expect(mocks.list).toHaveBeenLastCalledWith({ id: "verified" }, undefined, undefined);
+    mocks.list.mockClear();
+    expect((await GET(new Request("http://localhost/api/requests?planningNight=2026-02-30"))).status).toBe(400);
+    expect(mocks.list).not.toHaveBeenCalled();
+  });
   it("authenticates before reading malformed bodies and fails closed on outages", async () => {
     const { POST } = await import("@/app/api/requests/route");
     for (const [code, status] of [

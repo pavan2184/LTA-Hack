@@ -22,6 +22,8 @@ import {
   fakeTelegramToken,
 } from "./server";
 import { transcriptTitle } from "./provider-policy.mjs";
+import { coordinationJourney } from "./coordination-journey";
+import { deferredWorkJourney } from "./deferred-work-journey";
 
 async function login(user: FixtureUser, deadline: number) {
   const cookies = new Map<string, string>();
@@ -109,6 +111,48 @@ async function expectError(response: Response, status: number, code?: string) {
 }
 
 describe("production HTTP collaborative journey with controlled external providers", () => {
+  it("carries deferred work through ordinary approval and publishes while coordination remains pending", async () => {
+    const server = await startServer();
+    let fixture: E2EFixture | undefined, target: E2EFixture | undefined;
+    const failures: unknown[] = [];
+    try {
+      fixture = await createFixture({ isolatedNight: true });
+      target = await createFixture({ isolatedNight: true });
+      const deadline = Date.now() + 90000;
+      await deferredWorkJourney(fixture, target, await login(fixture.users[0], deadline), await login(fixture.users[1], deadline), await login(fixture.users[2], deadline));
+      expect(await server.counts()).toEqual({ anthropic: 0, telegram: 0, blocked: 0 });
+      expect(server.logs()).not.toMatch(/TypeError|ReferenceError|Unhandled|PRIVATE_CARRY_SOURCE_NOTE/);
+    } catch (error) { failures.push(error); }
+    finally {
+      try { await server.stop(); } catch { failures.push(new Error("Carry-forward server shutdown failed")); }
+      try { if (fixture) await cleanupFixture(fixture); } catch { failures.push(new Error(`Carry-forward cleanup failed: ${fixture?.recoveryPath}`)); }
+      try { if (target) await cleanupFixture(target); } catch { failures.push(new Error(`Carry-forward target cleanup failed: ${target?.recoveryPath}`)); }
+    }
+    if (failures.length) throw new AggregateError(failures, "Carry-forward HTTP journey or cleanup failed");
+  });
+  it("coordinates both organisations through exact revisions, pending Apply, scoped handoff and close", async () => {
+    const server = await startServer();
+    let fixture: E2EFixture | undefined;
+    const failures: unknown[] = [];
+    try {
+      fixture = await createFixture({ isolatedNight: true });
+      const deadline = Date.now() + 90000;
+      const planner = await login(fixture.users[0], deadline);
+      const a = await login(fixture.users[1], deadline);
+      const b = await login(fixture.users[2], deadline);
+      await coordinationJourney(fixture, planner, a, b);
+      expect(await server.counts()).toEqual({ anthropic: 0, telegram: 0, blocked: 0 });
+      expect(server.logs()).not.toMatch(/TypeError|ReferenceError|Unhandled|PRIVATE_PLANNER_CONFIRMATION_NOTE/);
+    } catch (error) { failures.push(error); }
+    finally {
+      try { await server.stop(); }
+      catch { failures.push(new Error("Coordination E2E server shutdown failed")); }
+      try { if (fixture) await cleanupFixture(fixture); }
+      catch { failures.push(new Error(`Coordination cleanup failed; recovery IDs: ${fixture?.recoveryPath}`)); }
+    }
+    if (failures.length) throw new AggregateError(failures, "Coordination HTTP journey or cleanup failed");
+  });
+
   it("submits manual and transcript work, approves, solves workforce-aware, publishes, retries delivery and downloads exact scoped results", async () => {
     let fixture: E2EFixture | undefined,
       server: Awaited<ReturnType<typeof startServer>> | undefined;
@@ -200,6 +244,22 @@ describe("production HTTP collaborative journey with controlled external provide
         request: RequestSubmission;
       }>("/api/requests", "POST", { fields }, 201);
       await expectError(await other.request(`/api/requests/${manual.id}`), 404);
+      const plannerDraft = (await planner.json<{ request: RequestSubmission }>(
+        "/api/requests", "POST", { fields: { ...fields, title: "E2E planner-created draft" }, organisationId: manual.organisationId }, 201,
+      )).request;
+      expect(plannerDraft.status).toBe("draft");
+      expect(plannerDraft.activeApprovedRevision).toBeNull();
+      expect(plannerDraft.history[0].actorId).toBe(fixture.users[0].id);
+      expect((await contractor.json<{ request: RequestSubmission }>(`/api/requests/${plannerDraft.id}`)).request.id).toBe(plannerDraft.id);
+      await expectError(await other.request(`/api/requests/${plannerDraft.id}`), 404);
+      await expectError(await contractor.request("/api/requests", {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ fields, organisationId: manual.organisationId }),
+      }), 403);
+      const plannerSubmitted = (await planner.json<{ request: RequestSubmission }>(
+        `/api/requests/${plannerDraft.id}/actions`, "POST", { expectedVersion: plannerDraft.version, action: "submit", reason: "" },
+      )).request;
+      expect(plannerSubmitted.status).toBe("submitted");
+      expect(plannerSubmitted.activeApprovedRevision).toBeNull();
       manual = (
         await contractor.json<{ request: RequestSubmission }>(
           `/api/requests/${manual.id}/actions`,

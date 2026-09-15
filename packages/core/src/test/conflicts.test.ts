@@ -4,6 +4,7 @@ import { requestById } from "../data/requests";
 import {
   categoryOf,
   conflictCategories,
+  groupConflicts,
   headline,
   summariseConflicts,
   summaryLine,
@@ -167,5 +168,71 @@ describe("greedy repair", () => {
       expect(move.toMinute).toBeGreaterThanOrEqual(request.earliestStart);
       expect(move.endMinute).toBeLessThanOrEqual(request.latestEnd);
     });
+  });
+});
+
+describe("conflict groups", () => {
+  it("merges transitive overlaps but keeps touching and untimed findings separate without mutating inputs", () => {
+    const findings = [
+      { ...violations[0], id: "a", requestIds: ["M-001", "M-002"], window: { start: 0, end: 15 } },
+      { ...violations[0], id: "b", requestIds: ["M-002", "M-001"], window: { start: 10, end: 25 } },
+      { ...violations[0], id: "c", requestIds: ["M-001", "M-002"], window: { start: 20, end: 30 } },
+      { ...violations[0], id: "d", requestIds: ["M-001", "M-002"], window: { start: 30, end: 45 } },
+      { ...violations[0], id: "e", requestIds: ["M-001", "M-002"], window: null },
+    ];
+    const before = structuredClone(findings);
+    const groups = groupConflicts(findings);
+    expect(groups).toHaveLength(3);
+    expect(groups.find(g => g.window?.start === 0)?.window).toEqual({ start: 0, end: 30 });
+    expect(groups.find(g => g.window?.start === 0)?.violations.map(v => v.id).sort()).toEqual(["a", "b", "c"]);
+    expect(groups.find(g => g.window?.start === 30)?.violations.map(v => v.id)).toEqual(["d"]);
+    expect(groups.find(g => g.window === null)?.violations.map(v => v.id)).toEqual(["e"]);
+    expect(findings).toEqual(before);
+    expect(groupConflicts([])).toEqual([]);
+  });
+  it("collapses findings that name the same requests over the same minutes into one clash", () => {
+    const groups = groupConflicts(violations);
+    expect(groups.length).toBeLessThan(violations.length);
+    expect(groups.reduce((sum, group) => sum + group.violations.length, 0)).toBe(violations.length);
+    // M-008 and M-014 collide on the block, the crew and the supervisor headcount
+    // over 01:00-02:15. That is one clash to a planner.
+    const pair = groups.filter(
+      (group) => group.requestIds.join(",") === ["M-008", "M-014"].join(","),
+    );
+    expect(pair).toHaveLength(1);
+    expect(pair[0].ruleIds).toEqual(
+      expect.arrayContaining(["BLOCK_CAPACITY", "TEAM_CAPACITY", "WORKFORCE_CAPACITY"]),
+    );
+    expect(pair[0].primary.shortfallMinutes).toBe(pair[0].shortfallMinutes);
+    expect(pair[0].window).toEqual({ start: 60, end: 135 });
+  });
+
+  it("keeps different request sets and non-overlapping minutes apart", () => {
+    const groups = groupConflicts(violations);
+    groups.forEach((group) => {
+      const key = group.requestIds.join(",");
+      group.violations.forEach((violation) => {
+        expect([...violation.requestIds].sort().join(",")).toBe(key);
+        if (group.window && violation.window) {
+          expect(violation.window.start).toBeGreaterThanOrEqual(group.window.start);
+          expect(violation.window.end).toBeLessThanOrEqual(group.window.end);
+        }
+      });
+    });
+    const sameSet = groups.filter((group) => group.requestIds.join(",") === "M-008,M-017");
+    // Two separate overlaps for one pair stay two clashes when their minutes do not touch.
+    sameSet.forEach((group, index) => {
+      sameSet.slice(index + 1).forEach((other) => {
+        expect(group.window!.start >= other.window!.end || other.window!.start >= group.window!.end).toBe(true);
+      });
+    });
+  });
+
+  it("is stable across re-validation and orders the worst clash first", () => {
+    const once = groupConflicts(violations).map((group) => group.id);
+    const again = groupConflicts([...violations].reverse()).map((group) => group.id);
+    expect(again).toEqual(once);
+    const shortfalls = groupConflicts(violations).map((group) => group.shortfallMinutes);
+    expect(shortfalls).toEqual([...shortfalls].sort((a, b) => b - a));
   });
 });

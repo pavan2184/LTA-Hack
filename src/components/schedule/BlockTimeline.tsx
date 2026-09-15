@@ -236,16 +236,16 @@ export function BlockTimeline() {
   );
 
   return (
-    <section className="min-w-0 border border-rule bg-surface">
+    <section className="sandbox-block-timeline min-w-0 border border-rule bg-surface">
       <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-rule px-3 py-2">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-[13px] font-semibold text-ink-900">Block occupation</h2>
+          <h2 className="text-[13px] font-semibold text-ink-900">Engineering timeline</h2>
           <span className="text-[12px] text-ink-500">
             {view === "submitted" ? "requested plan" : "optimised schedule"}
           </span>
         </div>
         <p className="text-[12px] text-ink-500">
-          {trackBlocks.length} blocks &middot; 00:00-{formatClock(WINDOW_END)} &middot; one row per block, not per request
+          Work and clearance by track block · {trackBlocks.length} blocks · 00:00-{formatClock(WINDOW_END)}
         </p>
       </header>
 

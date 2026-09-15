@@ -6,8 +6,19 @@ export const planningNightSchema = z.iso
     "Planning night must be between 2000 and 2100.",
   );
 export const planIdSchema = z.uuid();
+export const previewBasisSchema = z
+  .object({
+    planId: planIdSchema,
+    sourceRevision: z.string().regex(/^\d{1,20}$/),
+    solverVersion: z.string().min(1).max(100),
+    constraintVersion: z.string().min(1).max(100),
+    inputDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+  })
+  .strict();
 export const createPlanSchema = z
   .object({
+    expectedBasis: previewBasisSchema.optional(),
+    basedOnPlanId: planIdSchema.optional(),
     planningNight: planningNightSchema,
     strategy: z
       .enum([
@@ -43,3 +54,27 @@ export const decisionSchema = z
 export const publishPlanSchema = z.object({}).strict();
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;
 export type DecisionInput = z.infer<typeof decisionSchema>;
+export const analysisSchema = z.discriminatedUnion("operation", [
+  z
+    .object({
+      operation: z.literal("inspect"),
+      requestId: z.string().min(1).max(64),
+      strategy: createPlanSchema.shape.strategy.removeDefault().optional(),
+      locked: createPlanSchema.shape.locked.removeDefault().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("preview"),
+      strategy: createPlanSchema.shape.strategy.removeDefault(),
+      locked: createPlanSchema.shape.locked.removeDefault().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("compare-objectives"),
+      locked: createPlanSchema.shape.locked.removeDefault().optional(),
+    })
+    .strict(),
+]);
+export type AnalysisInput = z.infer<typeof analysisSchema>;

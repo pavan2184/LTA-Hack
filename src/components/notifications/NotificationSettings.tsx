@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useUnsavedChanges } from "@/lib/navigation/useUnsavedChanges";
 import type {
   NotificationConfiguration,
   NotificationDelivery,
@@ -15,6 +16,12 @@ export function NotificationSettings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [edited, setEdited] = useState<Set<string>>(() => new Set());
+  const confirmDiscard = useUnsavedChanges(edited.size > 0);
+  const markEdited = useCallback((id: string, dirty: boolean) => setEdited((current) => {
+    if (current.has(id) === dirty) return current;
+    const next = new Set(current); if (dirty) next.add(id); else next.delete(id); return next;
+  }), []);
   useEffect(() => {
     let active = true;
     notificationRequest<{
@@ -58,6 +65,7 @@ export function NotificationSettings() {
         className={notificationButton}
         disabled={loading}
         onClick={() => {
+          if (!confirmDiscard()) return;
           setLoading(true);
           setError("");
           setConfigurations([]);
@@ -95,6 +103,7 @@ export function NotificationSettings() {
               key={`${refresh}:${configuration.organisationId}`}
               initial={configuration}
               botConfigured={botConfigured}
+              onDirtyChange={markEdited}
             />
           ))}
         </>
@@ -105,9 +114,11 @@ export function NotificationSettings() {
 function ConfigurationCard({
   initial,
   botConfigured,
+  onDirtyChange,
 }: {
   initial: NotificationConfiguration;
   botConfigured: boolean;
+  onDirtyChange: (id: string, dirty: boolean) => void;
 }) {
   const [configuration, setConfiguration] = useState(initial);
   const [chatId, setChatId] = useState(initial.chatId ?? "");
@@ -116,6 +127,10 @@ function ConfigurationCard({
   const [notice, setNotice] = useState("");
   const normalized = chatId.trim() || null;
   const dirty = normalized !== configuration.chatId;
+  useEffect(() => {
+    onDirtyChange(initial.organisationId, dirty || busy);
+    return () => onDirtyChange(initial.organisationId, false);
+  }, [dirty, busy, initial.organisationId, onDirtyChange]);
   async function run(test: boolean) {
     if (
       test &&

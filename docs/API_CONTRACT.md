@@ -1,5 +1,107 @@
 # API Contract
 
+## Reviewed carry-forward — 2026-09-15
+
+`POST /api/deferred-work/:id/actions` accepts the strict planner-only action
+`prepare-carry-forward` with `expectedVersion`, configured `targetNight`, UUID
+`idempotencyKey`, and `organisationId` only when explicit seeded ownership is
+needed. Success is `{requestId}` for an ordinary draft, not an approval. A target
+must be strictly later than the currently active source night; historical dates
+are supported. Client owner/actor fields and unrecognised keys are rejected.
+
+Scoped request detail may add `carryForward: {workItemId,sourceNight,targetNight}`.
+Only planners receive `requiresReview`, `expectedWorkVersion`, original fields and
+dependencies, and exact `{planId,submissionRevision}` publication (null revision for
+seeded work). Contractor backlog DTOs do not include `activeNight`; planner detail
+uses it to offer only later carry-forward/proposed targets.
+
+Initial target approval additionally requires `carryForward` with the displayed
+`expectedWorkVersion`, `dependenciesReviewed:true` and, when applicable, the exact
+publication object explicitly confirmed by the planner. Context on non-approval
+actions is invalid. Normal safety/skills/windows/dependencies remain mandatory,
+and active inbound dependencies prevent source retirement. Stale source/item/
+publication is a conflict. A same-submission night change is rejected with guidance
+to use reviewed carry-forward. Latest cancelled same-night restoration uses normal
+intake review; retired earlier work cannot reactivate through direct SQL retries.
+
+## Deferred work — 2026-09-15
+
+All routes use verified identity/trusted profiles and no-store responses. Mutations
+require same-origin, strict bounded JSON with the shared 64 KiB stream limit.
+
+| Route | Input | Success |
+| --- | --- | --- |
+| GET /api/deferred-work | Optional ownerId, planningNight, state, overdue, repeated, missingDue, cursor, limit 1–50 | `{items,nextCursor,today,nights,owners?}` |
+| POST /api/deferred-work | `{planId,requestId,reason,idempotencyKey}` | 201 `{workItem}` |
+| GET /api/deferred-work/:id | Exact work UUID | `{workItem}` |
+| POST /api/deferred-work/:id/actions | Strict command plus expectedVersion | `{workItem}` |
+
+Filters use `true|false` strings and state `open|scheduled|completed|cancelled`.
+Night matches source, proposed, occurrence or linked-submission night. Results sort
+by descending UUID; cursor is the last returned UUID. Query length is at most 2048
+characters; duplicate and unknown keys are rejected. Catalogue returns at most 100
+configured nights and 100 trusted planner owners; owner filter/catalogue is planner
+only. `today` is the database-observed SGT calendar date.
+
+Planner commands: `update` accepts at least one of ownerId (UUID|null), dueDate
+(ISO date|null), priority or repeatThreshold (1–100). `propose-night` requires a
+configured planningNight and note. `complete`, `cancel`, `reopen` and `escalate`
+require note. All notes/reasons are trimmed, nonempty and bounded to 1000 characters.
+Metadata priority/deadline/threshold is tracking policy, not a solver constraint.
+
+Planner detail includes saved source-plan link, owner, version and latest 100 audit
+events plus historyTruncated and linked submissions. Contractor SQL DTOs omit those
+fields and contain own work state, dates, priority, counts and flags only. Operator
+items and foreign organisations return not_found. No caller-supplied identity,
+organisation, result, count or state is accepted. Reusing a record key/body returns
+the same durable item; changed reuse or stale versions returns conflict 409 with
+reload guidance. invalid_request400, forbidden403, not_found404 and sanitized
+engine_error500 use the shared error/code/message/requestId envelope.
+
+## Coordination — 2026-09-15
+
+All routes verify the Supabase identity and trusted profile. Mutations retain
+same-origin JSON, strict schemas and the 64 KiB streamed limit. Responses are
+no-store; errors include code/message/requestId without database exceptions.
+
+| Route | Input | Success |
+| --- | --- | --- |
+| GET /api/coordination | Optional planningNight, state=open\|closed, ownerId, overdue=true\|false, pending=true\|false, appliedPlanId, cursor, limit=1–50 | `{cases,nextCursor,owners?}` |
+| POST /api/coordination | `{sourcePlanId,selectedRequestIds,idempotencyKey,parameters:{planningNight,strategy,locked},deadline?}` | 201 `{case}` |
+| GET /api/coordination/:id | Exact case UUID | `{case}` with planner/contractor scope |
+| POST /api/coordination/:id/actions | Strict command with expectedVersion | `{case,appliedPlanId?}` |
+
+Owner/appliedPlanId filters and creation are planner-only. Owners contains at most
+100 trusted planner `{id,isCurrentUser}` options, never invented display names.
+Cases order by descending UUID, with the last UUID as cursor. Contractor lists
+and guessed exact IDs enforce organisation scope; an unrelated case is 404.
+
+Commands all require expectedVersion: `apply` requires revision/idempotencyKey;
+`approve` requires revision/organisationId/confirmedAt/note; `request-changes`
+requires revision/note and derives organisation from the contractor profile;
+`revise` requires a fresh same-night sourcePlanId and parameters; `assign` requires
+ownerId; `deadline` accepts timestamp|null; `escalate`, `close`, `reopen`, `withdraw`
+require a note. Notes are bounded to 1000 characters. Actor, participant and
+computed-output fields are never accepted. Approve is a planner-recorded external
+confirmation, separate from intake approval. Confirmation may remain pending or
+changes-requested when Apply or publication succeeds.
+
+`currentRevision` is latest; `viewedRevision` identifies returned evidence.
+appliedPlanId filtering projects the linked historical revision and its statuses.
+Contractors receive own changes/status/time and own change-request note only;
+their deferral prose is reduced to “Deferred” to exclude other request details.
+Planner proposals include source provenance, parameters, validated result,
+request-revision map, digests, stale/state and exact applied-plan links.
+
+Identical creation key/body returns the existing case. Exact Apply key/revision/
+original expectedVersion/actor replays the linked plan even after later revisions;
+changed replay parameters conflict. Concurrent differing Apply keys cannot create
+two plans for one revision. Revision resets only new confirmation snapshots.
+Typed domain failures: invalid_request400, forbidden403, not_found404,
+conflict/stale_plan/invalid_plan409; shared identity failures401/403/503 and
+sanitized internal500 remain. Stale Apply requires a fresh saved source and
+reviewed proposal. Apply never publishes or sends provider messages itself.
+
 Last updated: 2026-09-07 · RailPlan v0.4.0
 
 ## POST /api/assistant
@@ -91,6 +193,52 @@ Structured intake, ingestion, notification and saved-export routes are documente
 
 ## Durable plans — issue #6
 
+### Connected night workspace — 2026-09-14
+
+`GET /api/plans/overview?planningNight=YYYY-MM-DD&cursor=…` returns
+`{overview: PlannerOverview}`. Both query fields are optional; the default is the
+latest configured night. The response includes configured night windows, the
+current source revision, an exact count of current submitted revisions for the
+selected night, the current publication independently of pagination, 20 version
+summaries and an opaque `nextCursor` (or null). It never loads all historical
+facts or request revision histories. Cursor ordering preserves database timestamp
+precision and UUID ties. Unknown, duplicate, oversized or cross-night query/cursor
+fields are rejected.
+
+`POST /api/plans/:id/analysis` accepts a strict discriminated request:
+
+- `{operation: "inspect", requestId, strategy?, locked?}`: without parameters,
+  inspect the exact saved placements; supplied parameters inspect a server-solved
+  preview. Returns the explanation, blockers and validated alternative slots.
+- `{operation: "preview", strategy, locked?}`: independently validated server
+  result using that saved version's facts and supplied or saved pins.
+- `{operation: "compare-objectives", locked?}`: five previews from identical
+  saved facts and pins, one per objective.
+
+Analysis responses are direct `PlanAnalysis` objects, not `{plan}` envelopes.
+Each preview carries `result`, `parameters`, `basis`, `stale` and
+`currentSourceRevision`. The basis contains plan ID, source revision, current
+solver/constraint versions and the SHA-256 digest of the preview facts and
+normalized parameters. Inspection without parameters retains historical result
+versions. Currentness remains a separate observation, not a rewrite of saved facts.
+
+`POST /api/plans` additionally accepts optional `expectedBasis`. Guarded generation
+re-solves current facts and refuses a different night, source, engine or parameter
+digest with 409 `stale_plan`. The guard is never persisted in parameters or included
+in their digest. Optional `basedOnPlanId` accepts a UUID for upstream revision
+callers; preview saves infer it from `expectedBasis.planId`. If both are supplied
+they must agree. Under the source lock, the base must match the night, current
+source and engine versions, not be superseded, and retain valid saved/current-fact
+digests. The base ID is persisted in parameters and exported as lineage, but does
+not alter the solver input digest. Existing callers remain compatible. Analysis has the same planner
+authentication, RLS, same-origin JSON, 64 KiB body and bounded synchronous workload
+as generation. It never calls the source mutation lock, stores a run, advances a
+revision/generation, publishes or sends messages. No migration is required.
+
+`GET /api/requests?planningNight=YYYY-MM-DD` optionally filters the current revision
+by night **before** the existing 100-record limit. Default all-night and contractor
+organisation scope are unchanged. `/requests?planningNight=…` uses this filter.
+
 All routes verify the Supabase identity and trusted planner role before processing
 input. Contractors receive 403 without plan data. Shared Zod contracts live in
 `src/lib/plans/schemas.ts`; shared output types live in `@railplan/core/types/plans`.
@@ -173,7 +321,7 @@ status, approval result or saved-plan output are never accepted as fields.
 | --- | --- | --- |
 | GET /api/requests/catalogue | None | `{catalogue: RequestCatalogue}` |
 | GET /api/requests | None | `{requests: RequestSubmission[]}`, latest 100 scoped records |
-| POST /api/requests | `{fields: RequestFields}` | 201 `{request}`; contractor organisation derived server-side |
+| POST /api/requests | `{fields: RequestFields, organisationId?: UUID}` | 201 `{request}`; planners must choose an existing organisation; contractors must omit organisationId (derived server-side). Always creates a draft, never approval. |
 | GET /api/requests/:id | UUID | `{request}` including immutable revisions and status history |
 | PATCH /api/requests/:id | `{expectedVersion, fields}` | `{request}`; draft or needs_info only |
 | POST /api/requests/:id/actions | `{expectedVersion, action, reason, approval?}` | `{request}` |

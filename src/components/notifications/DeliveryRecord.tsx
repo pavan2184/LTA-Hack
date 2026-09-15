@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { NotificationDelivery } from "@railplan/core/types/notifications";
 import { notificationRequest } from "./notification-api";
 export const notificationButton =
-  "rounded border border-rule-strong px-3 py-2 text-sm hover:bg-sunk disabled:opacity-50";
+  "planner-button disabled:opacity-50";
 
 export function DeliveryRecord({
   delivery,

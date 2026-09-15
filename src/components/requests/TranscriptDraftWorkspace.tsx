@@ -9,8 +9,10 @@ import type { RequestSubmission } from "@railplan/core/types/requests";
 import type { UserRole } from "@railplan/core/types/auth";
 import { PrivateDraftEditor } from "./PrivateDraftEditor";
 import { ProposalEvidence, proposalLabels as labels } from "./ProposalEvidence";
+import Link from "next/link";
+import { useUnsavedChanges, writeSelection } from "@/lib/navigation/useUnsavedChanges";
 const button =
-  "rounded border border-rule-strong px-3 py-2 text-sm hover:bg-sunk disabled:opacity-50";
+  "planner-button";
 async function result(response: Response): Promise<PrivateDraft[]> {
   const body = await response.json().catch(() => null);
   if (!response.ok)
@@ -26,12 +28,21 @@ export function TranscriptDraftWorkspace({
   manualIntake = true,
   role = "contractor",
   onSubmitted,
+  selectedDraftId,
+  requestHref,
 }: {
   manualIntake?: boolean;
   role?: UserRole;
   onSubmitted?: (request: RequestSubmission) => void;
+  selectedDraftId?: string;
+  requestHref?: string;
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(selectedDraftId ?? null);
+  const [lastInitialId, setLastInitialId] = useState(selectedDraftId);
+  if (lastInitialId !== selectedDraftId) {
+    setLastInitialId(selectedDraftId);
+    setSelectedId(selectedDraftId ?? null);
+  }
   const [drafts, setDrafts] = useState<PrivateDraft[]>([]);
   const [transcript, setTranscript] = useState("");
   const [loading, setLoading] = useState(true);
@@ -41,6 +52,13 @@ export function TranscriptDraftWorkspace({
   const [notice, setNotice] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = loading || saving || readingFile;
+  useUnsavedChanges(Boolean(transcript) || saving || readingFile);
+  function select(id: string | null) { setSelectedId(id); writeSelection("draft", id); }
+  useEffect(() => {
+    const pop = () => setSelectedId(new URLSearchParams(window.location.search).get("draft"));
+    window.addEventListener("popstate", pop);
+    return () => window.removeEventListener("popstate", pop);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     fetch("/api/ingestions/drafts", { cache: "no-store" })
@@ -141,9 +159,9 @@ export function TranscriptDraftWorkspace({
           Submission shares its fields, evidence and saved revision history with
           the selected organisation and planners; it does not approve or
           schedule work.{" "}
-          {manualIntake
-            ? "Use the manual request form above when extraction is unavailable."
-            : "You can continue reviewing submitted requests above when extraction is unavailable."}
+          <Link className="underline" href={requestHref ?? (role === "planner" ? "/requests" : "/contractor")}>
+            {manualIntake ? "Open manual requests" : "Return to request review"}
+          </Link>{" "}when extraction is unavailable.
         </p>
       </header>
       <fieldset disabled={busy} className="space-y-3">
@@ -193,7 +211,7 @@ export function TranscriptDraftWorkspace({
           />
         </label>
         <div className="flex flex-wrap gap-2">
-          <button className={button} onClick={extract}>
+          <button className={`${button} primary`} onClick={extract}>
             Extract and save private drafts
           </button>
           <button
@@ -245,7 +263,8 @@ export function TranscriptDraftWorkspace({
           key={selectedId}
           id={selectedId}
           role={role}
-          onClose={() => setSelectedId(null)}
+          requestHref={requestHref}
+          onClose={() => select(null)}
           onSaved={(saved) =>
             setDrafts((current) =>
               current.map((row) => (row.id === saved.id ? saved : row)),
@@ -281,7 +300,7 @@ export function TranscriptDraftWorkspace({
             <button
               className={button}
               disabled={busy || selectedId !== null}
-              onClick={() => setSelectedId(draft.id)}
+              onClick={() => select(draft.id)}
             >
               {draft.status === "submitted"
                 ? "Review submitted proposal"

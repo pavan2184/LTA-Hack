@@ -48,7 +48,7 @@ interface RunRow {
 /** The isolation level is chosen at BEGIN, before the trusted profile read.
  * Revision locks conflict with every planning-fact write; retry a changed MVCC
  * snapshot from scratch, never reuse a partially read set of inputs. */
-async function transaction<T>(
+export async function transaction<T>(
   identity: VerifiedIdentity,
   work: (tx: TransactionSql) => Promise<T>,
   connection?: Connection,
@@ -152,7 +152,7 @@ async function readMany(
     ),
   }));
 }
-async function read(
+export async function read(
   tx: TransactionSql,
   id: string,
 ): Promise<{ plan: PlanVersion; row: RunRow }> {
@@ -165,10 +165,25 @@ export async function createPlan(
   raw: CreatePlanInput,
   connection?: Connection,
 ): Promise<PlanVersion> {
-  const input = createPlanSchema.parse(raw);
-  return transaction(
-    identity,
-    async (tx) => {
+  return transaction(identity, (tx) => createPlanInTransaction(tx, raw), connection);
+}
+
+/** Coordination Apply shares the caller's source/case transaction. Its reviewed
+ * result check runs before any immutable plan is written. */
+export async function createPlanInTransaction(
+  tx: TransactionSql,
+  raw: CreatePlanInput,
+  review?: (result: SolveResult, facts: PlanningInstance) => void,
+): Promise<PlanVersion> {
+  const { expectedBasis, ...input } = createPlanSchema.parse(raw);
+  if (expectedBasis) {
+    if (input.basedOnPlanId && input.basedOnPlanId !== expectedBasis.planId) {
+      throw new PlanError("stale_plan", "The revision base must match the reviewed preview.");
+    }
+    // Persist lineage, not client guard fields. Existing preview callers gain
+    // the same provenance as explicit upstream revision callers.
+    input.basedOnPlanId = expectedBasis.planId;
+  }
       const [{ revision }] = await tx<
         { revision: string }[]
       >`select railplan_private.lock_planning_source()::text as revision`;
@@ -181,6 +196,19 @@ export async function createPlan(
       const facts = canonicalise(
         await loadPlanningInstance(tx, input.planningNight),
       );
+      if (input.basedOnPlanId) {
+        const base = await read(tx, input.basedOnPlanId);
+        if (
+          base.plan.planningNight !== input.planningNight ||
+          base.plan.sourceRevision !== revision ||
+          base.plan.publishState === "superseded" ||
+          base.plan.solverVersion !== SOLVER_VERSION ||
+          base.plan.constraintVersion !== CONSTRAINT_VERSION ||
+          planInputDigest(facts, base.row.parameters) !== base.row.input_digest ||
+          planInputDigest(base.row.facts, base.row.parameters) !== base.row.input_digest
+        ) throw new PlanError("stale_plan",
+          "The reviewed version is no longer current. Generate a fresh plan and review the changes again.");
+      }
       // A bounded prototype workload. Larger datasets require a background solve
       // budget and are rejected before invoking the synchronous heuristic.
       if (
@@ -193,6 +221,22 @@ export async function createPlan(
           "This planning night exceeds the supported solve bounds.",
         );
       validatePlanParameters(facts, input);
+      if (expectedBasis) {
+        const { row: basisRow } = await read(tx, expectedBasis.planId);
+        if (
+          basisRow.planning_night !== input.planningNight ||
+          basisRow.source_revision !== expectedBasis.sourceRevision ||
+          expectedBasis.sourceRevision !== revision ||
+          expectedBasis.solverVersion !== SOLVER_VERSION ||
+          expectedBasis.constraintVersion !== CONSTRAINT_VERSION ||
+          planInputDigest(facts, input) !== expectedBasis.inputDigest ||
+          planInputDigest(basisRow.facts, input) !== expectedBasis.inputDigest
+        )
+          throw new PlanError(
+            "stale_plan",
+            "The reviewed preview no longer matches these inputs. Refresh and preview again before saving.",
+          );
+      }
       const world = buildWorld(facts);
       const result = solve({
         strategy: input.strategy,
@@ -209,13 +253,11 @@ export async function createPlan(
             result.plan.placements.some((p) => p.requestId === r.id),
           );
       const digest = planInputDigest(facts, input);
+      review?.(result, facts);
       const [{ id }] = await tx<
         { id: string }[]
       >`select railplan_private.save_generated_plan(${input.planningNight}::date,${revision}::bigint,${digest},${tx.json(facts as never)},${tx.json(input as never)},${tx.json(result as never)}) as id`;
       return (await read(tx, id)).plan;
-    },
-    connection,
-  );
 }
 export async function getPlan(
   identity: VerifiedIdentity,

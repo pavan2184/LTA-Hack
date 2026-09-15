@@ -1,33 +1,4 @@
-import { redirect } from "next/navigation";
-import { WorkspaceNavigation } from "@/components/layout/WorkspaceNavigation";
-import { workspaceActor } from "@/lib/auth/page";
-import { RequestWorkspaces } from "@/components/requests/RequestWorkspaces";
-export default async function Contractor() {
-  const actor = await workspaceActor();
-  if (!actor || actor.role !== "contractor") redirect("/");
-  return (
-    <>
-      <WorkspaceNavigation role="contractor" current="contractor" />
-      <main
-        id="workspace"
-        tabIndex={-1}
-        className="mx-auto max-w-6xl space-y-6 px-4 py-8"
-      >
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-widest">
-              RailPlan · Contractor workspace
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold">
-              Your organisation’s requests
-            </h1>
-          </div>
-        </header>
-        <RequestWorkspaces role="contractor" />
-        <footer className="border-t border-rule pt-4 text-xs">
-          Fabricated inputs. Not for operational decisions.
-        </footer>
-      </main>
-    </>
-  );
+import { RequestWorkspacePage, type RequestQuery } from "@/components/requests/RequestWorkspacePage";
+export default function Contractor({ searchParams }: { searchParams: Promise<RequestQuery> }) {
+  return RequestWorkspacePage({ role: "contractor", searchParams });
 }

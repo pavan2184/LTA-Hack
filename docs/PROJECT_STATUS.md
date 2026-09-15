@@ -1,6 +1,849 @@
 # Project Status
 
-Last updated: 2026-09-09
+## GitHub reconciliation — tooling and fresh merge assessment (2026-09-15)
+
+Ported upstream `.gitignore`, ESLint and Vitest exclusions: local artwork/output
+and duplicate `.claude/worktrees` sources stay out of the appropriate scans.
+Full lint and typecheck passed. Vitest file discovery completed with only main
+workspace app/core tests; this was discovery, not a full test run. Existing Vite
+config-loader advisory remains. No app change or preview restart in this step.
+
+Saved a fresh recoverable snapshot (tracked plus untracked source, separate index)
+at `refs/codex-backups/reconciliation-checkpoint-20260915`. The original pre-sync
+snapshot remains. A new merge-tree assessment against `c70ecef` reports29 textual
+conflicts, not22: adapting upstream changes in the local UI creates additional
+same-line overlaps. This is not an applied merge and no conflict markers/index
+entries were installed. Earlier functional checkpoints are resolution decisions,
+not Git-resolved files. No branch movement, push, or deployment occurred.
+
+The remaining functional blocker is the saved-plan grouped requested-time conflict
+editor/recommended-repair flow. It must reuse the existing server analysis/preview
+boundary, not import upstream's duplicate client editor. After that: reconcile
+remaining tests/docs and nonconflicting upstream additions, then perform the actual
+merge with the recorded keep-single-dashboard/navigation decisions and run combined
+verification. Current preview remains http://127.0.0.1:3000 (session40745); not
+reverified in this tooling-only step.
+
+## GitHub reconciliation — single-dashboard sandbox sessions (2026-09-15)
+
+Pavan explicitly chose to keep the single dashboard, not upstream's six subpages.
+Adapted `SandboxSessionBoundary` to the existing server-gated sandbox page. The
+actor-keyed dashboard remount clears component-local controls/conversation; the
+store clears demo inputs on first entry or actor change. Session epochs discard
+late load/build/repair completions. Initial entry deliberately clears unowned
+persisted demo pins; identity and epochs are not persisted. No database/auth policy
+changes. Server role gate remains before the boundary; no client identity is trusted
+for authorization. Reset clears pending work rather than allowing stale results back.
+
+The initial test run failed because the boundary was absent. After implementation,
+37/37 session/dashboard/navigation tests passed (15.41s), including same-actor
+retention and cross-actor pending operations; typecheck passed. This resolves the
+sandbox structural direction, not the final Git merge. Remaining upstream UI
+features and combined review/verification still need reconciliation. Focused lint,
+production build and whitespace checks passed. Preview restarted at
+http://127.0.0.1:3000 (session40745), with AI/Telegram disabled; login HTTP200.
+Authenticated cross-account browser testing was not run. Existing Vite advisory
+remains. No push or deployment.
+
+## GitHub reconciliation — request workflow (2026-09-15)
+
+Compared upstream request workspace, intake, private editor and transcript diffs.
+Retain local separate URL-addressable private-draft pages, exact submitted-request
+handoff, contextual return and unsaved guards instead of upstream hidden tabs and
+fragment-only handoff. Local status guidance already covers submitted/approved work.
+Added the missing upstream Continue to scheduling action to the status summary,
+using the approved request's night and engine request ID rather than a generic
+`/plans` link. Planner-only; not offered for submitted/unapproved work. Existing
+published-plan links retain their exact immutable version separately.
+
+New regression failed before implementation; all41 tests across intake, request
+journeys/pages and private editor passed (5.45s). Typecheck and focused lint passed.
+No permission/backend/database changes; the destination's existing planner gate
+remains authoritative. This records request-workflow reconciliation but does not
+mark a Git merge resolved. Remaining saved-conflict and sandbox structural work,
+combined verification and final Git integration are still pending. Production build
+and whitespace checks passed. Preview restarted at http://127.0.0.1:3000 (session
+66144), with live AI/Telegram disabled; login HTTP200. Browser interaction checks
+were not performed. Existing Vite advisory remains. Nothing pushed or deployed.
+
+## GitHub reconciliation — remove assumed planner-time claim (2026-09-15)
+
+Removed the upstream-deprecated Planner time saved dashboard card, preserving
+calculated movement, utilisation and workforce metrics and their formula controls.
+The regression failed on the existing card before removal; the replacement
+behavioural test checks its absence and retained calculation controls. All24
+dashboard tests passed (13.29s), plus typecheck and focused lint. The unused legacy
+metric helper/raw store baseline are retained for compatibility, not displayed as
+a product benefit. No solver, saved metric or database changes. Full Git merge and
+remaining request/sandbox/saved-conflict integration remain pending. Production
+build and whitespace checks passed. Preview restarted at http://127.0.0.1:3000
+(session47075) with live AI/Telegram disabled; login HTTP200. Authenticated browser
+checks were not run. Existing Vite advisory remains. Nothing pushed or deployed.
+
+## GitHub reconciliation — sandbox clash counts (2026-09-15)
+
+Ported upstream `conflictsMetric` and wired the toolbar/requested banner plus
+headline signals to grouped counts. The fabricated requested set now reports 16
+clashes instead of 30 rule findings. Raw validator counts remain untouched and
+labelled violations/findings. The headline metric counts critical clashes; the
+panel retains all severities. Unreplanned disruptions use their impact findings.
+Added `baselineClashes` captured on load/reset independently of the existing raw
+baseline, so suggested repairs cannot lower the original comparison count.
+
+Initial banner regression failed on 30 vs16; the existing baseline regression then
+caught an edited-request comparison and was retained with the grouped baseline.
+All 179 dashboard/core tests across11 files passed (20.55s). No saved-plan metric
+schema, validator, solver, database or permission changes. The old estimated
+planner-time figure is still present and remains a later upstream reconciliation
+item; its raw baseline was not repurposed. Typecheck, focused lint, production
+build and whitespace checks passed. Preview restarted at http://127.0.0.1:3000
+(session66613) with live AI/Telegram disabled; login HTTP200. Authenticated browser
+verification was not performed. The existing Vite advisory remains. Full Git merge
+remains pending; nothing pushed or deployed.
+
+## GitHub reconciliation — grouped conflict panel (2026-09-15)
+
+Connected the upstream grouping helper to the existing `ViolationPanel` without
+replacing its shell/styles. Header/chips count groups and separately report raw
+rule findings. Expanded rows retain every rule detail. Selecting any member opens
+its group (even outside the current category filter); repair resolves the selected
+finding through the existing store and explicitly avoids promising every finding
+will be cleared. Validator/store repair logic is unchanged.
+
+The new integration test failed before implementation. A missing closing JSX tag
+was caught and corrected during verification. All 24 dashboard tests then passed
+(14.19s), followed by typecheck and focused lint. Other dashboard banner/KPI counts
+still use their existing definitions and need reconciliation before final release;
+the saved-plan grouped-conflict surface is also pending. Production build and
+whitespace checks passed. Preview restarted at http://127.0.0.1:3000 (session
+39301) with AI/Telegram process overrides still disabled; login HTTP 200. Browser
+interaction/visual verification was not performed. Existing Vite advisory remains.
+No merge/push/deployment.
+
+## GitHub reconciliation — conflict grouping foundation (2026-09-15)
+
+Ported `groupConflicts`/`ConflictGroup` and its three upstream regression tests
+from `origin/main` at `c70ecef`. The three tests failed on the missing function
+before the port. Added explicit coverage for transitive overlap, half-open touching
+intervals, untimed findings, empty input and nonmutation. All 155 core tests across
+10 files passed (7.90s), followed by typecheck and focused lint. Validator and solver
+code are unchanged; grouping retains all findings and is presentation-only.
+
+The function is not yet connected to local UI consumers. Displayed conflict counts
+therefore have not changed, and the running preview was not rebuilt for this unused
+helper. Next: integrate grouped conflict rows/actions into the existing UI without
+importing the upstream replacement shell. Full Git merge, remaining workflows,
+final verification and push/deployment remain pending.
+
+## GitHub reconciliation — area 2b: requested-time preview action (2026-09-15)
+
+Added upstream Try requested time behaviour to the existing saved-plan inspector,
+preserving the shared button style and layout. It proposes a pin with the saved
+request's team, preferred start and exact duration through the existing parent
+preview handler; it does not save or publish. Existing pins require explicit
+unpinning first. Loading, busy, stale and superseded states disable the action.
+Five missing-button regressions failed before implementation. Inspector plus
+preview/recovery suites passed 21/21 (6.65s); typecheck and focused lint passed.
+Full grouped requested-conflict UI and the Git merge are still pending. No database
+or solver changes in this step. Production build passed. Restarted the local
+production preview at http://127.0.0.1:3000 (session 50905), retaining disabled AI
+and Telegram providers through process-only overrides. Login HTTP returned 200;
+authenticated browser interaction/visual checks were not performed in this step.
+Whitespace checks passed; the pre-existing Vite config-loader advisory remains.
+
+## GitHub reconciliation — area 2a: saved revision backend (2026-09-15)
+
+Ported the merged upstream revision base contract and two real rollback DB tests
+from `origin/main` (`c70ecef`), combining them with local preview/coordination
+guards. Saves now persist `basedOnPlanId`, infer it for existing expectedBasis
+callers, and reject mismatched or stale/superseded bases. A regression reproduced
+the previously accepted superseded preview. Lineage does not change solver hashes;
+original saved versions remain immutable. No migration or UI component changed.
+
+Red checks: one contract test and four selected DB tests failed on missing lineage
+or the accepted superseded preview before the implementation. Green: 19/19 across
+the complete plans contract, plans DB and planner-analysis DB suites (20.32s).
+Typecheck and focused six-file lint passed. Coordination DB and saved-plan
+preview/recovery/UI suites passed 24/24 (21.57s), for 43 focused tests overall.
+DB parity remains 22 requests with digest `fnv1a:8c4a9050cfea5e8b`; rollback fixtures
+leave no durable changes. Whitespace checks passed. The existing preview login
+at http://127.0.0.1:3000/login returned HTTP 200; no new browser/build verification
+was performed. The pre-existing Vite config-loader advisory remains.
+Security review: trusted planner authorization
+precedes base reads, RLS remains active, UUIDs are validated, and source-lock/digest
+checks precede writes; contractor revision attempts are denied in real SQL tests.
+No SQL privileges, auth policy, provider calls or durable test records were added.
+
+The full Git merge, upstream repair UI, final build/browser checks and release
+verification remain pending. The local preview was not restarted, so this checkpoint
+does not claim the running production build includes these backend changes.
+
+## GitHub reconciliation — area 1: navigation checkpoint (2026-09-15)
+
+Fetched `origin/main` at `c70ecef` without pulling into the working tree. The
+pre-sync tracked/untracked snapshot is preserved at
+`refs/codex-backups/pre-sync-20260915`. Merge-tree assessment found 22 conflicting
+files. PR #27 remains open and is outside this sync.
+
+Navigation/page-entry resolution: retain the current `WorkspaceNavigation`,
+`src/app/plans/page.tsx`, `src/app/requests/page.tsx` and `src/app/sandbox/page.tsx`
+entry behaviour. These preserve the approved shared theme, Home/history/settings,
+coordination/backlog links, separate private drafts, role gates and URL selection.
+The existing contextual sandbox return link already serves the upstream return-to-
+saved-planning intent. Do not introduce the upstream sandbox layout alongside the
+current page shell: that would duplicate navigation/workspace landmarks. Sandbox
+subpages/session-boundary integration must be reconciled as a later whole area.
+
+Added regression assertions for exact sandbox return selection, excluded private
+query data, a single navigation/skip target, and contractor navigation scope.
+Focused navigation/page/return/auth suites: 44/44 tests across five files (2.81s).
+This is a preservation checkpoint, not a completed Git merge or release. No
+production components, database, running preview or remote branches were changed.
+Full build, browser UAT and full/DB suites are deferred until functional integration.
+The existing Vite config-loader advisory remains. Next area: saved-plan repair and
+revision workflow; request editing, sandbox subpages, engine changes and remaining
+documentation/test reconciliation follow separately. Local preview remains at
+http://127.0.0.1:3000; it was not restarted or reverified during this checkpoint.
+
+## Deferred-work Task 3 — reviewed carry-forward verified locally
+
+Review fix round 1: original-source reapproval could strand a previously prepared
+target because generation zero dedupe ignored source revision. Additive migration
+`20260915081323` makes lookup/uniqueness match the full source request/generation/
+revision identity (seeded null uses zero), retaining immutable history and original
+retry IDs. Rollback and independent-session regressions reproduced the failure;
+fix-specific verification:24/24 related DB tests (47.65s),13/13 independent races
+(69.69s), unchanged22-request parity, lint/typecheck passed. Initial existing-case
+timeouts passed unchanged focused retry and the clean complete rerun. New migration
+only committed as `e3e7cc8`; regression/docs changes remain in the fix-only unstaged
+patch. Controller will run the fresh full-suite final gate. Preview PID53449 unchanged.
+
+New task-owned files committed as `1fc5441` (ten files). Twenty-two existing-file
+integrations remain unstaged with the preserved dirty baseline; exact task-only
+changes are in `task-3-integration.diff` beside the detailed Task 3 report.
+
+Implemented explicit linked-draft preparation and normal intake review, exact
+published-source retirement confirmation, one active occurrence, dependency guards,
+seeded-loader/workforce parity, latest cancelled restoration and direct SQL bypass
+protection. Forward targets are strictly later than the active source, including
+historical workflows. Private contractor DTO boundaries and nonblocking coordination
+organisation confirmation remain intact. PROJECT_BRIEF now describes both journeys.
+
+Four CLI-generated additive migrations were controller-reviewed and applied only
+to dedicated hosted Dev; all prior checksums accepted unchanged. No reset, seed,
+Docker, deployment or live provider send. New mapping/preparation fixture cleanup
+verifies 21 immutable-history guards and never rewinds source revision.
+
+Fresh lint/typecheck/build passed. Full suite: 774/774, 93 files, 190.02s. Required
+DB rollback: 84/84, 14 files, 94.46s; original 22-request parity digest unchanged.
+Earlier full-run failures were one unchanged DB latency timeout and outdated
+coordination endpoint mocks; focused checks and fresh full run passed. An extra
+old review-preimage test was accidentally discovered during the first required DB
+run; all preimages now have non-executable `.snapshot` suffixes and the clean DB
+rerun passed. Concurrency: 13/13, five files, 59.59s. Authenticated production HTTP:
+6/6, two files, 62.65s. The new carry-forward HTTP journey asserted zero AI,
+Telegram and blocked-provider calls.
+
+Real isolated-browser journey passed: source inspector → explicit record → backlog
+→ prepared target → ordinary request review → generation → validated-slot
+coordination proposal → Apply with pending organisation response → publication →
+scheduled (not completed) backlog. Exact-source publication checkboxes, failed
+backlog refresh with preserved saved link, Back/Forward, reload, keyboard focus
+trap/Escape return, 390×844 layout and own/foreign contractor views were verified.
+No private-note or title leakage to foreign scope; no uncaught browser errors.
+All three fixture browser sessions closed, exact accounts/data/session files and
+recovery manifests removed, 21 guards verified. Post-cleanup 22-request parity
+remained unchanged; source revision was never reset.
+
+Final production rebuild passed (1646ms compile, 1777ms TypeScript). Preview:
+`http://127.0.0.1:3000`, exec session `37676`, Next PID `53449`, npm parent `53432`.
+Login page verified in a fresh browser with no errors. Optional Anthropic/Telegram
+keys are empty only for this preview process; environment files are unchanged.
+VoiceOver, a full manual accessibility audit and 1440/1920px layout sweeps were not
+rerun in Task 3; desktop 1280px and mobile 390px were checked. Eight screenshots and
+the detailed evidence/report are retained in the ignored SDD task folder.
+
+Supabase advisor access remains permission-denied, not verified. Provider live
+success, operational safety and geographic redistribution clearance remain outside
+this task. Exact integration inventory, migration hashes, RED/GREEN and final local
+server/evidence are in `.superpowers/sdd/2026-09-15-deferred-work/task-3-report.md`.
+
+## Deferred-work Task 2 — backlog UI and connected journeys
+
+Review fix round 1 makes lifecycle progress/errors available inside the modal and
+adds Reload current work there. Recovery preserves the reason/target, shows the
+latest state/version for review and requires another explicit Save action. Two
+failing regressions reproduced missing modal status/alerts; 54 affected UI/navigation
+checks now pass, with scoped lint/typecheck/whitespace checks passing. Fix edits
+remain unstaged; exact source/test diff is in the Task 2 fix-1 artifact.
+
+Implemented the shared-shell planner backlog, exact `work` URL detail reads,
+trusted-owner/configured-night filters, due date/priority/threshold edits, required
+reason dialogs and explicit completion/cancellation/reopen/escalation/target-night
+commands. The contractor request workspace carries the exact work ID through page
+composition and login, displaying only its scoped backlog DTO; private draft pages
+omit it. Planner navigation, source-plan/intake links and saved-plan summaries connect
+the backlog to Night overview. The inspector records only exact saved deferrals;
+draft alternatives do not increment history and proposed nights do not approve work.
+
+Confirmed mutation responses retain their exact item/version and recovery ID when
+the list refresh fails. Explicit-record retries reuse the same key while the reason
+is unchanged. Independent detail reads survive filters/pagination; aborted or late
+responses cannot replace a newer URL selection. Unsaved metadata/reason guards and
+dialog focus recovery cover keyboard exits, including removal of the completion
+button after success. Role review confirms planner page gating, contractor-only DTO
+acceptance, no planner links/history/actions in contractor views and no local-storage
+persistence, provider calls or changed server permissions.
+
+TDD observed missing UI/navigation failures, then regression failures for duplicate
+Back confirmation, stale detail after a changed missing URL and lost completion
+focus. Final affected suite: 87 tests across 10 files passed; full lint, standalone
+typecheck and whitespace checks passed. The existing Vite config-loader advisory
+remains. Integrated DB, production HTTP, browser and build verification are reserved
+for Task 3. No migrations, deployment, server restart or live provider activity.
+Existing production preview remains http://127.0.0.1:3000 (older build, not used as
+evidence for this feature). New task-owned files are committed separately; baseline
+integration edits remain unstaged and are inventoried in the Task 2 report.
+
+## Deferred-work Task 1 — persistence and API
+
+Implemented durable backlog identity, private append-only occurrence/audit history,
+explicit historical deferral recording, publication INSERT-trigger projection,
+same-night correction and current-publication precedence. Scheduled remains
+unresolved; completion/cancellation/reopen/escalation are explicit planner actions.
+Owner/due-date/priority/threshold/target-night metadata is version checked and does
+not alter planning-source revision. Contractor SQL projections omit planner IDs,
+plan links and notes. Bounded list/detail APIs include configured night/owner choices.
+
+Root reviewed and approved additive CLI-generated migration
+20260915050742_deferred_work.sql before hosted Dev application; it applied alone
+with all prior checksum history unchanged. The applied file is now immutable.
+Pure/API 9 tests, rollback DB 7 tests, initial publication/outbox bundle 29 tests,
+existing concurrency 9 tests, typecheck and scoped lint pass. Exact fixture cleanup
+restores 20 history guards; baseline parity passes for the unchanged 22 requests.
+Supabase security advisors was denied by connector permissions; direct SQL checks
+confirmed RLS, write grants, helper execution grants and fixed search paths.
+
+Backlog UI and reviewed carry-forward remain subsequent tasks. Task 3 must extend
+the current seeded scheduling projection with a retired-occurrence guard; intake
+links already require the exact active approved revision for scheduled status.
+No new live provider call, seed/reset, deployment or browser/build run occurred.
+Existing production preview remains at http://127.0.0.1:3000/plans.
+
+Task 1 review fix: a historical record after a scheduling correction and subsequent
+complete removal could incorrectly restore the deferred count. A failing rollback
+regression reproduced count1 instead of count0. Root-reviewed additive migration
+20260915052157_deferred_work_publication_precedence.sql makes every current
+publication outcome authoritative while retaining the historical note. Deferred,
+plan and outbox regressions pass 22/22; typecheck, scoped lint, parity and 20 history
+guards pass. Previous applied migration checksums remain unchanged.
+
+Last updated: 2026-09-15
+
+## Coordination Task 3 — integration verification
+
+Added five actual independent-session coordination races and a production HTTP
+two-organisation journey with controlled/off providers. Exact fixture cleanup now
+removes coordination FKs before plans, supports an owned isolated future night,
+verifies fixture removal, and restores all 17 history guards. The ordinary DB gate
+includes coordination rollback coverage. Test facts/cleanup advance the global
+Dev source revision without resetting it; old saved snapshots remain intact but
+can become stale. Browser fixture accounts, requests, case, plans, night and
+temporary session files were removed after checks.
+
+Fixed two integration gaps with failing-then-passing regressions: owner/deadline
+edits now participate in the unsaved guard; contractor ordinary request pages
+forward an exact case ID through reload/login while private drafts omit it.
+Foreign exact IDs report not-found without selecting another case. Affected
+UI/navigation coverage passes 62 tests in eight files. Typecheck, lint, production
+build and whitespace checks pass. Baseline parity remains
+`fnv1a:8c4a9050cfea5e8b` for 22 requests; the required DB gate's 70 integration
+checks and all 9 concurrency checks passed. The production HTTP suite passed all
+5 tests with exact fixture cleanup; final evidence is in the Task 3 report.
+
+Production-browser verification used isolated identities at 1440×900 and390×844:
+keyboard validated-alternative creation, pending Apply, exact linked draft,
+planner-recorded confirmation, contractor own-only display/change request,
+revision reset, historical Apply disabled, and revision-1 status retained in
+the applied-plan summary and publication dialog. Native Back Cancel preserves an
+unsaved owner edit; Accept leaves, and refresh/back/forward preserve linked case/
+plan context. Escape returns focus to dialog openers. Computed body is white,
+no horizontal overflow or browser console/page errors occurred. A real token-expiry
+wait and spoken-reader test were not performed; signed-out redirect context was.
+
+No deployment, migration, live provider send, credential change or public-schema
+exposure change. Hosted advisor permission remains unavailable as recorded in
+Task 1; manual boundary review and real RLS tests provide the evidence here.
+Updated production preview: http://127.0.0.1:3000 (session19168, PID40412), rebuilt
+after review corrected the subtitle to “apply a validated proposal.” Static copy
+assertion and coordination UI22/22 passed; `/login` health returned200.
+New Task3 test files only are committed as `f9a4eb7`; fixture/integration/docs
+remain unstaged for review. Final HTTP5/5 and post-cleanup baseline parity pass.
+
+## Coordination and deferred-work — implementation started
+
+Pavan approved the written design and explicitly authorised the current checkout.
+Implementation plans: `docs/superpowers/plans/2026-09-15-coordination.md` and
+`docs/superpowers/plans/2026-09-15-deferred-work.md`. Coordination backend is in
+progress, with separate implementation/review and test-first verification. Baseline
+verification passed 686 tests in 82 files. Coordination backend is implemented:
+private immutable proposals/participant snapshots, revision-specific informational
+confirmations, scoped contractor DTOs, optimistic lifecycle actions and atomic
+validated Apply. Fresh source-plan rebasing preserves proposal history; exact
+applied-plan filtering returns that revision's confirmations. Both reviewed
+additive migrations were applied to dedicated Dev; the second corrects SQL JSON
+operator precedence without changing the original applied checksum.
+
+Backend verification passed 22 focused tests (including five real rollback
+coordination DB tests and eight existing plan DB tests), then **700 tests in 85
+files, zero skips** in the serial full run. Typecheck, full lint and diff whitespace
+checks passed. Transient DNS failures during the first DB attempt recovered.
+Real checks cover pending Apply, replay after later revisions, foreign-org denial,
+scoped nested DTOs, stale rebase, immutable evidence and SQL forged-result rejection.
+Hosted security advisors were unavailable due to tool permissions; manual SQL
+review and real RLS checks are recorded, without claiming advisor clearance.
+Planner/contractor UI, browser journeys and independent-connection coordination
+race verification remain later integration work.
+
+Coordination UI is now implemented locally: the planner queue exposes exact-case
+URLs, bounded owner/night/state/overdue/pending filters, complete server-derived
+proposal changes, revision previews, Apply and audited confirmation/lifecycle
+actions. The saved-plan inspector creates cases only from existing validated
+analysis parameters or up to three real alternatives. Contractors receive only
+their scoped change cards and change-request action; private drafts do not receive
+coordination content. Creation and Apply keep stable idempotency keys across an
+uncertain response while their exact input/version is unchanged. Exact applied-plan summaries use `viewedRevision` in the
+Night overview and publication review, without gating publication. Focused UI,
+navigation, saved-plan and request regressions passed 52 tests across 8 files;
+lint, typecheck and whitespace checks passed. Browser/runtime and complete
+authenticated journeys remain Task 3 integration work; the existing port 3000
+preview predates this checkout state and was not used as verification.
+No deployment is authorised for these
+features. Existing uncommitted changes are preserved.
+
+Task 2 review round 1 fixed direct-link fallback, historical revision Apply and
+confirmation alignment, delayed preview/mutation response races, and scoped case
+pagination. Five new regressions raise the focused result to 57 tests across 8
+files; typecheck, lint and whitespace checks remain green. These fixes are local
+and retain the same Task 3 browser/authenticated integration boundary.
+
+Task 2 review round 2 closed the remaining same-case preview reset and
+mixed-filter cursor paths. Two exact-sequence regressions raise focused coverage
+to 59 tests across 8 files; typecheck, lint and whitespace checks remain green.
+
+### Design checkpoint (historical)
+
+Pavan requested priorities one and three: conflict coordination with non-blocking
+organisation confirmation, and accountable deferred work. Proposed design is in
+`docs/superpowers/specs/2026-09-15-coordination-and-deferred-work.md`. It specifies
+version-bound planner-recorded approvals, atomic validated Apply, scoped contractor
+views, deadline escalation, distinct-night deferral counting, owned backlog and a
+reviewed carry-forward intake flow. Global multi-night optimisation is explicitly
+outside this proposed release and requires review of that boundary.
+
+Only design documentation changed this turn. No application code, migration,
+database mutation or deployment occurred. Design whitespace/placeholder checks
+passed; runtime tests were not rerun for documentation-only changes. Detailed
+implementation plans and build await written-design approval per the brainstorming
+workflow. Existing uncommitted changes remain preserved. Previously running local
+preview: http://127.0.0.1:3000 (not rechecked this turn).
+
+## Full working-tree release — 2026-09-15
+
+Deployed all current website changes (base `aa7395f` plus uncommitted work) to
+https://railplan-nine.vercel.app. Vercel deployment
+`dpl_Dm26veu5dm3Ps5CGa21XbpQ9A8c7` is READY, with a successful 34-second Next.js
+production build. Immutable URL:
+https://railplan-gwdgwjepg-pavanmadhup-1254s-projects.vercel.app.
+This supersedes the undeployed labels in the historical entries below.
+
+Release verification: latest local suite passed 686 tests, lint, typecheck and
+build. Authenticated live browser verified generated sandbox result (17 placed,
+5 deferred, zero violations), keyboard move preview, Apply and Undo; Night
+overview loaded and Add request opened the organisation-aware form preserving
+night context. White page styling verified; browser warnings/errors were absent.
+No production request was submitted or saved plan published during verification.
+No database migration, credential or environment change was performed this turn.
+Local preview remains http://127.0.0.1:3000. Initial CLI authorization failure was
+resolved by explicitly selecting the existing project team. The deployment's
+10-minute error-log scan returned no matching logs. Continuous monitoring
+and log-drain configuration were not audited.
+
+## Sandbox drag-to-reschedule — 2026-09-15 (not deployed)
+
+Generated sandbox drafts support horizontal snapped pointer proposals and
+Alt+Left/Right keyboard proposals. Whole-request linked bars and clearance move
+together visually; drop opens a validated solver preview, not an immediate edit.
+Apply pins the selected time and updates the entire result. One-step Undo restores
+the previous result/pins and is invalidated by other planning changes. Pins,
+emergency/overrun work, busy/submitted views and pending disruptions are protected.
+Touch users retain the existing inspector alternatives. No saved-plan, API,
+database or solver changes; unrelated local work preserved.
+
+Verification: all 686 tests across 82 files passed, including focused
+store/component/dashboard regressions; lint, typecheck, production build and
+diff whitespace checks passed. Real-browser pointer drag and keyboard preview,
+Cancel, Apply and Undo verified; linked bars, inspector and metrics stayed in
+sync, with no browser warnings/errors. Authenticated E2E was not rerun for this
+sandbox-only change (no authentication/API changes). Production preview remains
+running at http://127.0.0.1:3000; this feature has not been deployed.
+
+## Planner Add request — 2026-09-15 (local, not deployed)
+
+Night overview now links to manual creation with selected night/version/request
+return context. Planner intake requires an organisation; saving creates a shared
+draft, submission opens that exact request for separate review, and only approval
+adds planning input. Organisation edits are included in unsaved-change protection.
+The additive `20260915024501_planner_manual_request.sql` migration was applied to
+the configured RailPlan development database; no existing migration was modified.
+
+Security review: verified identity/profile gates in the service and new private
+function, empty search path, no anonymous/public execution, contractor override
+denial, organisation-scoped reads, existing JSON/origin guards and unchanged
+approval requirements. Supabase management advisors could not be run: the connected
+account's project list does not include RailPlan. Direct SQL privilege/search-path
+tests and authenticated access-control tests passed instead.
+
+Verification: lint/typecheck/build and database round-trip passed; scoped
+feature/security suites passed. The first full suite had 675 passing tests and one
+existing workforce timeout at 5 seconds; its isolated rerun passed. The second
+full run passed 679 tests and caught the newly added stale-editor error regression
+before its fix; after clearing the previous editor on failed new-request loading,
+all 25 intake tests passed and the production build passed again. No further full
+suite was run after that focused fix. Desktop/mobile browser
+creation and refresh checked, no overflow or console warnings. The in-app native
+unsaved prompt stalled browser automation; its test-only tab was closed, and the
+organisation-only unsaved guard passed in component tests. All four authenticated
+HTTP/provider-policy E2E tests passed, including planner manual creation and
+submission; temporary fixtures were cleaned up by the harness. Local production
+preview: http://127.0.0.1:3000. Frontend deployment remains a separate step.
+
+## Shared sandbox UI deployed — 2026-09-15
+
+At the owner's request, deployed the current working tree (base `aa7395f`, including
+the uncommitted UI/navigation work) to the existing RailPlan project under
+`pavanmadhup-1254`. Forced a clean remote production build, then promoted after
+lint, standalone typecheck and all 671 tests across 80 files passed.
+Deployment `dpl_DpsQwHCB268t4Uj1cztXqbYdCTZ3` is READY; remote build completed in
+49 seconds. Live: https://railplan-nine.vercel.app/sandbox. Immutable deployment:
+https://railplan-cs22jklp2-pavanmadhup-1254s-projects.vercel.app.
+
+Authenticated production browser verification confirmed the actual shared queue
+and timeline, white computed body background, blue controls, collapsed workforce
+and a generated demo result of 17 scheduled / 5 deferred / 0 conflicts. Browser
+console was clean. Anonymous login returned 200 and private overview API returned
+401; deployment inspection resolves the live domain to the new deployment. The
+deployment-specific 10-minute error scan returned no matching logs. Log drains and
+continuous monitoring were not audited. No migration, auth/protection change,
+environment change, saved-plan publication or provider message was performed.
+Separate controlled-provider E2E/concurrency suites were not rerun. Existing
+geographic-source licensing and operational-use limitations remain unresolved;
+deployment does not constitute clearance. Local preview remains on port 3000.
+
+## Sandbox component parity correction — 2026-09-15
+
+The earlier colour/spacing pass was insufficient: sandbox retained its old queue,
+chart and inspector. It now renders the same PlannerQueue/PlannerTimeline as Night
+overview, with a shared request/time header in both inspectors. The sandbox adapter
+uses fabricated visible inputs, including pending emergencies and disruptions;
+no saved-plan API or persistence is introduced. Additional filters retain mandatory,
+pinned, needs-action and conflict-category views. Detailed facts/corridor remain
+expandable, while alternatives are directly visible. Toolbar uses planner controls.
+
+Forty focused component tests, lint, typecheck and production build passed. New
+regressions were observed failing before implementation. An initial test used the
+wrong disruption method and was corrected to exercise the actual store; an ARIA
+tab warning was fixed by using aria-selected only. Browser checks verified the
+shared layout at 1440px, selected-request details, keyboard workforce expansion,
+390px without horizontal page overflow, and no console warnings/errors.
+Local preview: http://127.0.0.1:3000/sandbox. No deployment or separate provider E2E.
+The full suite passed 670 tests across 80 files before the final additional-filter
+regression; the final 40 focused tests include that filter and its implementation.
+The existing Vite future-config-loader advisory remains non-blocking.
+
+## Sandbox visual alignment — 2026-09-15
+
+Aligned the sandbox summary, draft toolbar, timeline tabs and inspector typography
+with Night overview's white/blue design. Four headline figures now include draft
+deferrals; movement and utilisation remain available under Calculations. The
+primary action says “Generate draft schedule” rather than claiming optimality.
+Desktop panels use the taller saved-workspace height range and retain the compact,
+click-to-expand workforce section. Demo data, repairs, pins, scenarios and solver
+behaviour are unchanged; sandbox publication remains unavailable.
+
+Verification: 29 focused tests, all 668 tests across 80 files, lint, standalone
+typecheck and production build passed. The existing Vite future-config-loader
+advisory remains. Desktop browser measurement at 1440×900: timeline 684.5px, closed workforce
+48.5px; keyboard expansion passed. Computed body background is white; 390px mobile
+has no horizontal page overflow and browser console has no warnings/errors.
+No separate authenticated E2E/provider run or deployment for this presentation
+change. Local production preview: http://127.0.0.1:3000/sandbox.
+
+## Click-to-expand workforce availability — 2026-09-15
+
+Night overview and Demo sandbox now share a collapsed-by-default workforce header
+with shortage/unknown-demand status. Clicking or pressing Enter/Space reveals the
+chart and detailed controls; hidden content stays mounted and inert so filters
+survive reopening and tab switches. Removed duplicate external workforce headings.
+The closed panel uses content height instead of reserving chart space, giving that
+space back to the engineering timeline. No solver or API changes.
+
+Focused workforce, sandbox-panel and saved-plan tests: 26 passed. Lint and production
+build (including TypeScript) passed. Browser checks verified saved-panel height
+44px closed / 280px open, sandbox 48px / 299px, visible status while closed,
+mobile without overflow and no console errors. Full suite: 667 tests passed across
+80 files. No deployment or separate authenticated E2E/provider run.
+Local preview: http://127.0.0.1:3000/plans and /sandbox.
+
+## Taller engineering timeline — 2026-09-15
+
+Raised the saved planning workspace's desktop height range from 450–720px to
+650–900px, allocating 200px more to the timeline at a 1440×900 viewport. Measured
+timeline scrolling area increased from 260px to 460px; workforce stays 140px and
+row/text sizes are unchanged. The existing 650px mobile workspace is retained.
+Browser verification confirmed the larger rendered timeline, no page overflow at
+390px and no console warnings/errors. Thirteen panel tests, lint and production
+build (including TypeScript) passed. Full suite/E2E were not rerun for this CSS-only
+change. No deployment. Local production preview: http://127.0.0.1:3000/plans.
+
+## Request UX priority batch — 2026-09-15
+
+Implemented the first three priorities from the owner's UX review: shared HH:MM
+inputs with explicit planning-date/day offsets in manual intake and private draft
+editing; request-inbox search and status/night/organisation filters; role-specific
+status/next-step guidance separating the current revision, active approval and
+published slot. Unknown private times remain null; blank required manual times
+are blocked before saving. API integer-minute contracts, permissions and solver
+rules are unchanged. Filters apply only to the loaded, scoped recent list (up to
+100 records), disclose that limit, and do not replace an open selection or edits.
+
+Verification: 667 tests across 80 files passed; lint, typecheck and production
+build passed. Initial failing regressions confirmed the missing controls and
+missing required-clock guard. A TypeScript narrowing error in the duration-only
+branch was corrected before the successful build. Browser checks covered the
+authenticated planner inbox, search/clear controls, white computed background,
+390px responsive width without overflow and no console warnings/errors. The live
+inbox is empty, so populated clock/status cases and contractor behaviour were
+verified in component tests, not a live browser submission journey. The existing
+Vite future-config-loader advisory remains. No separate E2E/concurrency/provider
+suite, deployment, migration or credential change was performed.
+
+Final consolidation moves the existing planner-only published-plan link into the
+status summary and removes duplicate approval/slot paragraphs. An existing test
+caught changed active-approval wording; the original explanation was retained.
+All 32 affected component/journey tests passed again after that consolidation.
+
+Remaining review recommendations: actionable overview indicators, richer version
+history/comparison entry, clearer sandbox adjustment retention and generation
+wording, and task-based usability testing. These are not claimed implemented by
+this incremental request-workspace batch. Local preview: http://127.0.0.1:3000.
+
+## Production stylesheet cache correction — 2026-09-15
+
+The owner reported beige Home surfaces and a transparent primary button after
+deployment. Inspection of both the actual browser and served CSS confirmed old
+`--color-paper: #edebe6` and missing `--rail-primary` despite correct local source.
+Rebuilt with `vercel deploy --prod --force --yes` (build cache explicitly skipped).
+Deployment dpl_Gr1m6FRLcNRYmwzDJyRASFhXvizK is READY at the existing production alias;
+immutable URL: https://railplan-93nqi1771-pavanmadhup-1254s-projects.vercel.app.
+Production build passed in 50s. Refreshing the reported tab now yields a white
+rgb(255,255,255) body and blue gradient rgb(0,85,184) → rgb(1,72,155) primary action.
+Screenshot confirms neutral panels and readable buttons. No app logic changed;
+unit/E2E tests were not rerun for this cache-only rebuild.
+
+Release lesson: validate computed production colour tokens and primary-button
+backgrounds, not just content and headings. Earlier deployment verification missed
+the stale CSS. If source and served bundles differ, rebuild without build cache.
+
+## Home and sandbox updates deployed — 2026-09-15
+
+At the owner's request, released the current working tree (base aa7395f plus the
+site-wide navigation, Home guide and sandbox corrections) to the existing RailPlan
+production project. Deployment dpl_AiHmfcQEGgXQdWz8kKirbDqCtmwz is READY at
+https://railplan-nine.vercel.app. Immutable URL:
+https://railplan-kwcsnv7mt-pavanmadhup-1254s-projects.vercel.app.
+Vercel production build completed in 49 seconds. No commit/push, migrations or
+authentication/provider configuration changes were made.
+
+Release used the preceding 661-test, lint, typecheck and build verification.
+Post-deploy checks: login HTTP 200, anonymous private overview HTTP 401;
+authenticated browser Home-to-sandbox journey exposes the new headings and 160px
+workforce panel, with no browser console warnings/errors. Existing operational
+and geographic licensing limitations remain; this deployment is not clearance.
+
+## Sandbox panel styling correction — 2026-09-15
+
+Corrected the remaining legacy sandbox panel presentation identified in the owner's
+screenshot: single Work requests / Engineering timeline / Request details headings,
+MRT chips, stronger request titles, pale-blue selection, hatched clearance and a
+larger inspector title/time summary. Width controls and the retained assistant are
+expandable rather than permanently occupying panel space. All underlying sandbox
+repair, alternatives, pinning, workforce and scenario computations are unchanged.
+The compact workforce panel no longer shrinks under timeline pressure; its 72px
+chart fits fully inside a 160px panel below a roughly 570px desktop timeline.
+
+Focused panel/workforce tests (19), full suite (661 tests / 79 files), lint,
+typecheck and production build passed. Separate HTTP E2E/provider checks were not
+rerun for this sandbox-only presentation correction.
+Browser checks verified schedule generation, request selection, width control
+disclosure, workforce detail expansion and complete chart visibility. Desktop and
+390px mobile had no document overflow. No deployment or backend changes.
+Preview: http://127.0.0.1:3000/sandbox.
+
+## Home guide and page introductions — 2026-09-15
+
+Added an authenticated Home guide at `/`, linked from Home and the RailPlan brand.
+Six numbered stages explain Prepare → Submit → Review → Schedule → Publish → Track,
+with role-scoped action links and a separate planner sandbox explanation. Supported
+night/version/request context is preserved through Home. Added short descriptions
+to saved planning, request review, contractor intake, private drafts and sandbox;
+history, settings and login retain their existing introductions. Post-login direct
+workspace destinations, permissions, APIs and solver behaviour are unchanged.
+
+Verification: 661 tests across 79 files passed; lint, typecheck, production build
+and diff check passed. The initial build caught an unsupported Testing Library
+test option; it was corrected and the final build passed. Browser checks confirmed
+desktop and 390px mobile Home layout without overflow, Home-to-drafts navigation,
+the draft introduction and a clean console. Viewport overrides were reset.
+No separate HTTP E2E/concurrency/provider rerun for this content/navigation change;
+contractor link scoping is covered by automated rendering tests, not a fresh browser
+login. No deployment. Preview: http://127.0.0.1:3000/.
+
+## Site-wide UI and navigation implemented locally — 2026-09-15
+
+On `codex/sitewide-ui-navigation`, extended the approved white/blue palette and
+shared role-aware shell across saved planning, demo sandbox, request intake,
+private transcript drafts, notification settings, login and system states.
+Added `/plans/history`, `/settings/notifications`, `/requests/drafts` and
+`/contractor/drafts`; selected records and night/version return context survive
+linked journeys. Exact submission and published-plan links retain role boundaries.
+Sandbox uses queue–timeline–inspector with a larger timeline and compact expandable
+workforce, keeping fabricated inputs separate from saved plans and retaining its
+repair, scenario, geography, calculations and assistant capabilities.
+
+Shared unsaved guards cover edited forms, previews, notification settings and sign
+out. Back uses cancelable pre-traversal events where available and a tested
+capture-phase fallback. Auth return paths have an exact path/query allowlist and
+server-resolved role checks. Independent review identified and corrected missing
+sandbox return context, router restoration ordering and native-link double prompts.
+No solver, migration, permission, provider-setting or deployment change was made.
+Pre-existing local changes were preserved; this work is not committed or deployed.
+
+Verification: 659 tests across 79 files passed; four authenticated production HTTP
+E2E tests passed with controlled providers; lint, typecheck, production build and
+diff checks passed. After the last internal-link correction, 18 affected tests
+passed again. A Vite future-config-loader advisory remains (not a test failure).
+Desktop and 390px mobile browser checks covered the shared palette, sandbox/history/
+request/settings/overview links, no document overflow, conflict focus and mobile
+inspector Escape/focus return. Sandbox measured a 589px timeline versus a 140px
+compact workforce at desktop width. A 720px reflow check also passed.
+
+Remaining manual release QA: explicit browser Back Cancel/OK, contractor visual
+journey and actual browser zoom. Chrome showed the Back warning, but browser control
+was interrupted before reliable Cancel/OK verification; automated traversal and
+both-role authorization checks pass. No live Telegram/LLM delivery, screen-reader
+audit or new database concurrency run was performed for this UI/navigation update.
+Existing geography licensing uncertainty remains. Local production preview:
+http://127.0.0.1:3000/plans. Deployment remains a separate release step.
+
+## Updated workspace deployed — 2026-09-15
+
+At the owner's request, deployed the current working tree (base aa7395f plus the
+connected-workspace and styling changes) to Pavan's existing RailPlan Vercel
+project. Deployment dpl_3VSRivj27a427rUZYEJWo6juKBWp is READY and promoted to
+https://railplan-nine.vercel.app. Immutable deployment URL:
+https://railplan-47baijgp6-pavanmadhup-1254s-projects.vercel.app.
+No Git commit/push, migrations, provider settings or authentication changes were
+made. Existing geographic-source licensing uncertainty remains unresolved.
+
+Fresh checks: 615 tests across 73 files passed; lint, typecheck, diff check and
+Vercel production build passed (build output completed in 44s). Anonymous login
+returned 200, private overview 401 and private workspace 307. Live browser login,
+saved-plan loading and actual white/blue-gradient styling were verified with no
+browser console warnings/errors. Existing saved draft correctly reports changed
+inputs; no plan generation, publication or live notification was performed during
+deployment verification. Separate concurrency/provider E2E suites were not rerun
+this turn; their earlier passing results remain documented below.
+
+## Palette correction — 2026-09-14
+
+Sampled intact reference-image regions instead of guessing the palette: primary
+blue around #01489B, panel neutral #FBFBFB, selected blue #CAE0FC. Removed the
+blue-grey page tint, unified planner link/tab accents, and introduced subtle
+primary, selected-bar and panel gradients. Browser computed styles verified the
+new white canvas, consistent #004BA5 link/tab colour and expected gradients after
+rebuilding. Lint, typecheck, build and four planner-panel tests passed; no DB/E2E
+rerun for this CSS-only correction. Reference raster artefacts mean this is not a
+claim of pixel-perfect equivalence. Preview: http://127.0.0.1:3000/plans.
+
+## Reference styling correction — 2026-09-14
+
+Matched the approved reference more closely with cool white panels, saturated
+blue actions and pills, pale-blue selected timeline bars, MRT line chips and
+compact queue rows. Context tabs now sit in the timeline header. The workforce
+view is a complete 90px-high overview inside a 140px body, not the earlier clipped
+full chart; detailed filters and interval inspection expand on demand. It retains
+actual team/role people counts, rather than relabelling them as aggregate crews.
+Existing solver, saved facts and publication behavior are unchanged.
+
+Verification: a new compact-chart regression failed before implementation and
+passed afterward; 20 focused tests, lint, typecheck and production build passed.
+Browser inspection at 1440px and 390px confirmed chart visibility, detail expansion
+and no document overflow or console warnings/errors. Full DB/E2E suites were not
+rerun for this presentation-only change. Preview: http://127.0.0.1:3000/plans.
+
+## Timeline space adjustment — 2026-09-14
+
+Reduced the scrollable context/workforce body from 195px to 120px as approved,
+giving the engineering timeline 75px more vertical space. Browser measurements
+at the same viewport confirmed timeline height increased from 192px to 267px;
+workforce overflow remains scrollable. Lint, typecheck, production build and
+10 focused planner tests passed. No planning logic or data changed; full DB/E2E
+suites were not repeated for this CSS-only adjustment. Production preview remains
+running at http://127.0.0.1:3000/plans.
+
+## Connected night workspace — 2026-09-14
+
+Implemented the owner's approved reference UI on `/plans`: real configured-night
+overview, exact pending count, scheduled/mandatory/deferred/critical metrics,
+searchable request queue, all-block timeline with separate clearance hatching,
+desktop inspector and narrow-screen dialogs. Workforce, geography and calculated
+metrics share request selection. URL state retains night/version/request.
+
+Server-only, read-only saved analysis provides explanations, alternatives, pin
+and objective previews plus five-objective comparison. Saving a preview re-solves
+with source/engine/digest guards; saved versions remain immutable. History is
+cursor-paged, current publication is independent of pagination, and saved-version
+comparison distinguishes schedule movement, reassignment, revised facts and
+deferrals. Publication review retains the existing endpoint/outbox behavior;
+delivery, exports and review notes remain separate. Request review supports a
+server-side night filter before its existing limit.
+
+Async abort/epoch guards, unsaved-preview discard, publication gating and exact-ID
+recovery cover late responses and successful writes whose display refresh fails.
+Independent review found these two recovery gaps; fixes now have four additional
+passing regressions. No solver changes, migrations, provider configuration,
+public deployment or changes to user-owned AGENTS/next-env edits.
+
+Verification complete: full suite 614 tests/73 files, zero skips; required database
+parity, 62 rollback tests and 4 real concurrency tests; 4 production HTTP E2E tests;
+lint, typecheck and production build all pass. Browser testing caught an exported
+placement carrying extra display fields into the strict pin API. The workspace now
+normalizes the payload to placement fields; a red-then-green regression and a real
+pin-preview/save browser journey verify the fix.
+Production-browser checks covered 1280/1440/1920 desktop widths, 390px mobile,
+native Chrome 200% zoom, mobile search/shared selection, Escape focus restoration,
+saved-version comparison, publication review without publishing, and all three
+context tabs. No document-level horizontal overflow or browser console errors were
+observed. Spoken screen-reader testing remains a manual follow-up, not a verified
+claim. The existing Vite future config-loader warning is non-blocking.
+Existing dev server was stopped before build. Development `127.0.0.1` rejected
+Next resources under its dev-origin policy; using `localhost` resolved hydration
+without changing application permissions. A production preview is running at
+http://127.0.0.1:3000/plans. Browser verification left two fabricated-input drafts
+for 2026-09-16 (d1427599 and 885e1bbf); neither was published and no live notification
+was sent. No public deployment was made. Existing geographic-source licence
+uncertainty remains unchanged.
 
 ## Vercel deployment — 2026-09-09
 

@@ -46,6 +46,8 @@ export interface PlannerWorkItem extends WorkItemBase {
   sourcePlanId: string;
   ownerId: string | null;
   version: number;
+  /** Current occurrence date for later-night choices; sourceNight retains original history. */
+  activeNight?: string | null;
   /** Planner-only audit and linked intake evidence, bounded to the latest 100 events. */
   events?: WorkItemEvent[];
   historyTruncated?: boolean;

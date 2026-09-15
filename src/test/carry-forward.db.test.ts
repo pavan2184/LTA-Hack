@@ -32,6 +32,35 @@ async function seeded(tx: TransactionSql, p: VerifiedIdentity) {
   return { source, item };
 }
 describe("reviewed carry-forward database boundary", { timeout: 40000 }, () => {
+  it("refreshes same-target preparation after original-source reapproval without rewriting old retries", () => fixture(async (tx, p, c, _org, target) => {
+    const source = await createRequest(c, { fields: { planningNight: PLANNING_NIGHT, title: "Reapproved carry source", description: "Preserve immutable preparation context", workClass: "civil", blockIds: ["NS10-NS11"], durationMinutes: 15, preferredStart: 0, earliestStart: 0, latestEnd: 240, equipment: [], workforce: [{ roleId: "technician", count: 10000 }] } }, tx);
+    await actOnRequest(c, source.id, { action: "submit", expectedVersion: 1, reason: "" }, tx);
+    await actOnRequest(p, source.id, { action: "approve", expectedVersion: 2, reason: "Source revision three", approval }, tx);
+    const plan = await createPlan(p, parameters, tx);
+    const item = await recordDeferral(p, { planId: plan.id, requestId: "R-" + source.id, reason: "Track original source", idempotencyKey: randomUUID() }, tx);
+    const originalCommand = { expectedVersion: item.version, targetNight: target, idempotencyKey: randomUUID() };
+    const old = await prepareCarryForward(p, item.id, originalCommand, tx);
+    await actOnRequest(c, old.requestId, { action: "submit", expectedVersion: 1, reason: "" }, tx);
+    await tx`reset role`;
+    const [originalPreparation] = await tx`select * from railplan_private.carry_forward_preparations where submission_id=${old.requestId}`;
+    await actOnRequest(p, source.id, { action: "revise", expectedVersion: 3, reason: "" }, tx);
+    await actOnRequest(p, source.id, { action: "submit", expectedVersion: 4, reason: "" }, tx);
+    await actOnRequest(p, source.id, { action: "approve", expectedVersion: 5, reason: "Source revision six", approval }, tx);
+    await expect(actOnRequest(p, old.requestId, { action: "approve", expectedVersion: 2, reason: "Stale preparation must remain invalid", approval, carryForward: { expectedWorkVersion: (await getWorkItem(p, item.id, tx)).version!, dependenciesReviewed: true } }, tx)).rejects.toMatchObject({ code: "conflict" });
+    expect(await prepareCarryForward(p, item.id, originalCommand, tx)).toEqual(old);
+    const refreshed = await prepareCarryForward(p, item.id, { expectedVersion: (await getWorkItem(p, item.id, tx)).version!, targetNight: target, idempotencyKey: randomUUID() }, tx);
+    expect(refreshed.requestId).not.toBe(old.requestId);
+    expect(await prepareCarryForward(p, item.id, { expectedVersion: (await getWorkItem(p, item.id, tx)).version!, targetNight: target, idempotencyKey: randomUUID() }, tx)).toEqual(refreshed);
+    await actOnRequest(c, refreshed.requestId, { action: "submit", expectedVersion: 1, reason: "" }, tx);
+    await actOnRequest(p, refreshed.requestId, { action: "approve", expectedVersion: 2, reason: "Approve refreshed source context", approval, carryForward: { expectedWorkVersion: (await getWorkItem(p, item.id, tx)).version!, dependenciesReviewed: true } }, tx);
+    expect((await getRequest(p, source.id, tx)).activeApprovedRevision).toBeNull();
+    expect((await getRequest(p, old.requestId, tx)).activeApprovedRevision).toBeNull();
+    expect((await withAuthenticatedTransaction(p, db => loadPlanningInstance(db, target), tx)).requests.map(r => r.id)).toEqual(["R-" + refreshed.requestId]);
+    await tx`reset role`;
+    expect((await tx`select * from railplan_private.carry_forward_preparations where submission_id=${old.requestId}`)[0]).toEqual(originalPreparation);
+    expect(await tx`select source_generation,source_submission_version from railplan_private.carry_forward_preparations where work_item_id=${item.id} order by source_submission_version`).toEqual([{ source_generation: 0, source_submission_version: 3 }, { source_generation: 0, source_submission_version: 6 }]);
+    expect(await tx`select s.id from railplan_private.request_submissions s join railplan_private.work_item_submissions l on l.submission_id=s.id where l.work_item_id=${item.id} and s.active_approved_version is not null`).toHaveLength(1);
+  }));
   it("supports historical carry-forward when the configured target is later than its source", () => fixture(async (tx, p, c) => {
     await tx`insert into public.planning_nights select d::date,window_start_minute,window_end_minute,slot_minutes,minutes_per_block_hop,inter_line_transfer_minutes from public.planning_nights cross join (values('2020-01-01'),('2020-01-02')) dates(d) where planning_night=${PLANNING_NIGHT}`;
     const source = await createRequest(c, { fields: { planningNight: "2020-01-01", title: "Historical carry-forward", description: "Fabricated historical work", workClass: "civil", blockIds: ["NS10-NS11"], durationMinutes: 15, preferredStart: 0, earliestStart: 0, latestEnd: 240, equipment: [], workforce: [{ roleId: "technician", count: 10000 }] } }, tx);
@@ -48,6 +77,7 @@ describe("reviewed carry-forward database boundary", { timeout: 40000 }, () => {
     const first = await prepareCarryForward(p, item.id, command, tx);
     const retried = await prepareCarryForward(p, item.id, command, tx);
     expect(first.requestId).toBe(retried.requestId);
+    expect(await prepareCarryForward(p, item.id, { ...command, expectedVersion: (await getWorkItem(p, item.id, tx)).version!, idempotencyKey: randomUUID() }, tx)).toEqual(first);
     const draft = await getRequest(c, first.requestId, tx);
     expect(draft.status).toBe("draft");
     expect(draft.fields.planningNight).toBe(target);

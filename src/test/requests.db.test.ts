@@ -10,6 +10,7 @@ import {
 import { createPlan, publishPlan } from "@/lib/plans/service";
 import {
   getRequest,
+  getRequestCatalogue,
   listRequests,
   createRequest,
   actOnRequest,
@@ -52,7 +53,7 @@ const fields = {
   planningNight: PLANNING_NIGHT,
   title: "Walkway inspection",
   description: "Inspect the walkway",
-  workClass: "civil",
+  workClass: "civil" as const,
   blockIds: ["NS10-NS11"],
   durationMinutes: 15,
   preferredStart: 15,
@@ -98,6 +99,52 @@ describe.skipIf(!reachable)(
   // rollback finishes. Keep the I/O budget local; statement_timeout stays 10s.
   { timeout: 20_000 },
   () => {
+    it("lets planners create an organisation draft without approving or scheduling it", async () => {
+      await fixture(async (tx, p, c, other) => {
+        const catalogue = await getRequestCatalogue(c, tx);
+        const valid = { ...fields, workforce: [{ roleId: catalogue.roles[0].id, count: 1 }] };
+        const own = await createRequest(c, { fields: valid }, tx);
+        const draft = await createRequest(p, { fields: valid, organisationId: own.organisationId }, tx);
+        expect(draft.status).toBe("draft");
+        expect(draft.organisationId).toBe(own.organisationId);
+        expect(draft.history[0].actorId).toBe(p.id);
+        expect(draft.activeApprovedRevision).toBeNull();
+        expect(draft.scheduled).toBeNull();
+        expect((await getRequest(c, draft.id, tx)).id).toBe(draft.id);
+        await expect(getRequest(other, draft.id, tx)).rejects.toMatchObject({ code: "not_found" });
+        const submitted = await actOnRequest(p, draft.id, { expectedVersion: 1, action: "submit", reason: "" }, tx);
+        expect(submitted.status).toBe("submitted");
+        expect(submitted.activeApprovedRevision).toBeNull();
+      });
+    });
+    it("rejects contractor organisation overrides and missing or unknown planner organisations", async () => {
+      await fixture(async (tx, p, c) => {
+        const catalogue = await getRequestCatalogue(c, tx);
+        const valid = { ...fields, workforce: [{ roleId: catalogue.roles[0].id, count: 1 }] };
+        await expect(createRequest(p, { fields }, tx)).rejects.toMatchObject({ code: "invalid_request", fieldErrors: { organisationId: expect.any(String) } });
+        await expect(createRequest(p, { fields: valid, organisationId: randomUUID() }, tx)).rejects.toMatchObject({ code: "invalid_request", fieldErrors: { organisationId: expect.any(String) } });
+        await expect(createRequest(c, { fields, organisationId: randomUUID() }, tx)).rejects.toMatchObject({ code: "forbidden" });
+        const denied = await withAuthenticatedTransaction(c, async (db) =>
+          (await db`select railplan_private.create_planner_request(${randomUUID()}::uuid,${db.json(valid)}) as result`)[0].result, tx);
+        expect(denied).toEqual({ code: "forbidden" });
+      });
+    });
+    it("keeps planner creation private, denies anonymous execution and fixes the search path", async () => {
+      const [permission] = await sql`select
+        has_function_privilege('anon','railplan_private.create_planner_request(uuid,jsonb)','EXECUTE') as anon,
+        has_function_privilege('authenticated','railplan_private.create_planner_request(uuid,jsonb)','EXECUTE') as authenticated,
+        proconfig from pg_proc where oid='railplan_private.create_planner_request(uuid,jsonb)'::regprocedure`;
+      expect(permission.anon).toBe(false);
+      expect(permission.authenticated).toBe(true);
+      expect(permission.proconfig).toContain('search_path=""');
+      await fixture(async (tx, p) => {
+        await withAuthenticatedTransaction(p, async (db) => {
+          await db`select set_config('request.jwt.claims','{}',true)`;
+          const [row] = await db`select railplan_private.create_planner_request(null,null) as result`;
+          expect(row.result).toEqual({ code: "forbidden" });
+        }, tx);
+      });
+    });
     it("installs the private immutable intake boundary", async () => {
       expect(
         await sql`select to_regclass('railplan_private.request_submissions') as name`,
@@ -168,6 +215,9 @@ describe.skipIf(!reachable)(
         expect(
           (await listRequests(other, tx)).some((r) => r.id === saved.id),
         ).toBe(false);
+        expect((await listRequests(c, tx, valid.planningNight)).some((r) => r.id === saved.id)).toBe(true);
+        expect((await listRequests(c, tx, "2099-12-31")).some((r) => r.id === saved.id)).toBe(false);
+        expect((await listRequests(other, tx, valid.planningNight)).some((r) => r.id === saved.id)).toBe(false);
         await expect(getRequest(other, saved.id, tx)).rejects.toMatchObject({
           code: "not_found",
         });

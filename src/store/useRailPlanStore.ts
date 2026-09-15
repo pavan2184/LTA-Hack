@@ -8,7 +8,7 @@ import {
 } from "@railplan/core/data/disruptions";
 import { requestById } from "@railplan/core/data/requests";
 import { findAlternatives } from "@railplan/core/engine/alternatives";
-import { computeMetrics } from "@railplan/core/engine/metrics";
+import { computeMetrics, conflictsMetric } from "@railplan/core/engine/metrics";
 import {
   explainPlacement,
   type PlacementExplanation,
@@ -44,6 +44,9 @@ export type PlanView = "submitted" | "planned";
 export type SolveStage = "idle" | "validating" | "solving" | "verifying";
 
 interface RailPlanState {
+  sandboxActorId: string | null;
+  sessionEpoch: number;
+  beginSandboxSession: (actorId: string) => void;
   loaded: boolean;
   view: PlanView;
   strategy: StrategyId;
@@ -67,6 +70,7 @@ interface RailPlanState {
    * quietly lowers the bar the schedule is later judged against.
    */
   baselineConflicts: number;
+  baselineClashes: number;
   activeDisruptionId: string | null;
   hasReplanned: boolean;
   stage: SolveStage;
@@ -165,6 +169,13 @@ export const useRailPlanStore = create<RailPlanState>()(
   persist(
     (set, get) => ({
       loaded: false,
+      sandboxActorId: null,
+      sessionEpoch: 0,
+      beginSandboxSession: (actorId) => {
+        if (get().sandboxActorId === actorId) return;
+        get().reset();
+        set({ sandboxActorId: actorId, strategy: "balanced" });
+      },
       view: "submitted",
       strategy: "balanced",
       selectedRequestId: null,
@@ -173,6 +184,7 @@ export const useRailPlanStore = create<RailPlanState>()(
       overrides: {},
       lastRepair: [],
       baselineConflicts: 0,
+      baselineClashes: 0,
       activeDisruptionId: null,
       hasReplanned: false,
       stage: "idle",
@@ -185,8 +197,10 @@ export const useRailPlanStore = create<RailPlanState>()(
       disruptionPlacements: [],
 
       load: async () => {
+        const epoch = get().sessionEpoch;
         set({ stage: "validating" });
         await yieldToPaint();
+        if (get().sessionEpoch !== epoch) return;
         const submitted = reviewSubmittedPlan();
         set({
           loaded: true,
@@ -196,6 +210,7 @@ export const useRailPlanStore = create<RailPlanState>()(
           plannedDisruptionId: null,
           overrides: {},
           lastRepair: [],
+          baselineClashes: conflictsMetric(submitted.violations).value,
           baselineConflicts: submitted.violations.filter(
             (v) => v.severity === "critical",
           ).length,
@@ -215,6 +230,7 @@ export const useRailPlanStore = create<RailPlanState>()(
         const state = get();
         set({ stage: "solving" });
         await yieldToPaint();
+        if (get().sessionEpoch !== state.sessionEpoch) return;
 
         const scenario = state.activeDisruptionId
           ? disruptionById[state.activeDisruptionId]
@@ -231,6 +247,7 @@ export const useRailPlanStore = create<RailPlanState>()(
 
         set({ stage: "verifying" });
         await yieldToPaint();
+        if (get().sessionEpoch !== state.sessionEpoch) return;
 
         set({
           planned: result,
@@ -345,6 +362,7 @@ export const useRailPlanStore = create<RailPlanState>()(
 
         set({ stage: "solving" });
         await yieldToPaint();
+        if (get().sessionEpoch !== state.sessionEpoch) return;
 
         const context = state.context();
         const outcome = repairPlan(current.plan, context);
@@ -429,6 +447,7 @@ export const useRailPlanStore = create<RailPlanState>()(
 
       reset: () =>
         set({
+          sessionEpoch: get().sessionEpoch + 1,
           loaded: false,
           view: "submitted",
           selectedRequestId: null,
@@ -437,6 +456,7 @@ export const useRailPlanStore = create<RailPlanState>()(
           overrides: {},
           lastRepair: [],
           baselineConflicts: 0,
+          baselineClashes: 0,
           activeDisruptionId: null,
           hasReplanned: false,
           stage: "idle",

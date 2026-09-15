@@ -1,6 +1,7 @@
 "use client";
 import {
   useEffect,
+  useId,
   useState,
   useSyncExternalStore,
   type CSSProperties,
@@ -16,11 +17,12 @@ import {
 export interface PlanningPanelsProps {
   preferenceKey: string;
   queue: ReactNode;
-  primary: ReactNode;
+  primary: ReactNode | ((headerActions: ReactNode) => ReactNode);
   inspector: ReactNode;
   workforce: ReactNode;
   geography: ReactNode;
   belowPrimary?: ReactNode;
+  compactContext?: boolean;
 }
 export function PlanningPanels(props: PlanningPanelsProps) {
   return <PanelLayout key={props.preferenceKey} {...props} />;
@@ -33,7 +35,10 @@ function PanelLayout({
   workforce,
   geography,
   belowPrimary,
+  compactContext,
 }: PlanningPanelsProps) {
+  const [contextTab, setContextTab] = useState("Workforce");
+  const tabsId = useId();
   const [store] = useState(() => createLayoutStore(preferenceKey));
   const { layout, storageWarning } = useSyncExternalStore(
     store.subscribe,
@@ -57,6 +62,15 @@ function PanelLayout({
     "--queue-width": `${layout.panels.queue.collapsed ? 84 : layout.panels.queue.size}px`,
     "--inspector-width": `${layout.panels.inspector.collapsed ? 84 : layout.panels.inspector.size}px`,
   } as CSSProperties;
+  const contextTabs = <div role="tablist" aria-label="Timeline context" className="planner-tabs">
+    {["Workforce", "Geography"].map((tab, index, tabs) => <button key={tab} role="tab" id={`${tabsId}-${tab}`} aria-controls={`${tabsId}-${tab}-panel`} aria-selected={contextTab === tab} tabIndex={contextTab === tab ? 0 : -1} onClick={() => setContextTab(tab)} onKeyDown={(event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[1] : tabs[(index + 1) % tabs.length];
+      setContextTab(next); document.getElementById(`${tabsId}-${next}`)?.focus();
+    }}>{tab}</button>)}
+    <a className="py-2 text-xs text-accent" href="#sandbox-calculations">Calculations</a>
+  </div>;
   return (
     <div className="min-w-0 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -93,15 +107,20 @@ function PanelLayout({
       >
         <AdjustablePanel
           id="queue"
-          title="Queue"
+          title={compactContext ? "Work requests" : "Queue"}
+          compact={compactContext}
           axis="width"
           preference={layout.panels.queue}
           onChange={change("queue")}
         >
           {queue}
         </AdjustablePanel>
-        <div className="min-w-0 space-y-2.5">
-          {primary}
+        {compactContext ? <div className="sandbox-center planner-center">
+          {typeof primary !== "function" && contextTabs}
+          {typeof primary === "function" ? primary(contextTabs) : <div className="sandbox-timeline">{primary}</div>}
+          {[{ label: "Workforce", content: workforce }, { label: "Geography", content: geography }].map(({ label, content }) => <div key={label} role="tabpanel" tabIndex={0} id={`${tabsId}-${label}-panel`} aria-labelledby={`${tabsId}-${label}`} hidden={contextTab !== label} inert={contextTab !== label} className="sandbox-context-body" data-view={label}>{content}</div>)}
+        </div> : <div className="min-w-0 space-y-2.5">
+          {typeof primary === "function" ? primary(null) : primary}
           {belowPrimary}
           <AdjustablePanel
             id="workforce"
@@ -121,11 +140,12 @@ function PanelLayout({
           >
             {geography}
           </AdjustablePanel>
-        </div>
+        </div>}
         <div className="min-w-0 lg:col-span-2 2xl:col-span-1">
           <AdjustablePanel
             id="inspector"
-            title="Inspector"
+            title={compactContext ? "Request details" : "Inspector"}
+            compact={compactContext}
             axis="width"
             preference={layout.panels.inspector}
             onChange={change("inspector")}
@@ -134,6 +154,7 @@ function PanelLayout({
           </AdjustablePanel>
         </div>
       </div>
+      {compactContext && belowPrimary}
     </div>
   );
 }

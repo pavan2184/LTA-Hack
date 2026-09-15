@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, Search, TriangleAlert } from "lucide-react";
+import { ChevronRight, Lock, Search, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { categoryTone } from "@/components/insights/ViolationPanel";
@@ -106,7 +106,7 @@ export function RequestQueue() {
   }, [query, filter, stateFor, categoriesOf]);
 
   return (
-    <aside className="flex min-h-0 flex-col border border-rule bg-surface">
+    <aside className="sandbox-request-queue flex min-h-0 flex-col border border-rule bg-surface">
       <div className="border-b border-rule p-2.5">
         <div className="flex items-baseline justify-between">
           <h2 className="text-[13px] font-semibold text-ink-900">Requests</h2>
@@ -206,11 +206,12 @@ function Row({
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="flex items-center gap-1.5">
+          <span className="sandbox-request-identity flex items-center gap-1.5">
           {/* Priority as a colour chip: scanning a queue for the critical work
               should not require reading a word at the end of every line. */}
           <span className={cn("h-2 w-2 shrink-0 rounded-full", priorityDot[request.priority])} />
           <span className="font-mono text-[11px] font-medium text-ink-700">{request.id}</span>
+          <span className="sandbox-line-chip" data-line={request.blockIds[0]?.slice(0, 2)}>{request.blockIds[0]?.slice(0, 2)}</span>
         </span>
         <span className="flex items-center gap-1.5 text-[11px] font-medium">
           {state === "pinned" && <Lock className="size-3 text-accent" />}
@@ -223,12 +224,12 @@ function Row({
                   : "text-ink-500"
             }
           >
-            {start !== null ? formatClock(start) : state === "deferred" ? "no slot" : ""}
+            {start !== null ? formatClock(start) : state === "deferred" ? "Deferred" : ""}
           </span>
         </span>
       </div>
 
-      <p className="mt-0.5 truncate text-[13px] text-ink-900">{request.title}</p>
+      <p className="sandbox-request-title mt-0.5 text-[13px] text-ink-900">{request.title}<ChevronRight aria-hidden="true" className="size-3.5 shrink-0" /></p>
 
       <p className="mt-0.5 text-[11px] text-ink-500">
         <span className={cn("font-medium", corridorText[request.blockIds[0]?.slice(0, 2) ?? "NS"])}>

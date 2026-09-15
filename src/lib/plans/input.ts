@@ -8,10 +8,7 @@ import type { CreatePlanInput } from "./schemas";
 export class PlanError extends Error {
   constructor(
     public readonly code:
-      | "not_found"
-      | "invalid_request"
-      | "stale_plan"
-      | "invalid_plan",
+      "not_found" | "invalid_request" | "stale_plan" | "invalid_plan",
     message: string,
   ) {
     super(message);
@@ -47,7 +44,8 @@ export function planInputDigest(
   input: CreatePlanInput,
 ): string {
   const parameters = {
-    ...input,
+    planningNight: input.planningNight,
+    strategy: input.strategy,
     locked: input.locked
       .map((p) => ({ ...p, locked: true }))
       .sort((a, b) => a.requestId.localeCompare(b.requestId)),

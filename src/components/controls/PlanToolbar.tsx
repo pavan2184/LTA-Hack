@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { categoryTone } from "@/components/insights/ViolationPanel";
 import { Button } from "@/components/ui/button";
 import { requests } from "@railplan/core/data/requests";
-import { summariseConflicts } from "@railplan/core/engine/conflicts";
+import { groupConflicts, summariseConflicts } from "@railplan/core/engine/conflicts";
 import { strategyList } from "@railplan/core/engine/strategies";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
@@ -37,7 +37,7 @@ export function PlanToolbar() {
   const selectViolation = useRailPlanStore((state) => state.selectViolation);
 
   const requestedConflicts = useMemo(
-    () => summariseConflicts(submitted?.violations ?? []),
+    () => summariseConflicts(groupConflicts(submitted?.violations ?? []).map(group => group.primary)),
     [submitted],
   );
 
@@ -45,37 +45,16 @@ export function PlanToolbar() {
   const pinnedCount = Object.keys(locked).length;
   const appliedCount = Object.keys(overrides).length;
   const profile = strategyList.find((item) => item.id === strategy) ?? strategyList[0];
-  const plannedConflicts = planned?.violations.filter((v) => v.severity === "critical").length ?? 0;
+  const plannedConflicts = groupConflicts(planned?.violations ?? []).length;
 
   return (
-    <section className="border border-rule bg-surface">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule px-3 py-2">
-        <h1 className="text-[14px] font-semibold tracking-tight text-ink-900">
+    <section className="sandbox-toolbar border border-rule bg-surface">
+      <h2 className="sr-only">
           Scheduled maintenance planner
-        </h1>
-
-        <div className="ml-auto flex items-center gap-2">
-          <label htmlFor="objective" className="text-[11px] uppercase tracking-[0.06em] text-ink-500">
-            Objective
-          </label>
-          <select
-            id="objective"
-            value={strategy}
-            onChange={(event) => setStrategy(event.target.value as StrategyId)}
-            disabled={busy}
-            className="h-7 rounded-sm border border-rule-strong bg-surface px-2 text-[12px] focus:border-accent disabled:text-ink-400"
-          >
-            {strategyList.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      </h2>
 
       {/* The three steps. Each is a real place to stand, so each is a control. */}
-      <ol className="flex flex-wrap items-stretch border-b border-rule">
+      <ol className="sandbox-stage-tabs flex flex-wrap items-stretch border-b border-rule">
         <Step
           index={1}
           label="Requested plan"
@@ -99,6 +78,9 @@ export function PlanToolbar() {
             setView("submitted");
             const first = submitted?.violations[0];
             if (first) selectViolation(first.id);
+            const panel = document.getElementById("sandbox-conflicts");
+            panel?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+            panel?.focus({ preventScroll: true });
           }}
         />
         <Step
@@ -144,28 +126,33 @@ export function PlanToolbar() {
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button
-            size="sm"
+      <div className="planner-toolbar sandbox-shared-controls">
+        <span className="planner-version">{view === "planned" ? "Demo draft" : "Requested times"}</span>
+        <div className="planner-actions">
+          <label htmlFor="objective" className="text-xs text-ink-500">Objective</label>
+          <select id="objective" value={strategy} onChange={(event) => setStrategy(event.target.value as StrategyId)} disabled={busy} className="planner-field text-xs">
+            {strategyList.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+          <button
+            type="button" className="planner-button"
             onClick={applyAllSuggestions}
             disabled={busy || view !== "submitted" || requestedConflicts.total === 0}
           >
             Apply suggested fixes
-          </Button>
+          </button>
           {appliedCount > 0 && (
             <Button size="sm" variant="quiet" onClick={clearSuggestions} disabled={busy}>
               <Undo2 className="size-3.5" />
               Undo {appliedCount}
             </Button>
           )}
-          <Button size="sm" variant="primary" onClick={buildPlan} disabled={busy}>
-            {busy ? "Working…" : planned ? "Generate again" : "Generate optimal schedule"}
-          </Button>
+          <button type="button" className="planner-button primary" onClick={buildPlan} disabled={busy}>
+            {busy ? "Working…" : planned ? "Generate again" : "Generate draft schedule"}
+          </button>
         </div>
 
-        <div className="ml-auto min-w-0 text-[11px] leading-relaxed text-ink-500">
-          <p className="truncate">{profile.description}</p>
+        <div className="w-full min-w-0 text-[11px] leading-relaxed text-ink-500">
+          <p>{profile.description}</p>
           {(pinnedCount > 0 || lastRepair.length > 0) && (
             <p className="text-accent">
               {pinnedCount > 0 &&
@@ -212,7 +199,7 @@ function Step({
           className={cn(
             "flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
             state === "current"
-              ? "bg-ink-900 text-white"
+              ? "bg-accent text-white"
               : state === "done"
                 ? "bg-rule-strong text-ink-900"
                 : "border border-rule-strong text-ink-400",

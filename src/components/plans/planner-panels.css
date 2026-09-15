@@ -1,0 +1,57 @@
+.rp-queue,.rp-timeline{min-width:0;background:#fff;color:#222a32;border:1px solid #dddeda;border-radius:4px;font-size:12px}
+.rp-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;border-bottom:1px solid #e6e7e3}
+.rp-panel-heading h3{font-size:14px;font-weight:600;margin:0;letter-spacing:-.15px}
+.rp-panel-heading p{font-size:11px;color:#646b72;margin:5px 0 0}
+.rp-count{font-size:11px;background:#f1f2ef;border:1px solid #e2e3df;border-radius:3px;padding:1px 6px;font-variant-numeric:tabular-nums}
+.rp-queue{display:flex;flex-direction:column;max-height:790px;overflow:hidden}
+.rp-queue-search{display:flex;align-items:center;gap:8px;margin:14px 14px 11px;padding:8px 9px;border:1px solid #dedfdc;border-radius:3px;color:#667079}
+.rp-queue-search input{min-width:0;width:100%;outline:none;font-size:11px;background:transparent;color:#283039}
+.rp-queue-search:focus-within{outline:2px solid #1257a8;outline-offset:2px}
+.rp-queue-filters{display:flex;gap:2px;padding:0 12px 11px;border-bottom:1px solid #e6e7e3}
+.rp-queue-filters button{flex:1;white-space:nowrap;font-size:10px;padding:6px 4px;border:1px solid transparent;border-radius:3px;color:#58626b;cursor:pointer}
+.rp-queue-filters button span{margin-left:3px;font-variant-numeric:tabular-nums}
+.rp-queue-filters button[aria-pressed=true]{background:#eaf1fa;border-color:#c8d8ec;color:#1257a8;font-weight:600}
+.rp-queue-list{list-style:none;margin:0;padding:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;flex:1}
+.rp-queue-request{display:block;width:100%;text-align:left;padding:13px 15px 12px;border-left:3px solid transparent;border-bottom:1px solid #e8e9e5;cursor:pointer}
+.rp-queue-request:hover{background:#f7f8f5}
+.rp-queue-request[aria-pressed=true]{background:#eff4fb;border-left-color:#1257a8}
+.rp-request-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.rp-request-id,.rp-block-label,.rp-hour-label,.rp-request-bottom{font-family:var(--font-mono),monospace;font-variant-numeric:tabular-nums}
+.rp-request-id{font-size:10px;color:#606973;overflow-wrap:anywhere}
+.rp-request-title{display:block;font-size:12px;font-weight:600;line-height:1.45;overflow-wrap:anywhere}
+.rp-request-sector{display:block;font-size:10px;color:#68717a;margin-top:4px;overflow-wrap:anywhere}
+.rp-request-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-size:10px;margin-top:9px;color:#59646d}
+.rp-queue-footer,.rp-queue-empty{padding:12px 16px;color:#667079;font-size:10px}
+.rp-queue-footer{border-top:1px solid #e6e7e3}
+.rp-line-chip{display:inline-block;flex-shrink:0;font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;line-height:1.6;letter-spacing:.3px}
+.rp-line-ns{color:#a6322c;background:#fae9e6}.rp-line-ew{color:#236a43;background:#e8f3eb}.rp-line-cc{color:#815814;background:#f9efda}
+.rp-timeline-scale{font-size:10px;white-space:nowrap;color:#69727a}
+.rp-timeline-scroll{overflow-x:auto;max-width:100%;overscroll-behavior-x:contain;padding:0 18px}
+.rp-timeline-canvas{min-width:560px;padding-right:12px}
+.rp-timeline-axis,.rp-block-row{display:grid;grid-template-columns:100px minmax(0,1fr)}
+.rp-timeline-axis{height:55px;color:#677079;font-size:10px;align-items:center}
+.rp-timeline-axis>div{position:relative;height:100%}
+.rp-hour-label{position:absolute;top:12px;font-size:10px;transform:translateX(-50%)}
+.rp-hour-label:first-child{transform:none}.rp-hour-label-end{transform:translateX(-100%)}
+.rp-handback-label{position:absolute;top:31px;transform:translateX(-100%);font-size:9px;white-space:nowrap;color:#5d646b}
+.rp-corridor-heading{display:flex;align-items:center;gap:7px;padding:10px 0 8px;font-size:10px;font-weight:600;color:#58616b;border-top:1px solid #dfe2dd;background:#fff}
+.rp-block-row{border-bottom:1px solid #f0f1ee}
+.rp-block-label{display:flex;align-items:center;font-size:10px;color:#657079;padding-right:8px}
+.rp-block-track{position:relative;min-width:0}
+.rp-time-gridline{position:absolute;inset-block:0;width:0;border-left:1px dashed #e4e7e2;pointer-events:none}.rp-time-gridline-hour{border-left-style:solid}
+.rp-handback-line{position:absolute;inset-block:0;width:0;border-left:1px dashed #939b9f;pointer-events:none}
+.rp-occupation{position:absolute;display:flex;height:28px;min-width:2px;cursor:pointer;padding:0;border:0;background:transparent;border-radius:3px;text-align:left}
+.rp-work-bar{display:flex;gap:5px;align-items:center;min-width:0;height:100%;overflow:hidden;white-space:nowrap;background:#e9ecee;border:1px solid #cbd1d5;border-radius:3px 0 0 3px;color:#414b56;padding:0 6px;font-size:9px}
+.rp-work-bar>span:first-child{font-family:var(--font-mono),monospace;font-size:9px}.rp-work-bar>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.rp-clearance-bar,.rp-legend-clearance{display:block;height:100%;background:repeating-linear-gradient(135deg,#fbfcfa,#fbfcfa 3px,#cdd3d5 3px,#cdd3d5 4px);border:1px solid #cbd1d5;border-left:0;border-radius:0 3px 3px 0}
+.rp-occupation[aria-pressed=true] .rp-work-bar{background:#1257a8;border-color:#1257a8;color:white}
+.rp-occupation[aria-pressed=true] .rp-clearance-bar{border-color:#1257a8;background:repeating-linear-gradient(135deg,#eaf2fb,#eaf2fb 3px,#7d9fc9 3px,#7d9fc9 4px)}
+.rp-occupation[aria-pressed=true]{outline:1px solid #1257a8;outline-offset:1px}
+.rp-queue button:focus-visible,.rp-occupation:focus-visible,.rp-timeline-scroll:focus-visible{outline:2px solid #1257a8;outline-offset:2px;z-index:2}
+.rp-timeline-legend{display:flex;align-items:center;flex-wrap:wrap;gap:18px;border-top:1px solid #e6e7e3;padding:13px 18px;margin-top:14px;font-size:10px;color:#616b73}
+.rp-timeline-legend>span{display:flex;align-items:center;gap:6px}.rp-timeline-legend i{width:13px;height:10px;border-radius:2px;display:inline-block}.rp-legend-work{background:#e9ecee;border:1px solid #cbd1d5}.rp-legend-selection{background:#1257a8}
+@media(max-width:700px){.rp-queue{max-height:460px}.rp-timeline-scroll{padding-inline:12px}.rp-panel-heading{padding:14px}.rp-timeline-scale{display:none}}
+.rp-occupation[data-draggable] { cursor: grab; }
+.rp-occupation[data-dragging] { cursor: grabbing; z-index: 5; outline: 2px dashed #0055b8; opacity: .8; }
+.rp-move-controls { padding: 8px 14px; border-bottom: 1px solid #d9dee7; font-size: 12px; color: #43516a; }
+.rp-move-controls section { margin-top: 8px; padding: 10px; background: #eaf3ff; border: 1px solid #9dc2f5; border-radius: 6px; }

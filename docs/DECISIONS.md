@@ -1,8 +1,158 @@
 # Decisions
 
+## 2026-09-15 — Keep the single sandbox dashboard
+
+Pavan selected the single dashboard instead of upstream's six-page sandbox.
+Retain the approved queue/timeline/inspector layout and adapt the upstream session
+boundary around it. Identity is server-confirmed and memory-only. On first entry
+or a planner change, clear demo state (including unowned persisted pins) and remount
+the dashboard. Same-planner renders retain state. Session epochs invalidate pending
+load/solve/repair completions after reset or identity change. This deliberately
+trades cross-reload demo-pin retention for preventing cross-account reuse; saved
+planning and private database records are unaffected.
+
+## 2026-09-15 — Reconcile saved revision provenance without replacing the UI
+
+Adopt merged upstream `basedOnPlanId` and its source-lock validation, retaining the
+local `expectedBasis` preview guard. Preview saves infer lineage automatically;
+explicit conflicting bases are rejected. The base ID is immutable saved metadata,
+not a solver input; historical digests remain unchanged. Both saved-preview and
+coordination Apply paths use the same check. No migration, permission expansion,
+second revision editor or visual redesign is needed for this backend checkpoint.
+Remaining conflict-repair UI integration is a separate reconciliation step.
+
+## 2026-09-15 — Reviewed forward-only occurrence transfer
+
+Carry-forward means a configured night strictly later than the active source, not
+necessarily after today. This preserves historical workflows; backward rescheduling
+needs a separate future workflow. Preparation never approves or retires work.
+Explicit review binds exact current publication and source generation, while ordinary
+validation enforces target references and source-retirement dependency safety.
+
+Retain seeded rows and old plans. A private active mapping is the loader authority
+after transfer; its null active fields represent cancellation, not permission to
+fall back to the old seed. Retain last submission identity so latest cancelled work
+can be restored normally, but old retired duplicates cannot. Ordinary revision is
+not a cross-night bypass. Source-first locking serializes approval/publication;
+metadata keeps item-only locking. Normal intake approval and informational
+coordination organisation approval are intentionally separate concepts.
+
+## 2026-09-15 — Durable deferred identity and publication corrections
+
+Keep accountable deferred work separate from immutable solver runs. Use approved
+submission UUID identity and explicit carry-forward links; baseline identity includes
+its engineering night. Titles never establish identity. Record draft deferral only
+on explicit planner action, or atomically at publication via a private INSERT
+trigger. Append same-night corrections and count distinct effective nights; a late
+historical record cannot reverse a current published placement.
+
+Keep terminal lifecycle separate from scheduled projection. Current publication
+does not establish physical completion, and removing a placement reopens unresolved
+work. Informational owner/due-date/priority/threshold edits never stale planning
+facts. A two-night threshold is configurable planning policy, not a safety rule.
+Use SQL-level contractor allowlists and retain actor UUIDs after account deletion.
+
+## 2026-09-15 — Coordination evidence and integration verification
+
+Implement the approved coordination design with revision-bound informational
+confirmation, immutable full-plan impact and source-before-case lock ordering.
+Reuse normal generation/publication rather than introducing another scheduling
+authority. Keep approval notes planner-only and contractor changes scoped through
+exact saved request revisions. Case closure leaves unresolved statuses visible.
+
+Verify races with committed isolated future-night fixtures and observed distinct
+waiting database sessions. Reuse the production HTTP provider-isolation harness;
+coordination itself has no provider call. Cleanup restores 17 immutable guards
+transactionally and never resets the source revision. Existing saved snapshots
+remain immutable but may become stale after test source changes. No new schema,
+deployment or live provider configuration is required by the verification task.
+
+## 2026-09-15 — Sandbox drag proposals, not unchecked placement edits
+
+Horizontal drag snaps to the existing planning interval and proposes a pin to the
+normal solver. Require explicit Apply after showing validation and other-placement
+changes; a solver reflow may move other jobs. Reject critical/infeasible results.
+Keep one guarded Undo, existing keyboard/inspector alternatives, and no duration
+or track reassignment. Touch retains the inspector to avoid stealing page scroll.
+The shared saved-plan timeline receives no move callback. No solver, API or
+database changes are part of this feature.
+
+## 2026-09-15 — Planner manual request creation
+
+Night overview links to `/requests?request=new` with planningNight, plan and
+planRequest context. Reuse the existing intake editor and lifecycle rather than
+introducing a second form or adding unreviewed work directly to a saved plan.
+Planners choose an existing contractor organisation; saved drafts are shared
+with that organisation, not private transcript drafts. Organisation is immutable
+after creation. Existing draft/needs-info editing and submission permissions now
+have planner UI controls; approval remains a separate audited action.
+
+Add one narrow private `create_planner_request(uuid,jsonb)` function with trusted
+profile authorization, empty search path, no anonymous/public execution, the
+existing source lock and field validator. Keep contractor mutation SQL unchanged.
+The application also rejects contractor organisation overrides and missing
+planner organisations. No new tables, RLS broadening, solver or publication changes.
+
+## 2026-09-15 — Reuse planner presentation in sandbox
+
+Use the existing planner queue and block timeline with a demo-only input adapter,
+and share the request/time header. CSS overrides on the old sandbox components
+did not meet the approved visual parity requirement. Keep saved-plan fetching,
+permissions and persistence outside the shared presentation; sandbox URL context
+remains a return address, not a source of planning inputs. Preserve timed conflict
+overlays and forced scenario inputs when adapting the demo to the shared chart.
+
+### 2026-09-15 — A workflow guide at Home
+
+Replace the authenticated root's immediate workspace redirect with a concise,
+role-aware six-stage guide. Keep direct workspace/login destinations intact and
+add Home to shared navigation. Describe all stages to both roles, but render
+planner-only action links only for planners. Existing page introductions are
+retained; missing descriptions are added without changing workflow behaviour.
+
+### 2026-09-15 — One visual system with separate saved and demo state
+
+Status: Accepted by the owner through the site-wide implementation plan.
+
+Promote the approved neutral-white/blue design into global tokens and shared
+navigation, rather than adding further `/plans`-only overrides. This supersedes
+the historical warm-paper palette choice, while retaining IBM Plex, MRT identity
+and distinct validation/conflict colours. Use linked history, settings and private
+draft views; retain small contextual review/pinning dialogs and quick version
+switching. Keep sandbox inputs separate even when carrying a saved-plan return
+address through its navigation. Preserve existing solver capabilities and scoped
+contractor access without adding imports, publication or database migrations.
+
+Native selection history contains identifiers only. Unsaved traversal is cancelled
+before history changes where the Navigation API supports it. The older-browser
+popstate fallback restores the current URL/router entry and replaces forward history.
+Authenticated login return paths are allowlisted and role-checked, never arbitrary
+URLs. Deployment is a separate release action after implementation verification.
+
 Last updated: 2026-09-07
 
 ## Log
+
+### 2026-09-14 — Connected night workspace with immutable preview basis
+
+Implement the owner's approved RailPlan UI as the actual planner landing workspace,
+not a parallel mock dashboard. Keep the warm paper/blue-selection/MRT-identity
+design and existing fonts; ignore the reference image's rendering artefacts and
+illustrative schedule inconsistencies. Show actual metrics and every saved block;
+deferred work never appears as a scheduled bar. Hatched clearance occupies track
+after work, and overlapping occupations receive separate lanes.
+
+Keep preview analysis read-only and server-authoritative. Reuse the existing
+heuristic and validator against immutable saved facts; do not accept client result
+payloads or change solver rules. An optional expected basis guards the explicit
+save against source, engine or parameter changes. Guard metadata is not a solver
+parameter and must never change historical digest compatibility. No schema change.
+
+Separate requested-time movement from saved-version changes. Current publication
+lookup is independent of the paginated history, and pending intake counts do not
+rely on the 100-row review list. Publication stays immutable and retains the existing
+notification dispatch behavior; the UI distinguishes publication from delivery and
+an uncertain response from a confirmed refresh. No deployment is included.
 
 
 ### 2026-09-07 — Workforce is a hard aggregate constraint (#8)

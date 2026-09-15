@@ -1,6 +1,6 @@
 # Project Brief
 
-Last updated: 2026-09-07 · RailPlan v0.4.0
+Last updated: 2026-09-15 · RailPlan v0.4.0
 
 RailPlan is a non-operational rail-maintenance planning prototype for planners and
 contractor organisations. A fabricated baseline of22 requests over12 atomic track
@@ -24,6 +24,14 @@ engineering night. No output is an operational instruction or safety approval.
 6. Contractors see their organisation's published slots. The separate `/sandbox`
    preserves fabricated conflict repair, alternatives, pins, disruptions and the
    optional engine-grounded assistant; sandbox edits are not persisted approvals.
+7. Coordination compares exact saved proposals and records organisation responses.
+   Pending organisation approval remains visible but does not block planner Apply
+   or publication; it is distinct from the intake approval required for planning.
+8. The deferred-work backlog preserves repeated deferrals, ownership and due dates.
+   A planner can prepare a linked draft on a later configured engineering night.
+   Normal intake review resolves dependencies and explicitly confirms retirement of
+   any exact current published source. Only approval moves the active occurrence;
+   generation and publication remain separate. Completion/cancellation is explicit.
 
 ## Architecture and boundaries
 

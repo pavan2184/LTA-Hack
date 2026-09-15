@@ -40,7 +40,7 @@ export default async function CoordinationPage({
           <h1 className="mt-2 text-3xl font-semibold">Coordinate plan changes</h1>
           <p>
             Review versioned schedule proposals, record organisation responses
-            and apply an agreed proposal as a separate saved draft.
+            and apply a validated proposal as a separate saved draft.
           </p>
         </header>
         <CoordinationWorkspace

@@ -1,5 +1,75 @@
 # Data Model
 
+## Carry-forward active identity — 2026-09-15
+
+`work_item_active_occurrences` is private, one row per work item. Its active request,
+night, submission UUID and positive revision must be all non-null or all null; the
+request ID must match the submission UUID. `generation` guards prepared-source
+optimism. `last_submission_id` remains non-null after cancellation so only the most
+recent cancelled occurrence can be restored, never an older retired duplicate.
+Planner SELECT is RLS-scoped; authenticated roles cannot directly write this table.
+Every mapping mutation advances the global planning-source revision.
+
+`carry_forward_preparations` is append-only: submission, work item, target, exact
+source identity/revision/generation, original fields/dependencies, actor and command
+are retained. Actor/idempotency-key and item/target/source-request/generation/revision
+uniqueness make retries deterministic; null seeded revision uses identity zero.
+Original intake generation remains zero across normal reapproval, so its captured
+revision must distinguish a fresh usable preparation from stale historical context.
+This adds the twenty-first guarded history table.
+Exact fixture cleanup removes preparations/mappings before links/items, verifies
+all guards, and never rewinds global source revision.
+
+Additive migrations `20260915070251`, `20260915070816`, `20260915071336` and
+`20260915071610` were reviewed before dedicated Dev application. Earlier migration
+checksums and saved/operator facts remain immutable. Additive correction
+`20260915081323` refines preparation uniqueness/lookup without rewriting rows,
+changing generations, or changing original-key replay results.
+
+## Durable deferred work — 2026-09-15
+
+`work_items` stores unique source identity, original saved provenance, organisation,
+owner, SGT due date, informational priority, repeat threshold (default two), proposed
+configured night, terminal lifecycle and optimistic version. Owner/actor UUIDs have
+no cascading Auth FK. Deleted owners become a visible missing-owner signal.
+
+`work_item_submissions` reserves immutable submission-to-item identity links for
+later reviewed carry-forward. It never creates or grants an active approval.
+`work_item_events` is an append-only, sequence-ordered audit/occurrence stream;
+one item/publication pair can contribute at most one event. Corrections retain
+earlier deferred evidence. `work_item_mutations` deduplicates explicit recording
+by authenticated actor plus key and rejects a changed replay payload.
+
+All four tables have private-schema RLS; three histories add immutable mutation/
+truncate guards (20 guarded tables in total). Detail returns the latest 100 events
+with a truncation indicator; effective counts always use the complete history.
+Scheduled remains unresolved for due-date purposes, and due today is not overdue.
+
+## Coordination evidence — 2026-09-15
+
+Five private tables retain coordination independently of intake approval and
+publication: `coordination_cases` holds owner/night/deadline/lifecycle/current
+version; `coordination_proposals` stores immutable revision payloads and source
+plan provenance; `coordination_participants` freezes each organisation's complete
+changes per revision; `coordination_events` appends actor/version/revision/action,
+bounded notes and optional confirmation time; `coordination_applications` uniquely
+links one revision to one immutable generated plan and its retry identity.
+
+Proposal evidence carries saved request revisions, source/input/result/impact
+digests, engine versions, parameters and validated output. Operator-seeded work
+has null organisation ownership. Confirmations derive from revision events as
+pending, approved or changes-requested; closing a case does not manufacture
+agreement. Current and viewed revisions differ when inspecting an older applied
+plan. Contractor projection includes own changes and own change-request notes,
+but excludes planner approval notes, global events and full proposals.
+
+Four coordination histories add immutable UPDATE/DELETE/TRUNCATE guards, bringing
+the fixture cleanup gate to 17. Exact fixture cleanup deletes applications,
+events, participants, proposals and cases before their plan/request/org parents;
+guards are disabled only inside the short-lock-timeout cleanup transaction and
+restored before commit. Isolated future-night fixtures advance the global source
+revision monotonically and can stale old drafts without editing their snapshots.
+
 Last updated: 2026-09-07 · RailPlan v0.4.0
 
 ## Planning inputs

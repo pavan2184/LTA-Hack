@@ -212,6 +212,97 @@ export function headline(violation: Violation): string {
   }
 }
 
+/**
+ * One clash, however many rules it breaks.
+ *
+ * When two jobs collide on a block they usually also collide on the crew and on
+ * the supervisor headcount, and the validator rightly reports all three. A
+ * planner counting problems sees one. A group is the set of findings that name
+ * the same requests over overlapping minutes; the finding with the largest
+ * shortfall speaks for it, and the rest are listed beneath as the rules it
+ * breaks. Findings without a time span are grouped by request set alone.
+ */
+export interface ConflictGroup {
+  /** Stable across re-validation: request set plus the merged interval. */
+  id: string;
+  requestIds: string[];
+  /** Union of the members' windows; null for untimed rules. */
+  window: { start: number; end: number } | null;
+  /** Members, worst first. */
+  violations: Violation[];
+  /** The member that headlines the group and drives its category and fix. */
+  primary: Violation;
+  ruleIds: ViolationRuleId[];
+  shortfallMinutes: number;
+  severity: Violation["severity"];
+}
+
+export function groupConflicts(violations: Violation[]): ConflictGroup[] {
+  const byRequests = new Map<string, Violation[]>();
+  violations.forEach((violation) => {
+    const key = [...violation.requestIds].sort().join(",");
+    if (!byRequests.has(key)) byRequests.set(key, []);
+    byRequests.get(key)!.push(violation);
+  });
+
+  const groups: ConflictGroup[] = [];
+  byRequests.forEach((items, key) => {
+    const timed = items
+      .filter((violation) => violation.window)
+      .sort((a, b) => a.window!.start - b.window!.start || a.window!.end - b.window!.end);
+    let members: Violation[] = [];
+    let span: { start: number; end: number } | null = null;
+    const flush = () => {
+      if (members.length) groups.push(buildGroup(key, members, span));
+      members = [];
+      span = null;
+    };
+    timed.forEach((violation) => {
+      if (span && violation.window!.start < span.end) {
+        members.push(violation);
+        span.end = Math.max(span.end, violation.window!.end);
+      } else {
+        flush();
+        members = [violation];
+        span = { ...violation.window! };
+      }
+    });
+    flush();
+    const untimed = items.filter((violation) => !violation.window);
+    if (untimed.length) groups.push(buildGroup(key, untimed, null));
+  });
+
+  return groups.sort(
+    (a, b) =>
+      Number(b.severity === "critical") - Number(a.severity === "critical") ||
+      b.shortfallMinutes - a.shortfallMinutes ||
+      a.id.localeCompare(b.id),
+  );
+}
+
+function buildGroup(
+  key: string,
+  members: Violation[],
+  window: { start: number; end: number } | null,
+): ConflictGroup {
+  const sorted = [...members].sort(
+    (a, b) =>
+      Number(b.severity === "critical") - Number(a.severity === "critical") ||
+      b.shortfallMinutes - a.shortfallMinutes ||
+      a.id.localeCompare(b.id),
+  );
+  return {
+    id: `G|${key}|${window ? `${window.start}-${window.end}` : "untimed"}`,
+    requestIds: key.split(","),
+    window,
+    violations: sorted,
+    primary: sorted[0],
+    ruleIds: [...new Set(sorted.map((violation) => violation.ruleId))],
+    shortfallMinutes: Math.max(...sorted.map((violation) => violation.shortfallMinutes)),
+    severity: sorted[0].severity,
+  };
+}
+
 /** Priority order for fixing: worst overlap first, mandatory work weighted up. */
 export function severityRank(
   violation: Violation,

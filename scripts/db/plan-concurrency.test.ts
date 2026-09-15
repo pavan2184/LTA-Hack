@@ -122,8 +122,12 @@ describe("concurrent plan publication (isolated committed fixtures)", () => {
           "planner_decisions",
           "plan_publications",
           "plan_audit_events",
+          "work_item_events",
+          "work_item_mutations",
+          "work_item_submissions",
+          "carry_forward_preparations",
         ];
-        for (const table of [...tables].sort())
+        for (const table of [...tables, "work_items", "work_item_active_occurrences"].sort())
           await tx`lock table ${tx("railplan_private." + table)} in access exclusive mode`;
         const rows = await tx<
           { id: string }[]
@@ -132,6 +136,9 @@ describe("concurrent plan publication (isolated committed fixtures)", () => {
         if (ids.length) {
           for (const table of tables)
             await tx`alter table ${tx("railplan_private." + table)} disable trigger immutable_history`;
+          for (const table of ["carry_forward_preparations", "work_item_active_occurrences", "work_item_events", "work_item_mutations", "work_item_submissions"])
+            await tx.unsafe(`delete from railplan_private.${table} where work_item_id in(select id from railplan_private.work_items where created_by=$1::uuid)`, [actorId]);
+          await tx`delete from railplan_private.work_items where created_by=${actorId}`;
           for (const table of [
             "plan_audit_events",
             "planner_decisions",

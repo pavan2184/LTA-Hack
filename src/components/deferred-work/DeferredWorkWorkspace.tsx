@@ -7,6 +7,7 @@ import type { WorkItemActionInput } from "@/lib/deferred-work/schemas";
 import { useUnsavedChanges } from "@/lib/navigation/useUnsavedChanges";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { DeferredWorkSummary } from "./DeferredWorkSummary";
+import { CarryForwardPreparation } from "./CarryForwardPreparation";
 
 type Filters = { planningNight: string; ownerId: string; state: string; overdue: boolean; repeated: boolean; missingDue: boolean };
 type Metadata = { ownerId: string; dueDate: string; priority: PlannerWorkItem["priority"]; repeatThreshold: string };
@@ -94,6 +95,7 @@ export function DeferredWorkWorkspace({ role, initialWorkId, initialPlanningNigh
       }
     } catch (cause) {
       if (ticket === epoch.current && !abort.signal.aborted) setError(cause instanceof Error ? cause.message : "Deferred work could not be loaded.");
+      return false;
     } finally {
       if (ticket === epoch.current && !abort.signal.aborted) setBusy("");
     }
@@ -202,15 +204,20 @@ export function DeferredWorkWorkspace({ role, initialWorkId, initialPlanningNigh
               <label>Repeated after nights<input type="number" required min={1} max={100} className="planner-field w-full" value={fields.repeatThreshold} onChange={event => setFields({ ...fields, repeatThreshold: event.target.value })} /></label>
             </fieldset><button className="planner-button primary" disabled={!!busy || !dirty}>Save metadata</button>
           </form>
-          <div className="flex flex-wrap gap-2">{([...(selected.state === "completed" || selected.state === "cancelled" ? ["reopen"] : ["complete", "cancel", "escalate", "propose-night"])] as Action[]).map(value => <button type="button" key={value} className="planner-button" disabled={!!busy || dirty} onClick={event => { opener.current = event.currentTarget; setAction(value); }}>{labels[value]}</button>)}</div>
+          <div className="flex flex-wrap gap-2">{([...(selected.state === "completed" || selected.state === "cancelled" ? ["reopen"] : ["complete", "cancel", "escalate", "propose-night"])] as Action[]).map(value => <button type="button" key={value} className="planner-button" disabled={!!busy || dirty} onClick={event => { opener.current = event.currentTarget; setError(""); setNotice(""); setAction(value); }}>{labels[value]}</button>)}</div>
           <section className="space-y-2"><h3 className="font-semibold">Audit history</h3>{plannerItem.historyTruncated && <p>Showing the latest 100 events. Counts include the complete history.</p>}<ol className="space-y-2">{plannerItem.events?.map(event => <li key={event.id} className="rounded border border-rule bg-surface p-3 text-sm"><strong>{event.kind}</strong> · {event.night ?? event.createdAt.slice(0, 10)}{event.note && <p>{event.note}</p>}{event.planId && <Link className="planner-link" href={`/plans?${new URLSearchParams({ plan: event.planId, ...(event.night ? { night: event.night } : {}), ...(event.requestId ? { request: event.requestId } : {}) })}`}>Open event plan</Link>}</li>)}</ol></section>
+          {selected.state !== "completed" && selected.state !== "cancelled" && <CarryForwardPreparation key={plannerItem.id} item={plannerItem} disabled={!!busy || dirty} onPrepared={async () => { if (await load(appliedFilters.current, { refreshDetail: true }) === false) throw new Error("Backlog refresh failed"); }} />}
         </>}
       </section>}
     </div>
     <Dialog open={!!action} onOpenChange={open => !open && closeDialog()}><DialogContent onCloseAutoFocus={event => { event.preventDefault(); if (opener.current?.isConnected && !opener.current.matches(":disabled")) opener.current.focus(); else detailHeading.current?.focus(); }} onEscapeKeyDown={event => busy && event.preventDefault()}>
       <DialogTitle>{action ? labels[action] : "Work action"}</DialogTitle><DialogDescription>{action === "propose-night" ? "This records a target for review. It does not create, approve or schedule a request." : "Record a reason in the immutable work-item history."}</DialogDescription>
+      <p role="status" aria-live="polite" aria-label="Work action status" className="planner-operation">{busy || (plannerItem ? `Current work: ${plannerItem.state} · Version ${plannerItem.version}. Review this state before saving.` : "")}</p>
+      {error && <p role="alert" className="planner-banner error">{error}</p>}
+      <p className="planner-muted text-sm">Reload current work to review its latest state. Your reason and target night stay in this dialog until you save or confirm discard.</p>
+      <button type="button" className="planner-button" disabled={!!busy} onClick={() => void load(appliedFilters.current, { refreshDetail: true })}>Reload current work</button>
       <form className="space-y-3" onSubmit={event => { event.preventDefault(); if (!action || !plannerItem || !note.trim() || (action === "propose-night" && !targetNight)) return; void mutate(action === "propose-night" ? { action, expectedVersion: plannerItem.version, planningNight: targetNight, note: note.trim() } : { action, expectedVersion: plannerItem.version, note: note.trim() }); }}>
-        {action === "propose-night" && <label className="block">Target night<select required disabled={!!busy} className="planner-field w-full" value={targetNight} onChange={event => setTargetNight(event.target.value)}><option value="">Choose configured night</option>{page?.nights.map(night => <option key={night.planningNight}>{night.planningNight}</option>)}</select></label>}
+        {action === "propose-night" && <label className="block">Target night<select required disabled={!!busy} className="planner-field w-full" value={targetNight} onChange={event => setTargetNight(event.target.value)}><option value="">Choose configured night</option>{page?.nights.filter(night => night.planningNight > (plannerItem?.activeNight ?? plannerItem?.sourceNight ?? "")).map(night => <option key={night.planningNight}>{night.planningNight}</option>)}</select></label>}
         <label className="block">Reason<textarea required maxLength={1000} disabled={!!busy} className="planner-field min-h-24 w-full" value={note} onChange={event => setNote(event.target.value)} /></label><button className="planner-button primary" disabled={!!busy || !note.trim() || (action === "propose-night" && !targetNight)}>Save action</button>
       </form>
     </DialogContent></Dialog>

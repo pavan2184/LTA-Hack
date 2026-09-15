@@ -12,6 +12,8 @@ import type { Plan } from "@railplan/core/types/railplan";
 import type { ValidationContext } from "@railplan/core/engine/validate";
 
 export interface WorkforceChartProps {
+  /** Dense saved-night panel; all values and accessible detail remain available. */
+  compact?: boolean;
   plan: Plan | null;
   context: ValidationContext;
   loading?: boolean;
@@ -31,9 +33,13 @@ export function WorkforceChart(props: WorkforceChartProps) {
   return (
     <section
       aria-label="Workforce availability and demand"
-      className="min-w-0 space-y-3 rounded border border-rule bg-surface p-4"
+      className={
+        props.compact
+          ? "min-w-0 space-y-2 bg-surface"
+          : "min-w-0 space-y-3 rounded border border-rule bg-surface p-4"
+      }
     >
-      <header>
+      <header className={props.compact ? "sr-only" : undefined}>
         <h2 className="text-base font-semibold">
           Workforce availability and demand
         </h2>
@@ -62,6 +68,7 @@ export function WorkforceChart(props: WorkforceChartProps) {
   );
 }
 function WorkforceDetails({
+  compact,
   plan,
   context,
   stale,
@@ -69,6 +76,7 @@ function WorkforceDetails({
   selectedRequestId,
   onSelectRequest,
 }: WorkforceChartProps & { plan: Plan }) {
+  const [expanded, setExpanded] = useState(false);
   const world = context.world ?? literalWorld();
   const assessment = useMemo(
     () => assessWorkforce(plan, context),
@@ -187,6 +195,26 @@ function WorkforceDetails({
     { length: Math.ceil((end - start) / tickStep) },
     (_, index) => start + index * tickStep,
   ).concat(end);
+  if (compact) return (
+    <div className="workforce-overview">
+      <button className="workforce-disclosure" type="button" aria-label="Workforce availability" aria-describedby={`${pattern}-status`} aria-controls={`${pattern}-content`} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+        <span className="font-semibold">Workforce availability</span>
+        <span id={`${pattern}-status`} className="text-xs">{unknown ? "Demand incomplete" : assessment.shortages.length ? `${assessment.shortages.length} shortage intervals` : "No shortages in this draft"}{stale ? " · Preview changed" : ""}</span>
+        <span aria-hidden="true">{expanded ? "▴" : "▾"}</span>
+      </button>
+      <div id={`${pattern}-content`} className="workforce-expanded-content" hidden={!expanded} inert={!expanded}>
+      <div className="workforce-overview-key">{teamName} · {roleName} · People <span>━ Demand　┄ Available</span></div>
+      <svg viewBox="0 0 750 174" preserveAspectRatio="none" role="img" aria-label={`Workforce overview: ${teamName}, ${roleName}, available and ${unknown ? "known " : ""}demanded people. ${assessment.shortages.length} shortage intervals across the plan.`}>
+        {[minimum, maximum].map(value => <g key={value}><line x1={plotLeft} x2={plotRight} y1={y(value)} y2={y(value)} stroke="#e0e5ec" /><text x="28" y={y(value) + 4} fontSize="14" fill="#566171">{value}</text></g>)}
+        {ticks.filter((_, i) => i % 2 === 0 || i === ticks.length - 1).map(minute => <text key={minute} x={x(minute)} y="167" textAnchor="middle" fontSize="14" fill="#566171">{formatClock(minute)}</text>)}
+        {rows.length > 0 && <path d={`${path("demand")} L${x(end)},${y(0)} L${x(start)},${y(0)} Z`} fill="#e9f2ff" />}
+        <path d={path("available")} fill="none" stroke="#8999ad" strokeWidth="2" strokeDasharray="7 4" />
+        <path d={path("demand")} fill="none" stroke="#0877ff" strokeWidth="2" />
+      </svg>
+      <WorkforceDetails plan={plan} context={context} stale={stale} infeasible={infeasible} selectedRequestId={selectedRequestId} onSelectRequest={onSelectRequest} />
+      </div>
+    </div>
+  );
   return (
     <>
       {stale && (

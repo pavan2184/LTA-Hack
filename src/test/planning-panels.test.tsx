@@ -9,12 +9,15 @@ import {
 
 function Fixture({
   preferenceKey = "layout-test",
+  compactContext = false,
 }: {
   preferenceKey?: string;
+  compactContext?: boolean;
 }) {
   return (
     <PlanningPanels
       preferenceKey={preferenceKey}
+      compactContext={compactContext}
       queue={
         <label>
           Queue search
@@ -39,6 +42,17 @@ function Fixture({
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 describe("adjustable planning panels", () => {
+  it("switches compact context without losing workforce filters or the primary timeline", async () => {
+    render(<Fixture compactContext />);
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Role filter"), "supervisor");
+    await user.click(screen.getByRole("tab", { name: "Geography" }));
+    expect(screen.getByRole("button", { name: "Map request" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Primary Gantt" })).toBeVisible();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Workforce" }));
+    expect(screen.getByLabelText("Role filter")).toHaveValue("supervisor");
+  });
   it("keeps the Gantt before secondary panels and preserves mounted inputs through collapse", async () => {
     const { container } = render(<Fixture />);
     const user = userEvent.setup();
@@ -190,7 +204,7 @@ it("integrates the real dashboard with Gantt first and retained workforce select
     screen.getByRole("button", { name: "Load the submitted requests" }),
   );
   const gantt = await screen.findByRole("heading", {
-    name: "Block occupation",
+    name: "Engineering timeline",
   });
   const workforce = screen.getByRole("region", {
     name: "Workforce availability and demand",
@@ -198,13 +212,16 @@ it("integrates the real dashboard with Gantt first and retained workforce select
   expect(
     gantt.compareDocumentPosition(workforce) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Workforce availability" }));
   const role = screen.getByLabelText("Workforce role");
   await user.selectOptions(role, "supervisor");
   await user.click(
-    screen.getByRole("button", { name: "Collapse workforce panel" }),
+    screen.getByRole("tab", { name: "Geography" }),
   );
   await user.click(
-    screen.getByRole("button", { name: "Expand workforce panel" }),
+    screen.getByRole("tab", { name: "Workforce" }),
   );
   expect(screen.getByLabelText("Workforce role")).toHaveValue("supervisor");
+  expect(screen.getByRole("heading", { name: "Work requests" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Request details" })).toBeInTheDocument();
 });

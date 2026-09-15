@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Link from "next/link";
+import { ClockTimeField } from "./ClockTimeField";
+import { useUnsavedChanges } from "@/lib/navigation/useUnsavedChanges";
 import type { UserRole } from "@railplan/core/types/auth";
 import {
   REQUEST_FIELD_KEYS,
@@ -21,7 +24,7 @@ import {
 const control =
   "mt-1 w-full rounded border border-rule-strong bg-surface p-2 text-sm";
 const button =
-  "rounded border border-rule-strong px-3 py-2 text-sm hover:bg-sunk disabled:opacity-50";
+  "planner-button";
 class DraftError extends Error {
   constructor(
     message: string,
@@ -70,12 +73,14 @@ export function PrivateDraftEditor({
   onClose,
   onSaved,
   onSubmitted,
+  requestHref,
 }: {
   id: string;
   role: UserRole;
   onClose: () => void;
   onSaved: (draft: PrivateDraftDetail) => void;
   onSubmitted?: (request: RequestSubmission) => void;
+  requestHref?: string;
 }) {
   const [draft, setDraft] = useState<PrivateDraftDetail | null>(null);
   const [fields, setFields] = useState<NullableRequestFields | null>(null);
@@ -103,7 +108,7 @@ export function PrivateDraftEditor({
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      api<{ draft: PrivateDraftDetail }>(`/api/ingestions/drafts/${id}`),
+      api<{ draft: PrivateDraftDetail }>(`/api/ingestions/drafts/${encodeURIComponent(id)}`),
       api<{ catalogue: RequestCatalogue }>("/api/requests/catalogue"),
     ])
       .then(([d, c]) => {
@@ -137,6 +142,7 @@ export function PrivateDraftEditor({
   const equipmentPending =
     equipmentMode === "specified" && !fields?.equipment?.length;
   const dirty = changed.length > 0 || equipmentPending;
+  const mayLeave = useUnsavedChanges(dirty || Boolean(reason || organisationId) || busy && draft !== null);
   const messages = (key: string) =>
     Object.entries(errors)
       .filter(
@@ -175,7 +181,7 @@ export function PrivateDraftEditor({
         draft: PrivateDraftDetail;
         request?: RequestSubmission;
       }>(
-        `/api/ingestions/drafts/${id}${submit ? "/submit" : ""}`,
+        `/api/ingestions/drafts/${encodeURIComponent(id)}${submit ? "/submit" : ""}`,
         submit
           ? {
               expectedVersion: draft.version,
@@ -188,6 +194,7 @@ export function PrivateDraftEditor({
       accept(data.draft);
       onSaved(data.draft);
       setReason("");
+      setOrganisationId("");
       setNotice(
         submit
           ? "Proposal submitted for human review. It is not approved or scheduled."
@@ -240,7 +247,7 @@ export function PrivateDraftEditor({
             ? "Submitted proposal"
             : "Edit private proposal"}
         </h3>
-        <button className={button} disabled={busy || dirty} onClick={onClose}>
+        <button className={button} disabled={busy || dirty} onClick={() => { if (mayLeave()) onClose(); }}>
           Close proposal
         </button>
       </header>
@@ -271,8 +278,8 @@ export function PrivateDraftEditor({
           {draft.status === "private" && (
             <>
               <p className="text-sm">
-                Leave unknown facts blank. Times are minutes after midnight on
-                the planning night. Private saves may be incomplete; submission
+                Leave unknown facts blank. Enter clock times in SGT relative to
+                the selected planning date; choose the next day explicitly when needed. Private saves may be incomplete; submission
                 requires complete, valid fields.
               </p>
               {Object.keys(draft.validationErrors).length > 0 && (
@@ -337,18 +344,21 @@ export function PrivateDraftEditor({
                       "earliestStart",
                       "latestEnd",
                     ] as const
-                  ).map((key) => (
+                  ).map((key) => key !== "durationMinutes" ? <div key={key}>
+                    <ClockTimeField label={`Proposal ${proposalLabels[key].toLowerCase()}`} value={fields[key]} onChange={(value) => update(key, value)} invalid={messages(key).length > 0} describedBy={messages(key).length ? `${prefix}-${key}` : undefined} />
+                    {fieldError(key)}
+                  </div> : (
                     <label key={key} className="text-sm">
                       {proposalLabels[key]} (minutes)
                       <input
                         {...attributes(
                           key,
-                          `Proposal ${key === "durationMinutes" ? "duration" : proposalLabels[key].toLowerCase()} (minutes)`,
+                          "Proposal duration (minutes)",
                         )}
                         type="number"
                         step={1}
-                        min={key === "durationMinutes" ? 1 : 0}
-                        max={key === "durationMinutes" ? 1440 : 2880}
+                        min={1}
+                        max={1440}
                         className={control}
                         value={fields[key] ?? ""}
                         onChange={(e) =>
@@ -553,7 +563,7 @@ export function PrivateDraftEditor({
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    className={button}
+                    className={`${button} primary`}
                     disabled={
                       !reason.trim() ||
                       !dirty ||
@@ -569,6 +579,8 @@ export function PrivateDraftEditor({
                     disabled={!dirty}
                     onClick={() => {
                       accept(draft);
+                      setReason("");
+                      setOrganisationId("");
                       setError("");
                       setNotice("");
                     }}
@@ -605,7 +617,7 @@ export function PrivateDraftEditor({
                     </label>
                   )}
                   <button
-                    className={button}
+                    className={`${button} primary`}
                     disabled={
                       dirty ||
                       !reason.trim() ||
@@ -624,10 +636,9 @@ export function PrivateDraftEditor({
           )}
           {draft.submittedRequestId && (
             <p className="text-sm">
-              <a href="#request-intake" className="underline">
-                Submitted request: {draft.submittedRequestId}. Open it in the
-                request list above.
-              </a>
+              <Link href={`${requestHref ?? (role === "planner" ? "/requests" : "/contractor")}${requestHref?.includes("?") ? "&" : "?"}request=${encodeURIComponent(draft.submittedRequestId)}`} className="underline">
+                Open submitted request {draft.submittedRequestId}
+              </Link>
             </p>
           )}
           <details>

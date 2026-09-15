@@ -217,7 +217,11 @@ export function CoordinationWorkspace({
       selected.proposals.find((item) => item.revision === selected.currentRevision)
         ?.parameters.strategy
   );
-  const mayLeave = useUnsavedChanges(dirtyRevision || !!lifecycleNote.trim());
+  const dirtyMetadata = !!selected && selected.scope === "planner" && (
+    owner !== selected.ownerId ||
+    deadline !== (selected.deadline ? sgtInput(selected.deadline) : "")
+  );
+  const mayLeave = useUnsavedChanges(dirtyRevision || dirtyMetadata || !!lifecycleNote.trim());
 
   const names = useMemo(
     () =>

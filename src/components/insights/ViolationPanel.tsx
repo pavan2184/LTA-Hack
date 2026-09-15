@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { requestById } from "@railplan/core/data/requests";
 import {
   categoryOf,
+  groupConflicts,
   headline,
   summariseConflicts,
   type ConflictCategory,
+  type ConflictGroup,
 } from "@railplan/core/engine/conflicts";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { ruleCatalogue } from "@railplan/core/engine/validate";
@@ -70,14 +72,13 @@ export function ViolationPanel() {
     [result, disruptionImpact, activeDisruptionId, hasReplanned],
   );
 
-  const summary = useMemo(() => summariseConflicts(violations), [violations]);
+  const groups = useMemo(() => groupConflicts(violations), [violations]);
+  const summary = useMemo(() => summariseConflicts(groups.map(group => group.primary)), [groups]);
 
   const visible = useMemo(
     () =>
-      violations
-        .filter((violation) => filter === "all" || categoryOf(violation.ruleId) === filter)
-        .sort((a, b) => b.shortfallMinutes - a.shortfallMinutes || a.id.localeCompare(b.id)),
-    [violations, filter],
+      groups.filter(group => filter === "all" || categoryOf(group.primary.ruleId) === filter || group.violations.some(v => v.id === selectedViolationId)),
+    [groups, filter, selectedViolationId],
   );
 
   if (!result) return null;
@@ -109,6 +110,7 @@ export function ViolationPanel() {
           <h2 className="text-[13px] font-semibold text-ink-900">Conflicts</h2>
           <span className="text-[12px] text-ink-500">
             {summary.total} across {summary.requestIds.length} requests
+            {` · ${violations.length} rule findings`}
           </span>
         </div>
 
@@ -137,12 +139,13 @@ export function ViolationPanel() {
         )}
 
         <ul>
-          {visible.map((violation) => (
+          {visible.map((group) => (
             <ConflictRow
-              key={violation.id}
-              violation={violation}
-              selected={selectedViolationId === violation.id}
-              onSelect={() => selectViolation(selectedViolationId === violation.id ? null : violation.id)}
+              key={group.id}
+              group={group}
+              violation={group.violations.find(v => v.id === selectedViolationId) ?? group.primary}
+              selected={group.violations.some(v => v.id === selectedViolationId)}
+              onSelect={() => selectViolation(group.violations.some(v => v.id === selectedViolationId) ? null : group.primary.id)}
             />
           ))}
         </ul>
@@ -152,10 +155,12 @@ export function ViolationPanel() {
 }
 
 function ConflictRow({
+  group,
   violation,
   selected,
   onSelect,
 }: {
+  group: ConflictGroup;
   violation: Violation;
   selected: boolean;
   onSelect: () => void;
@@ -198,8 +203,8 @@ function ConflictRow({
             {ruleCatalogue[violation.ruleId].label}
           </span>
           <span className="shrink-0 font-mono text-[11px] text-ink-500">
-            {violation.window
-              ? `${formatClock(violation.window.start)}-${formatClock(violation.window.end)}`
+            {group.window
+              ? `${formatClock(group.window.start)}-${formatClock(group.window.end)}`
               : `${violation.shortfallMinutes} min`}
           </span>
         </div>
@@ -212,13 +217,19 @@ function ConflictRow({
 
       {selected && (
         <div className="border-t border-rule bg-paper px-3 py-2">
-          <p className="text-[12px] leading-relaxed text-ink-700">{violation.detail}</p>
+          <ul aria-label="Rules involved in this clash" className="space-y-2 text-[12px] text-ink-700">
+            {group.violations.map(finding => <li key={finding.id}>
+              <strong>{ruleCatalogue[finding.ruleId].label}</strong>
+              <p>{finding.detail}</p>
+            </li>)}
+          </ul>
 
           {resolution ? (
             <div className="mt-2 border border-rule bg-surface px-2.5 py-2">
               <p className="text-[11px] uppercase tracking-[0.06em] text-ink-500">
                 Recommended resolution
               </p>
+              <p className="text-[11px] text-ink-500">Targets {ruleCatalogue[violation.ruleId].label}; remaining findings are rechecked after applying.</p>
               <p className="mt-1 text-[13px] font-medium text-ink-900">
                 {resolution.headline}{" "}
                 <span className="font-normal text-ink-500">

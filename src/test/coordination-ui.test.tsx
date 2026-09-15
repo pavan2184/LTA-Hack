@@ -108,6 +108,26 @@ afterEach(() => {
 });
 
 describe("planner coordination", () => {
+  it.each(["owner", "deadline"])("keeps unsaved %s edits when leaving is cancelled", async field => {
+    const user = userEvent.setup();
+    const value = plannerCase();
+    const secondOwner = "50000000-0000-4000-8000-000000000002";
+    const fetcher = workspaceFetch(value);
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.startsWith("/api/coordination")) return json({ cases: [value], nextCursor: null, owners: [{ id: ownerId, isCurrentUser: true }, { id: secondOwner, isCurrentUser: false }] });
+      return fetcher(url, init);
+    }));
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<CoordinationWorkspace role="planner" />);
+    await screen.findByRole("heading", { name: "Coordination case 10000000" });
+    const input = field === "owner" ? screen.getAllByLabelText("Owner")[1] : screen.getByLabelText("Response deadline (SGT display)");
+    if (field === "owner") await user.selectOptions(input, secondOwner);
+    else await user.clear(input);
+    await user.click(screen.getByRole("button", { name: /Open coordination case 10000000/ }));
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(input).toHaveValue(field === "owner" ? secondOwner : "");
+  });
+
   it("creates a case from a real inspector alternative and preserves the selected context", async () => {
     const saved = plannerVersion();
     let createBody: Record<string, unknown> | null = null;
@@ -156,6 +176,7 @@ describe("planner coordination", () => {
     const keys: string[] = [];
     let attempts = 0;
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.startsWith("/api/deferred-work")) return json({ items: [], nextCursor: null, today: "2026-09-15", nights: [], owners: [] });
       if (url.startsWith("/api/plans/overview")) return json(plannerOverview([saved]));
       if (url.includes("/export?")) return json(plannerExport(saved));
       if (url.endsWith("/analysis")) {

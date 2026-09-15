@@ -15,6 +15,7 @@ import {
   type SavedExportRecord,
 } from "@/lib/exports/serialize";
 import type { PlanVersion } from "@railplan/core/types/plans";
+import { plannerOverview, plannerInspection } from "./fixtures/planner-workspace";
 const id = "71384128-9bbb-4c62-bc02-44cefead01b2";
 const facts = buildInstanceFromLiterals(),
   result = solve({ strategy: "balanced" });
@@ -55,7 +56,7 @@ const saved: PlanVersion = {
   publishedAt: null,
   supersededBy: null,
 };
-beforeEach(() => localStorage.clear());
+beforeEach(() => { localStorage.clear(); window.history.replaceState(null, "", "/plans"); });
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -65,7 +66,8 @@ it("connects generation, saved Gantt review, publication status and exact snapsh
   let published = false;
   const snapshotStates: string[] = [];
   const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
-    if (url.startsWith("/api/plans?")) return Response.json({ plans: [] });
+    if (url.startsWith("/api/plans/overview")) return Response.json(plannerOverview([], { sourceRevision: "21" }));
+    if (url.endsWith("/analysis")) return plannerInspection(url, options);
     if (url === "/api/plans" && options?.method === "POST")
       return Response.json({ plan: saved }, { status: 201 });
     if (url === `/api/plans/${id}/publish`) {
@@ -126,15 +128,21 @@ it("connects generation, saved Gantt review, publication status and exact snapsh
     facts.requests.find((r) => r.id === first.requestId)!.title,
   );
   await user.click(
+    screen.getByRole("button", { name: "Review publication" }),
+  );
+  await user.click(
     screen.getByRole("button", { name: "Publish this version" }),
   );
+  await screen.findByRole("heading", { name: "Saved version details" });
+  await user.click(screen.getByRole("button", { name: "Close" }));
   await waitFor(() =>
     expect(
       screen.getByRole("status", { name: "Plan operation status" }),
-    ).toHaveTextContent("Plan published."),
+    ).toHaveTextContent(`Plan published (${id}).`),
   );
   await screen.findByRole("region", { name: "Saved block Gantt" });
   expect(snapshotStates).toEqual(["draft", "published"]);
+  await user.click(screen.getByRole("button", { name: "Version details" }));
   await user.click(screen.getByRole("button", { name: "Download JSON" }));
   await waitFor(() => expect(click).toHaveBeenCalledOnce());
   const payload = JSON.parse(
@@ -145,7 +153,6 @@ it("connects generation, saved Gantt review, publication status and exact snapsh
   expect(
     payload.placements.map(({ requestId }: { requestId: string }) => requestId),
   ).toEqual(result.plan.placements.map((p) => p.requestId));
-  expect(
-    screen.getByRole("button", { name: "Publish this version" }),
-  ).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.getByRole("button", { name: "Current publication" })).toBeDisabled();
 });

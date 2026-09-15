@@ -1,36 +1,22 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { plannerExport, plannerInspection, plannerOverview, plannerVersion } from "./fixtures/planner-workspace";
 import { SavedPlansWorkspace } from "@/components/plans/SavedPlansWorkspace";
-const saved = {
-  id: "plan-1",
-  planningNight: "2026-09-16",
-  sourceRevision: "1",
-  inputDigest: "sha256:test",
-  strategy: "balanced",
-  solverVersion: "test",
-  constraintVersion: "test",
-  status: "FEASIBLE",
-  objectives: [],
-  metrics: {},
-  validation: { independentlyValidated: true, violations: [] },
-  placements: [],
-  deferred: [],
-  createdBy: "planner",
-  createdAt: "2026-09-07T00:00:00Z",
-  publishState: "draft",
-  publishedAt: null,
-  supersededBy: null,
-};
+import { NotificationSettings } from "@/components/notifications/NotificationSettings";
+const saved = plannerVersion({ id: "plan-1" });
+beforeEach(() => window.history.replaceState(null, "", "/plans"));
 afterEach(() => vi.unstubAllGlobals());
 it("loads notification results after publication while retaining publication success when Telegram fails", async () => {
   const calls: string[] = [];
+  let published = false;
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/analysis")) return plannerInspection(url, init);
       calls.push(url);
-      if (url.startsWith("/api/plans?"))
-        return Response.json({ plans: [saved] });
+      if (url.startsWith("/api/plans/overview"))
+        return Response.json(plannerOverview([saved]));
       if (url.endsWith("/notifications"))
         return Response.json({
           deliveries: [
@@ -58,6 +44,8 @@ it("loads notification results after publication while retaining publication suc
             },
           ],
         });
+      if (url.includes("/export?")) return Response.json(plannerExport(published ? { ...saved, publishState: "published", publishedAt: saved.createdAt } : saved));
+      if (url.endsWith("/publish")) published = true;
       return Response.json({
         plan: url.endsWith("/publish")
           ? {
@@ -71,46 +59,45 @@ it("loads notification results after publication while retaining publication suc
   );
   const user = userEvent.setup();
   render(<SavedPlansWorkspace />);
-  await user.click(
-    await screen.findByRole("button", { name: "Open version plan-1" }),
-  );
+  await screen.findByRole("button", { name: "Version details" });
+  await user.click(screen.getByRole("button", { name: "Review publication" }));
   expect(calls.some((url) => url.endsWith("/notifications"))).toBe(false);
   await user.click(
     screen.getByRole("button", { name: "Publish this version" }),
   );
-  expect(await screen.findByText("Plan published.")).toBeInTheDocument();
+  expect(await within(screen.getByRole("dialog")).findByText(`Plan published (${saved.id}). Notification delivery is shown separately.`)).toBeInTheDocument();
   const deliveries = await screen.findByRole("region", {
     name: "Plan notification deliveries",
   });
   expect(
     await within(deliveries).findByText("Telegram bot is not configured."),
   ).toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Publish this version" }),
-  ).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.getByRole("button", { name: "Current publication" })).toBeDisabled();
   expect(calls.filter((url) => url.endsWith("/notifications"))).toEqual([
     "/api/plans/plan-1/notifications",
   ]);
 });
-it("loads destination settings only when the planner opens them", async () => {
+it("links to the dedicated settings view without loading destinations into the plan workspace", async () => {
   const calls: string[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (url: string) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/analysis")) return plannerInspection(url, init);
       calls.push(url);
       return Response.json(
         url.includes("configurations")
           ? { configurations: [], botConfigured: false }
-          : { plans: [] },
+          : plannerOverview(),
       );
     }),
   );
-  render(<SavedPlansWorkspace />);
+  const workspace = render(<SavedPlansWorkspace />);
   await screen.findByText("No saved versions for this night.");
   expect(calls).toHaveLength(1);
-  await userEvent
-    .setup()
-    .click(screen.getByRole("button", { name: "Notification settings" }));
+  expect(within(screen.getByRole("banner")).getByRole("link", { name: "Notification settings" })).toHaveAttribute("href", "/settings/notifications?night=2026-09-16");
+  workspace.unmount();
+  render(<NotificationSettings />);
   expect(
     await screen.findByText(/Bot credentials are not configured/),
   ).toBeInTheDocument();
@@ -118,14 +105,17 @@ it("loads destination settings only when the planner opens them", async () => {
 });
 
 it("keeps a committed publication successful while showing a notification-storage warning", async () => {
+  let published = false;
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (url: string) => {
-      if (url.startsWith("/api/plans?"))
-        return Response.json({ plans: [saved] });
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/analysis")) return plannerInspection(url, init);
+      if (url.startsWith("/api/plans/overview"))
+        return Response.json(plannerOverview([saved]));
       if (url.endsWith("/notifications"))
         return Response.json({ deliveries: [] });
-      if (url.endsWith("/publish"))
+      if (url.endsWith("/publish")) {
+        published = true;
         return Response.json({
           plan: {
             ...saved,
@@ -135,18 +125,18 @@ it("keeps a committed publication successful while showing a notification-storag
           notificationsWarning:
             "Notification records could not be prepared. Publication is committed.",
         });
-      return Response.json({ plan: saved });
+      }
+      return Response.json(plannerExport(published ? { ...saved, publishState: "published", publishedAt: saved.createdAt } : saved));
     }),
   );
   const user = userEvent.setup();
   render(<SavedPlansWorkspace />);
-  await user.click(
-    await screen.findByRole("button", { name: "Open version plan-1" }),
-  );
+  await screen.findByRole("button", { name: "Version details" });
+  await user.click(screen.getByRole("button", { name: "Review publication" }));
   await user.click(
     screen.getByRole("button", { name: "Publish this version" }),
   );
-  expect(await screen.findByText("Plan published.")).toBeInTheDocument();
+  expect(await within(screen.getByRole("dialog")).findByText(`Plan published (${saved.id}). Notification delivery is shown separately.`)).toBeInTheDocument();
   expect(
     await screen.findByText(
       "Notification records could not be prepared. Publication is committed.",

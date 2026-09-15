@@ -3,6 +3,8 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
+import "@/components/plans/planner-workspace.css";
+import "./workspace.css";
 
 /**
  * IBM Plex, self-hosted by Next at build time — no runtime request to a font

@@ -50,6 +50,17 @@ export interface RequestRevision {
   createdAt: string;
 }
 export interface RequestSubmission {
+  /** Only a linked detail includes review metadata. Planner fields are absent for contractors. */
+  carryForward?: {
+    workItemId: string;
+    sourceNight: string;
+    targetNight: string;
+    expectedWorkVersion?: number;
+    requiresReview?: boolean;
+    originalDependencies?: string[];
+    originalFields?: RequestFields;
+    publication?: { planId: string; submissionRevision: number | null } | null;
+  } | null;
   /** Included on detail reads; omitted from lightweight lists. */
   proposalSource?: RequestProposalSource | null;
   id: string;

@@ -142,7 +142,10 @@ export async function loadPlanningInstance(
         dependency_lag_minutes: number;
         description: string;
       }[]
-    >`select * from maintenance_requests where planning_night = ${planningNight}`,
+    >`select r.* from maintenance_requests r where r.planning_night = ${planningNight}
+      and not exists(select 1 from railplan_private.work_items w
+        join railplan_private.work_item_active_occurrences m on m.work_item_id=w.id
+        where w.source_key like 'seed:%' and w.source_night=r.planning_night and w.source_request_id=r.id)`,
     // Ordered by position: block order runs along the line and is meaningful,
     // unlike the skill and dependency sets below.
     sql<{ request_id: string; block_id: string }[]>`
@@ -162,7 +165,10 @@ export async function loadPlanningInstance(
     >`select planning_night::text as "planningNight",team_id as "teamId",role_id as "roleId",start_minute as "startMinute",end_minute as "endMinute",people_count as count from workforce_availability where planning_night=${planningNight}`,
     sql<
       WorkforceDemand[]
-    >`select d.request_id as "requestId",d.role_id as "roleId",d.people_count as count from request_workforce_demand d join maintenance_requests r on r.id=d.request_id where r.planning_night=${planningNight}`,
+    >`select d.request_id as "requestId",d.role_id as "roleId",d.people_count as count from request_workforce_demand d join maintenance_requests r on r.id=d.request_id where r.planning_night=${planningNight}
+      and not exists(select 1 from railplan_private.work_items w
+        join railplan_private.work_item_active_occurrences m on m.work_item_id=w.id
+        where w.source_key like 'seed:%' and w.source_night=r.planning_night and w.source_request_id=r.id)`,
   ]);
 
   const group = <T, V>(
