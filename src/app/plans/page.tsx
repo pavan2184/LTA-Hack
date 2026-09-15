@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { workspaceActor } from "@/lib/auth/page";
 import { WorkspaceNavigation } from "@/components/layout/WorkspaceNavigation";
@@ -21,6 +22,12 @@ export default async function SavedPlansPage() {
             </p>
             <h1 className="mt-2 text-3xl font-semibold">Plan the night</h1>
           </div>
+          <Link
+            href="/sandbox"
+            className="text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Try with demo data
+          </Link>
         </header>
         <p className="text-sm text-ink-700">
           Build a draft, review the jobs and any unscheduled work, then publish the schedule.
