@@ -177,6 +177,10 @@ export function CoordinationWorkspace({
     ...emptyFilters,
     planningNight: initialPlanningNight ?? "",
   });
+  const appliedFilters = useRef<Filters>({
+    ...emptyFilters,
+    planningNight: initialPlanningNight ?? "",
+  });
   const [page, setPage] = useState<CoordinationCasePage | null>(null);
   const [selected, setSelected] = useState<CoordinationCase | null>(null);
   const [catalogue, setCatalogue] = useState<RequestCatalogue | null>(null);
@@ -228,11 +232,14 @@ export function CoordinationWorkspace({
 
   const choose = useCallback((coordinationCase: CoordinationCase, force = false) => {
     if (!force && !mayLeave()) return;
+    previewEpoch.current += 1;
+    previewController.current?.abort();
+    setBusy((current) =>
+      current === "Validating proposal preview…" ? "" : current,
+    );
     if (selectedId.current !== coordinationCase.id) {
       selectionEpoch.current += 1;
       selectedId.current = coordinationCase.id;
-      previewEpoch.current += 1;
-      previewController.current?.abort();
       setBusy("");
       setSavedPlanId(null);
     }
@@ -286,6 +293,7 @@ export function CoordinationWorkspace({
           : Promise.resolve(null),
       ]);
       if (ticket !== epoch.current || abort.signal.aborted) return;
+      appliedFilters.current = { ...nextFilters };
       setPage(next);
       if (catalogueResponse) setCatalogue(catalogueResponse.catalogue);
       const requestedInitial = initialSelectionPending.current
@@ -350,7 +358,7 @@ export function CoordinationWorkspace({
     setBusy("Loading more coordination cases…");
     setError("");
     const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(filters)) {
+    for (const [key, value] of Object.entries(appliedFilters.current)) {
       if (value && (role === "planner" || key !== "ownerId")) query.set(key, value);
     }
     query.set("cursor", page.nextCursor);

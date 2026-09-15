@@ -316,6 +316,40 @@ describe("planner coordination", () => {
     expect(screen.queryByText(/^Preview:/)).not.toBeInTheDocument();
   });
 
+  it("invalidates a pending preview when the active case resets edited inputs", async () => {
+    let resolvePreview!: (response: Response) => void;
+    const pendingPreview = new Promise<Response>((resolve) => {
+      resolvePreview = resolve;
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/requests/catalogue") return json({ catalogue: { organisations: [] } });
+      if (url.endsWith("/analysis")) return pendingPreview;
+      if (url.startsWith("/api/coordination")) return json({ cases: [plannerCase()], nextCursor: null, owners: [] });
+      throw new Error(`Unexpected URL ${url}`);
+    }));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
+    const source = await screen.findByRole("textbox", { name: "Source plan ID" });
+    await user.clear(source);
+    await user.type(source, sourcePlanId.replace(/1$/, "9"));
+    await user.click(screen.getByRole("button", { name: "Preview proposal revision" }));
+    await user.click(screen.getByRole("button", { name: `Open coordination case ${caseId}` }));
+    expect(source).toHaveValue(sourcePlanId);
+    await act(async () => {
+      resolvePreview(json({
+        operation: "preview",
+        result: plannerResult,
+        parameters: { planningNight: "2026-09-16", strategy: "balanced", locked: [] },
+        basis: { planId: sourcePlanId.replace(/1$/, "9") },
+        stale: false,
+      }));
+    });
+
+    expect(screen.getByRole("button", { name: "Save new proposal revision" })).toBeDisabled();
+    expect(screen.queryByText(/^Preview:/)).not.toBeInTheDocument();
+  });
+
   it("does not restore a prior case when its delayed mutation finishes after navigation", async () => {
     const other = plannerCase({ id: otherCaseId, selectedRequestIds: ["M-002"] });
     let resolveMutation!: (response: Response) => void;
@@ -374,6 +408,28 @@ describe("planner coordination", () => {
     vi.stubGlobal("fetch", workspaceFetch(seeded));
     render(<CoordinationWorkspace role="planner" initialCaseId={caseId} />);
     expect(await screen.findByText("Operator-owned work — no contractor approval applicable")).toBeInTheDocument();
+  });
+
+  it("paginates with the applied filters when the filter form has unapplied edits", async () => {
+    const second = plannerCase({ id: otherCaseId, selectedRequestIds: ["M-002"] });
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      if (url === "/api/requests/catalogue") return json({ catalogue: { organisations: [] } });
+      if (url.includes("cursor=")) return json({ cases: [second], nextCursor: null, owners: [] });
+      if (url.startsWith("/api/coordination")) return json({ cases: [plannerCase()], nextCursor: caseId, owners: [] });
+      throw new Error(`Unexpected URL ${url}`);
+    }));
+    const user = userEvent.setup();
+    render(<CoordinationWorkspace role="planner" initialCaseId={caseId} initialPlanningNight="2026-09-16" />);
+    await screen.findByRole("button", { name: `Open coordination case ${caseId}` });
+    await user.clear(screen.getByLabelText("Planning night"));
+    await user.type(screen.getByLabelText("Planning night"), "2026-09-17");
+    await user.click(screen.getByRole("button", { name: "Load more cases" }));
+    await screen.findByRole("button", { name: `Open coordination case ${otherCaseId}` });
+
+    expect(urls).toContain(`/api/coordination?planningNight=2026-09-16&cursor=${caseId}`);
+    expect(urls).not.toContain(`/api/coordination?planningNight=2026-09-17&cursor=${caseId}`);
   });
 });
 
