@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button";
 import { requestById } from "@railplan/core/data/requests";
 import {
   categoryOf,
+  groupConflicts,
   headline,
   summariseConflicts,
   type ConflictCategory,
+  type ConflictGroup,
 } from "@railplan/core/engine/conflicts";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { cn } from "@/lib/utils";
 import { useRailPlanStore } from "@/store/useRailPlanStore";
-import type { Violation } from "@railplan/core/types/railplan";
 
 /** One hue per category, matching the timeline segments and the request badges. */
 export const categoryTone: Record<ConflictCategory, { text: string; border: string; soft: string; dot: string }> = {
@@ -71,14 +72,17 @@ export function ViolationPanel() {
     [result, disruptionImpact, activeDisruptionId, hasReplanned],
   );
 
-  const summary = useMemo(() => summariseConflicts(violations), [violations]);
+  // One row per clash: the block, crew and staffing findings for the same pair
+  // of jobs over the same minutes are one problem to a planner, not three.
+  const groups = useMemo(() => groupConflicts(violations), [violations]);
+  const summary = useMemo(
+    () => summariseConflicts(groups.map((group) => group.primary)),
+    [groups],
+  );
 
   const visible = useMemo(
-    () =>
-      violations
-        .filter((violation) => filter === "all" || categoryOf(violation.ruleId) === filter)
-        .sort((a, b) => b.shortfallMinutes - a.shortfallMinutes || a.id.localeCompare(b.id)),
-    [violations, filter],
+    () => groups.filter((group) => filter === "all" || categoryOf(group.primary.ruleId) === filter),
+    [groups, filter],
   );
 
   if (!result) return null;
@@ -110,6 +114,7 @@ export function ViolationPanel() {
           <h2 className="text-[13px] font-semibold text-ink-900">Conflicts</h2>
           <span className="text-[12px] text-ink-500">
             {summary.total} across {summary.requestIds.length} requests
+            {violations.length > summary.total && ` · ${violations.length} rule findings`}
           </span>
         </div>
 
@@ -138,14 +143,17 @@ export function ViolationPanel() {
         )}
 
         <ul>
-          {visible.map((violation) => (
-            <ConflictRow
-              key={violation.id}
-              violation={violation}
-              selected={selectedViolationId === violation.id}
-              onSelect={() => selectViolation(selectedViolationId === violation.id ? null : violation.id)}
-            />
-          ))}
+          {visible.map((group) => {
+            const selectedMember = group.violations.find((violation) => violation.id === selectedViolationId);
+            return (
+              <ConflictRow
+                key={group.id}
+                group={group}
+                selectedId={selectedMember?.id ?? null}
+                onSelect={() => selectViolation(selectedMember ? null : group.primary.id)}
+              />
+            );
+          })}
         </ul>
       </div>
     </section>
@@ -153,12 +161,13 @@ export function ViolationPanel() {
 }
 
 function ConflictRow({
-  violation,
-  selected,
+  group,
+  selectedId,
   onSelect,
 }: {
-  violation: Violation;
-  selected: boolean;
+  group: ConflictGroup;
+  /** The member the planner selected, if any; the row is open when set. */
+  selectedId: string | null;
   onSelect: () => void;
 }) {
   const resolutionFor = useRailPlanStore((state) => state.resolutionFor);
@@ -167,15 +176,20 @@ function ConflictRow({
   const view = useRailPlanStore((state) => state.view);
   const result = useRailPlanStore((state) => state.activeResult());
 
+  const violation = group.primary;
+  const selected = selectedId !== null;
   const category = categoryOf(violation.ruleId);
   const tone = categoryTone[category];
+  const others = group.violations.filter((member) => member.id !== violation.id);
 
   // Only computed for the open row: each recommendation is a search over every
   // candidate start for every request in the conflict, re-validated each time.
+  // A move that clears the headline finding almost always clears the others in
+  // the group, because they share the same requests and minutes.
   /* eslint-disable react-hooks/exhaustive-deps */
   const resolution = useMemo(
-    () => (selected ? resolutionFor(violation.id) : null),
-    [selected, violation.id, result, resolutionFor],
+    () => (selected ? resolutionFor(selectedId ?? violation.id) : null),
+    [selected, selectedId, violation.id, result, resolutionFor],
   );
   /* eslint-enable react-hooks/exhaustive-deps */
 
@@ -209,11 +223,25 @@ function ConflictRow({
           {violation.observed} &rarr; needs {violation.required}
           {mandatory && " · involves mandatory work"}
         </p>
+        {others.length > 0 && (
+          <p className="mt-0.5 text-[11px] text-ink-500">
+            Also breaks {others.map((member) => ruleCatalogue[member.ruleId].label.toLowerCase()).join(", ")}
+          </p>
+        )}
       </button>
 
       {selected && (
         <div className="border-t border-rule bg-paper px-3 py-2">
           <p className="text-[12px] leading-relaxed text-ink-700">{violation.detail}</p>
+          {others.length > 0 && (
+            <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-ink-500">
+              {others.map((member) => (
+                <li key={member.id}>
+                  <span className="font-medium text-ink-700">{ruleCatalogue[member.ruleId].label}:</span> {member.detail}
+                </li>
+              ))}
+            </ul>
+          )}
 
           {resolution ? (
             <div className="mt-2 border border-rule bg-surface px-2.5 py-2">

@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { PlanExport } from "@railplan/core/types/exports";
-import type { MaintenanceRequest, Placement, Violation } from "@railplan/core/types/railplan";
-import { categoryOf, headline, type ConflictCategory } from "@railplan/core/engine/conflicts";
+import type { MaintenanceRequest, Placement } from "@railplan/core/types/railplan";
+import { categoryOf, groupConflicts, headline, type ConflictCategory, type ConflictGroup } from "@railplan/core/engine/conflicts";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { ruleCatalogue } from "@railplan/core/engine/validate";
 import { alternativesFor, explainFor, previewRevision, resolutionFor } from "@/lib/plans/revision";
@@ -70,12 +70,14 @@ export function PlanRevisionEditor({ snapshot, selectedRequestId, selectRequest,
   const choices = useMemo(() => request && !pinned
     ? alternativesFor(preview, request.id)
     : { alternatives: [], bindingRuleId: null }, [preview, request, pinned]);
-  const conflicts = useMemo(() => [...preview.requestedViolations]
-    .sort((a, b) => b.shortfallMinutes - a.shortfallMinutes || a.id.localeCompare(b.id)), [preview]);
-  const openConflict = conflicts.find(v => v.id === openConflictId) ?? null;
+  // One row per clash: findings that name the same requests over the same
+  // minutes are one problem, with the rules they break listed beneath.
+  const conflicts = useMemo(() => groupConflicts(preview.requestedViolations), [preview]);
+  const openConflict = conflicts.find(g => g.id === openConflictId) ?? null;
   // A search over every candidate start for every request in the clash, so it
-  // runs for the open row only.
-  const resolution = useMemo(() => openConflict ? resolutionFor(preview, openConflict) : null, [preview, openConflict]);
+  // runs for the open row only. Clearing the headline finding clears the group:
+  // its members share the same requests and minutes.
+  const resolution = useMemo(() => openConflict ? resolutionFor(preview, openConflict.primary) : null, [preview, openConflict]);
 
   const pin = (id: string, startMinute: number) => {
     const target = world.requestById[id];
@@ -141,22 +143,25 @@ export function PlanRevisionEditor({ snapshot, selectedRequestId, selectRequest,
           <section aria-label="Requested-time conflicts" className={cn(panel, "flex max-h-[560px] min-h-0 flex-col")}>
             <header className={panelHead}>
               <h4 className="text-[13px] font-semibold">Conflicts in the requested times</h4>
-              <span className="text-[12px] text-ink-500">{conflicts.length} across {new Set(conflicts.flatMap(v => v.requestIds)).size} requests</span>
+              <span className="text-[12px] text-ink-500">
+                {conflicts.length} across {new Set(conflicts.flatMap(g => g.requestIds)).size} requests
+                {preview.requestedViolations.length > conflicts.length && ` · ${preview.requestedViolations.length} rule findings`}
+              </span>
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {!conflicts.length && <p className="p-3 text-[13px] text-signal-green">No conflicts in the requested times.</p>}
               <ul>
-                {conflicts.map(v => <ConflictRow key={v.id} violation={v} open={openConflictId === v.id}
-                  onToggle={() => setOpenConflictId(openConflictId === v.id ? null : v.id)}
-                  resolution={openConflictId === v.id ? resolution : null}
+                {conflicts.map(g => <ConflictRow key={g.id} group={g} open={openConflictId === g.id}
+                  onToggle={() => setOpenConflictId(openConflictId === g.id ? null : g.id)}
+                  resolution={openConflictId === g.id ? resolution : null}
                   onApply={(id, start) => pin(id, start)} onReview={selectRequest} world={world} />)}
               </ul>
             </div>
           </section>
 
-          <section aria-label="Work without a slot" className={panel}>
+          <section aria-label="Work without a slot in this proposal" className={panel}>
             <header className={panelHead}>
-              <h4 className="text-[13px] font-semibold">Work without a slot</h4>
+              <h4 className="text-[13px] font-semibold">Work without a slot in this proposal</h4>
               <span className="text-[12px] text-ink-500">{deferred.length} deferred</span>
             </header>
             {!deferred.length ? <p className="p-3 text-[13px] text-signal-green">Every request has a slot in this proposal.</p>
@@ -290,13 +295,15 @@ function QueueRow({ request, state, start, selected, onSelect }: {
   </button>;
 }
 
-function ConflictRow({ violation, open, onToggle, resolution, onApply, onReview, world }: {
-  violation: Violation; open: boolean; onToggle: () => void;
+function ConflictRow({ group, open, onToggle, resolution, onApply, onReview, world }: {
+  group: ConflictGroup; open: boolean; onToggle: () => void;
   resolution: ReturnType<typeof resolutionFor> | null;
   onApply: (requestId: string, startMinute: number) => void;
   onReview: (requestId: string) => void;
   world: RevisionWorld;
 }) {
+  const violation = group.primary;
+  const others = group.violations.filter(v => v.id !== violation.id);
   const category = categoryOf(violation.ruleId);
   const mandatory = violation.requestIds.some(id => world.requestById[id]?.mandatory);
   return <li className="border-b border-rule last:border-b-0">
@@ -310,9 +317,13 @@ function ConflictRow({ violation, open, onToggle, resolution, onApply, onReview,
       </div>
       <p className="mt-0.5 text-[12px] leading-relaxed text-ink-900">{headline(violation)}</p>
       <p className="mt-1 text-[11px] text-ink-500">{violation.observed} → needs {violation.required}{mandatory && " · involves mandatory work"} · <span className="font-mono">{violation.ruleId}</span></p>
+      {others.length > 0 && <p className="mt-0.5 text-[11px] text-ink-500">Also breaks {others.map(v => rule(v.ruleId).toLowerCase()).join(", ")}</p>}
     </button>
     {open && <div className="border-t border-rule bg-paper px-3 py-2 text-[12px]">
       <p className="leading-relaxed text-ink-700">{violation.detail}</p>
+      {others.length > 0 && <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-ink-500">
+        {others.map(v => <li key={v.id}><span className="font-medium text-ink-700">{rule(v.ruleId)}:</span> {v.detail} <span className="font-mono">{v.ruleId}</span></li>)}
+      </ul>}
       {resolution ? <div className="mt-2 border border-rule bg-surface px-2.5 py-2">
         <p className="text-[11px] uppercase tracking-[0.06em] text-ink-500">Recommended resolution</p>
         <p className="mt-1 text-[13px] font-medium text-ink-900">{resolution.headline} <span className="font-normal text-ink-500">(from {formatClock(resolution.fromMinute)})</span></p>

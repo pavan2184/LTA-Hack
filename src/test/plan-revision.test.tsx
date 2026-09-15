@@ -128,7 +128,12 @@ describe("saved planning revisions", () => {
     const conflicts = screen.getByRole("region", { name: "Requested-time conflicts" });
     expect(conflicts).toHaveTextContent("Track block capacity");
     expect(conflicts).toHaveTextContent(requestId);
+    // The two identical mandatory jobs collide on block, crew and staffing at
+    // once: one clash row, with the other rules listed beneath the headline.
     const rows = within(conflicts).getAllByRole("button", { expanded: false });
+    expect(rows).toHaveLength(1);
+    expect(conflicts).toHaveTextContent(/Also breaks/);
+    expect(conflicts).toHaveTextContent(/rule findings/);
     await userEvent.click(rows[0]);
     expect(within(conflicts).getByText("Recommended resolution")).toBeInTheDocument();
     await userEvent.click(within(conflicts).getByRole("button", { name: "Apply suggestion" }));
@@ -142,7 +147,7 @@ describe("saved planning revisions", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => saved }));
     render(<SavedPlanReview planId={id} onSaveRevision={vi.fn()} />);
     await userEvent.click(await screen.findByRole("button", { name: "Review conflicts and revise" }));
-    const unplaced = screen.getByRole("region", { name: "Work without a slot" });
+    const unplaced = screen.getByRole("region", { name: "Work without a slot in this proposal" });
     expect(unplaced).toHaveTextContent("Overnight relay");
     expect(screen.getByRole("status", { name: "Revision assessment" })).toHaveTextContent("1 deferred");
     await userEvent.click(within(unplaced).getByRole("button", { name: "Review R-long" }));

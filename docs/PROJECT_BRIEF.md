@@ -72,8 +72,9 @@ distinguishes local work, repository state, deployment and verification evidence
 | A credible demonstration | A reproducible request-to-publication journey, an impossible case and a 2–3 minute pitch with claims matched to evidence |
 
 Automated verification supports the implemented model. Reduced planning time,
-operator acceptance and operational validity remain unproven. The current time-saving
-metric assumes 12 minutes per manually resolved conflict; it is not a measured gain.
+operator acceptance and operational validity remain unproven. The time-saving tile
+was removed on 2026-09-15; no displayed figure multiplies an assumption. Conflicts
+are counted as distinct clashes, with the underlying rule findings inspectable.
 A pilot needs anonymized planning examples and operator-reviewed rules first.
 
 ## Scope and decision boundaries

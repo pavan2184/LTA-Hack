@@ -1,3 +1,4 @@
+import { groupConflicts } from "@railplan/core/engine/conflicts";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -197,11 +198,13 @@ describe("planner workspace", () => {
     expect(submitted?.status).toBe("INFEASIBLE");
     expect(submitted!.violations.length).toBeGreaterThan(10);
 
-    // The summary counts the same findings the engine produced, by category.
+    // The summary counts clashes, not rule findings: one collision that breaks
+    // the block, crew and staffing rules is one problem for the planner.
+    const clashes = groupConflicts(submitted!.violations).length;
+    expect(clashes).toBeLessThan(submitted!.violations.length);
     const banner = screen.getByText(/conflicts detected across/i);
-    expect(banner).toHaveTextContent(
-      new RegExp(`${submitted!.violations.length} conflicts detected across`),
-    );
+    expect(banner).toHaveTextContent(new RegExp(`${clashes} conflicts detected across`));
+    expect(screen.getAllByText(/Also breaks/).length).toBeGreaterThan(0);
     expect(screen.getByText(/sector overlaps/)).toBeInTheDocument();
   });
 
@@ -321,27 +324,25 @@ describe("planner workspace", () => {
     ).toBeInTheDocument();
   });
 
-  it("labels the one estimated figure as an assumption", async () => {
+  it("shows no estimated figure and counts clashes with the rule findings inspectable", async () => {
     const user = userEvent.setup();
     render(<PlannerWorkspace />);
     await loadRequests(user);
-    await generateSchedule(user);
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", {
-          name: /how planner time saved is calculated/i,
-        }),
-      ).toBeInTheDocument(),
-    );
+    // The time-saved tile multiplied an inflated count by an assumed 12 minutes.
+    // Nothing on the dashboard multiplies an assumption any more.
+    expect(screen.queryByText(/planner time saved/i)).not.toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", {
-        name: /how planner time saved is calculated/i,
-      }),
+      screen.getByRole("button", { name: /how conflicts is calculated/i }),
     );
-    expect(
-      screen.getByText(/assumption, not a measurement/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/critical rule findings/i)).toBeInTheDocument();
+    const clashes = groupConflicts(
+      useRailPlanStore.getState().submitted!.violations,
+    ).length;
+    expect(useRailPlanStore.getState().baselineConflicts).toBe(clashes);
+
+    await generateSchedule(user);
+    expect(screen.queryByText(/planner time saved/i)).not.toBeInTheDocument();
   });
 
   it("measures the schedule against the requests as submitted, not against its own fixes", async () => {

@@ -4,6 +4,33 @@ Last updated: 2026-09-15
 
 ## Log
 
+### 2026-09-15 — Count clashes, not rule findings; show unplaced work with the conflicts
+
+Status: Accepted by the owner ("start on P2") and implemented.
+
+The validator reports every rule a collision breaks, so two jobs sharing a block,
+a crew and a supervisor produce three findings for one problem. The as-submitted
+demo night showed 30 conflicts for roughly ten distinct clashes, and the
+planner-time-saved tile multiplied that inflated count by an assumed 12 minutes.
+Add `groupConflicts` to the core engine: findings that name the same request set
+over overlapping minutes form one group, headlined by the largest shortfall,
+with the other rules listed beneath. Untimed findings group by request set alone.
+The validator and its findings are unchanged; grouping is a presentation of them
+that keeps the raw count as the denominator of the new `conflictsMetric`.
+
+Use groups everywhere a planner counts problems: the sandbox conflict panel,
+toolbar and baseline, the overview tiles, and the saved-plan revision editor.
+Recommended resolutions run against the group's headline finding; its members
+share requests and minutes, so the same move clears them together. Selecting any
+member still opens its group, preserving the store's selection contract.
+
+Remove the planner-time-saved tile from the overview. The metric function stays
+in the core package for a future measured baseline; nothing on screen multiplies
+an assumption. Put "Work without a slot" beneath the conflicts on the sandbox
+Conflicts page after a solve and above the saved-plan panels, each row opening
+the request in the inspector, so "no conflicts" is never read without the
+deferred work beside it.
+
 ### 2026-09-15 — Join conflict review to saved planning; demote the sandbox
 
 Status: Accepted by the owner ("start on P1, join the halves") and implemented.
