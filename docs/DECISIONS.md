@@ -4,6 +4,26 @@ Last updated: 2026-09-15
 
 ## Log
 
+### 2026-09-15 — A published time is a question the contractor answers
+
+Status: Accepted by the owner ("start on P3") and implemented.
+
+The adoption review found the contractor's whole outcome was one sentence with a
+plan UUID and a Telegram line built from request IDs, with no way to agree or
+object. Publication that nobody confirms is a message, not a schedule. Add an
+append-only acknowledgement per request and published version: confirmed, or
+cannot comply with a required reason. Only the owning contractor answers, only
+about the plan that is current; a stale plan id is a conflict, so an answer never
+lands on a newer schedule. A new version asks again.
+
+Show contractors "Your schedule" first on their workspace: each published time
+beside the requested time in station names, with the two answers. Show planners
+the responses on the published version: confirmed, cannot make it with reasons,
+awaiting. Rewrite the notification in the same words, by title and sector with
+published and requested times, and ask for the answer in RailPlan. This does not
+change approval, planning or publication semantics, and it does not make an
+acknowledgement an operational permission to work.
+
 ### 2026-09-15 — Count clashes, not rule findings; show unplaced work with the conflicts
 
 Status: Accepted by the owner ("start on P2") and implemented.

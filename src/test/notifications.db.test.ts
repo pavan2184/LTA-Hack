@@ -124,11 +124,15 @@ describe.skipIf(!reachable)(
         for (const delivery of initial) {
           const own = delivery.organisationId === org ? a : b,
             foreign = delivery.organisationId === org ? b : a;
-          expect(delivery.messageText).toContain(`R-${own.id}`);
+          // The message names the work in the contractor's words, never by id.
+          expect(delivery.messageText).toContain(own.fields.title);
+          expect(delivery.messageText).not.toContain(foreign.fields.title);
+          expect(delivery.messageText).not.toContain(`R-${own.id}`);
           expect(delivery.messageText).not.toContain(`R-${foreign.id}`);
           expect(delivery.messageText).not.toContain("M-001");
           expect(delivery.messageText).toContain(first.id);
           expect(delivery.messageText).toContain(PLANNING_NIGHT);
+          expect(delivery.messageText).toMatch(/Please confirm each time/);
           expect(delivery.messageText).toMatch(/Prototype only/);
           expect(delivery.status).toBe("pending");
           expect(delivery.attemptCount).toBe(0);
@@ -154,8 +158,7 @@ describe.skipIf(!reachable)(
         await publishPlan(p, removed.id, tx);
         const notices = await listPlanNotifications(p, removed.id, tx);
         const notice = notices.find((n) => n.organisationId === org)!;
-        expect(notice.messageText).toContain(`R-${a.id} | removed`);
-        expect(notice.messageText).toContain("NS10-NS11");
+        expect(notice.messageText).toContain(`${a.fields.title} (NS10-NS11): removed from this night`);
         if (
           first.placements.some(
             (placement) => placement.requestId === `R-${a.id}`,

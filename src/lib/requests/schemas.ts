@@ -164,3 +164,13 @@ export function validateFields(
   });
   return errors;
 }
+
+/** A contractor's answer to the published time for one request. */
+export const acknowledgeSchema = z
+  .object({
+    planId: z.uuid(),
+    kind: z.enum(["confirmed", "cannot_comply"]),
+    reason: z.string().trim().max(2000).default(""),
+  })
+  .strict();
+export type AcknowledgeInput = z.input<typeof acknowledgeSchema>;

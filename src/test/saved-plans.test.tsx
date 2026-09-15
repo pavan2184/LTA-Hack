@@ -7,6 +7,7 @@ import { solve } from '@railplan/core/engine/solve';
 // Notification HTTP behavior and publish integration have their own real-component suites.
 vi.mock('@/components/notifications/PlanNotifications', () => ({ PlanNotifications: () => null }));
 vi.mock('@/components/notifications/NotificationSettings', () => ({ NotificationSettings: () => null }));
+vi.mock('@/components/plans/ContractorResponses', () => ({ ContractorResponses: () => null }));
 
 const result = solve({ strategy: 'balanced' });
 const saved = {

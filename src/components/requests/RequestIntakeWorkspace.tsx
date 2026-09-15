@@ -417,10 +417,21 @@ export function RequestIntakeWorkspace({
                 )}
               {selected?.scheduled && (
                 <p className="mt-2 text-sm">
-                  Scheduled in published plan {selected.scheduled.planId}:{" "}
-                  {clock(selected.scheduled.startMinute)}–
-                  {clock(selected.scheduled.endMinute)} (revision{" "}
-                  {selected.scheduled.revision}).
+                  Published time {clock(selected.scheduled.startMinute)}–
+                  {clock(selected.scheduled.endMinute)}
+                  {selected.scheduled.startMinute !== selected.fields.preferredStart &&
+                    ` (requested ${clock(selected.fields.preferredStart)})`}
+                  .{" "}
+                  {selected.scheduled.acknowledgement
+                    ? selected.scheduled.acknowledgement.kind === "confirmed"
+                      ? "The contractor confirmed this time."
+                      : `The contractor cannot make this time: ${selected.scheduled.acknowledgement.reason}`
+                    : contractor
+                      ? "Confirm it under Your schedule above."
+                      : "The contractor has not answered yet."}
+                  <span className="block text-xs text-ink-500">
+                    Version {selected.scheduled.planId} · revision {selected.scheduled.revision}
+                  </span>
                 </p>
               )}
             </header>

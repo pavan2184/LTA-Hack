@@ -4,6 +4,7 @@ import type { RequestSubmission } from "@railplan/core/types/requests";
 import type { UserRole } from "@railplan/core/types/auth";
 import { RequestIntakeWorkspace } from "./RequestIntakeWorkspace";
 import { TranscriptDraftWorkspace } from "./TranscriptDraftWorkspace";
+import { ContractorSchedule } from "./ContractorSchedule";
 
 export function RequestWorkspaces({ role }: { role: UserRole }) {
   const [submittedRequests, setSubmittedRequests] = useState<
@@ -12,6 +13,7 @@ export function RequestWorkspaces({ role }: { role: UserRole }) {
   const [view, setView] = useState<"requests" | "notes">("requests");
   return (
     <>
+      {role === "contractor" && <ContractorSchedule />}
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2" aria-label="Request workflow">
           {([['requests', role === 'planner' ? 'Review requests' : 'Your requests'], ['notes', 'From meeting notes']] as const).map(([id, label]) =>

@@ -98,6 +98,37 @@ all 51 pages were text-extracted. No application code or existing work was remov
 Documentation checks cover archive fidelity, local links, PDF checksum, ignored
 source placement and whitespace. Application tests were not rerun for these docs.
 
+## Contractor schedule and acknowledgement (P3) — 2026-09-15
+
+Implemented the adoption review's third recommendation. Migration
+`20260915140000_schedule_acknowledgements.sql` adds an append-only, RLS-scoped
+acknowledgement table, the `acknowledge_schedule` function, an `acknowledgement`
+field on the derived schedule, and notification text that names work by title and
+sector with published and requested times. `POST /api/requests/:id/acknowledge`
+records confirmed or cannot-comply answers against the current published version.
+Contractors see "Your schedule" first on their workspace with the published time,
+the requested time, station names and the two answers; planners see contractor
+responses on the published version, with reasons for times that cannot be kept.
+
+Verification (worktree without database configuration): typecheck and lint clean;
+`npm test` 576 passed, 53 skipped. New coverage: contractor schedule shows the
+published time against the requested time in station names, confirms, requires a
+reason to decline, and keeps the answer on a stale-plan conflict; the planner
+response panel summarises confirmed, declined and awaiting for the published
+version only; a database test covers ownership, planner refusal, reason
+validation, latest-answer-wins and re-asking after a new version.
+
+**Database verification is blocked.** On 2026-09-15 the shared RailPlan Dev
+database reported an applied migration, `20260915024501_planner_manual_request.sql`,
+that exists in no branch of this repository, so `npm run db:migrate` refused to
+run and the acknowledgement migration was **not applied**. `npm run test:db` was
+run anyway for information: the new acknowledgement test and the two rewritten
+notification wording assertions fail as expected against the unmigrated database,
+and five unrelated `plans.db` tests timed out at 5 s under the same conditions.
+The main checkout was returned to `main`. Whoever applied the missing migration
+must commit it before the ledger accepts new migrations; then rerun
+`npm run db:migrate` and `npm run test:db` and record the result here.
+
 ## Conflicts by root cause, unplaced work first (P2) — 2026-09-15
 
 Implemented the adoption review's second recommendation. The core engine gains

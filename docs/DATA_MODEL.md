@@ -224,6 +224,24 @@ cancellation. The engine request carries optional `submissionRevision`; absence
 identifies the existing operator-seeded baseline. Approved request demand joins
 the same canonical workforce facts and saved-plan digest.
 
+## Schedule acknowledgements — 2026-09-15
+
+Private `schedule_acknowledgements` records a contractor organisation's answer to
+one published time: submission, published plan, the approved revision that was
+scheduled, `kind` (confirmed or cannot_comply), a trimmed reason of at most 2,000
+characters (required for cannot_comply), actor and server timestamp. Rows are
+append-only with the shared mutation guard; the latest row per submission and
+plan is the answer that counts. RLS reads are scoped to the owning organisation
+or a planner; writes go only through `acknowledge_schedule`, which rechecks the
+contractor's organisation and that the plan is the request's current published
+plan. `request_schedule` now returns that latest answer as `acknowledgement`.
+
+Publication notifications name each changed request by title and sector with its
+published time and, where it differs, the requested time, and ask the contractor
+to confirm in RailPlan. Snapshots gain `title` and `requestedStart`, so a title
+change or a moved requested time is itself a notified change. Request IDs no
+longer appear in the message body; the plan version is retained at the end.
+
 ## Private extracted proposals — issue #10
 
 `NullableRequestFields` contains all eleven contractor RequestFields keys, each

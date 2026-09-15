@@ -49,6 +49,12 @@ export interface RequestRevision {
   approval: RequestApproval | null;
   createdAt: string;
 }
+export type AcknowledgementKind = "confirmed" | "cannot_comply";
+export interface ScheduleAcknowledgement {
+  kind: AcknowledgementKind;
+  reason: string;
+  createdAt: string;
+}
 export interface RequestSubmission {
   /** Included on detail reads; omitted from lightweight lists. */
   proposalSource?: RequestProposalSource | null;
@@ -65,6 +71,8 @@ export interface RequestSubmission {
     revision: number;
     startMinute: number;
     endMinute: number;
+    /** The organisation's latest answer to this published time, if any. */
+    acknowledgement: ScheduleAcknowledgement | null;
   };
   history: RequestEvent[];
   revisions: RequestRevision[];

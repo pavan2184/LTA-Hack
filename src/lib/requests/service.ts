@@ -15,10 +15,12 @@ import {
 } from "@/lib/auth/session";
 import { requireAction } from "@/lib/auth/permissions";
 import {
+  acknowledgeSchema,
   createRequestSchema,
   updateRequestSchema,
   actionSchema,
   validateFields,
+  type AcknowledgeInput,
   type RequestAction,
 } from "./schemas";
 export class RequestError extends Error {
@@ -272,6 +274,48 @@ export async function actOnRequest(
         input.approval ?? null,
         input.reason,
       );
+    },
+    connection,
+  );
+}
+
+/**
+ * A contractor answers the published time for one of its requests. SQL checks
+ * ownership and that the answer names the plan that is still current; a stale
+ * plan id is a conflict, because the schedule moved on before the answer did.
+ */
+export async function acknowledgeSchedule(
+  identity: VerifiedIdentity,
+  id: string,
+  raw: AcknowledgeInput,
+  connection?: Connection,
+) {
+  const input = acknowledgeSchema.parse(raw);
+  return transaction(
+    identity,
+    async (tx) => {
+      const [row] = await tx<
+        {
+          result: {
+            id?: string;
+            code?: RequestError["code"];
+            fieldErrors?: Record<string, string>;
+          };
+        }[]
+      >`select railplan_private.acknowledge_schedule(${id}::uuid,${input.planId}::uuid,${input.kind},${input.reason}) as result`;
+      if (row.result.code)
+        throw new RequestError(
+          row.result.code,
+          row.result.code === "conflict"
+            ? "The published schedule has changed. Reload to see the current time before answering."
+            : row.result.code === "not_found"
+              ? "This request does not exist."
+              : row.result.code === "forbidden"
+                ? "Only the contractor organisation can answer its published time."
+                : "Correct the highlighted fields.",
+          row.result.fieldErrors,
+        );
+      return read(tx, id);
     },
     connection,
   );

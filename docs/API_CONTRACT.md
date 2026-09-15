@@ -207,7 +207,25 @@ returns conflict 409; unavailable actions return invalid_transition 409; foreign
 organisation UUIDs return not_found 404. Anonymous/unassigned/planner-action
 failures return 401/403; auth unavailability returns 503 without processing input.
 Catalogue teams and dependency options are returned to planners only. `scheduled`
-contains only the scoped request's current published planId, revision and times.
+contains only the scoped request's current published planId, revision and times,
+plus `acknowledgement`: the organisation's latest answer to that published version
+(`kind` confirmed or cannot_comply, `reason`, `createdAt`) or null.
+
+### Schedule acknowledgement — 2026-09-15
+
+| Route | Input | Success |
+| --- | --- | --- |
+| POST /api/requests/:id/acknowledge | `{planId, kind: "confirmed" \| "cannot_comply", reason?}` | 201 `{request}` |
+
+Contractors only, scoped to their organisation; planners receive forbidden 403.
+`planId` must be the plan that is currently published for the request; any other
+value, including a superseded version or an unpublished draft, returns conflict
+409 so a stale answer never lands on a newer schedule. `reason` is trimmed, at
+most 2,000 characters, and required for cannot_comply (invalid_request 400 with
+`fieldErrors.reason`). Answers are append-only; the latest one for the current
+version is what `scheduled.acknowledgement` reports, so a contractor can change
+an answer and a newly published version asks again. Same-origin JSON and the
+64 KiB body limit apply.
 
 ## Transcript extraction — issue #10
 

@@ -9,6 +9,7 @@ import { PLANNING_NIGHT } from "@railplan/core/data/requests";
 import { formatClock } from "@railplan/core/engine/intervals";
 import { NotificationSettings } from "@/components/notifications/NotificationSettings";
 import { PlanNotifications } from "@/components/notifications/PlanNotifications";
+import { ContractorResponses } from "./ContractorResponses";
 import { Button } from "@/components/ui/button";
 
 import { SavedPlanExports } from "./SavedPlanExports";
@@ -169,6 +170,7 @@ export function SavedPlansWorkspace() {
           <Button variant="primary" disabled={busy || revising || stale || selected.publishState !== "draft" || selected.status === "INFEASIBLE" || !selected.validation.independentlyValidated} onClick={publish}>Publish this version</Button>
           {revising && <p className="text-sm">Save or discard your schedule changes before publishing.</p>}
           <p className="text-xs text-ink-500">The server rechecks the current planning inputs. Failed notifications do not undo publication.</p>
+        {selected.publishState === "published" && <ContractorResponses key={selected.id} planId={selected.id} />}
         <PlanNotifications planId={selected.id} publishState={selected.publishState} warning={notificationWarning?.planId === selected.id ? notificationWarning.message : null} />
         <SavedPlanExports key={selected.id} planId={selected.id} disabled={busy || revising} />
         </section>

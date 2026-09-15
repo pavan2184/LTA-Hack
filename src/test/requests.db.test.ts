@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/session";
 import { createPlan, publishPlan } from "@/lib/plans/service";
 import {
+  acknowledgeSchedule,
   getRequest,
   listRequests,
   createRequest,
@@ -244,6 +245,75 @@ describe.skipIf(!reachable)(
         );
         await publishPlan(p, refreshed.id, tx);
         expect((await getRequest(c, created.id, tx)).scheduled).toBeNull();
+      }));
+    it("lets only the owning contractor answer the current published time, and asks again after a new version", async () =>
+      fixture(async (tx, p, c, other) => {
+        const catalog = await withAuthenticatedTransaction(
+          c,
+          async (db) =>
+            (await db`select railplan_private.request_catalogue() as c`)[0].c,
+          tx,
+        );
+        const created = await mutate(tx, c, null, null, "create", {
+          ...fields,
+          workforce: [{ roleId: catalog.roles[0].id, count: 1 }],
+        });
+        await mutate(tx, c, created.id, 1, "submit");
+        await mutate(tx, p, created.id, 2, "approve", null, {
+          ...approval,
+          priority: "critical",
+        });
+        const plan = await createPlan(
+          p,
+          { planningNight: PLANNING_NIGHT, strategy: "balanced", locked: [] },
+          tx,
+        );
+        // Nothing to answer before publication.
+        await expect(
+          acknowledgeSchedule(c, created.id, { planId: plan.id, kind: "confirmed" }, tx),
+        ).rejects.toMatchObject({ code: "conflict" });
+        await publishPlan(p, plan.id, tx);
+        expect((await getRequest(c, created.id, tx)).scheduled).toMatchObject({
+          planId: plan.id,
+          acknowledgement: null,
+        });
+        await expect(
+          acknowledgeSchedule(other, created.id, { planId: plan.id, kind: "confirmed" }, tx),
+        ).rejects.toMatchObject({ code: "not_found" });
+        await expect(
+          acknowledgeSchedule(p, created.id, { planId: plan.id, kind: "confirmed" }, tx),
+        ).rejects.toMatchObject({ code: "forbidden" });
+        await expect(
+          acknowledgeSchedule(c, created.id, { planId: plan.id, kind: "cannot_comply", reason: "  " }, tx),
+        ).rejects.toMatchObject({ code: "invalid_request", fieldErrors: { reason: expect.any(String) } });
+        const declined = await acknowledgeSchedule(
+          c,
+          created.id,
+          { planId: plan.id, kind: "cannot_comply", reason: "Our crew starts at 01:00." },
+          tx,
+        );
+        expect(declined.scheduled?.acknowledgement).toMatchObject({
+          kind: "cannot_comply",
+          reason: "Our crew starts at 01:00.",
+        });
+        // The planner sees the answer on the same request; a later answer wins.
+        expect((await getRequest(p, created.id, tx)).scheduled?.acknowledgement?.kind).toBe("cannot_comply");
+        const confirmed = await acknowledgeSchedule(c, created.id, { planId: plan.id, kind: "confirmed" }, tx);
+        expect(confirmed.scheduled?.acknowledgement).toMatchObject({ kind: "confirmed", reason: "" });
+        // A new published version asks again; an answer about the old version is stale.
+        const next = await createPlan(
+          p,
+          { planningNight: PLANNING_NIGHT, strategy: "max-completion", locked: [] },
+          tx,
+        );
+        await publishPlan(p, next.id, tx);
+        expect((await getRequest(c, created.id, tx)).scheduled).toMatchObject({
+          planId: next.id,
+          acknowledgement: null,
+        });
+        await expect(
+          acknowledgeSchedule(c, created.id, { planId: plan.id, kind: "confirmed" }, tx),
+        ).rejects.toMatchObject({ code: "conflict" });
       }));
     it("protects baseline predecessors from planner deletion and cross-night moves", async () =>
       fixture(async (tx, p, c) => {
