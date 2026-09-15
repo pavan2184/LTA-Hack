@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { WorkspaceNavigation } from "@/components/layout/WorkspaceNavigation";
 import Home from "@/app/page";
 import SandboxLayout from "@/app/sandbox/layout";
+import SavedPlansPage from "@/app/plans/page";
 const { actor } = vi.hoisted(() => ({ actor: vi.fn() }));
 vi.mock("@/lib/auth/page", () => ({ workspaceActor: actor }));
 vi.mock("next/navigation", () => ({
@@ -15,6 +16,9 @@ vi.mock("@/components/auth/SignOut", () => ({
 }));
 vi.mock("@/components/layout/DashboardShell", () => ({
   DashboardShell: () => <div>Interactive conflict workspace</div>,
+}));
+vi.mock("@/components/plans/SavedPlansWorkspace", () => ({
+  SavedPlansWorkspace: () => <div>Saved planning workspace</div>,
 }));
 afterEach(() => {
   cleanup();
@@ -30,13 +34,21 @@ it("provides planner journey links and marks the current workspace", () => {
     "aria-current",
     "page",
   );
-  expect(screen.getByRole("link", { name: "Demo sandbox" })).toHaveAttribute(
-    "href",
-    "/sandbox",
-  );
+  expect(
+    screen.queryByRole("link", { name: "Demo sandbox" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.getByRole("link", { name: "Skip to workspace" }),
   ).toHaveAttribute("href", "#workspace");
+});
+it("offers the demo sandbox from the schedule page rather than the primary navigation", async () => {
+  actor.mockResolvedValue({ id: "planner-one", role: "planner" });
+  render(await SavedPlansPage());
+  expect(screen.getByRole("link", { name: "Try with demo data" })).toHaveAttribute(
+    "href",
+    "/sandbox",
+  );
+  expect(screen.getAllByRole("link")).toHaveLength(4);
 });
 it("does not offer planner-wide workspaces to contractors", () => {
   render(<WorkspaceNavigation role="contractor" current="contractor" />);

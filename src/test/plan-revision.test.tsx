@@ -11,13 +11,17 @@ import { previewRevision } from "@/lib/plans/revision";
 
 const id = "11223344-1122-4122-8122-112233445566";
 const requestId = "R-11223344-1122-4122-8122-112233445566";
-function fixture() {
+function fixture(withUnplaceable = false) {
   const facts = structuredClone(buildInstanceFromLiterals());
   facts.requests = [requestId, "R-second"].map((id, index) => ({
     ...facts.requests[0], id, title: `Approved inspection ${index + 1}`, submissionRevision: 7,
     durationMinutes: 30, clearanceMinutes: 0, preferredStart: 30, earliestStart: 0,
     latestEnd: 240, dependencies: [], requiredSkills: [], equipment: [], mandatory: true,
   }));
+  // Optional work longer than the whole engineering window: it can never fit and
+  // must be reported as unplaced rather than hidden.
+  if (withUnplaceable) facts.requests.push({ ...facts.requests[0], id: "R-long", title: "Overnight relay",
+    priority: "low", mandatory: false, durationMinutes: 300, preferredStart: 0, latestEnd: 240 });
   facts.workforceDemand = facts.requests.map(r => ({ requestId: r.id,
     roleId: facts.workforceRoles[0].id, count: 1 }));
   const result = solve({ strategy: "balanced", context: { world: buildWorld(facts) } });
@@ -44,7 +48,7 @@ describe("saved planning revisions", () => {
     render(<SavedPlanReview planId={id} onSaveRevision={vi.fn()} />);
     await userEvent.click(await screen.findByRole("button", { name: "Review conflicts and revise" }));
     await userEvent.click(screen.getByRole("button", { name: "Try requested time" }));
-    await userEvent.selectOptions(screen.getByLabelText("Request to review"), "R-second");
+    await userEvent.click(screen.getByRole("button", { name: "Open R-second, Approved inspection 2" }));
     await userEvent.click(screen.getByRole("button", { name: "Try requested time" }));
     expect(screen.getByRole("button", { name: "Save as new draft" })).toBeDisabled();
     expect(screen.getByLabelText("Revision blockers")).toHaveTextContent("BLOCK_CAPACITY");
@@ -115,6 +119,53 @@ describe("saved planning revisions", () => {
     expect(input.locked[0].startMinute).not.toBe(saved.placements[0].startMinute);
     expect(previewRevision(saved, input.locked).feasible).toBe(true);
     expect(saved.parameters.locked).toEqual([]);
+  });
+  it("lists requested-time conflicts with a recommended fix that becomes a pin", async () => {
+    const saved = fixture();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => saved }));
+    render(<SavedPlanReview planId={id} onSaveRevision={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Review conflicts and revise" }));
+    const conflicts = screen.getByRole("region", { name: "Requested-time conflicts" });
+    expect(conflicts).toHaveTextContent("Track block capacity");
+    expect(conflicts).toHaveTextContent(requestId);
+    const rows = within(conflicts).getAllByRole("button", { expanded: false });
+    await userEvent.click(rows[0]);
+    expect(within(conflicts).getByText("Recommended resolution")).toBeInTheDocument();
+    await userEvent.click(within(conflicts).getByRole("button", { name: "Apply suggestion" }));
+    expect(screen.getByRole("status", { name: "Revision assessment" })).toHaveTextContent("1 pinned");
+    expect(screen.getByRole("table", { name: "Proposed changes" })).toHaveTextContent("Unpinned → Pinned");
+    expect(screen.getByRole("button", { name: "Save as new draft" })).toBeEnabled();
+  });
+  it("shows work without a slot beside the conflicts and opens it in the inspector", async () => {
+    const saved = fixture(true);
+    expect(saved.deferrals.map(d => d.requestId)).toEqual(["R-long"]);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => saved }));
+    render(<SavedPlanReview planId={id} onSaveRevision={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Review conflicts and revise" }));
+    const unplaced = screen.getByRole("region", { name: "Work without a slot" });
+    expect(unplaced).toHaveTextContent("Overnight relay");
+    expect(screen.getByRole("status", { name: "Revision assessment" })).toHaveTextContent("1 deferred");
+    await userEvent.click(within(unplaced).getByRole("button", { name: "Review R-long" }));
+    const inspector = screen.getByRole("region", { name: "Request inspector" });
+    expect(inspector).toHaveTextContent("Overnight relay");
+    expect(inspector).toHaveTextContent("No slot");
+    expect(within(inspector).queryByRole("button", { name: "Pin proposed placement" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Needs action" }));
+    const queue = screen.getByRole("region", { name: "Requests" });
+    expect(within(queue).getAllByRole("button", { name: /^Open R-/ })).toHaveLength(1);
+    expect(queue).toHaveTextContent("no slot");
+  });
+  it("explains a moved placement by what breaks at its requested time", async () => {
+    const saved = fixture();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => saved }));
+    render(<SavedPlanReview planId={id} onSaveRevision={vi.fn()} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Review conflicts and revise" }));
+    const moved = saved.placements.find(p => p.startMinute !== 30)!;
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(`^Open ${moved.requestId},`) }));
+    const inspector = screen.getByRole("region", { name: "Request inspector" });
+    expect(inspector).toHaveTextContent("Why this placement");
+    expect(within(inspector).getByRole("list", { name: "At the requested time" })).toHaveTextContent("Track block capacity");
+    expect(inspector).toHaveTextContent(/min later/);
   });
   it("blocks stale snapshots and preserves edits when a save fails", async () => {
     const saved = fixture();

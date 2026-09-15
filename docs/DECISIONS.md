@@ -1,8 +1,33 @@
 # Decisions
 
-Last updated: 2026-09-14
+Last updated: 2026-09-15
 
 ## Log
+
+### 2026-09-15 — Join conflict review to saved planning; demote the sandbox
+
+Status: Accepted by the owner ("start on P1, join the halves") and implemented.
+
+The adoption review found the planner's real work (see a clash, weigh
+alternatives, commit a choice) existed only in the sandbox over fabricated
+requests, while the saved path generated an immutable plan the planner could not
+touch. Rebuild the saved-plan revision editor in the sandbox's shape, computed
+from the approved snapshot: a request queue with deferred/pinned/moved states, the
+requested-time conflicts with the engine's recommended resolution, an inspector
+with the counterfactual explanation and validated alternatives, work without a
+slot as its own list, then the diff against the saved version and one save.
+
+Reuse the core engine unchanged: `recommendResolution` runs against the requested
+plan built from the saved facts, `explainPlacement` and `findAlternatives` against
+the proposal. Every planner choice is a pin; the night is re-solved around the
+pins in the browser and recomputed on the server through the existing
+`basedOnPlanId` contract. No new routes, schema or solver behaviour. The sandbox
+components stay bound to their store and demo data rather than being refactored
+under deadline; the new editor duplicates their shape, not their code.
+
+Remove "Demo sandbox" from primary planner navigation. The route remains and is
+reached from a "Try with demo data" link on the schedule page, so the approved
+path is the default and the demo is an explicit detour.
 
 ### 2026-09-14 — Split the local sandbox by planning task
 

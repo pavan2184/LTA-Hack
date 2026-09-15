@@ -107,9 +107,11 @@ uncertainty are part of the product, not optional presentation details.
 5. Publication rechecks current source/version/feasibility and records immutable
    history. Contractor-scoped Telegram delivery has separate audited failure/retry
    status. JSON/CSV exports preserve the saved version and its assessment.
-6. Contractors see their organisation's published slots. The separate `/sandbox`
-   preserves fabricated conflict repair, alternatives, pins, disruptions and the
-   optional engine-grounded assistant; sandbox edits are not persisted approvals.
+6. Contractors see their organisation's published slots. Conflict review,
+   recommended fixes, alternatives and pins run on the approved facts inside the
+   saved-plan revision editor. The separate `/sandbox`, reached from the schedule
+   page as "Try with demo data", keeps fabricated disruptions and the optional
+   engine-grounded assistant; sandbox edits are not persisted approvals.
 
 ## Architecture and boundaries
 

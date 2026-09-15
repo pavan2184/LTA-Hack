@@ -97,6 +97,30 @@ all 51 pages were text-extracted. No application code or existing work was remov
 Documentation checks cover archive fidelity, local links, PDF checksum, ignored
 source placement and whitespace. Application tests were not rerun for these docs.
 
+## Join the halves (P1) — 2026-09-15
+
+Implemented the adoption review's first recommendation on `/plans`. The saved-plan
+revision editor now presents, from the approved snapshot: a request queue with
+Needs action / All / Pinned filters and deferred, pinned and moved states; the
+conflicts in the requested times with the engine's recommended resolution, where
+"Apply suggestion" pins the moved request; an inspector with requested versus
+proposed time, the counterfactual "why this placement" with the rules that break
+at the requested time, pin/unpin/try-requested controls and validated alternative
+slots; a "Work without a slot" list with reasons and blocking rules; and the
+existing change table and "Save as new draft". The sandbox is no longer in primary
+planner navigation; the schedule page links to it as "Try with demo data".
+
+Verification on this branch (worktree without database configuration): typecheck
+and lint clean; `npm test` 566 passed, 52 skipped (the database integration
+files, which probe for a connection and skip; no database or service code
+changed). New coverage: recommended fix becomes a pin, unplaced work listed and
+opened in the inspector, moved placement explained by what breaks at the
+requested time, sandbox reached from the schedule page only. A fixture-backed
+browser check at 1440px confirmed the three-panel layout; no authenticated
+browser run. This is a product change on fabricated rules; it is not evidence
+that planners complete the journey without help, which the review's adoption
+test still has to measure.
+
 ## Product adoption review — 2026-09-15
 
 Recorded [PRODUCT_ADOPTION_REVIEW.md](PRODUCT_ADOPTION_REVIEW.md): a candid
