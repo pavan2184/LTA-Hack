@@ -65,6 +65,15 @@ describe("deferred-work real authenticated rollback persistence", { timeout: 300
     const removed = await createPlan(p, parameters, tx);
     await publishPlan(p, removed.id, tx);
     expect(await getWorkItem(p, work.id, tx)).toMatchObject({ state: "open", deferredCount: 1 });
+    await publishPlan(p, (await createPlan(p, { ...parameters, strategy: "max-completion" }, tx)).id, tx);
+    await tx`delete from public.maintenance_requests where id='M-006'`;
+    const omitted = await createPlan(p, parameters, tx);
+    expect(omitted.placements.some(x => x.requestId === "M-006")).toBe(false);
+    expect(omitted.deferred.some(x => x.requestId === "M-006")).toBe(false);
+    await publishPlan(p, omitted.id, tx);
+    const reopened = await getWorkItem(p, work.id, tx);
+    expect(reopened).toMatchObject({ state: "open", deferredCount: 0 });
+    expect(reopened.events?.at(-1)?.kind).toBe("removed");
   }));
   it("preserves lifecycle reasons, source revision and trusted owner reassignment", () => fixture(async (tx, p, c) => {
     const source = await createPlan(p, parameters, tx);
