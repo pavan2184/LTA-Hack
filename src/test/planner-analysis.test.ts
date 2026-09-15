@@ -3,11 +3,41 @@ import { describe, expect, it } from "vitest";
 import { buildInstanceFromLiterals } from "@railplan/core/domain/instance";
 import { buildWorld } from "@railplan/core/domain/world";
 import { validate } from "@railplan/core/engine/validate";
-import { solvePreview } from "@/lib/plans/analysis";
+import { solvePreview, reviewRequestedConflicts, previewConflictRepair } from "@/lib/plans/analysis";
 import { analysisSchema, createPlanSchema } from "@/lib/plans/schemas";
 import { planInputDigest } from "@/lib/plans/input";
 import { parseOverviewQuery } from "@/lib/plans/overview";
 describe("connected planner bounded analysis", () => {
+  it("groups requested-time findings and previews a repair without mutating saved facts or pins", () => {
+    const facts = buildInstanceFromLiterals();
+    const parameters = { planningNight: facts.planningNight, strategy: "balanced" as const, locked: [] };
+    const original = JSON.stringify({ facts, parameters });
+    const groups = reviewRequestedConflicts(facts, parameters);
+    expect(groups.length).toBeGreaterThan(0);
+    expect(groups.flatMap(group => group.violations).length).toBeGreaterThan(groups.length);
+    let repaired = false;
+    for (const group of groups) {
+      try {
+        const proposal = previewConflictRepair(facts, parameters, group.primary.id);
+        expect(proposal.result.independentlyValidated).toBe(true);
+        expect(proposal.result.violations).toEqual(validate(proposal.result.plan, { world: buildWorld(facts) }));
+        expect(proposal.parameters.locked).toHaveLength(1);
+        expect(proposal.result.plan.placements).toContainEqual(proposal.parameters.locked[0]);
+        repaired = true;
+        break;
+      } catch (error) {
+        expect(error).toMatchObject({ code: "invalid_request" });
+      }
+    }
+    expect(repaired).toBe(true);
+    expect(JSON.stringify({ facts, parameters })).toBe(original);
+    expect(() => previewConflictRepair(facts, parameters, "foreign-finding")).toThrow();
+  });
+  it("accepts bounded server conflict commands and rejects client-supplied recommendations", () => {
+    expect(analysisSchema.safeParse({ operation: "conflicts", strategy: "balanced" }).success).toBe(true);
+    expect(analysisSchema.safeParse({ operation: "repair", strategy: "balanced", violationId: "v1" }).success).toBe(true);
+    expect(analysisSchema.safeParse({ operation: "repair", strategy: "balanced", violationId: "v1", resolution: {} }).success).toBe(false);
+  });
   it("independently validates all objectives on the supplied facts and preserves pins", () => {
     const facts = buildInstanceFromLiterals();
     const first = solvePreview(facts, {

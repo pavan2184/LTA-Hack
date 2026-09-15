@@ -55,6 +55,17 @@ export const publishPlanSchema = z.object({}).strict();
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;
 export type DecisionInput = z.infer<typeof decisionSchema>;
 export const analysisSchema = z.discriminatedUnion("operation", [
+  z.object({
+    operation: z.literal("conflicts"),
+    strategy: createPlanSchema.shape.strategy.removeDefault(),
+    locked: createPlanSchema.shape.locked.removeDefault().optional(),
+  }).strict(),
+  z.object({
+    operation: z.literal("repair"),
+    strategy: createPlanSchema.shape.strategy.removeDefault(),
+    locked: createPlanSchema.shape.locked.removeDefault().optional(),
+    violationId: z.string().min(1).max(200),
+  }).strict(),
   z
     .object({
       operation: z.literal("inspect"),

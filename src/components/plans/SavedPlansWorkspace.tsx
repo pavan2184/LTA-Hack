@@ -45,6 +45,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { PlannerTimeline } from "./PlannerTimeline";
+import { PlannerConflictReview } from "./PlannerConflictReview";
 import { PlannerQueue } from "./PlannerQueue";
 import { PlannerInspector } from "./PlannerInspector";
 import { PlanComparison } from "./PlanComparison";
@@ -352,6 +353,19 @@ export function SavedPlansWorkspace({
       pins.filter((p) => p.requestId !== id),
     );
   };
+  const repair = (violationId: string) => snapshot &&
+    run("Checking the recommended repair…", async operation => {
+      const proposal = await plannerRequest<PlanAnalysis>(
+        `/api/plans/${snapshot.provenance.planId}/analysis`,
+        { operation: "repair", strategy, locked: pins, violationId }, operation.signal);
+      if (!operation.current()) return;
+      if (proposal.operation !== "preview") throw new Error("Unexpected repair response.");
+      updatePreview(proposal);
+      setStrategy(proposal.parameters.strategy);
+      opener.current = document.activeElement as HTMLElement | null;
+      setModal("changes");
+      setNotice("Repair preview only. Review all changes before generating a revised draft.");
+    });
   const createCoordination = async (
     requestId: string,
     parameters: CoordinationParameters,
@@ -864,6 +878,12 @@ export function SavedPlansWorkspace({
         )}
         {snapshot && plan && context ? (
           <>
+            <PlannerConflictReview
+              key={JSON.stringify([snapshot.provenance.planId, strategy, pins])}
+              planId={snapshot.provenance.planId} strategy={strategy} locked={pins}
+              disabled={!!busy || stale || engineMismatch || snapshot.assessment.publicationState === "superseded"}
+              onSelectRequest={selectRequest} onRepair={id => void repair(id)}
+            />
             <div className="planner-mobile-controls">
               <button
                 className="planner-button"

@@ -138,6 +138,19 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("saved snapshot visual review", () => {
+  it("lists work without a slot above the panels and opens it in the inspector", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(fixture())));
+    render(<SavedPlanReview planId={firstId} />);
+    const unplaced = await screen.findByRole("region", { name: "Work without a slot" });
+    expect(unplaced).toHaveTextContent("1 of 2 requests");
+    expect(unplaced).toHaveTextContent("R-deferred");
+    expect(unplaced).toHaveTextContent("Saved crew shortage");
+    await userEvent.click(within(unplaced).getByRole("button", { name: "Review R-deferred" }));
+    expect(screen.getByRole("region", { name: "Saved request inspector" })).toHaveTextContent(
+      "Saved crew shortage",
+    );
+  });
+
   it("keeps MRT identity on block labels and uses neutral placement bars with accent selection", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(fixture())));
     render(<SavedPlanReview planId={firstId} />);

@@ -146,9 +146,9 @@ function Workspace() {
       <PlanningPanels
         compactContext
         preferenceKey="railplan-demo-layout"
-        queue={<SandboxPlannerPanel kind="queue" />}
-        primary={(tabs) => <SandboxPlannerPanel kind="timeline" headerActions={tabs} />}
-        workforce={<WorkforceTimeline compact />}
+        queue={<div id="sandbox-requests" tabIndex={-1}><SandboxPlannerPanel kind="queue" /></div>}
+        primary={(tabs) => <div id="sandbox-schedule" tabIndex={-1}><SandboxPlannerPanel kind="timeline" headerActions={tabs} /></div>}
+        workforce={<div id="sandbox-resources" tabIndex={-1}><WorkforceTimeline compact /></div>}
         geography={<GeographicNetworkView />}
         belowPrimary={
           <div className="grid gap-2.5 xl:grid-cols-2">
@@ -164,7 +164,7 @@ function Workspace() {
         }
       />
 
-      <ScenarioTesting />
+      <div id="sandbox-scenarios" tabIndex={-1}><ScenarioTesting /></div>
       <SolverBar />
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-3 text-[11px] text-ink-500">

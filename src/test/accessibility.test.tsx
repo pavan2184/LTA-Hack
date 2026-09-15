@@ -8,6 +8,7 @@ import { useRailPlanStore } from "@/store/useRailPlanStore";
 
 beforeEach(() => {
   localStorage.clear();
+  useRailPlanStore.getState().reset();
   useRailPlanStore.setState({
     loaded: false,
     submitted: null,
@@ -32,7 +33,9 @@ it.each(["Escape", "Cancel", "Apply to this plan"])(
   "restores keyboard focus after closing the disruption dialog with %s",
   async (action) => {
     await useRailPlanStore.getState().load();
-    render(<DashboardShell />);
+    render(
+      <DashboardShell />,
+    );
     const user = userEvent.setup();
     const trigger = screen.getByRole("button", { name: "Test a disruption" });
     trigger.focus();

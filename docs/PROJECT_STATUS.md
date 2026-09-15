@@ -1,5 +1,39 @@
 # Project Status
 
+## GitHub merge verified — 2026-09-15
+
+Pavan approved all recommended resolutions and pushing main after verification.
+Checkpoint 18c32d3 preserves all local work before the actual merge with c70ecef.
+All 29 textual conflicts are resolved; verification is complete and the merge is
+ready for commit/push. PR #27 remains excluded. Current implementation keeps the single
+sandbox and exact role-aware journeys, ports transient-state safeguards, and adds
+server-validated requested-time conflict/repair review to Night overview. Unused
+upstream duplicate editor/subpage components are excluded, with behavioural tests
+adapted to the approved routes.
+
+Fresh typecheck, lint and production build passed. Sandbox integration: 44/44;
+saved conflict/read-only review: 13/13; request/notification/analysis DB: 35/35.
+Initial full suite: 824 passed, three historical-UI assertions failed; those were
+adapted to the approved server preview, dedicated settings page and explicit
+discard guard, and their focused reruns passed. The subsequent whole-suite run
+passed 820/820 tests across 98 files. Independent-session concurrency passed
+13/13 and authenticated production HTTP tests passed 6/6. Database parity remains
+fnv1a:8c4a9050cfea5e8b / 22 requests. After the final sandbox anchor-focus change,
+the focused regression suite passed 9/9 and fresh lint/production build passed;
+the whole suite was not repeated after that small change.
+Independent read-only review found no critical/important issue in the merge or
+carry-forward source-revision identity correction, including the final focus fix.
+Browser checks passed at 1440×900 and 390×844: white surfaces, no document overflow,
+expandable workforce, legacy redirects and focused anchors, keyboard dialog focus,
+and consistent fabricated emergency data across queue/timeline/inspector. Browser
+error/warning logs were empty. The existing saved plan was stale and correctly
+disabled repair actions; no durable plan was created for manual verification.
+Authenticated role coverage used the controlled E2E fixtures, not a full manual
+contractor journey. No real provider sends, session-expiry wait or VoiceOver audit.
+Production preview: http://127.0.0.1:3000 (session67690), optional AI/Telegram disabled.
+No explicit deployment performed; the authorized main push may trigger configured
+hosting automation. Historical entries below retain earlier facts.
+
 ## GitHub reconciliation — tooling and fresh merge assessment (2026-09-15)
 
 Ported upstream `.gitignore`, ESLint and Vitest exclusions: local artwork/output

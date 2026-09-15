@@ -94,6 +94,48 @@ function SnapshotReview({ snapshot }: { snapshot: PlanExport }) {
   const selection = { snapshot, world, selectedRequestId, selectRequest };
   return (
     <div className="min-w-0 space-y-4">
+      <section aria-label="Work without a slot" className="rounded border border-rule bg-surface">
+        <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-rule px-3 py-2">
+          <h3 className="text-[13px] font-semibold">Work without a slot</h3>
+          <span className="text-[12px] text-ink-500">
+            {snapshot.deferrals.length} of {snapshot.placements.length + snapshot.deferrals.length} requests
+          </span>
+        </header>
+        {!snapshot.deferrals.length ? (
+          <p className="px-3 py-3 text-[13px] text-signal-green">
+            Every request has a slot in this version.
+          </p>
+        ) : (
+          <ul className="divide-y divide-rule">
+            {snapshot.deferrals.map((entry) => {
+              const request = world.requestById[entry.requestId];
+              return (
+                <li
+                  key={entry.requestId}
+                  className="flex flex-wrap items-start justify-between gap-2 px-3 py-2 text-[12px]"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink-900">
+                      <span className="font-mono">{entry.requestId}</span> · {entry.title}
+                      {request?.mandatory && (
+                        <span className="ml-2 font-medium text-signal-red">mandatory</span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 leading-relaxed text-ink-700">{entry.reason}</p>
+                  </div>
+                  <button
+                    className={button}
+                    aria-pressed={selectedRequestId === entry.requestId}
+                    onClick={() => selectRequest(entry.requestId)}
+                  >
+                    Review {entry.requestId}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
       <div className="space-y-2 border-l-4 border-signal-amber bg-sunk p-3 text-sm">
         <p className="font-semibold">{snapshot.notice}</p>
         <p>

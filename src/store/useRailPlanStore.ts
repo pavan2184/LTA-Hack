@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ConflictCategory } from "@railplan/core/engine/conflicts";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { visiblePlanningInputs } from "./visible-planning-inputs";
 
@@ -43,7 +44,43 @@ export type PlanView = "submitted" | "planned";
 /** Progress stages surfaced while the solver runs. Each is a real phase. */
 export type SolveStage = "idle" | "validating" | "solving" | "verifying";
 
+export type SandboxRequestFilter =
+  | "attention"
+  | "all"
+  | "mandatory"
+  | "pinned"
+  | ConflictCategory;
+
+export interface SandboxAssistantTurn {
+  role: "user" | "assistant";
+  content: string;
+  mode?: "model" | "engine";
+  notice?: string | null;
+}
+
+export interface SandboxWorkforceView {
+  filter: { teamId: string; roleId: string } | null;
+  selection: { basis: string; start: number } | null;
+}
+
 interface RailPlanState {
+  /** Page-level controls retained only while this browser visit is active. */
+  requestQuery: string;
+  requestFilter: SandboxRequestFilter;
+  conflictFilter: ConflictCategory | "all";
+  workforceView: SandboxWorkforceView;
+  assistantTurns: SandboxAssistantTurn[];
+  assistantInput: string;
+  assistantPending: boolean;
+  assistantRequestEpoch: number;
+
+  setRequestQuery: (query: string) => void;
+  setRequestFilter: (filter: SandboxRequestFilter) => void;
+  setConflictFilter: (filter: ConflictCategory | "all") => void;
+  setWorkforceView: (view: SandboxWorkforceView) => void;
+  setAssistantInput: (input: string) => void;
+  setAssistantPending: (pending: boolean) => void;
+  appendAssistantTurn: (turn: SandboxAssistantTurn) => void;
   sandboxActorId: string | null;
   sessionEpoch: number;
   beginSandboxSession: (actorId: string) => void;
@@ -195,6 +232,15 @@ export const useRailPlanStore = create<RailPlanState>()(
       disruptionImpact: [],
       disruptionMetrics: null,
       disruptionPlacements: [],
+
+      requestQuery: "",
+      requestFilter: "attention",
+      conflictFilter: "all",
+      workforceView: { filter: null, selection: null },
+      assistantTurns: [],
+      assistantInput: "",
+      assistantPending: false,
+      assistantRequestEpoch: 0,
 
       load: async () => {
         const epoch = get().sessionEpoch;
@@ -448,6 +494,14 @@ export const useRailPlanStore = create<RailPlanState>()(
       reset: () =>
         set({
           sessionEpoch: get().sessionEpoch + 1,
+      requestQuery: "",
+      requestFilter: "attention",
+      conflictFilter: "all",
+      workforceView: { filter: null, selection: null },
+      assistantTurns: [],
+      assistantInput: "",
+      assistantPending: false,
+      assistantRequestEpoch: get().assistantRequestEpoch + 1,
           loaded: false,
           view: "submitted",
           selectedRequestId: null,
@@ -467,6 +521,15 @@ export const useRailPlanStore = create<RailPlanState>()(
           disruptionMetrics: null,
           disruptionPlacements: [],
         }),
+
+      setRequestQuery: (requestQuery) => set({ requestQuery }),
+      setRequestFilter: (requestFilter) => set({ requestFilter }),
+      setConflictFilter: (conflictFilter) => set({ conflictFilter }),
+      setWorkforceView: (workforceView) => set({ workforceView }),
+      setAssistantInput: (assistantInput) => set({ assistantInput }),
+      setAssistantPending: (assistantPending) => set({ assistantPending }),
+      appendAssistantTurn: (turn) =>
+        set((state) => ({ assistantTurns: [...state.assistantTurns, turn] })),
 
       activeResult: () => {
         const state = get();

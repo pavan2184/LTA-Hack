@@ -1,5 +1,16 @@
 # Testing Plan
 
+## Reconciled merge verification — 2026-09-15
+
+The current sandbox tests cover one shared dashboard, section redirects, request/
+conflict/workforce/assistant state, reset and cross-actor invalidation. The earlier
+six-page assertions below describe upstream history, not the current navigation.
+Saved revision tests exercise server conflict commands, every finding in a group,
+inspector selection, stale repair disabling and full-plan preview/discard.
+Unit and rollback DB tests cover independent validation, immutable inputs, scoped
+authorization and stale rejection. Notification edits are protected on their
+dedicated page; request navigation uses explicit-discard confirmation.
+
 ## Reviewed carry-forward verification — 2026-09-15
 
 Task 3 review correction adds source revision3 → prepare target → same-night source
@@ -191,6 +202,18 @@ strategies, independent final validation, calculated metric formulas, repairs,
 alternatives, grounded assistant responses and HTTP validation/fallback behavior.
 The dashboard suite exercises planner interactions against real engine output.
 
+`sandbox-subpages.test.tsx` covers all six semantic header links, nested active
+page state, the deep-link introduction gate, workflow availability, client-remount
+retention for request/conflict/workforce interval/assistant state, actor-change
+isolation, stale assistant-response invalidation, reset behavior and the exact
+limited persistence payload. `sandbox-page-content.test.tsx` records the content
+assignment for every focused route module. `planning-panels.test.tsx` verifies the focused
+queue/inspector and workforce/geography compositions retain their adjustable
+controls, including the rendered inspector column variable, while the existing
+all-panel and saved-review behavior remains covered.
+`workspace-navigation.test.tsx` applies the planner authorization assertion to the
+shared sandbox layout.
+
 `src/test/instance.test.ts` checks canonicalization, meaningful digest changes,
 loaded database/literal parity and rollback-isolated drift detection. Database
 checks explicitly skip with a warning only when Postgres is unreachable. A
@@ -232,7 +255,9 @@ Exercise load → conflict inspection → single/all repairs → generation → 
 alternative → disruption/replan → assistant and formula inspection. Check console
 and server errors, keyboard/focus/labels, non-color conflict indicators and page
 overflow at 1280×800, 1440×900 and 1920×1080. An HTTP probe is not a substitute for
-browser UAT. Record runs and skipped checks in `PROJECT_STATUS.md`.
+browser UAT. The split sandbox additionally checks semantic link navigation,
+active-page styling, visible keyboard focus and no page overflow at 640, 1280,
+1440 and 1920 CSS pixels. Record runs and skipped checks in `PROJECT_STATUS.md`.
 
 Future request lifecycle, workforce and integration work
 must add its route/RLS/constraint tests before issue #17's complete two-role
@@ -507,3 +532,27 @@ fragment error; bound UUID arrays fixed it and exact recovery restored all13
 history guards. Private-schema probing uses a nonmutating RPC with Content-Profile,
 which returns406/PGRST106; REST root discovery instead requires a secret key and
 is not evidence of schema exposure. No app authorization rule was relaxed.
+
+## Saved revision regression coverage — 2026-09-09
+
+`plan-revision.test.tsx` uses real approved snapshot facts and the shared engine to
+check requested conflict evidence, exact alternative pins, impossible pin blocking,
+unpin recovery, retained edits on failed save, browser engine mismatch and stale
+version guards. The real workspace prevents publication/navigation during preview.
+Plan schema/digest tests cover optional parent IDs. Hosted rollback tests cover
+planner-only linked creation, immutable parent, exact publication/export pins and
+stale/superseded rejection. The production HTTP journey chooses an alternative for
+approved intake, compares its preview to the saved result and carries that revision
+through publication, contractor scope and JSON export. Provider responses in this
+suite are controlled and fixture artifacts are removed by exact IDs.
+
+## Guided workflow checks — 2026-09-09
+
+Check initial latest-version selection, collapsed history/technical records, keyboard
+focus into publication, and recovery when refreshing into a newer version. Request
+view switching must retain manual edits and transcript text, exclude hidden-panel
+controls from browser focus, and reveal the shared queue after proposal submission.
+Dirty request navigation must remain disabled until save/action/discard; unrecorded
+review notes cannot carry into another plan. Unsaved destination edits must survive
+night changes and version refresh. Browser checks verify native disclosure and focus;
+jsdom role queries alone do not reliably model closed-details visibility.

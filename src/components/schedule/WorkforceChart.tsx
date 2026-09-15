@@ -21,7 +21,19 @@ export interface WorkforceChartProps {
   infeasible?: boolean;
   selectedRequestId?: string | null;
   onSelectRequest: (id: string) => void;
+  viewState?: WorkforceChartViewState;
+  onViewStateChange?: (view: WorkforceChartViewState) => void;
 }
+
+export interface WorkforceChartViewState {
+  filter: { teamId: string; roleId: string } | null;
+  selection: { basis: string; start: number } | null;
+}
+
+const emptyViewState = (): WorkforceChartViewState => ({
+  filter: null,
+  selection: null,
+});
 const signed = (value: number) =>
   value < 0 ? `−${Math.abs(value)}` : value > 0 ? `+${value}` : "0";
 const span = (row: { start: number; end: number }) =>
@@ -75,6 +87,8 @@ function WorkforceDetails({
   infeasible,
   selectedRequestId,
   onSelectRequest,
+  viewState: controlledViewState,
+  onViewStateChange,
 }: WorkforceChartProps & { plan: Plan }) {
   const [expanded, setExpanded] = useState(false);
   const world = context.world ?? literalWorld();
@@ -90,10 +104,14 @@ function WorkforceDetails({
   const initial =
     assessment.shortages.find(knownPair) ??
     assessment.intervals.find(knownPair);
-  const [filter, setFilter] = useState<{
-    teamId: string;
-    roleId: string;
-  } | null>(null);
+  const [localViewState, setLocalViewState] = useState(emptyViewState);
+  const viewState = controlledViewState ?? localViewState;
+  const updateViewState = onViewStateChange ?? setLocalViewState;
+  const { filter, selection } = viewState;
+  const setFilter = (next: { teamId: string; roleId: string }) =>
+    updateViewState({ filter: next, selection: null });
+  const setSelection = (next: { basis: string; start: number }) =>
+    updateViewState({ ...viewState, selection: next });
   const teamId =
     filter && world.teamById[filter.teamId]
       ? filter.teamId
@@ -134,10 +152,6 @@ function WorkforceDetails({
     !!stale,
     !!infeasible,
   ]);
-  const [selection, setSelection] = useState<{
-    basis: string;
-    start: number;
-  } | null>(null);
   const selected =
     selection?.basis === basis
       ? rows.find((row) => row.start === selection.start)

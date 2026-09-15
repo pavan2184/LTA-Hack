@@ -7,6 +7,7 @@ import type {
   StrategyId,
 } from "@railplan/core/types/railplan";
 import type { PlacementExplanation } from "@railplan/core/engine/explain";
+import type { ConflictGroup } from "@railplan/core/engine/conflicts";
 
 export type PlanSummary = Pick<
   PlanVersion,
@@ -59,6 +60,7 @@ export interface PlanInspection extends PlanPreview {
   bindingRuleId: ViolationRuleId | null;
 }
 export type PlanAnalysis =
+  | { operation: "conflicts"; groups: ConflictGroup[]; stale: boolean; currentSourceRevision: string }
   | (PlanPreview & { operation: "preview" })
   | PlanInspection
   | {

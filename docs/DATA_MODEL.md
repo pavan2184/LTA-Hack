@@ -176,6 +176,11 @@ Published versions have no edit/delete route; database grants and immutable
 UPDATE/DELETE/TRUNCATE triggers protect all generated versions and audit history.
 Publications link to the version they supersede, leaving its snapshot intact.
 
+Optional `planning_runs.parameters.basedOnPlanId` records the reviewed parent
+version and participates in the SHA-256 input digest. It is checked by the service
+inside the authenticated transaction, not a new database column or foreign key.
+The JSON export preserves this parameter; old versions without it remain valid.
+
 Actor UUIDs deliberately have no cascading Auth foreign key: deleting an account
 must not erase the historical creator/audit identity. Audit stores only actor,
 action, plan ID, optional related ID and server timestamp. Decision reason is

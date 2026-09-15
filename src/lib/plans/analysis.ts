@@ -1,7 +1,9 @@
 import type { TransactionSql } from "postgres";
 import type { PlanningInstance } from "@railplan/core/domain/instance";
 import { buildWorld } from "@railplan/core/domain/world";
-import { solve, SOLVER_VERSION } from "@railplan/core/engine/solve";
+import { buildSubmittedPlan, solve, SOLVER_VERSION } from "@railplan/core/engine/solve";
+import { groupConflicts } from "@railplan/core/engine/conflicts";
+import { recommendResolution } from "@railplan/core/engine/resolutions";
 import {
   validate,
   isFeasible,
@@ -52,6 +54,40 @@ export function solvePreview(
   if (!result.independentlyValidated) result.status = "INFEASIBLE";
   return result;
 }
+function requestedReview(facts: PlanningInstance, parameters: PlanParameters) {
+  assertAnalysisBounds(facts);
+  validatePlanParameters(facts, parameters);
+  const world = buildWorld(facts);
+  const plan = buildSubmittedPlan(world.requests);
+  plan.placements = plan.placements.map(placement => {
+    const pin = parameters.locked.find(item => item.requestId === placement.requestId);
+    return pin ? { ...pin, locked: true } : placement;
+  });
+  return { plan, context: { world }, violations: validate(plan, { world }) };
+}
+
+/** Requested-time clashes are not violations of the currently saved schedule. */
+export function reviewRequestedConflicts(facts: PlanningInstance, parameters: PlanParameters) {
+  return groupConflicts(requestedReview(facts, parameters).violations);
+}
+
+export function previewConflictRepair(facts: PlanningInstance, parameters: PlanParameters, violationId: string) {
+  const requested = requestedReview(facts, parameters);
+  const violation = requested.violations.find(item => item.id === violationId);
+  if (!violation) throw new PlanError("invalid_request", "This clash changed. Refresh the conflict review.");
+  const resolution = recommendResolution(requested.plan, violation, requested.context);
+  if (!resolution) throw new PlanError("invalid_request", "No single validated move repairs this finding. Inspect its requests for alternatives.");
+  const request = requested.context.world.requestById[resolution.requestId];
+  const next = { ...parameters, locked: [
+    ...parameters.locked.filter(pin => pin.requestId !== request.id),
+    { requestId: request.id, teamId: request.teamId, startMinute: resolution.toMinute, endMinute: resolution.endMinute, locked: true },
+  ] };
+  const result = solvePreview(facts, next);
+  if (!result.independentlyValidated || result.status === "INFEASIBLE")
+    throw new PlanError("invalid_request", "This repair cannot produce a valid full schedule with the current pins. Inspect alternatives instead.");
+  return { result, parameters: next };
+}
+
 export async function analysePlan(
   identity: VerifiedIdentity,
   id: string,
@@ -72,6 +108,26 @@ export async function analysePlan(
         ...p,
         locked: true,
       }));
+      if (input.operation === "conflicts" || input.operation === "repair") {
+        const parameters = { planningNight: row.planning_night, strategy: input.strategy, locked };
+        if (input.operation === "conflicts")
+          return { operation: "conflicts", groups: reviewRequestedConflicts(row.facts, parameters), stale, currentSourceRevision: revision };
+        if (stale || plan.publishState === "superseded" ||
+            row.result.solverVersion !== SOLVER_VERSION || row.result.constraintVersion !== CONSTRAINT_VERSION)
+          throw new PlanError("invalid_request", "Open or generate a current version before previewing repairs.");
+        const proposal = previewConflictRepair(row.facts, parameters, input.violationId);
+        return {
+          operation: "preview",
+          ...proposal,
+          stale,
+          currentSourceRevision: revision,
+          basis: {
+            planId: id, sourceRevision: row.source_revision,
+            solverVersion: SOLVER_VERSION, constraintVersion: CONSTRAINT_VERSION,
+            inputDigest: planInputDigest(row.facts, proposal.parameters),
+          },
+        };
+      }
       const preview = (strategy: PlanParameters["strategy"]): PlanPreview => {
         const parameters = {
           planningNight: row.planning_night,

@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-09-15 — Approved upstream reconciliation
+
+Pavan approved all recommended merge choices: retain the current shared design and
+server-preview Night overview; integrate grouped requested-time conflicts and
+recommended repairs there; retain the single sandbox with compatibility redirects;
+exclude open PR #27; preserve local work in checkpoint 18c32d3 and backup refs; then
+verify and push the reconciled branch to main. Deployment is not an explicit step
+of this merge, although repository integrations may deploy on push.
+Upstream's duplicate client revision editor and focused sandbox components are not
+adopted. Behavioural coverage is adapted to the approved entrypoints.
+
 ## 2026-09-15 — Keep the single sandbox dashboard
 
 Pavan selected the single dashboard instead of upstream's six-page sandbox.
@@ -153,6 +164,88 @@ lookup is independent of the paginated history, and pending intake counts do not
 rely on the 100-row review list. Publication stays immutable and retains the existing
 notification dispatch behavior; the UI distinguishes publication from delivery and
 an uncertain response from a confirmed refresh. No deployment is included.
+
+## Historical upstream decisions (superseded where noted above)
+
+Last updated: 2026-09-15
+
+## Log
+
+### 2026-09-15 — Count clashes, not rule findings; show unplaced work with the conflicts
+
+Status: Accepted by the owner ("start on P2") and implemented.
+
+The validator reports every rule a collision breaks, so two jobs sharing a block,
+a crew and a supervisor produce three findings for one problem. The as-submitted
+demo night showed 30 conflicts for roughly ten distinct clashes, and the
+planner-time-saved tile multiplied that inflated count by an assumed 12 minutes.
+Add `groupConflicts` to the core engine: findings that name the same request set
+over overlapping minutes form one group, headlined by the largest shortfall,
+with the other rules listed beneath. Untimed findings group by request set alone.
+The validator and its findings are unchanged; grouping is a presentation of them
+that keeps the raw count as the denominator of the new `conflictsMetric`.
+
+Use groups everywhere a planner counts problems: the sandbox conflict panel,
+toolbar and baseline, the overview tiles, and the saved-plan revision editor.
+Recommended resolutions run against the group's headline finding; its members
+share requests and minutes, so the same move clears them together. Selecting any
+member still opens its group, preserving the store's selection contract.
+
+Remove the planner-time-saved tile from the overview. The metric function stays
+in the core package for a future measured baseline; nothing on screen multiplies
+an assumption. Put "Work without a slot" beneath the conflicts on the sandbox
+Conflicts page after a solve and above the saved-plan panels, each row opening
+the request in the inspector, so "no conflicts" is never read without the
+deferred work beside it.
+
+### 2026-09-15 — Join conflict review to saved planning; demote the sandbox
+
+Status: Accepted by the owner ("start on P1, join the halves") and implemented.
+
+The adoption review found the planner's real work (see a clash, weigh
+alternatives, commit a choice) existed only in the sandbox over fabricated
+requests, while the saved path generated an immutable plan the planner could not
+touch. Rebuild the saved-plan revision editor in the sandbox's shape, computed
+from the approved snapshot: a request queue with deferred/pinned/moved states, the
+requested-time conflicts with the engine's recommended resolution, an inspector
+with the counterfactual explanation and validated alternatives, work without a
+slot as its own list, then the diff against the saved version and one save.
+
+Reuse the core engine unchanged: `recommendResolution` runs against the requested
+plan built from the saved facts, `explainPlacement` and `findAlternatives` against
+the proposal. Every planner choice is a pin; the night is re-solved around the
+pins in the browser and recomputed on the server through the existing
+`basedOnPlanId` contract. No new routes, schema or solver behaviour. The sandbox
+components stay bound to their store and demo data rather than being refactored
+under deadline; the new editor duplicates their shape, not their code.
+
+Remove "Demo sandbox" from primary planner navigation. The route remains and is
+reached from a "Try with demo data" link on the schedule page, so the approved
+path is the default and the demo is an explicit detour.
+
+### 2026-09-14 — Split the local sandbox by planning task
+
+Status: Accepted by the owner and implemented.
+
+Expose Overview, Requests, Conflicts, Schedule, Resources and Scenarios as six
+planner-only App Router pages under one `/sandbox` layout. Keep authorization,
+the fabricated-data warning and all workflow controls in shared chrome so direct
+links cannot bypass the sandbox boundary and every page can generate, repair,
+inspect provenance, replan or reset. Horizontal header scrolling is the narrow
+screen behavior; the document itself must not overflow.
+
+Keep plan and disruption state in the existing client store across navigation.
+Promote page controls that must survive navigation—filters, workforce selection
+and assistant conversation/draft/pending state—to a transient store slice, but do
+not add them to persisted preferences. Reset and reload clear that slice; the
+existing persistence promise remains exactly objective strategy plus locked
+placements. Reuse the existing bounded panel-layout preference record for focused
+request and resource panels, leaving saved-plan presentation behavior unchanged.
+Key transient state to the server-confirmed planner identity: clear it before the
+workspace is revealed to a different planner and invalidate any assistant reply
+that completes after reset or an identity transition. Give every route a focused
+component entry rather than shipping the legacy all-panel composition to each
+subpage.
 
 
 ### 2026-09-07 — Workforce is a hard aggregate constraint (#8)
@@ -668,3 +761,31 @@ roles remain the access boundary. Verified anonymously on both production aliase
 login200, private API401, workspace307 to the app login. This supersedes the earlier
 choice to retain Vercel Authentication; it does not clear the geographic-source
 licence issue or change the prototype's non-operational status.
+
+## 2026-09-09 — Connect validated repair to immutable saved planning
+
+Implement the first recommendation from the NebulaX research using the current
+engine and approved saved facts. Use exact pins, original requested-conflict
+evidence and a complete placement/deferral diff. Choosing an alternative can move
+other unpinned work during re-solve; expose those changes before a separate save.
+Do not mutate an approved request or existing saved version to represent a choice.
+
+Reuse POST /api/plans with optional basedOnPlanId, checked under the existing
+source/publication lock. Keep the parent in immutable JSON parameters and its
+digest, avoiding a migration. Reject stale/superseded bases; block local previews
+from mismatched browser engine versions. Saving creates a draft; publication
+remains explicit and independently guarded. This does not introduce a new solver,
+operator rule set, named-worker model or change the remaining release gates.
+
+## 2026-09-09 — Make the next planner action visible
+
+Organize existing functionality into prepare the night, review/adjust, and publish/
+notify. Resume the latest returned version, with explicit draft/publication status;
+keep history and technical records accessible through native disclosure. Preserve
+existing routes, data contracts, solver behavior and immutable publication checks.
+
+Separate manual requests from optional meeting-note extraction visually while
+keeping both mounted. Protect local request navigation and plan review notes from
+silent edit loss; keep delivery settings outside the selected-plan mount boundary.
+This is a usability improvement, not proof of intuitive use: validate first-time
+completion with representative users before making usability or time-saving claims.

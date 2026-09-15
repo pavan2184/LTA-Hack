@@ -149,3 +149,20 @@ it("keeps a committed publication successful while showing a notification-storag
 
 // Saved snapshot visuals have real-component and combined journey coverage.
 vi.mock("@/components/plans/SavedPlanReview", () => ({ SavedPlanReview: () => null }));
+
+it("protects destination edits on the dedicated settings page before reload or return to a night", async () => {
+  window.history.replaceState(null, "", "/settings/notifications");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+    configurations: [{ organisationId: "org", organisationName: "Alpha", chatId: null, version: 0, updatedAt: null, updatedBy: null, lastTest: null }], botConfigured: false,
+  })));
+  const confirm = vi.fn(() => false);
+  vi.stubGlobal("confirm", confirm);
+  render(<><a href="/plans?night=2026-09-16">Back to night overview</a><NotificationSettings /></>);
+  await userEvent.type(await screen.findByLabelText("Telegram chat ID"), "-100123");
+  await userEvent.click(screen.getByRole("button", { name: "Reload settings (discard unsaved edits)" }));
+  expect(screen.getByLabelText("Telegram chat ID")).toHaveValue("-100123");
+  await userEvent.click(screen.getByRole("link", { name: "Back to night overview" }));
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(screen.getByLabelText("Telegram chat ID")).toHaveValue("-100123");
+  expect(window.location.pathname).toBe("/settings/notifications");
+});

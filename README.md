@@ -1,213 +1,310 @@
-# RailPlan
+<a id="readme-top"></a>
 
-Overnight rail maintenance planning. 22 competing work requests, one four-hour
-engineering window, 12 atomic track blocks.
+<div align="center">
+  <h1>RailPlan</h1>
+  <p><strong>Turn competing maintenance requests into a plan schedulers can explain.</strong></p>
+  <p>A rail-maintenance planning prototype for Nebula X PS1: AI Maintenance Scheduler.</p>
+  <p>
+    <a href="docs/PROJECT_BRIEF.md"><strong>Read the product brief</strong></a>
+    <br />
+    <a href="https://railplan-nine.vercel.app/login">Open prototype</a>
+    &middot;
+    <a href="https://github.com/pavan2184/LTA-Hack/issues/new">Report a bug</a>
+    &middot;
+    <a href="https://github.com/pavan2184/LTA-Hack/issues/new">Suggest a feature</a>
+  </p>
+</div>
 
-RailPlan reads the requests as submitted, runs every operating constraint against
-them, and reports what collides. It then builds a schedule that satisfies those
-constraints, and checks its own answer before showing it to you.
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Supabase-181818?logo=supabase&logoColor=3FCF8E" alt="Supabase" />
+</p>
 
-The data is fabricated. It encodes no LTA operating rule and must not be used for
-an operational decision.
+> **Prototype boundary:** requests and engineering rules are fabricated. Results
+> are checked against the encoded model, not authoritative LTA operating rules.
+> RailPlan does not grant permission to access track or carry out work.
 
-## Run it
+<details>
+  <summary>Table of contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About the project</a></li>
+    <li><a href="#built-with">Built with</a></li>
+    <li><a href="#getting-started">Getting started</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#how-scheduling-works">How scheduling works</a></li>
+    <li><a href="#verification">Verification</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#documentation">Documentation</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
+
+## About the project
+
+Maintenance, upgrades and renewals compete for the same short engineering windows.
+A scheduler must reconcile track access, compatible work and available engineers;
+a change that fixes one clash can create another elsewhere. This is the coordination
+problem behind [Nebula X's PS1 challenge](https://nebulax.com.sg/#ps-1).
+
+**RailPlan helps the scheduler see what conflicts, understand why, and choose a
+feasible plan to share with contractors.** The intended benefit is less time spent
+reconciling requests and a clearer record of what was agreed. That benefit still
+needs measurement with real planners.
+
+```mermaid
+flowchart LR
+    A[Contractor request] --> B[Planner review and approval]
+    B --> C[Generate and validate]
+    C --> D[Inspect saved plan]
+    D --> E[Publish version]
+    E --> F[Contractor schedule and exports]
+```
+
+The fabricated baseline contains **22 requests, 12 atomic track blocks and a
+four-hour engineering window**. These are demo inputs, not universal rail rules.
+For example, work spanning `NS10–NS12` and `NS11–NS13` shares block `NS11–NS12`;
+different sector labels do not prevent a collision.
+
+| Need | What RailPlan provides |
+| --- | --- |
+| Collect usable requests | Structured contractor intake and optional private proposals extracted from meeting text |
+| Keep decisions accountable | Planner review, explicit approval and immutable request revisions |
+| Find feasible schedules | Five objective profiles using the same constraint validator |
+| Understand the result | Linked Gantt, workforce, request and geographic views, plus inspectable metric formulas |
+| Share the agreed version | Immutable saved plans, publication history, contractor-scoped access and JSON/CSV exports |
+| Explore alternatives | A separate sandbox for conflict repairs, exact pins, alternative slots and disruption replanning |
+| Explain and notify | Optional engine-grounded assistant and separately audited Telegram delivery |
+
+The scheduler remains responsible for decisions. Generative AI assists with reviewed
+intake and language; deterministic code checks feasibility. The geographic view
+provides orientation, not an authoritative operational topology.
+
+### Built with
+
+| Layer | Technology |
+| --- | --- |
+| Application | Next.js 16, React 19, TypeScript 6 |
+| Interface | Tailwind CSS 4, Radix UI, Recharts, Zustand |
+| Planning | Pure TypeScript `@railplan/core` validator, heuristic solver and analytics |
+| Identity and persistence | Supabase Auth, PostgreSQL and row-level security |
+| Optional integrations | Anthropic SDK for language/extraction; Telegram Bot API for delivery |
+| Verification | Vitest, Testing Library, hosted database and production HTTP journey suites |
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
+
+## Getting started
+
+### Prerequisites
+
+- Node.js **22.13+ on the 22.x line**, or **24.x**, with npm. The local verification
+  used Node 22.22.0; these minimums cover the installed test tooling.
+- A dedicated hosted RailPlan development database with Supabase Auth.
+- A confirmed account provisioned with a planner or contractor role.
+
+The app runs directly in Node.js. **No Docker is used.** There is no automatic
+public signup or default online password. Missing identity configuration blocks
+workspace access, including the sandbox.
+
+### Installation
 
 ```bash
+git clone https://github.com/pavan2184/LTA-Hack.git
+cd LTA-Hack
 npm ci
-npm run dev      # http://localhost:3000
+cp .env.example .env.local
+chmod 600 .env.local
 ```
 
-Configure the existing `.env.example` variables in ignored `.env.local`, using
-the hosted Supabase project and a confirmed, provisioned planner or contractor
-account. See [Teammate handoff](docs/TEAM_HANDOFF.md). No Docker is used.
+For a fresh clone, uncomment and populate the documented settings in `.env.local`:
 
-The planner assistant is optional. Without credentials it answers from the engine
-using templates — correct, just terser. With `ANTHROPIC_API_KEY` set (or an
-`ant auth login` profile), answers are written by Claude and still constrained to
-figures the engine produced. See `.env.example`.
-
-## What it actually does
-
-Contractors submit work for planner review. Approved revisions become inputs to
-immutable saved plans, with publication, scoped delivery status and JSON/CSV
-exports. Planners land in Saved plans; `/sandbox` retains the interactive
-fabricated conflict-repair demo. Saved views use their exact original facts.
-
-**Detects conflicts.** Thirteen rules over atomic track blocks, crew capacities,
-equipment unit counts, isolation zones, work-class compatibility, dependencies,
-travel time and handback deadlines. Workforce role counts are checked independently of crew concurrency. Conflict
-counts and intervals are computed from the current inputs.
-
-Two of them are worth the demo on their own:
-
-- `M-001` covers `NS10-NS12` and `M-017` covers `NS11-NS13`. Different labels, no
-  shared station in the names — and a 15-minute overlap on `NS11-NS12`. Comparing
-  sector strings never finds this.
-- `M-004` and `M-011` are on different lines, and their crew has two teams, so
-  crew capacity is satisfied. They still cannot both run: there is one calibrated
-  thermal imaging unit, and both sit inside the SS-4 traction isolation area.
-
-**Builds a schedule.** Dependency-aware ordered insertion with bounded repair at
-15-minute resolution. Roughly 20-70 ms. Reports `FEASIBLE` or `INFEASIBLE` without claiming global optimality, with solve time, candidate count and an input digest on
-screen.
-
-**Checks its own work.** Every plan is handed back to the validator from scratch
-before display. The interface says "re-validated after solving: 0 violations", or
-it reports the plan infeasible. A test asserts this as a property across all five
-objectives.
-
-**Explains by counterfactual.** "Why did M-014 move?" is answered by replaying it
-at the time its requester asked for and reporting what breaks, in the rules' own
-numbers — not by looking up a sentence someone wrote.
-
-**Shows its arithmetic.** Every figure has an `fx` control exposing its formula,
-numerator and denominator. Emergency capacity is not a score: each scenario in a
-versioned set is actually inserted into the plan and re-validated.
-
-**Lets planner decisions count.** Pinning a placement enters it as a hard
-constraint and re-solves the night around it. The plan and every metric move with
-the decision — or the tool reports that the decision cannot be honoured.
-
-**Takes disruptions seriously.** A scenario changes the solver's inputs, the plan
-is re-checked so you see what breaks, and only then is it solved again. The
-emergency-insertion scenario comes back infeasible and names the mandatory job
-that has nowhere to go. That is the correct answer, not a failure.
-
-## How the rule-based scheduler works
-
-The current scheduler is a deterministic, dependency-aware greedy insertion
-heuristic with bounded repair (`railplan-greedy-repair-v3`). It is implemented in
-pure TypeScript in `packages/core/src/engine/solve.ts`; it is not CP-SAT, MILP, or
-an exhaustive search. `packages/core/src/engine/validate.ts` is deliberately
-separate and is the only authority on whether a plan is feasible.
-
-The scheduling flow is:
-
-1. Build a `PlanningWorld` from the planning instance: requests, atomic track
-   blocks, graph adjacency, conflict zones, team and equipment capacities, and
-   the engineering window. The same world is passed to every validation call.
-2. Insert planner-pinned placements first as hard constraints and remove those
-   requests from the scheduling queue.
-3. Order the remaining requests using the selected objective profile, while
-   ensuring every predecessor appears before work that depends on it. Request ID
-   is the final tie-break, so identical inputs always produce the same order.
-4. Generate every permitted start at 15-minute intervals. A candidate must fit
-   the request's earliest start, latest end, clearance time, and the effective
-   handback deadline. Candidates are then ranked according to the objective.
-5. Insert one candidate into the partial plan and run the complete validator.
-   The candidate is accepted only when it creates no critical violation for the
-   request being placed. Strategy recovery gaps are applied after the hard rules:
-   Balanced may relax its 15-minute preference when necessary; Minimum risk does
-   not relax its 30-minute gap.
-6. If mandatory work remains unplaced, run up to four repair rounds. Each round
-   defers the lowest-priority eligible non-mandatory placement (preferring a
-   longer job when priorities tie) and rebuilds the plan from scratch. Re-solving
-   avoids making the result depend on the history of earlier mutations.
-7. Validate the complete plan again against the real engineering window. A
-   critical violation or deferred mandatory request makes the result
-   `INFEASIBLE`; otherwise it is `FEASIBLE`. The narrower `OPTIMAL` label is used
-   only when every request is placed at its first-choice candidate with no
-   deferrals. The result also reports candidates examined, solve time, solver and
-   constraint versions, and a deterministic input digest.
-
-### Hard rules
-
-Every trial placement and completed plan is checked against the same 12-rule
-catalogue (`constraints-v2`):
-
-| Rule | What it checks |
+| Variable | Purpose |
 | --- | --- |
-| `BLOCK_CAPACITY` | Work plus clearance does not exceed an atomic block's concurrent capacity; a closed block has capacity zero. |
-| `CONFLICT_ZONE` | Only one applicable job holds a fabricated isolation or crossover zone at a time. |
-| `ADJACENT_WORK` | Work classes whose hazard extends beyond a block do not overlap on neighbouring blocks. |
-| `TEAM_CAPACITY` | Concurrent assignments do not exceed the number of crews rostered for the named team. |
-| `EQUIPMENT_CAPACITY` | Concurrent equipment demand, including turnaround time, does not exceed serviceable units. |
-| `SKILL_COVERAGE` | The assigned team exists and holds every skill required by the request. |
-| `WORK_COMPATIBILITY` | Incompatible work classes do not overlap on a block that permits concurrent occupation. |
-| `DEPENDENCY_ORDER` | A successor starts only after its predecessor's work, clearance, and dependency lag. |
-| `TIME_WINDOW` | Work stays inside the request's permitted start and finish bounds and the planning window. |
-| `HANDBACK` | Work plus clearance finishes before the engineering-window deadline. |
-| `TRAVEL_TIME` | A single-crew team has enough time to travel between consecutive jobs. |
-| `SHIFT_AVAILABILITY` | Work stays inside the assigned team's shift and avoids disruption withdrawals. |
+| `DATABASE_URL` | Server-only connection to the dedicated development database |
+| `NEXT_PUBLIC_SUPABASE_URL` | Auth endpoint for that same project |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public client key; never a service-role or secret key |
+| `ANTHROPIC_API_KEY` | Optional language assistant and meeting-text extraction |
+| `TELEGRAM_BOT_TOKEN` | Optional server-only notification delivery |
 
-Capacity breaches use a sweep-line calculation rather than pairwise comparisons,
-so three simultaneous demands against capacity two are detected even when no
-individual pair is independently over capacity. Violations are deduplicated by
-rule and request set, retain the exact offending interval, and are grouped into
-connected clusters for the planner.
-
-### Objective profiles
-
-All five strategies use the same hard rules and placement algorithm. They change
-only request order, candidate ranking, recovery-gap preference, and end-of-window
-reserve:
-
-| Strategy | Scheduling preference |
-| --- | --- |
-| Balanced | Prioritise higher-value work, stay near requested times, and prefer a 15-minute block recovery gap that may be relaxed. |
-| Maximum completion | Rank work by priority value per minute and pack it as early as possible with no extra gap. |
-| Minimum risk | Prefer early finishes and enforce a non-relaxable 30-minute recovery gap. |
-| Minimum changes | Penalise priority-weighted movement from requested times and favour schedule stability. |
-| Emergency reserve | Plan against a deadline 45 minutes early, leaving the tail of the window available for urgent work. |
-
-Suggested conflict fixes and alternative slots do not bypass these rules. Each
-candidate move is inserted into the real plan and re-validated before it is
-shown. Locks likewise re-enter the next solve as hard constraints.
-
-### Current limits
-
-The scheduler can find a feasible plan quickly for this 22-request prototype,
-but bounded greedy search can miss a better feasible schedule. It therefore does
-not claim a general optimality bound. It moves requests in time but does not
-reassign crews; travel is checked only for teams with one crew because a
-multi-crew plan does not identify which crew performs each job. All topology,
-capacities, travel estimates, work rules, and requests are fabricated.
-
-## The assistant
-
-It reads engine output and nothing else. The server re-solves from the request
-parameters and builds its own fact set, so nothing the browser sends can become a
-fact the model repeats. Any answer containing a figure absent from that fact set
-is discarded and the engine answers instead. The model never decides feasibility.
-
-The check has already earned its keep: it caught the fact set missing the
-counterfactual explanations that the templates were quoting.
-
-## Layout
-
-```
-packages/core/src/domain/  topology, crews, assets, work-class rules
-packages/core/src/data/    22 requests, emergency scenarios, disruptions
-packages/core/src/engine/  validate · solve · metrics · alternatives · explain
-packages/core/src/types/   planning inputs and result contracts
-src/store/                 Zustand: view state and solver invocation
-src/components/            dashboard
-src/lib/assistant/         fact set, grounding guard, templates
-src/app/api/assistant/     Claude call, server side
-```
-
-`packages/core/src/engine/validate.ts` is the file to read first. It is the only
-authority on whether a plan is feasible, and everything else defers to it.
-
-## Checks
+Keep `.env.local` and credentials out of Git. Follow the [teammate handoff](docs/TEAM_HANDOFF.md)
+to apply migrations and provision confirmed users. For a **new, dedicated empty
+development database**, an operator bootstraps it with:
 
 ```bash
-npm test          # engine, API, and UI tests
+npm run db:migrate
+npm run db:seed
+npm run db:verify
+```
+
+For an existing shared RailPlan database, coordinate with its owner; do not reset
+or reseed it. The seed command refuses existing workflow records. Then start the app:
+
+```bash
+npm run dev
+```
+
+Open [localhost:3000](http://localhost:3000) and sign in. Without AI credentials,
+manual intake and scheduling work; the sandbox assistant uses deterministic
+answers. Meeting-text extraction requires `ANTHROPIC_API_KEY`. Missing Telegram
+credentials affect delivery, not whether a plan can be saved or published.
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
+
+## Usage
+
+The [hosted prototype](https://railplan-nine.vercel.app/login) requires a provisioned
+RailPlan login. Obtain demo access from the project team. See [current status](docs/PROJECT_STATUS.md)
+for differences between the hosted deployment, GitHub and local work.
+
+### Contractor to planner
+
+1. **Contractor:** open `/contractor`, create a draft, complete the required details
+   and submit it. Meeting-text proposals stay private until explicitly submitted.
+2. **Planner:** open `/requests`, inspect the submission, assign planning fields
+   and approve it, or return/reject it. Only active approved revisions enter planning.
+3. **Planner:** open `/plans`, select the engineering night and objective, then
+   generate a saved version. Inspect placements, deferred work, workforce and formulas.
+4. **Planner:** publish a current, independently validated version. Missing mandatory
+   work or stale source facts prevents publication. Delivery status is reported separately.
+5. **Contractor:** inspect the organisation's published slots. Planners can download
+   JSON/CSV artifacts for the exact saved version.
+
+### Explore scheduling decisions
+
+Open `/sandbox` as a planner and load the fabricated requests. One dashboard combines
+the queue, timeline, inspector, conflicts, expandable workforce and scenarios.
+Older sandbox subpage URLs redirect to the matching dashboard sections.
+
+Inspect a conflict and its interval, try a validated fix or alternative, generate a
+schedule, pin a commitment, then test a disruption. Changes remain in the exploratory
+sandbox and do not modify approved requests or saved plans. An impossible mandatory
+job stays visible as a blocker.
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
+
+## How scheduling works
+
+The [solver](packages/core/src/engine/solve.ts) uses deterministic, dependency-aware
+insertion with bounded repair at 15-minute resolution. It places exact pins first,
+orders remaining work by objective, tries candidate slots and independently validates
+the complete result. The [validator](packages/core/src/engine/validate.ts) is the
+only feasibility authority; the model never approves a schedule.
+
+Five profiles change placement preferences: **Balanced**, **Maximum completion**,
+**Minimum risk**, **Minimum changes** and **Emergency reserve**. Minimum changes
+measures movement from requested times; it is not a general published-plan repair objective.
+
+<details>
+  <summary>The 13 encoded constraint rules</summary>
+
+| Rule | Constraint |
+| --- | --- |
+| `BLOCK_CAPACITY` | Atomic track occupancy, including clearance |
+| `CONFLICT_ZONE` | Shared isolation or crossover capacity |
+| `ADJACENT_WORK` | Hazard separation across neighbouring blocks |
+| `TEAM_CAPACITY` | Concurrent crew assignments |
+| `WORKFORCE_CAPACITY` | Anonymous role headcounts and defined staffing demand |
+| `EQUIPMENT_CAPACITY` | Serviceable units and turnaround |
+| `SKILL_COVERAGE` | Assigned-team skill requirements |
+| `WORK_COMPATIBILITY` | Permitted combinations of simultaneous work |
+| `DEPENDENCY_ORDER` | Predecessor completion, clearance and lag |
+| `TIME_WINDOW` | Request and engineering-window bounds |
+| `HANDBACK` | Completion and clearance before the deadline |
+| `TRAVEL_TIME` | Travel between jobs for single-crew teams |
+| `SHIFT_AVAILABILITY` | Team shifts and withdrawals |
+
+</details>
+
+This is a heuristic, not a CP-SAT/MILP solver or proof of global optimality. The
+implementation reports `FEASIBLE` or `INFEASIBLE`; its limited `OPTIMAL` label is
+used only when all requests take their first-choice candidates with no deferrals.
+It does not establish a general optimality bound. Crews are not reassigned, and
+travel checks cover single-crew teams only. See the [architecture](docs/ARCHITECTURE.md).
+
+## Verification
+
+```bash
+npm test
+npm run test:db
 npm run lint
 npm run typecheck
 npm run build
+npm run test:e2e
 ```
 
-The tests that matter most are the properties in
-`packages/core/src/test/solve.test.ts`: every strategy's output survives
-independent re-validation, identical inputs produce an identical plan and hash,
-and pins are honoured exactly.
+Run these serially against the dedicated development database. `test:db` requires
+parity and exercises real authorization and concurrency. The separate
+[HTTP E2E suite](scripts/e2e/README.md) starts a production server on port 3101,
+uses controlled provider responses, and removes its exact fixtures. Read its
+preflight requirements before running it.
+
+Ordinary tests may skip unreachable database checks; a green `npm test` alone is
+not the release gate. [Testing](docs/TESTING.md) defines browser/accessibility and
+release requirements; [current status](docs/PROJECT_STATUS.md) records dated results
+and unresolved checks. Controlled provider responses do not prove live delivery.
+
+## Roadmap
+
+- [x] Deterministic scheduling, conflict detection and validated sandbox alternatives.
+- [x] Contractor intake, private transcript proposals and planner approval.
+- [x] Workforce constraints, saved versions, publication, scoped delivery and exports.
+- [x] Integrated role workspaces and one shared-design sandbox dashboard.
+- [ ] [#17 — Finish release security, accessibility and end-to-end verification](https://github.com/pavan2184/LTA-Hack/issues/17).
+- [ ] [#18 — Consented voice capture and transcription](https://github.com/pavan2184/LTA-Hack/issues/18).
+- [ ] [#19 — Controlled Drive and meeting-source imports](https://github.com/pavan2184/LTA-Hack/issues/19).
+- [ ] [#20 — Benchmark the heuristic against CP-SAT](https://github.com/pavan2184/LTA-Hack/issues/20).
+- [ ] [#21 — Evaluate named crew rostering and reassignment](https://github.com/pavan2184/LTA-Hack/issues/21).
+
+Follow the numbered issue order. #21 is a scope decision, not authorization to
+collect named-worker data. Additional local improvements and remaining evidence
+gaps are recorded in [project status](docs/PROJECT_STATUS.md).
 
 ## Documentation
 
-- `docs/CURRENT_IMPLEMENTATION_AUDIT.md` — what the code does, including what it
-  still does not do
-- `docs/ARCHITECTURE.md` — why it is shaped this way
-- `docs/PROJECT_STATUS.md` — current state and what is next
-- `docs/DETERMINISTIC_SCHEDULING_AND_ANALYTICS.md` — the mathematics, including
-  the CP-SAT direction not yet taken
+- [Product brief](docs/PROJECT_BRIEF.md) — the problem, users, intended workflow and success criteria.
+- [Participant context](docs/NEBULAX_PARTICIPANT_CONTEXT.md) — source wording, deadlines and submission requirements.
+- [Product research](docs/NEBULAX_PRODUCT_RESEARCH.md) — dated comparisons, operator questions and proposals.
+- [Architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md) and [API contract](docs/API_CONTRACT.md).
+- [Project status](docs/PROJECT_STATUS.md), [testing](docs/TESTING.md) and [security review](docs/SECURITY_REVIEW.md).
+- [Full documentation index](docs/README.md).
+
+For PS1, the participant pack requires a repository/README, hosted prototype,
+**2–3 minute video**, short write-up and results ZIP by **19 September 2026,
+16:00 Singapore time**, plus in-person submission sign-in. The event context
+records details and unresolved questions.
+
+## Contributing
+
+Read [AGENTS.md](AGENTS.md) and the project contracts before changing code. Discuss
+new scope in an issue, work on a focused branch (for example,
+`PinZheng/describe-the-change`), and submit a pull request with the rationale and
+verification results. Use `<area>(<type>): <summary>` for commit and PR titles.
+
+Reuse existing patterns, preserve the validator boundary, add tests for backend
+changes and update the relevant contracts/status. Keep credentials and private
+participant material out of commits. The project uses a hosted development
+database; coordinate tests that share its planning-source lock.
+
+## License
+
+This repository currently has no project licence file. The README template's
+licence does not set RailPlan's licence. Third-party code and data retain their
+own terms. The geographic snapshot has an unresolved source-permission conflict;
+see [the security review](docs/SECURITY_REVIEW.md) before redistributing it.
+
+## Contact
+
+Use [GitHub Issues](https://github.com/pavan2184/LTA-Hack/issues) for project questions,
+bugs and feature discussions. Project repository: [pavan2184/LTA-Hack](https://github.com/pavan2184/LTA-Hack).
+
+## Acknowledgments
+
+- [Nebula X / LTA Rail Digitalisation and Guild](https://nebulax.com.sg/) for the challenge framing.
+- [Best-README-Template](https://github.com/othneildrew/Best-README-Template) for the README structure.
+- The open-source projects listed above and the primary sources credited in [product research](docs/NEBULAX_PRODUCT_RESEARCH.md).
+
+<p align="right"><a href="#readme-top">Back to top</a></p>

@@ -49,6 +49,29 @@ function PanelLayout({
   useEffect(() => {
     store.hydrate();
   }, [store]);
+  useEffect(() => {
+    if (!compactContext) return;
+    let frame = 0;
+    const reveal = () => {
+      const id = window.location.hash.slice(1);
+      if (!["sandbox-requests", "sandbox-schedule", "sandbox-resources", "sandbox-conflicts", "sandbox-calculations", "sandbox-scenarios"].includes(id)) return;
+      if (id === "sandbox-requests") {
+        const current = store.getSnapshot().layout;
+        if (current.panels.queue.collapsed)
+          store.update({ ...current, panels: { ...current.panels, queue: { ...current.panels.queue, collapsed: false } } });
+      }
+      if (id === "sandbox-resources") setContextTab("Workforce");
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const target = document.getElementById(id);
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView({ block: "start" });
+      });
+    };
+    frame = requestAnimationFrame(reveal);
+    window.addEventListener("hashchange", reveal);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("hashchange", reveal); };
+  }, [store, compactContext]);
   const change =
     (id: PanelId) => (preference: PanelPreference, message: string) => {
       const current = store.getSnapshot().layout;

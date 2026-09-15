@@ -1,5 +1,25 @@
 # Architecture
 
+## Reconciled composition — 2026-09-15
+
+The current Night overview remains the queue/timeline/inspector workspace.
+Requested-time conflict review calls the existing planner-only analysis endpoint.
+Findings are grouped without dropping underlying rules. Current pins override
+requested placements and cannot be moved by a recommendation. A selected finding
+is recomputed on the server; its recommended pin goes through a full independent
+solve/validation before opening the existing change-review dialog. Explicit draft
+generation retains the exact preview basis and parent lineage. No client-side
+revision editor, solver change, or new migration is introduced by this merge.
+
+The sandbox remains one server-gated dashboard. Former requests/conflicts/schedule/
+resources/scenarios routes redirect to its named sections, keeping only safe
+night/plan/request return context. They never import saved planning data.
+The page owns the only navigation/session boundary. Actor changes and reset clear
+transient assistant/filter state and invalidate pending results; persistence remains
+limited to strategy and exact pins, with unowned pins cleared on first entry.
+Separate history, notifications and private-draft pages retain their unsaved guards.
+Historical upstream compositions below are superseded by this section.
+
 ## Reviewed carry-forward — 2026-09-15
 
 Preparation creates a linked ordinary intake draft atomically through the existing
@@ -495,6 +515,36 @@ status/source freshness are separate observations; publication still revalidates
 on the server. Saved IDs key visual selection and pending requests are cancelled
 on changes. Layout preferences are browser-local presentation data only.
 
+## Historical upstream sandbox route composition (superseded)
+
+The fabricated planner sandbox is split into six App Router pages: `/sandbox`,
+`/sandbox/requests`, `/sandbox/conflicts`, `/sandbox/schedule`,
+`/sandbox/resources` and `/sandbox/scenarios`. A single server layout checks the
+planner role, renders the shared workspace navigation and warning, and mounts one
+client `DashboardShell`. The shell owns the introduction/load gate, RailPlan page
+navigation, three-step workflow, solver controls and provenance, scenario outcome,
+reset, progress and footer. Route children provide only the focused content area.
+This keeps deep links authorized and useful before loading without duplicating the
+workspace boundary on every page. Each route imports its own focused component,
+so requests, conflicts, schedule, resources and scenario UI are not all forced
+through one monolithic client entry point.
+
+Solver results, selection, repairs, pins, objective and disruption remain in the
+existing Zustand store, so client navigation does not reconstruct a plan. Request
+and conflict filters, workforce filter/interval selection, and assistant
+conversation/draft/pending state are transient fields in that same in-memory
+store. Reset clears them and the persistence partial deliberately excludes them;
+only objective strategy and exact locked placements survive a reload. The shared
+layout keys that transient slice to the server-confirmed planner identity, hides
+the client workspace during an identity transition, and invalidates any assistant
+reply still in flight when reset or an actor change clears the conversation.
+
+`PlanningPanels` retains the existing `railplan-demo-layout` preference store and
+adds focused request and resource compositions. The default composition used by
+saved-plan review is unchanged. Queue/inspector width controls and
+workforce/geography height controls therefore share the existing bounded browser
+preference record across the new pages.
+
 ## Issue #17 release harness and log boundary
 
 The application has no test-mode provider endpoint or alternate authorization
@@ -509,3 +559,36 @@ Assistant API calls apply the shared Origin/Host JSON mutation guard before quot
 and retain deterministic fallback. Application logging never serializes prompt,
 provider exception, ungrounded token or arbitrary usage metadata; only fixed
 events, counts and bounded numeric usage cross the log boundary.
+
+## Historical upstream saved conflict editor — 2026-09-09 (superseded)
+
+`PlanRevisionEditor` keeps unsaved pins separate from the immutable saved visual
+review. `previewRevision` uses the existing solver/validator and explicit saved
+facts; requested-time conflicts use `buildSubmittedPlan`. Alternatives hold other
+placements fixed while being assessed; choosing one pins it and re-solves the night,
+so the full before/after list is shown. There is no new scheduler or database schema.
+
+Local solver/constraint versions must match the snapshot before preview. Source
+freshness is an observation until save; the server checks the referenced base and
+recomputes in the existing serialized source transaction. Save failure retains
+choices; success opens the new draft. Publication and workspace navigation are
+unavailable during revision, keeping unsaved proposals distinct from saved results.
+
+## Historical upstream guided presentation — 2026-09-09 (superseded)
+
+Saved planning resumes the latest version returned by the existing list endpoint.
+Preparation, schedule review and publication/delivery form a linear page with a
+keyboard-focus handoff to publication. Night setup collapses after a current draft
+is loaded. The saved review reports its observed stale state to the workspace,
+which opens fresh-draft controls and disables publication; the server remains
+authoritative. Native details disclose version history,
+metrics and technical records; stale, superseded and infeasible snapshot details
+open automatically. No backend lifecycle, validation or authorization is changed.
+
+Request intake and meeting-note extraction use mutually exclusive visible panels
+that remain mounted, preserving edits and submitted-request queue reconciliation.
+The submitted-proposal link returns to the request view without selecting over an
+unrelated manual draft. Dirty request forms block their own open/new/refresh actions
+until saved, completed or discarded. Review notes block plan version changes until
+recorded/discarded. Notification settings remain mounted outside plan selection.
+These guards cover workspace controls, not cross-page or browser navigation.

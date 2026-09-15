@@ -18,6 +18,8 @@ export function WorkforceTimeline({ compact = false }: { compact?: boolean }) {
   );
   const selectRequest = useRailPlanStore((state) => state.selectRequest);
   const selectViolation = useRailPlanStore((state) => state.selectViolation);
+  const workforceView = useRailPlanStore((state) => state.workforceView);
+  const setWorkforceView = useRailPlanStore((state) => state.setWorkforceView);
   const inputs = useMemo(
     () =>
       visiblePlanningInputs(
@@ -37,6 +39,8 @@ export function WorkforceTimeline({ compact = false }: { compact?: boolean }) {
       stale={!!activeDisruptionId && !hasReplanned}
       infeasible={result?.status === "INFEASIBLE"}
       selectedRequestId={selectedRequestId}
+      viewState={workforceView}
+      onViewStateChange={setWorkforceView}
       onSelectRequest={(id) => {
         selectViolation(null);
         selectRequest(id);

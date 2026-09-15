@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight, Lock, Search, TriangleAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { categoryTone } from "@/components/insights/ViolationPanel";
 import { requests } from "@railplan/core/data/requests";
@@ -44,8 +44,10 @@ const corridorText: Record<string, string> = {
 };
 
 export function RequestQueue() {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterId>("attention");
+  const query = useRailPlanStore(state => state.requestQuery);
+  const setQuery = useRailPlanStore(state => state.setRequestQuery);
+  const filter = useRailPlanStore(state => state.requestFilter);
+  const setFilter = useRailPlanStore(state => state.setRequestFilter);
 
   const result = useRailPlanStore((state) => state.activeResult());
   const selectedRequestId = useRailPlanStore((state) => state.selectedRequestId);

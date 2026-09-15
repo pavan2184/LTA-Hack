@@ -59,6 +59,29 @@ describe.skipIf(!reachable)(
         await tx`reset role`;
         const before =
           await tx`select revision,lock_generation from railplan_private.planning_source`;
+        const conflicts = await analysePlan(planner, plan.id, { operation: "conflicts", strategy: "balanced" }, tx);
+        if (conflicts.operation !== "conflicts") throw new Error("wrong operation");
+        expect(conflicts.groups.length).toBeGreaterThan(0);
+        let repaired = false;
+        for (const group of conflicts.groups) {
+          try {
+            const proposal = await analysePlan(planner, plan.id, {
+              operation: "repair", strategy: "balanced", violationId: group.primary.id,
+            }, tx);
+            if (proposal.operation !== "preview") throw new Error("wrong operation");
+            expect(proposal.result.independentlyValidated).toBe(true);
+            expect(proposal.basis.planId).toBe(plan.id);
+            expect(proposal.parameters.locked.length).toBeGreaterThan(0);
+            repaired = true; break;
+          } catch (error) { expect(error).toMatchObject({ code: "invalid_request" }); }
+        }
+        expect(repaired).toBe(true);
+        for (const operation of ["conflicts", "repair"] as const) {
+          await expect(analysePlan(contractor, plan.id, operation === "conflicts"
+            ? { operation, strategy: "balanced" }
+            : { operation, strategy: "balanced", violationId: conflicts.groups[0].primary.id }, tx))
+            .rejects.toMatchObject({ code: "forbidden" });
+        }
         const inspection = await analysePlan(
           planner,
           plan.id,
@@ -107,6 +130,9 @@ describe.skipIf(!reachable)(
           await tx`select revision,lock_generation from railplan_private.planning_source`,
         ).toEqual(before);
         await tx`update public.equipment_types set units=units where id='E-THM'`;
+        await expect(analysePlan(planner, plan.id, {
+          operation: "repair", strategy: "balanced", violationId: conflicts.groups[0].primary.id,
+        }, tx)).rejects.toMatchObject({ code: "invalid_request" });
         const stale = await analysePlan(
           planner,
           plan.id,
