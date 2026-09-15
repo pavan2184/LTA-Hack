@@ -352,6 +352,13 @@ it("updates the shared request queue after submission while keeping an unrelated
     screen.getByLabelText("Title"),
     "Unrelated unsaved manual work",
   );
+  expect(screen.queryByRole("textbox", { name: "Meeting transcript" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "From meeting notes" }));
+  await user.type(screen.getByLabelText("Meeting transcript"), "Keep these unsaved notes");
+  await user.click(screen.getByRole("button", { name: "Your requests" }));
+  expect(screen.getByLabelText("Title")).toHaveValue("Unrelated unsaved manual work");
+  await user.click(screen.getByRole("button", { name: "From meeting notes" }));
+  expect(screen.getByLabelText("Meeting transcript")).toHaveValue("Keep these unsaved notes");
   await open();
   await user.type(
     screen.getByLabelText("Proposal decision reason"),
@@ -360,6 +367,7 @@ it("updates the shared request queue after submission while keeping an unrelated
   await user.click(
     screen.getByRole("button", { name: "Submit proposal for review" }),
   );
+  await user.click(await screen.findByRole("link", { name: /Submitted request:/ }));
   expect(
     await screen.findByRole("button", { name: "Open Shared proposal" }),
   ).toBeInTheDocument();

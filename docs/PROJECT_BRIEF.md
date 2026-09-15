@@ -99,7 +99,11 @@ uncertainty are part of the product, not optional presentation details.
    workforce-aware validator, full input facts, parameters, output and provenance.
 4. The planner inspects a primary Gantt, linked request/workforce/geographic panels,
    saved calculations, status and source freshness; adjustable panels support
-   keyboard/pointer controls and browser-local layout preferences.
+   keyboard/pointer controls and browser-local layout preferences. The workspace
+   resumes the latest schedule, separates prepare/review/publication, and folds
+   history, metrics and technical records away until needed. A current version
+   can be revised using requested-conflict evidence, alternative slots and exact
+   pins; the planner reviews all changes and saves a new independently checked draft.
 5. Publication rechecks current source/version/feasibility and records immutable
    history. Contractor-scoped Telegram delivery has separate audited failure/retry
    status. JSON/CSV exports preserve the saved version and its assessment.

@@ -14,7 +14,7 @@ export function WorkspaceNavigation({
     role === "planner"
       ? [
           { id: "requests", title: "Request review", href: "/requests" },
-          { id: "plans", title: "Saved plans", href: "/plans" },
+          { id: "plans", title: "Schedule", href: "/plans" },
           { id: "sandbox", title: "Demo sandbox", href: "/sandbox" },
         ]
       : [{ id: "contractor", title: "Your requests", href: "/contractor" }];

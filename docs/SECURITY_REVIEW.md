@@ -452,3 +452,19 @@ Anonymous requests to both production aliases now return200 for `/login`,401 for
 `/api/requests`, and307 to RailPlan `/login` for `/plans`; no Vercel SSO redirect
 remains. No redeploy, database mutation, credential disclosure or bypass link was
 needed. This supersedes the initial deployment's retained Vercel-login gate.
+
+## Saved revision review — 2026-09-09
+
+The new base UUID and pins remain untrusted input: strict schema, runtime pin
+validation, verified planner permission and authenticated RLS run through the
+existing creation path. Current approved facts, engine/source versions and both
+base/current fact digests are checked under the source lock. Client-computed
+placements, feasibility and actor fields are never accepted. Contractor access
+and stale/superseded bases are covered by hosted rollback tests; existing Origin
+and publication guards are unchanged. New drafts preserve the parent snapshot.
+
+Browser engine mismatches disable preview, and an open preview disables publication
+of the old version. No new provider calls, personal fields or logging payloads are
+introduced. Read-only independent review found the browser-version gap; the fix
+and focused re-review passed. This does not replace the existing operational and
+release limitations documented above.

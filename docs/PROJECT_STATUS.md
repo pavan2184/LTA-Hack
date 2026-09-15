@@ -80,6 +80,15 @@ claims that the sandbox server remains running are not current server status.
 
 ## Context maintenance — 2026-09-15
 
+Submission assets: `assets/submission/` contains three original campaign PNGs
+(Devpost 3:2 cover, wide banner, square social card), draft Devpost/social copy,
+alt text and exact built-in image-generation prompts. Visual inspection checked
+text and composition; all PNGs are below 5 MB and dimensions were verified.
+No geography snapshot, credentials or official logos were used. No submission,
+posting or application changes were made; application tests were not rerun for
+this artwork/documentation task. The bundle does not replace the required pitch
+video or establish that the event's results ZIP requirements are satisfied.
+
 Preserved the original participant PDF byte-for-byte in ignored, owner-readable
 `secrets/reference/`; extracted a credential-free working summary. Archived the
 entire prior 893-line status file, corrected the stale documentation index and

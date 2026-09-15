@@ -21,3 +21,10 @@ tsconfig.tsbuildinfo
 # Random credentials from the explicitly loopback-only auth demo seed.
 .railplan-local-demo.json
 .vercel
+
+# Local browser-check screenshots
+output/
+
+# Submission artwork and bundles stay local (pre-commit caps files at 2 MB)
+assets/submission/*.png
+assets/*.zip

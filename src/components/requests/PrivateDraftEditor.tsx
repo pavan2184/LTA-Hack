@@ -70,12 +70,14 @@ export function PrivateDraftEditor({
   onClose,
   onSaved,
   onSubmitted,
+  onViewRequests,
 }: {
   id: string;
   role: UserRole;
   onClose: () => void;
   onSaved: (draft: PrivateDraftDetail) => void;
   onSubmitted?: (request: RequestSubmission) => void;
+  onViewRequests?: () => void;
 }) {
   const [draft, setDraft] = useState<PrivateDraftDetail | null>(null);
   const [fields, setFields] = useState<NullableRequestFields | null>(null);
@@ -624,9 +626,9 @@ export function PrivateDraftEditor({
           )}
           {draft.submittedRequestId && (
             <p className="text-sm">
-              <a href="#request-intake" className="underline">
+              <a href="#request-intake" className="underline" onClick={onViewRequests}>
                 Submitted request: {draft.submittedRequestId}. Open it in the
-                request list above.
+                request list.
               </a>
             </p>
           )}

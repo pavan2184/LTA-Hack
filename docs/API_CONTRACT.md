@@ -103,7 +103,7 @@ properties are rejected, including caller-supplied results/creator/status.
 
 | Route | Request | Success |
 | --- | --- | --- |
-| POST /api/plans | `{planningNight, strategy?, locked?}` | 201 `{plan: PlanVersion}` |
+| POST /api/plans | `{planningNight, strategy?, locked?, basedOnPlanId?}` | 201 `{plan: PlanVersion}` |
 | GET /api/plans?planningNight=YYYY-MM-DD | Valid planning night | 200 `{plans: PlanVersion[]}`, latest 20 |
 | GET /api/plans/:id | UUID | 200 `{plan: PlanVersion}` |
 | POST /api/plans/:id/publish | `{}` | 200 `{plan: PlanVersion}` |
@@ -115,6 +115,15 @@ IDs/team IDs are bounded to 64 characters, start minutes 0–1440 and ends 1–2
 Runtime checks enforce the selected night's unique request IDs, assigned teams,
 exact duration and actual request/night window. Synchronous generation is limited
 to 100 requests, a 1,440-minute window and slots of at least five minutes.
+
+`basedOnPlanId` is an optional UUID identifying the saved version a planner reviewed.
+Under the same source lock used for generation/publication, the server requires
+its night, source revision, engine versions and input digests to match current
+facts, and rejects superseded bases with `stale_plan` 409. A missing base returns
+404. The server recomputes from current approved facts and the requested pins;
+it never accepts client preview results. Successful revisions create a new draft,
+retain the base ID in immutable parameters/JSON export, and leave the base untouched.
+Callers omitting the field retain normal fresh-generation behavior.
 
 The server loads a consistent database snapshot, computes and independently
 validates the output, then stores it. `PlanVersion.validation` contains
