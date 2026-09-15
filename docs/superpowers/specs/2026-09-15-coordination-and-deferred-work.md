@@ -1,6 +1,7 @@
 # Coordination and deferred-work design
 
-Status: proposed for Pavan's review; implementation has not started.
+Status: approved by Pavan; implementation authorised in the current checkout,
+preserving existing uncommitted work. No deployment authorised for this feature.
 
 ## Outcome and confirmed decisions
 
