@@ -1,13 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { controlledFetch } from "./provider-policy.mjs";
 
 describe("E2E provider network boundary", () => {
   it("refuses preload activation outside the explicit loopback harness", () => {
     const run = spawnSync(
       process.execPath,
-      ["--import", resolve("scripts/e2e/provider-preload.mjs"), "-e", ""],
+      [
+        "--import",
+        pathToFileURL(resolve("scripts/e2e/provider-preload.mjs")).href,
+        "-e",
+        "",
+      ],
       {
         env: {
           ...process.env,

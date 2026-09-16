@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { existsSync } from "node:fs";
 export const origin = "http://127.0.0.1:3101";
 export const fakeAnthropicKey = "sk-ant-e2e-fake-not-a-real-key";
@@ -20,7 +21,7 @@ export async function startServer() {
     process.execPath,
     [
       "--import",
-      resolve("scripts/e2e/provider-preload.mjs"),
+      pathToFileURL(resolve("scripts/e2e/provider-preload.mjs")).href,
       resolve("node_modules/next/dist/bin/next"),
       "start",
       "-H",
