@@ -1,5 +1,40 @@
 # Project Status
 
+## Local planner verification — 2026-09-16
+
+Agent-led verification at http://localhost:3000 on commit `203068d`: lint and
+typecheck passed; the non-DB regression run passed 733/733 tests across 84 files.
+Focused accessibility/navigation/planner tests passed 53/53 (included in the
+broad run). Component tests emitted React act warnings. The Windows preload path
+was converted to a file URL in both E2E spawn sites; provider-policy tests passed
+3/3 afterward.
+
+Signed-in browser checks exercised sandbox load/fixes/generation, linked request
+selection, drag preview/apply/undo, workforce expansion, exact saved-version
+reopening, stale-source publication guards, unsaved-request discard/cancel,
+coordination/backlog empty states and notification settings. A compact request
+drawer passed search, visible Tab focus and Escape focus restoration. Saved-plan
+layout was spot-checked at emulated widths 1280/1440/1920 with automatic height;
+this was not the complete viewport/zoom/keyboard/VoiceOver audit. The development
+overlay reported a PlannerTimeline React key warning; no root-cause fix yet.
+
+No retained workflow writes or real provider sends. In the user-confirmed exclusive
+window, database parity, 88 rollback/integration tests, 13 independent-session
+concurrency tests, production build and 6 controlled production E2E tests passed.
+Exact E2E fixture cleanup restored 22-request parity at
+`fnv1a:8c4a9050cfea5e8b`. The dev server was stopped before build and restarted;
+localhost login returned HTTP 200. The existing generated next-env.d.ts change was
+preserved. An offline pinned OR-Tools CP-SAT reference benchmark also completed:
+it proved valid optima of 19/22 versus the heuristic's 17/22 at baseline and 18/22
+versus 15/22 in a shortened window; both approaches identified the forced mandatory
+block closure as infeasible. CP-SAT took 6.64–15.80 seconds on feasible fixtures
+versus 26–69 ms for the heuristic and increased movement, so it remains a research
+reference rather than a production replacement. Prepared the human study protocol and demo
+storyboard; no participant measurements collected. See
+[verification evidence and limitations](RELEASE_VERIFICATION_2026-09-16.md) and
+[planner pilot](PLANNER_USABILITY_PILOT.md). The seven next steps in handoff.md
+section 17 remain the priority, not the historical issue-number roadmap.
+
 ## GitHub merge verified — 2026-09-15
 
 Pavan approved all recommended resolutions and pushing main after verification.

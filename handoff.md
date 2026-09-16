@@ -473,6 +473,31 @@ detected Next.js `16.3.4`.
 
 ## 17. Recommended next steps
 
+### Execution update — 2026-09-16
+
+- **Planner study — prepared, not conducted.** The frozen-night protocol,
+  measurements and demo script are in `docs/PLANNER_USABILITY_PILOT.md`.
+  A human planner participant is still required.
+- **Accessibility — partially completed.** Component tests and browser checks at
+  1280, 1440 and 1920px passed without obvious clipping. Complete browser zoom,
+  full keyboard traversal and macOS VoiceOver testing remain.
+- **Provider testing — controlled tests completed.** Provider-policy tests passed
+  3/3 and controlled production E2E passed 6/6. No real provider or recipient was
+  used; an explicitly authorized non-production recipient is still required.
+- **Geographic permission — outstanding.** Do not publicly redistribute the
+  snapshot until reuse permission is resolved.
+- **PR #27 — outstanding.** It was not reviewed or merged.
+- **CP-SAT benchmark — completed.** The reference model found valid optima of
+  19/22 versus the heuristic's 17/22 at baseline, and 18/22 versus 15/22 under
+  the shortened window. Both detected the mandatory-block fixture as infeasible.
+  CP-SAT was materially slower and increased movement, so it remains an offline
+  benchmark rather than a production replacement.
+- **Demo — prepared, not recorded.** The storyboard exists and the controlled
+  end-to-end journey passed. A human-paced rehearsal and recording remain.
+
+Detailed evidence and limitations are recorded in
+`docs/RELEASE_VERIFICATION_2026-09-16.md`.
+
 1. Run a short planner usability study using the same night once with the current
    manual process and once with RailPlan. Measure active reconciliation time,
    unresolved clashes, rework and confidence instead of displaying assumed savings.
