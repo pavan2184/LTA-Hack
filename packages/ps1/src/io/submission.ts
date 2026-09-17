@@ -1,5 +1,21 @@
 import type { AccessRow, OccupancyRow, ResultRow, Scenario, Submission } from "../types/ps1";
 
+/**
+ * The three submission files, named exactly as the brief publishes them.
+ *
+ * Lives here rather than beside the UI that reads them because both a server
+ * component and a client component need the list, and a value exported from a
+ * `"use client"` module arrives on the server as a reference proxy rather than
+ * as the array itself.
+ */
+export const SUBMISSION_FILES = [
+  "RESULTS.csv",
+  "SCHEDULE_ACCESS.csv",
+  "SCHEDULE_OCCUPANCY.csv",
+] as const;
+
+export type SubmissionFileName = (typeof SUBMISSION_FILES)[number];
+
 export class SubmissionError extends Error {}
 
 function rows(text: string, file: string): Record<string, string>[] {

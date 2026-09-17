@@ -30,6 +30,29 @@ export type BlockerKind =
   | "predecessor"
   | "none";
 
+/**
+ * A dependency outranks everything else as an explanation.
+ *
+ * `blockerAt` probes capacity and allocation, which is the right question only
+ * once the activity is allowed to start at all. While its predecessor is still
+ * running, an empty network would not have let it start any earlier, so a week
+ * in that stretch is a predecessor week whatever else was also busy — reporting
+ * it as "no rule blocked this week" underneath a summary that blames the
+ * predecessor is the panel contradicting itself.
+ */
+function predecessorBlockerAt(
+  activity: Activity,
+  finishes: number,
+  week: number,
+): WeekBlocker {
+  return {
+    week,
+    kind: "predecessor",
+    subject: activity.predecessorActivityId!,
+    detail: `${activity.predecessorActivityId} was still running; it finishes in wk${finishes}`,
+  };
+}
+
 export interface WeekBlocker {
   week: number;
   kind: BlockerKind;
@@ -200,30 +223,29 @@ export function explainPlacement(
   const state = buildState(instance, submission);
   const span = expandSpan(network, activity.startLocationId, activity.endLocationId);
 
-  const blockers: WeekBlocker[] = [];
-  if (actualWeek !== null && weeksSlipped > 0) {
-    for (let week = plannedWeek; week < actualWeek; week += 1) {
-      blockers.push(blockerAt(instance, network, state, activity, contract, span, week));
-    }
-  }
-
-  // A predecessor that finishes late is the reason, whatever else was also busy.
-  let predecessorBlock: string | null = null;
+  // Established before the week-by-week probe, because it decides which weeks
+  // are worth probing at all.
+  let predecessorFinish: number | null = null;
   if (activity.predecessorActivityId) {
     const predecessorWeeks = submission.access
       .filter((row) => row.activityId === activity.predecessorActivityId)
       .map((row) => row.week);
-    if (predecessorWeeks.length) {
-      const finishes = Math.max(...predecessorWeeks);
-      if (finishes >= plannedWeek) {
-        predecessorBlock = `${activity.predecessorActivityId} had to finish first, in wk${finishes}`;
-      }
-    }
+    if (predecessorWeeks.length) predecessorFinish = Math.max(...predecessorWeeks);
   }
+  const predecessorBlock =
+    predecessorFinish !== null && predecessorFinish >= plannedWeek
+      ? `${activity.predecessorActivityId} had to finish first, in wk${predecessorFinish}`
+      : null;
 
-  const counts = new Map<BlockerKind, number>();
-  for (const blocker of blockers) {
-    counts.set(blocker.kind, (counts.get(blocker.kind) ?? 0) + 1);
+  const blockers: WeekBlocker[] = [];
+  if (actualWeek !== null && weeksSlipped > 0) {
+    for (let week = plannedWeek; week < actualWeek; week += 1) {
+      blockers.push(
+        predecessorFinish !== null && week <= predecessorFinish
+          ? predecessorBlockerAt(activity, predecessorFinish, week)
+          : blockerAt(instance, network, state, activity, contract, span, week),
+      );
+    }
   }
 
   const facts: { label: string; value: string }[] = [
@@ -258,33 +280,21 @@ export function explainPlacement(
     weeksSlipped,
     blockers,
     facts,
-    summary: summarise(activity, plannedWeek, actualWeek, weeksSlipped, counts, predecessorBlock, blockers),
+    summary: summarise(activity, plannedWeek, actualWeek, weeksSlipped, predecessorBlock, blockers),
   };
 }
 
-function summarise(
-  activity: Activity,
-  plannedWeek: number,
-  actualWeek: number | null,
-  weeksSlipped: number,
-  counts: Map<BlockerKind, number>,
-  predecessorBlock: string | null,
-  blockers: WeekBlocker[],
-): string {
-  if (actualWeek === null) return `${activity.activityId} was not scheduled.`;
-  if (weeksSlipped === 0) {
-    return `${activity.activityId} started in wk${actualWeek}, the week it was planned for.`;
+/** The clauses naming what stopped a set of weeks, busiest cause first. */
+function reasons(blockers: WeekBlocker[]): string[] {
+  const counts = new Map<BlockerKind, number>();
+  for (const blocker of blockers) {
+    counts.set(blocker.kind, (counts.get(blocker.kind) ?? 0) + 1);
   }
-  if (predecessorBlock) {
-    return `${activity.activityId} started in wk${actualWeek} rather than wk${plannedWeek} because ${predecessorBlock}.`;
-  }
-
   const parts: string[] = [];
   const capacity = counts.get("capacity") ?? 0;
   const allocation = counts.get("allocation") ?? 0;
   const workfront = counts.get("workfront") ?? 0;
   const mix = counts.get("mix") ?? 0;
-  const unexplained = counts.get("none") ?? 0;
 
   if (capacity) {
     // Name the location that blocked most often; it is the actual bottleneck.
@@ -294,17 +304,45 @@ function summarise(
       tally.set(blocker.subject, (tally.get(blocker.subject) ?? 0) + 1);
     }
     const worst = [...tally].sort((a, b) => b[1] - a[1])[0];
-    parts.push(
-      `${worst[0]} was full in ${capacity} of those week${capacity === 1 ? "" : "s"}`,
-    );
+    parts.push(`${worst[0]} was full in ${capacity} of those week${capacity === 1 ? "" : "s"}`);
   }
-  if (allocation) {
-    parts.push(
-      `its contract had no access-nights left in ${allocation} of them`,
-    );
-  }
+  if (allocation) parts.push(`its contract had no access-nights left in ${allocation} of them`);
   if (workfront) parts.push(`its workfronts were committed in ${workfront}`);
   if (mix) parts.push(`no compatible possession was available in ${mix}`);
+  return parts;
+}
+
+function summarise(
+  activity: Activity,
+  plannedWeek: number,
+  actualWeek: number | null,
+  weeksSlipped: number,
+  predecessorBlock: string | null,
+  blockers: WeekBlocker[],
+): string {
+  if (actualWeek === null) return `${activity.activityId} was not scheduled.`;
+  if (weeksSlipped === 0) {
+    return `${activity.activityId} started in wk${actualWeek}, the week it was planned for.`;
+  }
+
+  if (predecessorBlock) {
+    // The dependency explains its own weeks. Anything that held the activity up
+    // *after* the predecessor cleared is a second reason, and dropping it would
+    // leave the blocker rows below saying more than the sentence above them.
+    const after = blockers.filter((blocker) => blocker.kind !== "predecessor");
+    const later = reasons(after);
+    const free = after.filter((blocker) => blocker.kind === "none").length;
+    let tail = "";
+    if (later.length) {
+      tail = ` It then waited ${after.length} week${after.length === 1 ? "" : "s"} more because ${later.join(", and ")}.`;
+    } else if (free) {
+      tail = ` The ${free} week${free === 1 ? "" : "s"} after that ${free === 1 ? "was" : "were"} free, so higher-priority work took ${free === 1 ? "it" : "them"}.`;
+    }
+    return `${activity.activityId} started in wk${actualWeek} rather than wk${plannedWeek} because ${predecessorBlock}.${tail}`;
+  }
+
+  const parts = reasons(blockers);
+  const unexplained = blockers.filter((blocker) => blocker.kind === "none").length;
 
   if (!parts.length) {
     // Slipped without any rule blocking it: the scheduler chose to place more

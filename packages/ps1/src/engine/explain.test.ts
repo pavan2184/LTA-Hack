@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import type { Submission } from "../types/ps1";
 import { loadInstance, PS1_FILES } from "../io/load";
 import { scheduleInstance } from "./schedule";
 import { validate } from "./validate";
@@ -70,20 +71,35 @@ describe("placement explanation", () => {
   });
 
   it("is honest when nothing blocked the earlier weeks", () => {
-    // A greedy scheduler places dearer work first, so some activities slip with
-    // no rule against them. Inventing a blocker there would be a lie — the
-    // summary must either name a predecessor or say that dearer work took the
-    // week, never assert a constraint that did not fire.
-    const explanations = instance.activities.map(
-      (a) => explainPlacement(instance, submission, a.activityId)!,
-    );
-    const unblocked = explanations.filter(
-      (e) => e.weeksSlipped > 0 && e.blockers.every((b) => b.kind === "none"),
-    );
-    expect(unblocked.length).toBeGreaterThan(0);
-    for (const explanation of unblocked) {
-      expect(explanation.summary).toMatch(/higher-priority work|had to finish first/);
-    }
+    // A greedy scheduler places dearer work first, so an activity can slip with
+    // no rule against it at all. Inventing a blocker there would be a lie.
+    //
+    // The case is constructed rather than found: on the public instance every
+    // real slip is now attributed to a predecessor or to capacity, so searching
+    // the fixture for an unexplained one would assert nothing. Moving an
+    // activity that has no predecessor two weeks later leaves the weeks it
+    // vacated genuinely free, which is exactly the situation the fallback wording
+    // exists for.
+    const target = instance.activities.find((activity) => {
+      if (activity.predecessorActivityId) return false;
+      const explanation = explainPlacement(instance, submission, activity.activityId)!;
+      return explanation.weeksSlipped === 0 && explanation.actualWeek !== null;
+    })!;
+    expect(target).toBeDefined();
+
+    const shift = <T extends { activityId: string; week: number }>(row: T): T =>
+      row.activityId === target.activityId ? { ...row, week: row.week + 2 } : row;
+    const moved: Submission = {
+      ...submission,
+      access: submission.access.map(shift),
+      occupancy: submission.occupancy.map(shift),
+    };
+
+    const explanation = explainPlacement(instance, moved, target.activityId)!;
+    expect(explanation.weeksSlipped).toBe(2);
+    expect(explanation.blockers.map((blocker) => blocker.kind)).toEqual(["none", "none"]);
+    expect(explanation.summary).toMatch(/no rule blocked the earlier weeks/);
+    expect(explanation.summary).toMatch(/higher-priority work/);
   });
 
   it("prefers a predecessor as the reason over anything else", () => {
@@ -91,6 +107,48 @@ describe("placement explanation", () => {
     // network was also busy, because relieving congestion would not have helped.
     const explanation = explainPlacement(instance, submission, "A004")!;
     expect(explanation.summary).toMatch(/A003 had to finish first/);
+  });
+
+  /**
+   * The summary and the week rows are read together, one directly above the
+   * other, so they must not disagree. Blaming a predecessor in the sentence and
+   * then printing "no rule blocked this week" against every week underneath it
+   * is the one way this panel can look like it is guessing.
+   */
+  it("attributes the waiting weeks to the predecessor that caused them", () => {
+    const depending = instance.activities.filter((activity) => {
+      if (!activity.predecessorActivityId) return false;
+      const explanation = explainPlacement(instance, submission, activity.activityId)!;
+      return explanation.weeksSlipped > 0 && /had to finish first/.test(explanation.summary);
+    });
+    expect(depending.length).toBeGreaterThan(0);
+
+    for (const activity of depending) {
+      const explanation = explainPlacement(instance, submission, activity.activityId)!;
+      const finish = Math.max(
+        ...submission.access
+          .filter((row) => row.activityId === activity.predecessorActivityId)
+          .map((row) => row.week),
+      );
+      for (const blocker of explanation.blockers) {
+        if (blocker.week > finish) continue;
+        expect(blocker.kind, `${activity.activityId} wk${blocker.week}`).toBe("predecessor");
+        expect(blocker.detail).toContain(activity.predecessorActivityId!);
+        expect(blocker.detail).not.toMatch(/no rule blocked/);
+      }
+    }
+  });
+
+  it("still names what held an activity up after its predecessor cleared", () => {
+    // Weeks past the predecessor's finish are ordinary counterfactual weeks, so
+    // the sentence has to account for them rather than stop at the dependency.
+    const explanation = explainPlacement(instance, submission, "A038")!;
+    const after = explanation.blockers.filter((blocker) => blocker.kind !== "predecessor");
+    if (after.length === 0) {
+      expect(explanation.summary).toMatch(/^A038 started in wk\d+ rather than wk\d+ because .+\.$/);
+    } else {
+      expect(explanation.summary).toMatch(/It then waited|after that/);
+    }
   });
 
   it("carries the facts a panel needs to render rows", () => {
