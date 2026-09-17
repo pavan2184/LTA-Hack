@@ -20,6 +20,7 @@
     "db:provision-user": "node --env-file-if-exists=.env.local --import tsx scripts/db/provision-user.ts",
     "db:seed-auth-local": "node --env-file-if-exists=.env.local --import tsx scripts/db/seed-auth-users.ts",
     "geo:verify": "node --import tsx scripts/geography/verify.ts",
+    "benchmark:cpsat": "node --import tsx scripts/benchmark/cp-sat.ts .venv-cpsat/bin/python",
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {

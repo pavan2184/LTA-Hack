@@ -1,5 +1,121 @@
 # Project Status
 
+## Issue #20 CP-SAT benchmark and solver decision — 2026-09-17
+
+Issue #20 is complete. All four acceptance criteria are met and the decision is
+recorded. Nothing is committed; the working tree carries these changes. No
+application, solver, test or database code changed — only the offline benchmark
+and documentation.
+
+**Cross-language digests agree and schema drift fails fast.** Payloads carry
+`instanceDigest`, `constraintVersion` and fixture name under schema
+`railplan-cp-sat-payload-v2`; Python echoes all three and the harness rejects any
+mismatch. Verified by deliberately tampering with the echo, which produced
+`provenance drift on instanceDigest — sent fnv1a:8c4a9050cfea5e8b, received fnv1a:TAMPERED`;
+the tampered file was restored. Wrong `schemaVersion`, missing keys and unknown
+keys each raise `SchemaDrift` and exit non-zero. Python models no rule:
+`validate()` remains the sole constraint authority.
+
+**All reported feasible CP-SAT plans pass the validator.** Zero critical
+violations and 5/5 mandatory on every feasible fixture. A CP-SAT plan returning
+critical violations aborts the run rather than being reported.
+
+**Results are reproducible.** `scripts/benchmark/results-2026-09-17.json` records
+host CPU, core count, memory, Node/Python/OR-Tools versions, time limit, seed and
+worker count alongside seven fixtures. `npm run benchmark:cpsat` reproduces it in
+about 105 seconds.
+
+| Fixture | Heuristic | CP-SAT |
+| --- | --- | --- |
+| baseline-feasible | 17 placed, 88.2%, 735 move, 22 ms | 19, 95.3%, 1320 move, 6.0 s |
+| shortened-window-disruption | 15, 84.7%, 720 move, 14 ms | 18, 92.9%, 1080 move, 2.3 s |
+| team-unavailable-disruption | 17, 88.2%, 735 move, 24 ms | 18, 90.6%, 1395 move, 4.0 s |
+| locked-planner-pins | 17, 88.2%, 735 move, 22 ms | 19, 95.3%, 1350 move, 3.5 s |
+| adversarial-tight-windows | 16, 84.7%, 480 move, 11 ms | 17, 90.6%, 480 move, 2.2 s |
+| larger-cloned-night (33) | 19, 74.6%, 1230 move, 33 ms | 20, 76.9%, 1065 move, 75.2 s |
+| mandatory-blocks-closed | INFEASIBLE, 4/5, 49 ms | INFEASIBLE, proved, 0.3 s |
+
+**The decision is recorded.** `DECISIONS.md` now carries
+`2026-09-17 — No CP-SAT solver service; the TypeScript heuristic stands`, which
+resolves the previously `Proposed` *Real optimisation solver* entry. CP-SAT
+produces better plans — one to three more jobs, +2.3 to +8.2 points of weighted
+completion — at 157-2278x the runtime, and is rejected on latency, not quality.
+The decision names the operational failure modes a service would add and what
+would reopen it. MILP was never benchmarked and remains open.
+
+Findings worth not rediscovering:
+
+- Movement is not uniformly worse under CP-SAT. It rose 50-90% on the four
+  22-request feasible fixtures, was identical on the adversarial one, and fell
+  13% on the larger one.
+- The CP-SAT objective faithfully encodes `max-completion`, whose own objective 4
+  is "Movement from requested times is not penalised". The movement figures are a
+  real consequence, not a proxy artifact. `balanced` and `min-risk` do price
+  movement and were not benchmarked.
+- Timing is load-sensitive; answers are not. Baseline ran 6121/5680/5556 ms idle
+  but 50.0 s under concurrent load, and the larger fixture crossed from `OPTIMAL`
+  at 75 s to a solver timeout at 96 s. The plan and objective were identical
+  throughout.
+- `timeLimitSeconds` bounds CP-SAT's search but not model construction. With
+  thousands of cuts the build dominates, so a fixture budget checked between
+  calls cannot interrupt one long call; the subprocess itself is now bounded at
+  90 s. Three reporting statuses (`SOLVER_TIMEOUT`, `BUDGET_EXCEEDED`,
+  `CUT_LIMIT`) replace throwing, so one hard fixture cannot discard the rest.
+- Cloning all 22 requests gave a 44-request night neither method could satisfy —
+  heuristic `INFEASIBLE` at 4/5 mandatory, CP-SAT exhausting five minutes over 35
+  rounds and 14,001 cuts — which conflates scale with solvability. Cloning every
+  second request keeps 33 requests feasible.
+- The adversarial band started at 30 minutes and was genuinely infeasible,
+  duplicating the closed-block fixture; 60 minutes keeps it tight but comparable.
+- Clone requests must carry their own `workforceDemand` rows or every clone trips
+  `WORKFORCE_CAPACITY` as undefined staffing.
+
+`.venv-cpsat/` is git-ignored. Lint and typecheck pass.
+
+## Release gate re-verification — 2026-09-17
+
+Pulled `main` to `9ca5630` (two upstream commits: the Windows E2E preload file-URL
+fix and the CP-SAT/verification documentation). The local branch
+`codex/sitewide-ui-navigation` was already an ancestor of `origin/main` and holds
+no unique work; it is untouched.
+
+Every release gate passed on this commit, with no skips: lint and typecheck
+exit 0; `npm test` 821 tests across 98 files in 268.86 s **including** the hosted
+`*.db.test.ts` rollback/integration files; independent-session concurrency 13/13
+in 97.21 s; production build with 43 routes; production HTTP E2E 6/6 in 83.45 s;
+`geo:verify` 15 station points. **840 automated tests, zero failures.** Database
+parity was `fnv1a:8c4a9050cfea5e8b` / 22 requests both before and after the E2E
+run, and E2E fixture cleanup left no recovery manifest and no listening port.
+
+**Issue #17 dependency gate closed.** `npm audit` now reports 0 vulnerabilities;
+`vitest` and `@vitest/mocker` resolve to 4.1.11, clearing GHSA-82fw-gwwq-j7x9.
+The stale "audit currently reports advisories" open finding in
+`docs/SECURITY_REVIEW.md` was corrected in place with this evidence.
+
+The 2026-09-16 `PlannerTimeline` React key warning was investigated and **did not
+reproduce**: a targeted `console.error` probe over real solver output and over the
+conflict-rich requested plan with violations was clean, the seven
+`SavedPlansWorkspace` test files were clean, every JSX `.map` in the component
+carries a key, and duplicate keys are excluded by the `plan_placements` primary
+key. It remains open — it was seen once in a signed-in `next dev` session against
+real saved data, which the test layer cannot recreate. A separate latent
+fragility was found and recorded but deliberately not changed: `SandboxPlannerPanel`
+concatenates `extraRequests` onto `demoFacts.requests` without deduplicating by id.
+
+Still outstanding for #17 and unchanged: screen-reader speech and native browser
+zoom (both need owner approval for VoiceOver on macOS), the exact 1280/1440/1920
+keyboard and responsive acceptance matrix, real provider delivery, geographic
+licence clearance and public deployment. The CP-SAT benchmark was not re-run —
+`ortools` is not installed here and no Python package was installed — so the
+2026-09-16 benchmark results stand as recorded. No commit, push, merge or
+deployment was performed. Evidence and limitations:
+[RELEASE_VERIFICATION_2026-09-17.md](RELEASE_VERIFICATION_2026-09-17.md).
+
+Workstation note: the session hit a full disk (99%, `ENOSPC`) partway through
+this update. `npm cache clean --force` reclaimed 3.8 GB. The cause is unrelated
+caches, chiefly `~/Library/Caches` at 30 GB (Telegram 12 GB, lima 3.5 GB,
+Codex 3.7 GB); this repository is 1.2 GB in total.
+
 ## Local planner verification — 2026-09-16
 
 Agent-led verification at http://localhost:3000 on commit `203068d`: lint and

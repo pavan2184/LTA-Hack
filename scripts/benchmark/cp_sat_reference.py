@@ -3,15 +3,77 @@
 The TypeScript validator remains the constraint authority. The caller supplies
 candidate placements and validator-derived no-good cuts; this process optimizes
 the remaining discrete choices and reports solver status/bounds as JSON.
+
+This process deliberately does NOT re-model track, crew, equipment, workforce or
+dependency rules. Re-expressing them here would create a second validator that
+could disagree with `validate()` in a way nothing detects, which is exactly the
+drift the instance-digest handshake below exists to prevent.
+
+The handshake: the caller sends the digest of the planning instance it built its
+candidates from, plus the constraint version those candidates were cut against.
+This process echoes both back verbatim alongside its own model and library
+versions, and the caller refuses any result whose echo does not match what it
+sent. A payload written against a different schema fails here instead of being
+silently half-read.
 """
 
 from __future__ import annotations
 
 import json
+import platform
 import sys
 from typing import Any
 
+import ortools
 from ortools.sat.python import cp_model
+
+PAYLOAD_SCHEMA = "railplan-cp-sat-payload-v2"
+RESULT_SCHEMA = "railplan-cp-sat-result-v2"
+MODEL_VERSION = "cp-sat-master-v2"
+
+REQUIRED_KEYS = {
+    "schemaVersion",
+    "provenance",
+    "requests",
+    "candidates",
+    "cuts",
+    "timeLimitSeconds",
+    "randomSeed",
+}
+REQUIRED_PROVENANCE_KEYS = {"instanceDigest", "constraintVersion", "fixture"}
+
+
+class SchemaDrift(ValueError):
+    """The payload is not the shape this model version was written against."""
+
+
+def check_schema(payload: dict[str, Any]) -> None:
+    """Fail loudly on drift rather than optimizing a half-understood payload."""
+    if not isinstance(payload, dict):
+        raise SchemaDrift("payload must be a JSON object")
+    if payload.get("schemaVersion") != PAYLOAD_SCHEMA:
+        raise SchemaDrift(
+            f"expected schemaVersion {PAYLOAD_SCHEMA!r}, "
+            f"received {payload.get('schemaVersion')!r}"
+        )
+    keys = set(payload)
+    if missing := REQUIRED_KEYS - keys:
+        raise SchemaDrift(f"missing payload keys: {sorted(missing)}")
+    if unknown := keys - REQUIRED_KEYS:
+        raise SchemaDrift(f"unknown payload keys: {sorted(unknown)}")
+
+    provenance = payload["provenance"]
+    if not isinstance(provenance, dict):
+        raise SchemaDrift("provenance must be a JSON object")
+    if missing := REQUIRED_PROVENANCE_KEYS - set(provenance):
+        raise SchemaDrift(f"missing provenance keys: {sorted(missing)}")
+    for key in REQUIRED_PROVENANCE_KEYS:
+        if not isinstance(provenance[key], str) or not provenance[key]:
+            raise SchemaDrift(f"provenance.{key} must be a non-empty string")
+
+    for candidate in payload["candidates"]:
+        if missing := {"key", "requestId", "startMinute", "priorityWeight"} - set(candidate):
+            raise SchemaDrift(f"candidate missing keys: {sorted(missing)}")
 
 
 def solve(payload: dict[str, Any]) -> dict[str, Any]:
@@ -57,9 +119,9 @@ def solve(payload: dict[str, Any]) -> dict[str, Any]:
     model.maximize(sum(objective_terms))
 
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = float(payload.get("timeLimitSeconds", 10))
+    solver.parameters.max_time_in_seconds = float(payload["timeLimitSeconds"])
     solver.parameters.num_search_workers = 1
-    solver.parameters.random_seed = 0
+    solver.parameters.random_seed = int(payload["randomSeed"])
     solver.parameters.log_search_progress = False
     status = solver.solve(model)
     status_name = solver.status_name(status)
@@ -75,6 +137,15 @@ def solve(payload: dict[str, Any]) -> dict[str, Any]:
         if has_solution and solver.value(variable) == 1
     ]
     return {
+        "schemaVersion": RESULT_SCHEMA,
+        # Echoed verbatim. The caller compares this with what it sent and
+        # refuses the result on any mismatch.
+        "provenance": {
+            **payload["provenance"],
+            "modelVersion": MODEL_VERSION,
+            "ortoolsVersion": ortools.__version__,
+            "pythonVersion": platform.python_version(),
+        },
         "status": status_name,
         "objectiveValue": solver.objective_value if has_solution else None,
         "bestObjectiveBound": solver.best_objective_bound,
@@ -89,6 +160,7 @@ def solve(payload: dict[str, Any]) -> dict[str, Any]:
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
+        check_schema(payload)
         print(json.dumps(solve(payload), separators=(",", ":")))
     except Exception as error:  # The caller turns this into a visible benchmark failure.
         print(json.dumps({"error": type(error).__name__, "message": str(error)}))

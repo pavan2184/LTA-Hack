@@ -7,6 +7,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Isolated OR-Tools environment for the offline CP-SAT reference benchmark.
+.venv-cpsat/
 node_modules/
 .next/
 dist/

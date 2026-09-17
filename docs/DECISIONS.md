@@ -1,5 +1,102 @@
 # Decisions
 
+## 2026-09-17 — No CP-SAT solver service; the TypeScript heuristic stands
+
+Status: Accepted. Resolves the `Real optimisation solver` proposal below, which
+was `Proposed` pending exactly this evidence, and confirms the 2026-08-02
+rejection of a CP-SAT backend on measurement rather than on estimate.
+
+Issue #20 asked whether an OR-Tools service earns its place. On this evidence it
+does not, and the reason is latency rather than quality.
+
+**What was measured.** Seven fixtures covering the classes the issue names —
+seeded, infeasible, two disruptions, locked pins, larger and adversarial —
+comparing the production `max-completion` heuristic against a CP-SAT reference on
+an Apple M2 (8 cores, 8 GiB), Node v24.2.0, Python 3.12.8, OR-Tools 9.15.6755,
+10-second solve limit, random seed 0, one search worker. `validate()` stayed the
+only constraint authority: Python modelled no rule, and every reported plan was
+re-validated before any number was taken from it. Raw output is in
+`scripts/benchmark/results-2026-09-17.json`; `npm run benchmark:cpsat` reproduces
+it.
+
+| Fixture | Heuristic | CP-SAT |
+| --- | --- | --- |
+| baseline-feasible | 17 placed, 88.2%, 735 move, 22 ms | 19, 95.3%, 1320 move, 6.0 s |
+| shortened-window-disruption | 15, 84.7%, 720 move, 14 ms | 18, 92.9%, 1080 move, 2.3 s |
+| team-unavailable-disruption | 17, 88.2%, 735 move, 24 ms | 18, 90.6%, 1395 move, 4.0 s |
+| locked-planner-pins | 17, 88.2%, 735 move, 22 ms | 19, 95.3%, 1350 move, 3.5 s |
+| adversarial-tight-windows | 16, 84.7%, 480 move, 11 ms | 17, 90.6%, 480 move, 2.2 s |
+| larger-cloned-night (33) | 19, 74.6%, 1230 move, 33 ms | 20, 76.9%, 1065 move, 75.2 s |
+| mandatory-blocks-closed | INFEASIBLE, 4/5 mandatory, 49 ms | INFEASIBLE, proved, 0.3 s |
+
+**CP-SAT is better at the thing it was asked to do.** It placed one to three more
+jobs on every feasible fixture, worth +2.3 to +8.2 points of priority-weighted
+completion, and it proves optimality instead of asserting it. Both methods agreed
+the closed-block fixture is infeasible. Every CP-SAT plan passed the validator
+with zero critical violations and placed all five mandatory requests. Both were
+deterministic across repeat runs.
+
+**It costs 157 to 2278 times the runtime.** 11-33 ms against 2.2-75.2 seconds.
+That is the decisive number. RailPlan's core interaction is moving a pin and
+watching the numbers move; a 20 ms recompute is direct manipulation, a 6-second
+one is a progress bar, and a 75-second one is a batch job. The product would
+become a different kind of tool, and two extra placements do not buy that back.
+
+**The movement cost is real but not uniform.** Movement from requested times rose
+50-90% on the four 22-request feasible fixtures, was identical on the adversarial
+one, and *fell* 13% on the larger one. So "CP-SAT moves more work" is not a law;
+on this evidence it is what happens when extra capacity exists to exploit.
+`max-completion` declares its own objective 4 as "Movement from requested times is
+not penalised" and ranks candidates by `start` alone, so the CP-SAT objective —
+priority-weighted completion, then count, then earlier start — is a faithful
+encoding of that strategy rather than a mismatched proxy. The movement figures
+are a real consequence of placing more work under a strategy that does not price
+movement, not an artifact of the comparison. Emergency capacity was identical for
+both methods on every fixture.
+
+**Timing is load-sensitive in a way the answers are not.** On an idle machine the
+baseline fixture ran in 6121, 5680 and 5556 ms across three runs — about 10%
+spread, with an identical plan and objective each time. Under concurrent load the
+same fixture took 50.0 s, roughly 8× worse, and the larger fixture crossed from
+`OPTIMAL` at 75 s to a solver timeout at 96 s. The answer never changed; only the
+time did. A planner's experience of the tool would therefore depend on what else
+the box was doing.
+
+Rejected for now, with the operational failure modes a service would add:
+
+- **A network hop and a deploy on the critical path.** Planning is currently a
+  pure function in the browser. A service makes every solve a request that can
+  time out, queue behind another tenant, or fail while a planner is mid-edit.
+- **Version skew between two languages.** The benchmark catches this with an
+  instance-digest handshake that fails fast, but that is harness scaffolding. In
+  production the same risk becomes a service answering confidently about
+  yesterday's constraints, and the handshake would have to be built, tested and
+  kept honest for real.
+- **Wall-clock sensitivity becomes a product surface.** The 8× load-dependent
+  variance above is tolerable in an offline benchmark and not in an interaction
+  budget. Saved plans carry digests and are expected to reproduce; a solve whose
+  duration depends on neighbouring load makes that a promise about infrastructure
+  rather than about the engine.
+- **Worse infeasibility reporting.** The heuristic names the mandatory work it
+  could not place. CP-SAT returns `INFEASIBLE` and nothing else. The 2026-08-02
+  decision to report status honestly and name the blocked work would regress.
+- **A 190 MB Python dependency** and its supply chain, added to a stack that is
+  currently one language.
+
+**What would reopen this.** Any of: an offline or overnight batch planning mode
+where 75 seconds is free; instances routinely larger than the seeded night, where
+the quality gap widens faster than the runtime does; a strategy that prices
+movement explicitly, where the two can be compared without this decision's main
+caveat; or evidence from real LTA instances rather than a fabricated one.
+
+**Limits of this evidence.** One fabricated night, one machine, and one of five
+strategies — the one whose objectives the CP-SAT model encodes most exactly.
+`balanced` and `min-risk` both penalise movement in `candidateCost` and were not
+benchmarked; under those the comparison could move in either direction. The
+larger fixture is a synthetic clone set, not a real larger night. These numbers
+do not support a general claim about exact optimisation for rail maintenance
+planning, only about this engine, these instances and this interaction budget.
+
 ## 2026-09-15 — Approved upstream reconciliation
 
 Pavan approved all recommended merge choices: retain the current shared design and
@@ -515,11 +612,12 @@ Status: Implemented and superseded by the 2026-08-02 decision (historical propos
 
 ### Real optimisation solver
 
-Status: Proposed
+Status: Resolved by the 2026-09-17 decision above — benchmarked and rejected for now
 
 - Benchmark a deterministic frontend heuristic against CP-SAT and, if useful, MILP.
 - A FastAPI/OR-Tools service is a strong future option but would replace the accepted frontend-only boundary.
 - Approval would require updates to architecture, API, data, testing, security, deployment, and operational status documentation before code changes.
+- The CP-SAT half was benchmarked on 2026-09-17 across seven fixtures: better plans, 157-2278x the runtime, rejected on latency. MILP was not benchmarked and remains open.
 
 ### Public rail geography and historical statistics
 
