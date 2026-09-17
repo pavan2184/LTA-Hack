@@ -6,7 +6,7 @@ import { loadInstance, PS1_FILES, type Ps1FileName } from "@railplan/ps1/io/load
 import { writeSubmission } from "@railplan/ps1/io/write";
 import { scheduleInstance } from "@railplan/ps1/engine/schedule";
 import { validate } from "@railplan/ps1/engine/validate";
-import { buildNetwork } from "@railplan/ps1/engine/network";
+import { buildNetwork, type Network as Ps1Network } from "@railplan/ps1/engine/network";
 import type {
   Ps1Instance,
   Scenario,
@@ -15,6 +15,7 @@ import type {
 } from "@railplan/ps1/types/ps1";
 
 import { Button } from "@/components/ui/button";
+import { ExplainPanel } from "@/components/ps1/ExplainPanel";
 
 const SCENARIOS: Scenario[] = ["A", "B", "C"];
 
@@ -29,6 +30,7 @@ interface Solved {
   submission: Submission;
   report: ValidationReport;
   solveMs: number;
+  network: Ps1Network;
 }
 
 /**
@@ -90,7 +92,13 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
           const started = performance.now();
           const submission = scheduleInstance(instance, { scenario }, network);
           const solveMs = Math.round((performance.now() - started) * 100) / 100;
-          return { scenario, submission, report: validate(instance, submission, network), solveMs };
+          return {
+            scenario,
+            submission,
+            report: validate(instance, submission, network),
+            solveMs,
+            network,
+          };
         }),
       );
       setRunError(null);
@@ -250,6 +258,15 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
                   Download scenario {current.scenario} CSVs
                 </Button>
               </div>
+
+              {instance && (
+                <ExplainPanel
+                  instance={instance}
+                  submission={current.submission}
+                  report={current.report}
+                  network={current.network}
+                />
+              )}
             </div>
           )}
         </section>
