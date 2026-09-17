@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { login } from "./actions";
 import { authConfig } from "@/lib/auth/config";
 import { safeReturnTo } from "@/lib/auth/return-path";
@@ -18,6 +19,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <label className="text-sm">Password<input name="password" type="password" autoComplete="current-password" maxLength={1024} required className="mt-1 block w-full rounded border bg-white p-3" /></label>
       <button disabled={!configured} className="rail-button-primary rounded px-4 py-3 text-white disabled:opacity-50" type="submit">Sign in</button>
     </form>
-    <p className="mt-6 text-xs">Fabricated planning data. This prototype is not for operational use.</p>
+    <p className="mt-6 text-sm">Looking for the NebulaX PS1 scheduler? It is open to everyone — <Link className="underline" href="/ps1">open it without signing in</Link>.</p>
+    <p className="mt-4 text-xs">Fabricated planning data. This prototype is not for operational use.</p>
   </main>;
 }
