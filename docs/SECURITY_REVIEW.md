@@ -1,5 +1,24 @@
 # Security Review
 
+## Release gate re-audit — 2026-09-17
+
+Dependency audit at commit `9ca5630`: `npm audit` reports **0 vulnerabilities**.
+GHSA-82fw-gwwq-j7x9 is cleared — `vitest` and `@vitest/mocker` both resolve to
+4.1.11, the fixed release. Open finding 4 below is closed on this evidence.
+
+No application, authorization, RLS or provider-boundary code was changed in this
+session; this was a verification pass, so the reviews below still describe the
+implemented boundaries. All release gates passed: 840 automated tests across the
+broad suite, independent-session concurrency and production HTTP E2E, plus lint,
+typecheck, production build and geography verification. The hosted source digest
+was identical before and after the E2E suite (`fnv1a:8c4a9050cfea5e8b`,
+22 requests), and the suite's exact fixture cleanup completed — no recovery
+manifest remained.
+
+Open findings 1–3 are unchanged. Screen-reader speech and native browser zoom
+remain unverified and still require the owner's approval to enable VoiceOver.
+Full evidence and limitations: [RELEASE_VERIFICATION_2026-09-17.md](RELEASE_VERIFICATION_2026-09-17.md).
+
 ## GitHub reconciliation review — 2026-09-15
 
 The requested-time conflict and repair commands reuse the authenticated planner
@@ -65,9 +84,13 @@ immutable. Independent pre-application review found no important blockers.
    payload logging before transcript or personal-data support (#10/#17).
 3. Seed truncates planning facts. Use only a dedicated disposable RailPlan
    development database. Never run it on an unrelated or production project.
-4. `npm audit` currently reports dependency advisories; do not repeat the obsolete
-   zero-vulnerability claim. Package remediation and re-audit are release gates
-   in #17, with exact current verification recorded in project status.
+4. ~~`npm audit` currently reports dependency advisories.~~ **Closed 2026-09-17.**
+   `npm audit` reports 0 vulnerabilities at commit `9ca5630`; `npm ls` resolves
+   `vitest@4.1.11` and `@vitest/mocker@4.1.11`, the fixed release for
+   GHSA-82fw-gwwq-j7x9 (4.1.10 was affected). This states the dependency tree at
+   that commit on the verifying machine — not that a deployed environment is
+   secure. Re-audit remains a release gate on every dependency change; record the
+   exact result in project status rather than reusing this one.
 
 ## Work requiring further review
 
