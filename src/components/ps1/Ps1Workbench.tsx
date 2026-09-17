@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import { loadInstance, PS1_FILES, type Ps1FileName } from "@railplan/ps1/io/load";
 import { writeSubmission } from "@railplan/ps1/io/write";
-import { scheduleInstance } from "@railplan/ps1/engine/schedule";
+import { scheduleInstance, type Pin, type RejectedPin } from "@railplan/ps1/engine/schedule";
 import { validate } from "@railplan/ps1/engine/validate";
 import { buildNetwork, type Network as Ps1Network } from "@railplan/ps1/engine/network";
 import type {
@@ -16,6 +16,7 @@ import type {
 
 import { Button } from "@/components/ui/button";
 import { ExplainPanel } from "@/components/ps1/ExplainPanel";
+import { PossessionTimeline } from "@/components/ps1/PossessionTimeline";
 
 const SCENARIOS: Scenario[] = ["A", "B", "C"];
 
@@ -31,6 +32,7 @@ interface Solved {
   report: ValidationReport;
   solveMs: number;
   network: Ps1Network;
+  rejectedPins: RejectedPin[];
 }
 
 /**
@@ -48,6 +50,7 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
   const [solved, setSolved] = useState<Solved[] | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [active, setActive] = useState<Scenario>("A");
+  const [pins, setPins] = useState<Pin[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const missing = useMemo(
@@ -83,29 +86,57 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
     setFiles((current) => ({ ...current, ...next }));
   }, []);
 
-  const run = useCallback(() => {
-    if (!instance) return;
-    try {
-      const network = buildNetwork(instance);
-      setSolved(
-        SCENARIOS.map((scenario) => {
-          const started = performance.now();
-          const submission = scheduleInstance(instance, { scenario }, network);
-          const solveMs = Math.round((performance.now() - started) * 100) / 100;
-          return {
-            scenario,
-            submission,
-            report: validate(instance, submission, network),
-            solveMs,
-            network,
-          };
-        }),
-      );
-      setRunError(null);
-    } catch (cause) {
-      setRunError(cause instanceof Error ? cause.message : String(cause));
-    }
-  }, [instance]);
+  const run = useCallback(
+    (withPins: Pin[]) => {
+      if (!instance) return;
+      try {
+        const network = buildNetwork(instance);
+        setSolved(
+          SCENARIOS.map((scenario) => {
+            const started = performance.now();
+            const submission = scheduleInstance(instance, { scenario, pins: withPins }, network);
+            const solveMs = Math.round((performance.now() - started) * 100) / 100;
+            return {
+              scenario,
+              submission,
+              report: validate(instance, submission, network),
+              solveMs,
+              network,
+              rejectedPins: submission.rejectedPins,
+            };
+          }),
+        );
+        setRunError(null);
+      } catch (cause) {
+        setRunError(cause instanceof Error ? cause.message : String(cause));
+      }
+    },
+    [instance],
+  );
+
+  /**
+   * A pin re-solves immediately. Entering it before the solve is the whole
+   * point: the rest of the schedule moves around the controller's decision
+   * rather than being annotated after the fact.
+   */
+  const togglePin = useCallback(
+    (pin: Pin) => {
+      setPins((current) => {
+        const key = `${pin.activityId}|${pin.week}`;
+        const next = current.some((item) => `${item.activityId}|${item.week}` === key)
+          ? current.filter((item) => `${item.activityId}|${item.week}` !== key)
+          : [...current, pin];
+        run(next);
+        return next;
+      });
+    },
+    [run],
+  );
+
+  const clearPins = useCallback(() => {
+    setPins([]);
+    run([]);
+  }, [run]);
 
   const download = useCallback((entry: Solved) => {
     for (const [name, text] of Object.entries(writeSubmission(entry.submission))) {
@@ -186,7 +217,7 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
           Solves all three scenarios and validates each against the nine hard rules.
         </p>
         <div className="mt-3">
-          <Button variant="primary" disabled={!instance} onClick={run}>
+          <Button variant="primary" disabled={!instance} onClick={() => run(pins)}>
             Run all three scenarios
           </Button>
         </div>
@@ -258,6 +289,30 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
                   Download scenario {current.scenario} CSVs
                 </Button>
               </div>
+
+              {current.rejectedPins.length > 0 && (
+                <ul className="mt-4 grid gap-1 rounded-md border border-signal-amber bg-signal-amber-soft p-3 text-[12px] text-ink-900">
+                  {current.rejectedPins.map((pin) => (
+                    <li key={`${pin.activityId}|${pin.week}`}>
+                      <span className="font-semibold">
+                        {pin.activityId} wk{pin.week} not pinned
+                      </span>{" "}
+                      — {pin.reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {instance && (
+                <PossessionTimeline
+                  instance={instance}
+                  submission={current.submission}
+                  network={current.network}
+                  pins={pins}
+                  onPin={togglePin}
+                  onClearPins={clearPins}
+                />
+              )}
 
               {instance && (
                 <ExplainPanel

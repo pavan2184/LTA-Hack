@@ -51,6 +51,23 @@ validator the judges run.
   at one location-week are separate possessions on separate nights. Enforcing
   buffers across them rejects the reference in 118 places.
 
+## Working with a schedule
+
+- **`engine/explain.ts`** answers "why is this job here?" by counterfactual: put
+  the activity back in each earlier week with the rest held still, and record
+  what stops it. It says so plainly when nothing did, rather than inventing a
+  blocker.
+- **`engine/metrics.ts`** gives every figure its numerator, denominator and
+  formula, and decomposes the banded overrun into rows that sum to the score.
+- **`engine/categories.ts`** groups the eleven rule tags into six things a
+  controller can act on, each with the lever that resolves it.
+- **`engine/timeline.ts`** turns a submission into locations-by-weeks, counting
+  possessions rather than placements so co-sharing does not read as overload.
+- **Pins** are entered as hard constraints *before* the solve, never as an
+  overlay: `scheduleInstance(instance, { scenario, pins })`. A pin that would
+  break a rule comes back in `rejectedPins` with the reason, and a pin before an
+  activity's planned start is refused outright.
+
 ## Running it
 
 ```sh
