@@ -10,7 +10,7 @@
       "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 0,
       "nightsScheduled": 192,
-      "solveMs": 10.15
+      "solveMs": 10.51
     },
     {
       "scenario": "B",
@@ -21,7 +21,7 @@
       "excessAccessNightsTotal": 2,
       "ecloNightsTotal": 6,
       "nightsScheduled": 189,
-      "solveMs": 1.83
+      "solveMs": 1.54
     },
     {
       "scenario": "C",
@@ -32,7 +32,7 @@
       "excessAccessNightsTotal": 2,
       "ecloNightsTotal": 0,
       "nightsScheduled": 192,
-      "solveMs": 1.33
+      "solveMs": 1.21
     }
   ]
 }

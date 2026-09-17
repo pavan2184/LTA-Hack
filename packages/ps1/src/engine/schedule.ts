@@ -30,10 +30,30 @@ import { isoDate, weekEnd, weekOf, MAX_ACTIVITIES_PER_POSSESSION } from "./valid
  * schedule scores whatever its quality earns.
  */
 
+/**
+ * A week a works controller has fixed by hand.
+ *
+ * Pins are entered as hard constraints *before* the solve, not laid over the
+ * result afterwards, so a controller's decision moves the rest of the schedule
+ * and the numbers with it. RailPlan settled this the same way, for the same
+ * reason: an overlay lets the tool report a plan nobody could actually run.
+ */
+export interface Pin {
+  activityId: string;
+  week: number;
+}
+
 export interface ScheduleOptions {
   scenario: Scenario;
   /** Weeks beyond the horizon the scheduler may use before giving up. */
   overflowWeeks?: number;
+  /** Weeks fixed by hand. Placed first; the rest of the schedule works around them. */
+  pins?: Pin[];
+}
+
+/** A pin the scheduler could not honour, and why. */
+export interface RejectedPin extends Pin {
+  reason: string;
 }
 
 /** What one location-week currently holds. */
@@ -77,7 +97,7 @@ export function scheduleInstance(
   instance: Ps1Instance,
   options: ScheduleOptions,
   network: Network = buildNetwork(instance),
-): Submission {
+): Submission & { rejectedPins: RejectedPin[] } {
   const { scenario } = options;
   const overflow = options.overflowWeeks ?? DEFAULT_OVERFLOW_WEEKS;
   const lastWeek = instance.parameters.horizonWeeks + overflow;
@@ -186,6 +206,69 @@ export function scheduleInstance(
   };
 
   const placedWeeks = new Map<string, number[]>();
+  const sequenceOf = new Map<string, number>();
+  const rejectedPins: RejectedPin[] = [];
+
+  /**
+   * Commit one access-night. Shared by the pin pass and the greedy pass so a
+   * pinned week is held to exactly the rules an ordinary week is.
+   */
+  function commit(
+    activity: Activity,
+    contract: Contract,
+    span: string[],
+    week: number,
+    eclo: boolean,
+  ): boolean {
+    const night = nightFor(activity, contract, week);
+    if (night === null) return false;
+    const labels = placementFor(activity, contract, span, week);
+    if (!labels) return false;
+
+    const sequence = (sequenceOf.get(activity.activityId) ?? 0) + 1;
+    sequenceOf.set(activity.activityId, sequence);
+    access.push({
+      activityId: activity.activityId,
+      accessSeq: sequence,
+      week,
+      eclo: eclo ? 1 : 0,
+      accessNight: night,
+    });
+    for (const [locationId, label] of labels) {
+      const slot = slotAt(locationId, week);
+      slot.possessions.set(label, [...(slot.possessions.get(label) ?? []), activity.activityId]);
+      occupancy.push({ activityId: activity.activityId, week, locationId, coShareGroup: label });
+    }
+    const load = loadAt(contract, activity.activityType, week);
+    load.nights.set(night, new Set([...(load.nights.get(night) ?? []), activity.activityId]));
+    placedWeeks.set(activity.activityId, [...(placedWeeks.get(activity.activityId) ?? []), week]);
+    return true;
+  }
+
+  // Pins first, in week order, so an earlier pin cannot be displaced by a later
+  // one belonging to the same contract.
+  for (const pin of [...(options.pins ?? [])].sort((a, b) => a.week - b.week)) {
+    const activity = instance.activities.find((a) => a.activityId === pin.activityId);
+    if (!activity) {
+      rejectedPins.push({ ...pin, reason: `no activity ${pin.activityId} in this instance` });
+      continue;
+    }
+    const contract = contractByNumber.get(activity.contractNumber)!;
+    const plannedWeek = weekOf(instance.parameters.horizonStart, activity.plannedStartDate);
+    if (pin.week < plannedWeek) {
+      rejectedPins.push({
+        ...pin,
+        reason: `wk${pin.week} is before the planned start of ${activity.plannedStartDate} (wk${plannedWeek})`,
+      });
+      continue;
+    }
+    if (!commit(activity, contract, spanFor(activity), pin.week, false)) {
+      rejectedPins.push({
+        ...pin,
+        reason: `wk${pin.week} had no free possession or access-night for ${activity.activityId}`,
+      });
+    }
+  }
 
   for (const activity of scheduleOrder(instance)) {
     const contract = contractByNumber.get(activity.contractNumber)!;
@@ -198,19 +281,19 @@ export function scheduleInstance(
       if (predecessor?.length) earliest = Math.max(earliest, Math.max(...predecessor) + 1);
     }
 
-    let remaining = activity.totalAccesses;
-    let sequence = 1;
-    const weeksUsed: number[] = [];
+    // Pinned weeks are already committed and already counted; the greedy pass
+    // only tops the activity up to its full workload.
+    const pinned = placedWeeks.get(activity.activityId) ?? [];
+    let remaining = activity.totalAccesses - pinned.length * STANDARD_YIELD;
+    const taken = new Set(pinned);
     const deadlineWeek = weekOf(
       instance.parameters.horizonStart,
       contract.plannedCompletionDate,
     );
 
     for (let week = earliest; week <= lastWeek && remaining > 1e-9; week += 1) {
-      const night = nightFor(activity, contract, week);
-      if (night === null) continue;
-      const labels = placementFor(activity, contract, span, week);
-      if (!labels) continue;
+      // One access per week per activity, so a pinned week is not doubled up.
+      if (taken.has(week)) continue;
 
       // ECLO is only legal in B and C, and is spent only when the date would
       // otherwise slip: at one access per week, an activity needs as many weeks
@@ -223,27 +306,10 @@ export function scheduleInstance(
         remaining > weeksLeft &&
         ecloAllowed(scenario);
 
-      access.push({
-        activityId: activity.activityId,
-        accessSeq: sequence,
-        week,
-        eclo: useEclo ? 1 : 0,
-        accessNight: night,
-      });
-      for (const [locationId, label] of labels) {
-        const slot = slotAt(locationId, week);
-        slot.possessions.set(label, [...(slot.possessions.get(label) ?? []), activity.activityId]);
-        occupancy.push({ activityId: activity.activityId, week, locationId, coShareGroup: label });
-      }
-      const load = loadAt(contract, activity.activityType, week);
-      load.nights.set(night, new Set([...(load.nights.get(night) ?? []), activity.activityId]));
-
+      if (!commit(activity, contract, span, week, useEclo)) continue;
+      taken.add(week);
       remaining -= useEclo ? ECLO_YIELD : STANDARD_YIELD;
-      sequence += 1;
-      weeksUsed.push(week);
     }
-
-    placedWeeks.set(activity.activityId, weeksUsed);
   }
 
   return {
@@ -251,6 +317,7 @@ export function scheduleInstance(
     access,
     occupancy,
     results: resultsFor(instance, access, scenario),
+    rejectedPins,
   };
 }
 
