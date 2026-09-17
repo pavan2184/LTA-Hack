@@ -1,5 +1,59 @@
 # Decisions
 
+## 2026-09-17 — Named crew rostering: recommended no-go, pending the owner's decision
+
+Status: **Proposed — awaiting Pavan's decision as data controller.** This is the
+one decision in this log an engineer cannot take alone: it authorises collecting
+personal data about real workers, and that authorisation belongs to the
+controller. The evaluation issue #21 asks for is complete and is in
+`docs/EVALUATION_NAMED_CREW_ROSTERING.md`.
+
+**Recommendation: no-go. Solve the safety-relevant needs with finer-grained
+anonymous roles instead.**
+
+The production model is anonymous by construction — counts of people per role,
+team and interval, never identities. Named rostering was evaluated against four
+operational needs. Two are safety-relevant (qualification matching, rest and
+fatigue compliance) and two are efficiency gains (travel feasibility,
+reassignment continuity).
+
+Both safety-relevant needs are reachable without personal data. A role named
+`technician_hv_certified` carries the same planning power as knowing which named
+individual holds the certificate, and none of the risk. Rest can be modelled as
+reduced availability in the window after a heavy shift. That leaves only
+efficiency gains to justify introducing identity, location and absence data — and
+they do not.
+
+Three risks are specific to RailPlan rather than generic to rostering:
+
+- **A published plan would become a movement record.** RailPlan publishes plans
+  to contractors and through Telegram. Named placements turn an operational
+  document into a per-person timetable of where an identified worker will be, at
+  night, at a known trackside location. That is a physical-safety concern before
+  it is a privacy one.
+- **Absence is inferable even when leave reasons are deliberately not stored.** A
+  weekly gap in one person's availability discloses what the omitted field was
+  meant to protect.
+- **Support and logging paths leak first.** Every error envelope, export and log
+  line was designed when workforce data was counts. Issue #21 names logs in its
+  acceptance criteria for this reason.
+
+**What would overturn this.** One fact, and it is not an engineering judgement:
+whether any LTA or regulatory obligation requires *per-person auditable* rest and
+qualification records rather than plan-level assurance. If it does, anonymous
+roles cannot satisfy a regulator and the recommendation inverts. Three further
+questions for the owner are listed in the evaluation.
+
+**Enforced in the meantime.** `src/test/workforce-anonymity.test.ts` fails if
+personal identifiers reach any workforce table, so the expansion cannot happen
+quietly through an unrelated migration. It was mutation-tested against an
+injected named-worker table to confirm it catches the case rather than passing
+vacuously. It is a tripwire for the obvious shape of the mistake, not a privacy
+control in itself.
+
+No named-worker table, API, seed, UI or log has been added. The aggregate
+role-capacity model remains the production default.
+
 ## 2026-09-17 — No CP-SAT solver service; the TypeScript heuristic stands
 
 Status: Accepted. Resolves the `Real optimisation solver` proposal below, which
