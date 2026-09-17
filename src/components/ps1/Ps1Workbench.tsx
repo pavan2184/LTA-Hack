@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { loadInstance, PS1_FILES, type Ps1FileName } from "@railplan/ps1/io/load";
 import { writeSubmission } from "@railplan/ps1/io/write";
 import { scheduleInstance, type Pin, type RejectedPin } from "@railplan/ps1/engine/schedule";
+import type { Disruption, ReplanOutcome } from "@railplan/ps1/engine/disruption";
 import { validate } from "@railplan/ps1/engine/validate";
 import { buildNetwork, type Network as Ps1Network } from "@railplan/ps1/engine/network";
 import type {
@@ -17,6 +18,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { ExplainPanel } from "@/components/ps1/ExplainPanel";
 import { PossessionTimeline } from "@/components/ps1/PossessionTimeline";
+import { DisruptionPanel } from "@/components/ps1/DisruptionPanel";
 
 const SCENARIOS: Scenario[] = ["A", "B", "C"];
 
@@ -137,6 +139,30 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
     setPins([]);
     run([]);
   }, [run]);
+
+  /**
+   * Adopt a replan for the scenario in view. The disruption stays in force, so
+   * the score shown afterwards is the one for the night actually being planned
+   * rather than the undisrupted one it replaced.
+   */
+  const adoptReplan = useCallback(
+    (outcome: ReplanOutcome, disruptions: Disruption[]) => {
+      if (!instance) return;
+      setSolved((current) =>
+        (current ?? []).map((entry) =>
+          entry.scenario === active
+            ? {
+                ...entry,
+                submission: outcome.submission,
+                report: validate(instance, outcome.submission, entry.network, disruptions),
+                rejectedPins: outcome.submission.rejectedPins,
+              }
+            : entry,
+        ),
+      );
+    },
+    [instance, active],
+  );
 
   const download = useCallback((entry: Solved) => {
     for (const [name, text] of Object.entries(writeSubmission(entry.submission))) {
@@ -301,6 +327,15 @@ export function Ps1Workbench({ publicInstance }: { publicInstance: Record<string
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {instance && (
+                <DisruptionPanel
+                  instance={instance}
+                  submission={current.submission}
+                  network={current.network}
+                  onApply={adoptReplan}
+                />
               )}
 
               {instance && (

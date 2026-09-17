@@ -68,6 +68,12 @@ validator the judges run.
   break a rule comes back in `rejectedPins` with the reason, and a pin before an
   activity's planned start is refused outright.
 
+- **`engine/disruption.ts`** cuts a location's nightly quota mid-horizon,
+  reports what that displaces, and re-plans around it. The replan works by
+  pinning every surviving access, so untouched work is not merely likely to stay
+  put — it is held. Displacement is chosen cheapest-first by contract tier,
+  following the brief's own cost ordering.
+
 ## Running it
 
 ```sh
