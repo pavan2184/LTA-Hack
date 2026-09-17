@@ -1,0 +1,38 @@
+{
+  "generatedFor": "PS1 public instance",
+  "results": [
+    {
+      "scenario": "A",
+      "feasible": true,
+      "hardViolations": 0,
+      "objectiveScore": 25.2,
+      "overrunDaysTotal": 21,
+      "excessAccessNightsTotal": 0,
+      "ecloNightsTotal": 0,
+      "nightsScheduled": 192,
+      "solveMs": 10.15
+    },
+    {
+      "scenario": "B",
+      "feasible": true,
+      "hardViolations": 0,
+      "objectiveScore": 44,
+      "overrunDaysTotal": 0,
+      "excessAccessNightsTotal": 2,
+      "ecloNightsTotal": 6,
+      "nightsScheduled": 189,
+      "solveMs": 1.83
+    },
+    {
+      "scenario": "C",
+      "feasible": true,
+      "hardViolations": 0,
+      "objectiveScore": 39.2,
+      "overrunDaysTotal": 21,
+      "excessAccessNightsTotal": 2,
+      "ecloNightsTotal": 0,
+      "nightsScheduled": 192,
+      "solveMs": 1.33
+    }
+  ]
+}

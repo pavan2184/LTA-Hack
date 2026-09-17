@@ -1,0 +1,213 @@
+/**
+ * NebulaX PS1 — railway track access optimisation.
+ *
+ * The unit of scheduling here is a *week*, not a minute. An activity consumes
+ * whole access-nights, and `access_night` is an accounting index within a
+ * contract's weekly allocation (1..cap) rather than a time of day. That is the
+ * single biggest departure from RailPlan's own engine, which places work inside
+ * one night at minute resolution.
+ */
+
+/** `Live` cuts traction power, so its closure mirrors and crosses lines. */
+export type NatureOfWorks = "Live" | "Non-live (Consist)" | "Non-live (Others)";
+
+/** `PM` takes a location alone; `PC` may host co-workers; `C` is a co-worker. */
+export type AccessType = "PM" | "PC" | "C";
+
+export type Bound = "EB" | "WB";
+export type LocationKind = "tunnel sector" | "platform sector";
+export type Scenario = "A" | "B" | "C";
+
+export interface Line {
+  lineCode: string;
+  lineName: string;
+}
+
+export interface Station {
+  stationId: string;
+  lineCode: string;
+  /** Position along its own line, 1-based. */
+  seq: number;
+  isInterchange: boolean;
+}
+
+export interface Sector {
+  sectorId: string;
+  lineCode: string;
+  fromStationId: string;
+  toStationId: string;
+  seq: number;
+  isShared: boolean;
+}
+
+/** A bookable place: one tunnel sector or one platform, on one bound. */
+export interface LocationSupply {
+  locationId: string;
+  locationKind: LocationKind;
+  lineCode: string;
+  bound: Bound;
+  /** Activities that may occupy this location in one week. */
+  supplyCapacity: number;
+}
+
+export interface BufferRule {
+  natureOfWorks: NatureOfWorks;
+  /** Sectors of exclusion either side of the worksite. */
+  upToBufferSectors: number;
+  /** `Live` only: the closure mirrors onto the opposite bound. */
+  oppositeBoundRequired: boolean;
+}
+
+export interface Contract {
+  contractNumber: string;
+  contractDescription: string;
+  contractAwardDate: string;
+  activityType: string;
+  natureOfActivity: NatureOfWorks;
+  /** 1 High, 2 Default, 3 Low. Sets the overrun penalty band. */
+  contractPriority: 1 | 2 | 3;
+  contractCompletionDate: string;
+  /** The date overrun is measured against. */
+  plannedCompletionDate: string;
+  /** Concurrent activities this contract can run on one night. */
+  numberOfWorkfronts: number;
+  accessType: AccessType;
+  /** Distinct access-nights this contract may use in any one week. */
+  numberOfMaximumAccessPerWeek: number;
+}
+
+export interface Activity {
+  activityId: string;
+  contractNumber: string;
+  activityType: string;
+  /** Inclusive span endpoints; the work books everything between them. */
+  startLocationId: string;
+  endLocationId: string;
+  /** Access-nights of work. A standard night yields 1.0, an ECLO night 1.5. */
+  totalAccesses: number;
+  plannedStartDate: string;
+  predecessorActivityId: string | null;
+  /** Nudges the penalty within its contract's band; never across bands. */
+  activityPriority: 1 | 2 | 3;
+}
+
+export interface Parameters {
+  /** Monday of week 1. */
+  horizonStart: string;
+  horizonWeeks: number;
+}
+
+export interface Ps1Instance {
+  lines: Line[];
+  stations: Station[];
+  sectors: Sector[];
+  locationSupply: LocationSupply[];
+  bufferRules: BufferRule[];
+  parameters: Parameters;
+  contracts: Contract[];
+  activities: Activity[];
+}
+
+/** One row of `SCHEDULE_ACCESS.csv`. */
+export interface AccessRow {
+  activityId: string;
+  /** 1-based sequence of this access within its activity. */
+  accessSeq: number;
+  week: number;
+  /** 0 standard, 1 early-closure/late-opening. */
+  eclo: 0 | 1;
+  /** Which of the contract+type's granted weekly nights this falls on. */
+  accessNight: number;
+}
+
+/** One row of `SCHEDULE_OCCUPANCY.csv`. */
+export interface OccupancyRow {
+  activityId: string;
+  week: number;
+  locationId: string;
+  /** Label identifying which possession slot at that location/week. */
+  coShareGroup: string;
+}
+
+/** One row of `RESULTS.csv`. */
+export interface ResultRow {
+  scenario: Scenario;
+  contractNumber: string;
+  simulatedCompletionDate: string;
+  overrunDays: number;
+}
+
+export interface Submission {
+  scenario: Scenario;
+  access: AccessRow[];
+  occupancy: OccupancyRow[];
+  results: ResultRow[];
+}
+
+export type ViolationRule =
+  | "workload"
+  | "start_date"
+  | "closure"
+  | "capacity"
+  | "mix"
+  | "weekly_allocation"
+  | "workfront"
+  | "eclo"
+  | "eclo_window"
+  | "planned_date"
+  | "schema";
+
+export interface HardViolation {
+  rule: ViolationRule;
+  severity: "hard";
+  /** Human-readable pinpoint: activity, week, location. */
+  detail: string;
+}
+
+export interface SoftScores {
+  scenario: Scenario;
+  overrunDaysTotal: number;
+  contractsOverrunning: number;
+  earlinessDaysTotal: number;
+  excessAccessNightsTotal: number;
+  ecloNightsTotal: number;
+  /** Raw overrun-days by contract priority tier. Ignores activity priority. */
+  priorityOverrun: Record<"1" | "2" | "3", number>;
+  /** contract_weight x (1 + activity nudge) x overrun_days, summed. */
+  priorityWeightedScore: number;
+}
+
+export interface ValidationReport {
+  scenario: Scenario;
+  feasible: boolean;
+  hardViolations: HardViolation[];
+  softScores: SoftScores;
+  detail: {
+    capacityHotspots: string[];
+    nightsScheduled: number;
+    ecloNights: number;
+  };
+  /** Present only when feasible, per the brief's output contract. */
+  objectiveScore?: number;
+  formulaVersion?: string;
+}
+
+/** Contract-tier weights for the overrun penalty band. */
+export const CONTRACT_WEIGHT: Record<1 | 2 | 3, number> = { 1: 100, 2: 10, 3: 1 };
+
+/** Activity-priority nudge, added on top of the contract weight. */
+export const ACTIVITY_NUDGE: Record<1 | 2 | 3, number> = { 1: 0.3, 2: 0.2, 3: 0.0 };
+
+/** An ECLO night yields half a night more work than a standard one. */
+export const ECLO_YIELD = 1.5;
+export const STANDARD_YIELD = 1.0;
+
+/** Penalty rates from the brief's combined objective. */
+export const EXCESS_NIGHT_PENALTY = 7;
+export const ECLO_PENALTY = 5;
+
+/** Scenario C tolerates this much capacity excess per location-week. */
+export const SCENARIO_C_CAPACITY_ALLOWANCE = 1;
+
+/** Scenario C confines each line's ECLO nights to one span this wide. */
+export const ECLO_WINDOW_WEEKS = 2;
