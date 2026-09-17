@@ -1,5 +1,47 @@
 # Project Status
 
+## Issue #21 named crew rostering evaluation — 2026-09-17
+
+Issue #21 asks for an evaluation and an accepted decision, and explicitly forbids
+implementation before approval. The evaluation is complete in
+`docs/EVALUATION_NAMED_CREW_ROSTERING.md`; the decision is recorded as
+**Proposed, awaiting Pavan's decision as data controller**. Authorising
+collection of personal data about real workers is not an engineering call, so it
+is the one decision in the log left open deliberately rather than accepted.
+
+**Recommendation: no-go.** Of the four operational needs named rostering could
+serve, two are safety-relevant (qualification matching, rest and fatigue) and
+both are reachable without personal data — a role such as
+`technician_hv_certified` carries the same planning power as knowing who holds
+the certificate. The other two are efficiency gains and do not justify
+introducing identity, location and absence data into a system that publishes its
+output to contractors and Telegram.
+
+One fact would overturn it, and it is the owner's to establish: whether any LTA
+or regulatory obligation requires per-person auditable rest and qualification
+records rather than plan-level assurance. Three further questions are listed in
+the evaluation.
+
+Acceptance criterion 2 — no named-worker table, API, seed, UI or log before
+approval — is now enforced by `src/test/workforce-anonymity.test.ts`. It was
+mutation-tested twice, against an injected `workforce_roster` and a differently
+named `crew_member_roster`, to confirm it catches personal identifiers rather
+than passing vacuously. It is a tripwire for the obvious shape of the mistake,
+not a privacy control in itself. The aggregate role-capacity model remains the
+production default and nothing was built.
+
+## CI restored — 2026-09-17
+
+CI had been red since `ef727b0` on 2026-09-15, three commits before this work.
+The 2026-09-15 upstream reconciliation added the carry-forward, coordination and
+deferred-work database suites without the reachability guard the other ten
+`*.db.test.ts` files carry, so with no `DATABASE_URL` they connected to the inert
+loopback fallback and failed with `ECONNREFUSED`, taking the whole run down.
+Applying the existing idiom to those three files restored a green pipeline:
+against an unreachable database the suite exits 0 with 742 passed and 79 skipped,
+and against a real database all tests still pass, so no coverage was lost where a
+database exists. `npm run test:db` remains the non-skipping gate.
+
 ## Issue #20 CP-SAT benchmark and solver decision — 2026-09-17
 
 Issue #20 is complete. All four acceptance criteria are met and the decision is
