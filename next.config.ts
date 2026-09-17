@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pino"],
   // The engine package ships TypeScript source rather than a build artefact, so
   // the browser and the server compile the same files the tests run against.
-  transpilePackages: ["@railplan/core"],
+  transpilePackages: ["@railplan/core", "@railplan/ps1"],
 };
 
 export default nextConfig;

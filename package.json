@@ -21,13 +21,15 @@
     "db:seed-auth-local": "node --env-file-if-exists=.env.local --import tsx scripts/db/seed-auth-users.ts",
     "geo:verify": "node --import tsx scripts/geography/verify.ts",
     "benchmark:cpsat": "node --import tsx scripts/benchmark/cp-sat.ts .venv-cpsat/bin/python",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "ps1:solve": "node --import tsx scripts/ps1/solve.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
     "@radix-ui/react-dialog": "1.1.19",
     "@radix-ui/react-slot": "1.3.0",
     "@railplan/core": "*",
+    "@railplan/ps1": "*",
     "@supabase/ssr": "0.12.6",
     "@supabase/supabase-js": "2.115.0",
     "class-variance-authority": "0.7.1",
