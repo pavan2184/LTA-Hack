@@ -3,9 +3,32 @@
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-import type { MetricValue } from "@railplan/core/types/railplan";
 
-function suffix(unit: MetricValue["unit"]): string {
+/**
+ * The shape a figure needs, rather than one product's metric type.
+ *
+ * RailPlan measures a night in minutes and PS1 measures a horizon in weeks, so
+ * their metric types name different units — but "a number that can show its own
+ * arithmetic" is the same idea in both, and it should be the same control. Both
+ * `MetricValue` and PS1's `Metric` satisfy this structurally.
+ */
+export interface FigureMetric {
+  /** Unused here, but both metric types carry it and call sites pass literals. */
+  key?: string;
+  label: string;
+  value: number;
+  unit: string;
+  numerator: number;
+  denominator: number;
+  formula: string;
+  note: string;
+}
+
+/**
+ * Only units the label does not already carry. "ECLO nights" followed by
+ * "0 nights" says nothing twice; a bare percent sign says something once.
+ */
+function suffix(unit: string): string {
   if (unit === "percent") return "%";
   if (unit === "minutes") return " min";
   return "";
@@ -24,7 +47,7 @@ export function Figure({
   tone = "neutral",
   className,
 }: {
-  metric: MetricValue;
+  metric: FigureMetric;
   secondary?: string;
   tone?: "neutral" | "red" | "amber" | "green";
   className?: string;

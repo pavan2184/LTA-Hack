@@ -4,9 +4,27 @@ import { useMemo, useState } from "react";
 
 import { explainPlacement } from "@railplan/ps1/engine/explain";
 import { summariseByCategory } from "@railplan/ps1/engine/categories";
-import { computeMetrics, overrunBreakdown } from "@railplan/ps1/engine/metrics";
+import { computeMetrics, overrunBreakdown, type Metric } from "@railplan/ps1/engine/metrics";
 import type { Network } from "@railplan/ps1/engine/network";
 import type { Ps1Instance, Submission, ValidationReport } from "@railplan/ps1/types/ps1";
+
+import { ActionNote } from "@/components/ps1/ActionNote";
+import { Figure } from "@/components/shared/Figure";
+
+/**
+ * Status colour, on the same three-way rule the planner dashboard uses: green
+ * when a gate is met, amber when something is being paid for, neutral for a
+ * figure that is neither good nor bad on its own.
+ */
+function scoreTone(metric: Metric): "neutral" | "amber" | "green" {
+  if (metric.key === "delivery" || metric.key === "activities-scheduled") {
+    return metric.numerator >= metric.denominator ? "green" : "amber";
+  }
+  if (metric.key === "excess-nights" || metric.key === "eclo") {
+    return metric.value > 0 ? "amber" : "green";
+  }
+  return "neutral";
+}
 
 /**
  * The "explain, don't just produce" half of the tool.
@@ -43,31 +61,39 @@ export function ExplainPanel({
       .sort((a, b) => b.weeksSlipped - a.weeksSlipped || a.activityId.localeCompare(b.activityId));
   }, [instance, submission, network]);
 
+  const movedCount = useMemo(
+    () => slipped.filter((item) => item.weeksSlipped > 0).length,
+    [slipped],
+  );
+
   const [selected, setSelected] = useState<string>(slipped[0]?.activityId ?? "");
   const explanation = slipped.find((item) => item.activityId === selected) ?? slipped[0] ?? null;
 
   return (
     <div className="mt-6 flex flex-col gap-5">
       <section>
-        <h3 className="text-[13px] font-semibold text-ink-900">How the score was reached</h3>
+        <h3 className="text-[15px] font-semibold text-ink-900">How the score was reached</h3>
         <p className="mt-1 text-[12px] text-ink-700">
-          Every figure carries the arithmetic that produced it.
+          Every figure can be opened to show the arithmetic that produced it — press{" "}
+          <span className="font-mono">fx</span> on any of them.
         </p>
-        <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/*
+          The same control RailPlan puts on every number in the planner
+          dashboard. The formulas used to be printed under all eight figures at
+          once, which made a wall of arithmetic nobody reads and buried the
+          numbers themselves; folded away, the grid reads as a result and still
+          answers "where did that come from" in one press.
+        */}
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric) => (
-            <div key={metric.key} className="rounded-md border border-rule bg-sunk p-3">
-              <dt className="text-[12px] text-ink-700">{metric.label}</dt>
-              <dd className="mt-0.5 text-[15px] font-semibold tabular-nums text-ink-900">
-                {metric.value}
-                {metric.unit === "percent" && "%"}
-              </dd>
-              <dd className="mt-1 font-mono text-[11px] leading-snug text-ink-700">
-                {metric.formula}
-              </dd>
-              <dd className="mt-1 text-[11px] leading-snug text-ink-400">{metric.note}</dd>
-            </div>
+            <Figure
+              key={metric.key}
+              metric={metric}
+              tone={scoreTone(metric)}
+              className="rounded-sm"
+            />
           ))}
-        </dl>
+        </div>
       </section>
 
       {breakdown.length > 0 && (
@@ -141,6 +167,7 @@ export function ExplainPanel({
           Activity
           <select
             className="mt-1 block w-full max-w-sm rounded-md border border-rule-strong bg-surface px-2 py-1.5 text-[12px] text-ink-900"
+            aria-describedby="ps1-note-explain-pick"
             value={selected}
             onChange={(event) => setSelected(event.target.value)}
           >
@@ -152,6 +179,11 @@ export function ExplainPanel({
             ))}
           </select>
         </label>
+        <ActionNote id="ps1-note-explain-pick">
+          {movedCount === 0
+            ? "Every activity started in the week it was planned for, so there is nothing to account for here."
+            : `Ordered by how far each activity slipped, so the ${movedCount} that moved ${movedCount === 1 ? "is" : "are"} at the top. The rest started in their planned week.`}
+        </ActionNote>
 
         {explanation && (
           <div className="mt-3 rounded-md border border-rule bg-sunk p-3">

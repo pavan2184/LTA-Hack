@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { Metadata } from "next";
 
 import { PS1_FILES } from "@railplan/ps1/io/load";
+import { SUBMISSION_FILES } from "@railplan/ps1/io/submission";
 import { Ps1Workbench } from "@/components/ps1/Ps1Workbench";
 
 export const metadata: Metadata = {
@@ -26,25 +27,34 @@ export default function Ps1Page() {
       readFileSync(resolve(process.cwd(), "packages/ps1/data/public", name), "utf8"),
     ]),
   );
+  // The organisers' own answer, shipped so the validator can be pointed at
+  // something this tool did not write.
+  const referenceSubmission = Object.fromEntries(
+    SUBMISSION_FILES.map((name) => [
+      name,
+      readFileSync(resolve(process.cwd(), "packages/ps1/data/sample-submission", name), "utf8"),
+    ]),
+  );
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <header className="mb-6">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-accent">
-          NebulaX PS1
-        </p>
-        <h1 className="mt-1 text-[20px] font-semibold text-ink-900">
-          Railway track access scheduler
-        </h1>
-        <p className="mt-2 max-w-3xl text-[13px] text-ink-700">
-          Decides which contracted activities get the track, in which weeks, across Line Alpha
-          and Line Beta — then checks its own answer against the nine hard rules and reports the
-          scenario score. Every activity is scheduled in full; the schedule flexes on dates,
-          capacity and early-closure instead of dropping work.
-        </p>
+    <main className="workspace-page">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="workspace-eyebrow">NebulaX PS1</p>
+          <h1>Railway track access scheduler</h1>
+          <p className="max-w-3xl">
+            Decides which contracted activities get the track, in which weeks, across Line Alpha
+            and Line Beta — then checks its own answer against the nine hard rules and reports the
+            scenario score. Every activity is scheduled in full; the schedule flexes on dates,
+            capacity and early-closure instead of dropping work.
+          </p>
+        </div>
+        <span className="workspace-prototype whitespace-nowrap">
+          No account · runs in your browser
+        </span>
       </header>
 
-      <Ps1Workbench publicInstance={publicInstance} />
+      <Ps1Workbench publicInstance={publicInstance} referenceSubmission={referenceSubmission} />
 
       <footer className="mt-8 border-t border-rule pt-4 text-[12px] text-ink-700">
         <p>

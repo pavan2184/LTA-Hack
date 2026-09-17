@@ -18,6 +18,12 @@
 .workspace-tabs a { color: var(--color-ink-500); padding: 9px 2px; border-bottom: 2px solid transparent; }
 .workspace-tabs a[aria-current="page"] { color: var(--color-accent); border-color: var(--color-accent); font-weight: 600; }
 .workspace-card { border: 1px solid var(--color-rule); border-radius: 6px; background: var(--rail-panel); padding: 18px; min-width: 0; }
+/* PS1's numbered panels, on the workspace card's own border, radius and panel
+   gradient. A live drop target borrows the planner's selection treatment, so
+   "something is about to land here" looks the same in both products. */
+.ps1-panel { border: 1px solid var(--color-rule); border-radius: 6px; background: var(--rail-panel); padding: 16px; min-width: 0; }
+.ps1-panel[data-dropping="true"] { border-color: var(--color-accent); background: var(--rail-selected); }
+.ps1-panel > h2 { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
 .rail-button-primary { background: var(--rail-primary); color: white; border-color: var(--color-accent); }
 .rail-button-primary:hover:not(:disabled) { filter: brightness(.95); }
 .login-page form { padding: 22px; border: 1px solid var(--color-rule); border-radius: 8px; background: var(--rail-panel); }
