@@ -17,6 +17,7 @@ import {
   type ValidationReport,
 } from "../types/ps1";
 import { buildNetwork, expandSpan, type Network } from "./network";
+import { capacityAt, type Disruption } from "./disruption";
 
 /** One PM alone, or one PC plus three co-workers, or four co-workers. */
 export const MAX_ACTIVITIES_PER_POSSESSION = 4;
@@ -90,6 +91,8 @@ export function validate(
   instance: Ps1Instance,
   submission: Submission,
   network: Network = buildNetwork(instance),
+  /** Capacity cuts in force, so a replan is judged against the night it faces. */
+  disruptions: Disruption[] = [],
 ): ValidationReport {
   const scenario = submission.scenario;
   const violations: HardViolation[] = [];
@@ -192,7 +195,7 @@ export function validate(
   const hotspots: string[] = [];
   for (const [key, rows] of byLocationWeek) {
     const [locationId, weekRaw] = key.split("|");
-    const supply = network.supply.get(locationId)!.supplyCapacity;
+    const supply = capacityAt(network, disruptions, locationId, Number(weekRaw));
     const possessions = new Set(rows.map((row) => row.coShareGroup));
     const excess = Math.max(0, possessions.size - supply);
     excessAccessNights += excess;

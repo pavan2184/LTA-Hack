@@ -12,6 +12,7 @@ import {
 } from "../types/ps1";
 import { buildNetwork, expandSpan, type Network } from "./network";
 import { isoDate, weekEnd, weekOf, MAX_ACTIVITIES_PER_POSSESSION } from "./validate";
+import { capacityAt, type Disruption } from "./disruption";
 
 /**
  * A greedy, priority-ordered scheduler for PS1.
@@ -41,6 +42,8 @@ import { isoDate, weekEnd, weekOf, MAX_ACTIVITIES_PER_POSSESSION } from "./valid
 export interface Pin {
   activityId: string;
   week: number;
+  /** Preserved when re-pinning an existing schedule, so yields do not change. */
+  eclo?: 0 | 1;
 }
 
 export interface ScheduleOptions {
@@ -49,6 +52,8 @@ export interface ScheduleOptions {
   overflowWeeks?: number;
   /** Weeks fixed by hand. Placed first; the rest of the schedule works around them. */
   pins?: Pin[];
+  /** Capacity cuts to respect while solving, from urgent maintenance. */
+  disruptions?: Disruption[];
 }
 
 /** A pin the scheduler could not honour, and why. */
@@ -68,6 +73,17 @@ interface WeekLoad {
 }
 
 const DEFAULT_OVERFLOW_WEEKS = 26;
+
+/** Local copy of the disruption predicate, to keep the import surface small. */
+function appliesToLocationWeek(
+  disruption: Disruption,
+  locationId: string,
+  week: number,
+): boolean {
+  if (disruption.locationId !== locationId) return false;
+  if (week < disruption.fromWeek) return false;
+  return disruption.toWeek === undefined || week <= disruption.toWeek;
+}
 
 function contractWeight(contract: Contract): number {
   return contract.contractPriority === 1 ? 100 : contract.contractPriority === 2 ? 10 : 1;
@@ -125,14 +141,24 @@ export function scheduleInstance(
     return created;
   };
 
-  /** Capacity the scenario permits at one location, including its allowance. */
-  const capacityFor = (locationId: string): number => {
-    const supply = network.supply.get(locationId)!.supplyCapacity;
+  const disruptions = options.disruptions ?? [];
+
+  /**
+   * Capacity the scenario permits at one location in one week.
+   *
+   * A disruption is a physical fact about the night, so it applies before the
+   * scenario's elasticity rather than after: B may buy extra nights, but not at
+   * a location that has been closed down to one.
+   */
+  const capacityFor = (locationId: string, week: number): number => {
+    const supply = capacityAt(network, disruptions, locationId, week);
     // B pays for extra nights rather than slipping dates; C gets one per
     // location-week. A has no elasticity at all.
-    if (scenario === "B") return supply + 2;
-    if (scenario === "C") return supply + 1;
-    return supply;
+    const elastic = scenario === "B" ? supply + 2 : scenario === "C" ? supply + 1 : supply;
+    // Never let elasticity exceed what the disruption physically left behind.
+    return disruptions.some((d) => appliesToLocationWeek(d, locationId, week))
+      ? supply
+      : elastic;
   };
 
   /**
@@ -171,7 +197,7 @@ export function scheduleInstance(
       }
 
       if (label === null) {
-        if (slot.possessions.size >= capacityFor(locationId)) return null;
+        if (slot.possessions.size >= capacityFor(locationId, week)) return null;
         label = `b${slot.possessions.size + 1}`;
       }
       chosen.set(locationId, label);
@@ -262,7 +288,7 @@ export function scheduleInstance(
       });
       continue;
     }
-    if (!commit(activity, contract, spanFor(activity), pin.week, false)) {
+    if (!commit(activity, contract, spanFor(activity), pin.week, pin.eclo === 1)) {
       rejectedPins.push({
         ...pin,
         reason: `wk${pin.week} had no free possession or access-night for ${activity.activityId}`,
@@ -284,7 +310,10 @@ export function scheduleInstance(
     // Pinned weeks are already committed and already counted; the greedy pass
     // only tops the activity up to its full workload.
     const pinned = placedWeeks.get(activity.activityId) ?? [];
-    let remaining = activity.totalAccesses - pinned.length * STANDARD_YIELD;
+    const pinnedYield = access
+      .filter((row) => row.activityId === activity.activityId)
+      .reduce((sum, row) => sum + (row.eclo === 1 ? ECLO_YIELD : STANDARD_YIELD), 0);
+    let remaining = activity.totalAccesses - pinnedYield;
     const taken = new Set(pinned);
     const deadlineWeek = weekOf(
       instance.parameters.horizonStart,
