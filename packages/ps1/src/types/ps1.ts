@@ -221,10 +221,45 @@ export interface PlanDiff {
   feasibleBefore: boolean;
   feasibleAfter: boolean;
   movedAccesses: number;
+  /** Percentage of the previous access rows retained byte-for-byte. */
+  unchangedAccessPercent: number;
   movedActivityIds: string[];
   changedContracts: string[];
+  completionChanges: {
+    contractNumber: string;
+    beforeDate: string | null;
+    afterDate: string | null;
+    beforeOverrunDays: number | null;
+    afterOverrunDays: number | null;
+  }[];
   newViolations: HardViolation[];
   resolvedViolations: HardViolation[];
+}
+
+export type AttentionSeverity = "blocking" | "critical" | "warning" | "change" | "normal";
+
+export type AttentionKind =
+  | "violation"
+  | "unscheduled"
+  | "p1-risk"
+  | "rejected-constraint"
+  | "disruption"
+  | "capacity"
+  | "scenario-lever"
+  | "recent-change"
+  | "activity";
+
+/** A deterministic, engine-grounded item in the operations attention queue. */
+export interface AttentionItem {
+  id: string;
+  severity: AttentionSeverity;
+  kind: AttentionKind;
+  label: string;
+  detail: string;
+  activityIds: string[];
+  contractNumbers: string[];
+  locationIds: string[];
+  weeks: number[];
 }
 
 export interface PlanRevision {

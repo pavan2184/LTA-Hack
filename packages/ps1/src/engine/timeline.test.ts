@@ -40,8 +40,28 @@ describe("timeline", () => {
       for (const cell of row.cells.values()) {
         expect(cell.possessions).toBeLessThanOrEqual(cell.activityIds.length);
         expect(cell.capacity).toBe(row.capacity);
+        expect(cell.nominalCapacity).toBe(row.capacity);
+        expect(cell.effectiveCapacity).toBe(row.capacity);
+        expect(cell.disrupted).toBe(false);
       }
     }
+  });
+
+  it("uses the shared disruption capacity for affected location-weeks", () => {
+    const row = timeline.rows.find((candidate) => candidate.cells.size > 0)!;
+    const cell = [...row.cells.values()][0];
+    const reduced = Math.max(0, row.capacity - 1);
+    const disrupted = buildTimeline(instance, submission, undefined, [
+      { locationId: row.locationId, fromWeek: cell.week, toWeek: cell.week, capacity: reduced },
+    ]);
+    const next = disrupted.rows
+      .find((candidate) => candidate.locationId === row.locationId)!
+      .cells.get(cell.week)!;
+
+    expect(next.nominalCapacity).toBe(row.capacity);
+    expect(next.effectiveCapacity).toBe(reduced);
+    expect(next.capacity).toBe(reduced);
+    expect(next.disrupted).toBe(true);
   });
 
   it("never reports load above 1 for a scenario A schedule", () => {

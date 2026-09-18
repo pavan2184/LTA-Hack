@@ -1,5 +1,6 @@
 import type { Ps1Instance, Submission } from "../types/ps1";
 import { buildNetwork, parseLocationId, type Network } from "./network";
+import { capacityAt, type Disruption } from "./disruption";
 
 /**
  * The schedule as a grid a works controller can read: locations down, weeks
@@ -16,7 +17,13 @@ export interface TimelineCell {
   week: number;
   /** Distinct possessions opened here, which is what capacity limits. */
   possessions: number;
+  /** Capacity from LOCATION_SUPPLY before temporary cuts. */
+  nominalCapacity: number;
+  /** Capacity after applying the tightest disruption for this location-week. */
+  effectiveCapacity: number;
+  /** Backwards-compatible display capacity: always the effective value. */
   capacity: number;
+  disrupted: boolean;
   /** Activities present, in id order. */
   activityIds: string[];
   /** possessions / capacity, above 1 when the location is over supply. */
@@ -49,6 +56,7 @@ export function buildTimeline(
   instance: Ps1Instance,
   submission: Submission,
   network: Network = buildNetwork(instance),
+  disruptions: Disruption[] = [],
 ): Timeline {
   const weeks = Array.from({ length: instance.parameters.horizonWeeks }, (_, i) => i + 1);
   const usedWeeks = submission.occupancy.map((row) => row.week);
@@ -92,13 +100,17 @@ export function buildTimeline(
       const entry = byLocationWeek.get(`${supply.locationId}|${week}`);
       if (!entry) continue;
       const possessions = entry.possessions.size;
-      if (possessions >= supply.supplyCapacity) peak += 1;
+      const effectiveCapacity = capacityAt(network, disruptions, supply.locationId, week);
+      if (possessions >= effectiveCapacity) peak += 1;
       cells.set(week, {
         week,
         possessions,
-        capacity: supply.supplyCapacity,
+        nominalCapacity: supply.supplyCapacity,
+        effectiveCapacity,
+        capacity: effectiveCapacity,
+        disrupted: effectiveCapacity !== supply.supplyCapacity,
         activityIds: [...entry.activities].sort(),
-        load: possessions / supply.supplyCapacity,
+        load: effectiveCapacity === 0 ? (possessions > 0 ? Number.POSITIVE_INFINITY : 0) : possessions / effectiveCapacity,
       });
     }
 

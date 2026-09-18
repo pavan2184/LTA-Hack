@@ -142,7 +142,7 @@ export function SubmissionCheck({
       className="ps1-panel transition-colors"
       data-dropping={dragging || undefined}
     >
-      <h2>4. Check a submission</h2>
+      <h2>Check an external submission</h2>
       <p className="mt-1 text-[12px] text-ink-700">
         Runs the local conformance validator over a submission this tool did not produce, against
         the instance loaded above. It checks every rule decidable from the CSVs; global physical

@@ -226,13 +226,13 @@ export function DisruptionPanel({
         </div>
         {outcome && (
           <div className="flex flex-col items-start gap-1">
-            <Button aria-describedby="ps1-note-adopt" onClick={() => onApply(outcome, disruptions)}>
+            <Button disabled={!replannedReport?.feasible} aria-describedby="ps1-note-adopt" onClick={() => onApply(outcome, disruptions)}>
               Adopt this schedule
             </Button>
             <ActionNote id="ps1-note-adopt">
-              Replaces the scenario&apos;s result with this one. The cut stays in force, so every
-              figure above it afterwards describes the disrupted plan. Run the scenarios again to
-              go back.
+              {replannedReport?.feasible
+                ? "Sends this validated proposal to the review shelf. The current scenario and exports stay unchanged until you apply it."
+                : "This replan is not locally conformant, so it cannot be adopted."}
             </ActionNote>
           </div>
         )}

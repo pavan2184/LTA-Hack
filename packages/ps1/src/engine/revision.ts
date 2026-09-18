@@ -15,11 +15,13 @@ export function comparePlans(
   const afterRows = new Set(after.access.map(accessKey));
   const movedActivityIds = new Set<string>();
   let changedRows = 0;
+  let unchangedRows = 0;
   for (const row of before.access) {
     if (!afterRows.has(accessKey(row))) {
       changedRows += 1;
       movedActivityIds.add(row.activityId);
     }
+    else unchangedRows += 1;
   }
   for (const row of after.access) {
     if (!beforeRows.has(accessKey(row))) {
@@ -29,17 +31,25 @@ export function comparePlans(
   }
 
   const beforeResults = new Map(before.results.map((row) => [row.contractNumber, row]));
-  const changedContracts = after.results
-    .filter((row) => {
-      const previous = beforeResults.get(row.contractNumber);
-      return (
-        !previous ||
-        previous.simulatedCompletionDate !== row.simulatedCompletionDate ||
-        previous.overrunDays !== row.overrunDays
-      );
-    })
-    .map((row) => row.contractNumber)
-    .sort();
+  const afterResults = new Map(after.results.map((row) => [row.contractNumber, row]));
+  const completionChanges = [...new Set([...beforeResults.keys(), ...afterResults.keys()])]
+    .sort()
+    .flatMap((contractNumber) => {
+      const previous = beforeResults.get(contractNumber);
+      const next = afterResults.get(contractNumber);
+      if (
+        previous?.simulatedCompletionDate === next?.simulatedCompletionDate &&
+        previous?.overrunDays === next?.overrunDays
+      ) return [];
+      return [{
+        contractNumber,
+        beforeDate: previous?.simulatedCompletionDate ?? null,
+        afterDate: next?.simulatedCompletionDate ?? null,
+        beforeOverrunDays: previous?.overrunDays ?? null,
+        afterOverrunDays: next?.overrunDays ?? null,
+      }];
+    });
+  const changedContracts = completionChanges.map((change) => change.contractNumber);
 
   const beforeViolations = new Set(beforeReport.hardViolations.map(violationKey));
   const afterViolations = new Set(afterReport.hardViolations.map(violationKey));
@@ -49,8 +59,12 @@ export function comparePlans(
     feasibleBefore: beforeReport.feasible,
     feasibleAfter: afterReport.feasible,
     movedAccesses: Math.ceil(changedRows / 2),
+    unchangedAccessPercent: before.access.length
+      ? Math.round((unchangedRows / before.access.length) * 1000) / 10
+      : 100,
     movedActivityIds: [...movedActivityIds].sort(),
     changedContracts,
+    completionChanges,
     newViolations: afterReport.hardViolations.filter(
       (violation) => !beforeViolations.has(violationKey(violation)),
     ),

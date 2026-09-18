@@ -25,6 +25,11 @@ describe("PS1 reviewed revisions", () => {
     const diff = comparePlans(before, validate(instance, before), after, validate(instance, after));
     expect(diff.movedActivityIds).toContain(first.activityId);
     expect(diff.movedAccesses).toBeGreaterThan(0);
+    expect(diff.unchangedAccessPercent).toBeGreaterThanOrEqual(0);
+    expect(diff.unchangedAccessPercent).toBeLessThanOrEqual(100);
+    expect(diff.completionChanges.map((change) => change.contractNumber)).toEqual(
+      diff.changedContracts,
+    );
   });
 
   it("keeps the planning log separate and versioned", () => {

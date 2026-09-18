@@ -24,6 +24,44 @@
 .ps1-panel { border: 1px solid var(--color-rule); border-radius: 6px; background: var(--rail-panel); padding: 16px; min-width: 0; }
 .ps1-panel[data-dropping="true"] { border-color: var(--color-accent); background: var(--rail-selected); }
 .ps1-panel > h2 { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+.ps1-cell-disrupted {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(20, 22, 26, .28),
+    rgba(20, 22, 26, .28) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+.ps1-cell-closure { box-shadow: inset 0 0 0 2px var(--color-signal-amber); }
+.ps1-low-glare {
+  --color-paper: #101419;
+  --color-surface: #171c22;
+  --color-sunk: #20262e;
+  --color-ink-900: #edf1f5;
+  --color-ink-700: #c8d0d8;
+  --color-ink-500: #aeb8c2;
+  --color-ink-400: #98a4af;
+  --color-rule: #35404b;
+  --color-rule-strong: #52606e;
+  --color-accent: #7db7ff;
+  --color-accent-soft: #1d3856;
+  --color-signal-red: #ff8a7c;
+  --color-signal-red-soft: #432521;
+  --color-signal-amber: #f4bd68;
+  --color-signal-amber-soft: #3f321d;
+  --color-signal-green: #75d9a4;
+  --color-signal-green-soft: #173a2a;
+  --color-line-alpha-tint: #232b38;
+  --color-line-beta-tint: #2e2a24;
+  --rail-panel: linear-gradient(110deg, #171c22, #14191f);
+  --rail-selected: linear-gradient(#1d3856, #182f49);
+  color-scheme: dark;
+  margin: -8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--color-paper);
+}
 .rail-button-primary { background: var(--rail-primary); color: white; border-color: var(--color-accent); }
 .rail-button-primary:hover:not(:disabled) { filter: brightness(.95); }
 .login-page form { padding: 22px; border: 1px solid var(--color-rule); border-radius: 8px; background: var(--rail-panel); }
