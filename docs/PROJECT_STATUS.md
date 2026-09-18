@@ -53,6 +53,50 @@ Issue #40 named two stale comments. A full sweep of `packages/ps1` found **seven
 
 Rules 1 and 2 are unchanged, so `engine/pins.test.ts:64` needed no edit.
 
+### Release gate #17: responsive and keyboard matrix — 2026-09-18
+
+Ran against the deployed `/ps1` (`railplan-nine.vercel.app`), then re-verified the
+fix on a local dev server. The solve reproduced the recorded figures exactly:
+**A 25.2, B 44.0, C 39.2**, Scenario C selected initially, locally conformant.
+
+**Responsive — pass at all three widths.** Measured, not eyeballed: at 1280, 1440
+and 1920 the document had **no horizontal page scroll** and **zero elements
+overflowing the viewport** (excluding intentionally scrollable containers).
+Effective widths after the scrollbar were 1271, 1431 and 1911. The three-column
+solved layout — attention queue, location/week timeline, operations inspector —
+holds at every width.
+
+**Keyboard — pass, with one defect found and fixed.** Tab order follows the visual
+reading order: command bar, policy cards, attention queue, timeline controls,
+inspector. Across 90 Tab presses, **35 distinct stops, zero focus landings outside
+the viewport** (focus always scrolls into view) and **no keyboard trap** — focus
+wraps cleanly. The focus indicator is `solid 2px rgb(0, 75, 165)` at 1px offset,
+applied by real keyboard focus rather than programmatic `.focus()`.
+
+**Defect: WCAG 2.1 4.1.2 Name, Role, Value (Level A).** Of 72 focusable controls on
+the solved workspace, one had no accessible name: the `sr-only` CSV file input in
+`Ps1Workbench.tsx`. It was also the **first tab stop on the page**, so a keyboard
+user's first Tab landed on a 1x1 clipped control with no name — the 2px outline is
+applied but cannot be perceived on a clipped 1x1 box.
+
+Fixed by taking it out of the tab order (`tabIndex={-1}`) and giving it an
+`aria-label`. Nothing is lost: the input is fully proxied by the visible, labelled
+"Upload instance files" and "Load another" buttons, both already keyboard
+reachable. The same pattern in `SubmissionCheck.tsx` was fixed with it.
+
+Re-verified after the fix: **zero focusable controls without an accessible name**
+(72 of 72 named), and the first Tab now lands on the visible "Load another" button.
+No console errors. 888 tests pass, typecheck, lint and build clean.
+
+**Observation, not a 2.1 AA failure.** The "Reveal it" control measures 42x17,
+below the 24x24 target-size minimum — but that is WCAG **2.2** SC 2.5.8, outside
+the stated 2.1 AA bar. Recorded so the decision is deliberate rather than missed.
+
+**Still outstanding on #17**, unchanged by this run: actual screen-reader speech
+checks (VoiceOver approval still pending), native browser zoom, real Telegram
+delivery receipt, the clean-database two-role demo, and geographic licence
+clearance.
+
 ### Evidence calibration
 
 A deep-research pass extracted 85 claims; 25 reached adversarial verification,
