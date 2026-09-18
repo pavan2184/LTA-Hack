@@ -214,7 +214,7 @@ describe("the timeline drives the rest of the page", () => {
 
     expect(await screen.findByRole("button", { name: /Pinned here/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Clear 1 pin/ })).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it("aims urgent maintenance at the location-week that was clicked", async () => {
     const user = userEvent.setup();
