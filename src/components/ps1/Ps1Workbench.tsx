@@ -9,6 +9,7 @@ import { solveInstance, type Pin } from "@railplan/ps1/engine/schedule";
 import type { Disruption, ReplanOutcome } from "@railplan/ps1/engine/disruption";
 import { validate } from "@railplan/ps1/engine/validate";
 import { comparePlans, planningLogJson } from "@railplan/ps1/engine/revision";
+import { buildHandoverSummary } from "@railplan/ps1/engine/handover";
 import { buildNetwork } from "@railplan/ps1/engine/network";
 import type {
   Ps1Instance,
@@ -58,6 +59,7 @@ const SCENARIO_BLURB: Record<Scenario, string> = {
 
 interface PendingChange {
   label: string;
+  scenario: Scenario;
   runs: ScenarioRun[];
   pins: Pin[];
   diff: PlanDiff;
@@ -103,7 +105,7 @@ export function Ps1Workbench({
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState("");
   const [pending, setPending] = useState<PendingChange | null>(null);
-  const [history, setHistory] = useState<{ runs: ScenarioRun[]; pins: Pin[] }[]>([]);
+  const [history, setHistory] = useState<{ runs: ScenarioRun[]; pins: Pin[]; scenario: Scenario }[]>([]);
   const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
   const [lastDiff, setLastDiff] = useState<PlanDiff | null>(null);
   const [selection, setSelection] = useState<WorkspaceSelection>(null);
@@ -242,7 +244,7 @@ export function Ps1Workbench({
   );
 
   const run = useCallback(
-    async (withPins: Pin[], override?: Ps1Instance) => {
+    async (withPins: Pin[], override?: Ps1Instance, resetScenario = true) => {
       const target = override ?? instance;
       if (!target) return;
       const epoch = ++operationEpochRef.current;
@@ -257,7 +259,7 @@ export function Ps1Workbench({
         setSessionLog([]);
         setLastDiff(null);
         setSelection(target.activities[0] ? { kind: "activity", activityId: target.activities[0].activityId } : null);
-        setActive("C");
+        if (resetScenario) setActive("C");
         setRunError(null);
       } catch (cause) {
         if (epoch !== operationEpochRef.current) return;
@@ -319,6 +321,7 @@ export function Ps1Workbench({
         }
         setPending({
           label: nextPins.length < pins.length ? `Release ${pin.activityId} from wk${pin.week}` : `Pin ${pin.activityId} to wk${pin.week}`,
+          scenario: active,
           runs: nextSolved,
           pins: nextPins,
           diff: comparePlans(before.outcome.submission, before.outcome.validation, after.outcome.submission, after.outcome.validation),
@@ -352,6 +355,7 @@ export function Ps1Workbench({
       }
       setPending({
         label: `Clear ${pins.length} pin${pins.length === 1 ? "" : "s"}`,
+        scenario: active,
         runs: nextSolved,
         pins: [],
         diff: comparePlans(before.outcome.submission, before.outcome.validation, after.outcome.submission, after.outcome.validation),
@@ -405,6 +409,7 @@ export function Ps1Workbench({
       if (!isReadyScenario(before) || !isReadyScenario(after)) return;
       setPending({
         label: `Apply urgent-maintenance replan to Scenario ${active}`,
+        scenario: active,
         runs: nextRuns,
         pins,
         diff: comparePlans(before.outcome.submission, before.outcome.validation, after.outcome.submission, after.outcome.validation),
@@ -416,7 +421,7 @@ export function Ps1Workbench({
 
   const applyPending = useCallback(() => {
     if (!pending || !runs) return;
-    setHistory((current) => [...current, { runs, pins }]);
+    setHistory((current) => [...current, { runs, pins, scenario: pending.scenario }]);
     setRuns(pending.runs);
     setPins(pending.pins);
     setLastDiff(pending.diff);
@@ -426,35 +431,36 @@ export function Ps1Workbench({
         id: current.length + 1,
         at: new Date().toISOString(),
         action: pending.label,
-        scenario: active,
+        scenario: pending.scenario,
         diff: pending.diff,
       },
     ]);
     setPending(null);
-  }, [active, pending, pins, runs]);
+  }, [pending, pins, runs]);
 
   const undo = useCallback(() => {
     const previous = history.at(-1);
     if (!previous || !runs) return;
-    const before = runs.find((entry) => entry.scenario === active);
-    const after = previous.runs.find((entry) => entry.scenario === active);
+    const before = runs.find((entry) => entry.scenario === previous.scenario);
+    const after = previous.runs.find((entry) => entry.scenario === previous.scenario);
     if (!isReadyScenario(before) || !isReadyScenario(after)) return;
     const diff = comparePlans(before.outcome.submission, before.outcome.validation, after.outcome.submission, after.outcome.validation);
     setRuns(previous.runs);
     setPins(previous.pins);
     setHistory((current) => current.slice(0, -1));
     setLastDiff(diff);
+    setActive(previous.scenario);
     setSessionLog((current) => [
       ...current,
       {
         id: current.length + 1,
         at: new Date().toISOString(),
         action: "Undo the latest applied change",
-        scenario: active,
+        scenario: previous.scenario,
         diff,
       },
     ]);
-  }, [active, history, runs]);
+  }, [history, runs]);
 
   const download = useCallback((entry: ScenarioRun) => {
     if (!isReadyScenario(entry) || !entry.outcome.validation.feasible) return;
@@ -489,6 +495,7 @@ export function Ps1Workbench({
     runs && runs.length === SCENARIOS.length && runs.every((entry) => isReadyScenario(entry) && entry.outcome.validation.feasible),
   );
   const currentReady = isReadyScenario(current) ? current : null;
+  const activeDiff = pending?.scenario === active ? pending.diff : lastDiff;
   const comparisonReports = Object.fromEntries(
     (runs ?? []).flatMap((entry) =>
       isReadyScenario(entry) ? [[entry.scenario, entry.outcome.validation] as const] : [],
@@ -503,11 +510,13 @@ export function Ps1Workbench({
         : null;
   const copyHandover = useCallback(async () => {
     if (!currentReady) return;
-    const text = handoverText({
-      run: currentReady,
+    const text = buildHandoverSummary({
+      scenario: currentReady.scenario,
+      report: currentReady.outcome.validation,
       pins,
-      sessionLog,
-      diff: pending?.diff ?? lastDiff,
+      disruptions: currentReady.disruptions,
+      recentAction: sessionLog.at(-1)?.action ?? null,
+      diff: activeDiff,
     });
     try {
       await navigator.clipboard.writeText(text);
@@ -515,7 +524,7 @@ export function Ps1Workbench({
     } catch {
       setRunError("The browser could not copy the handover summary. Select and copy it from the proof drawer instead.");
     }
-  }, [currentReady, lastDiff, pending?.diff, pins, sessionLog]);
+  }, [activeDiff, currentReady, pins, sessionLog]);
 
   return (
     <div className={`ps1-workbench flex flex-col gap-4 ${lowGlare ? "ps1-low-glare" : ""}`} data-tone={lowGlare ? "low-glare" : "light"}>
@@ -580,11 +589,11 @@ export function Ps1Workbench({
               <span className="h-7 w-px bg-rule" aria-hidden />
               <div>
                 <p className="text-[10px] text-ink-500">Scenario {active}</p>
-                <p className={`text-[12px] font-semibold ${current?.outcome.status === "FEASIBLE" ? "text-signal-green" : "text-signal-red"}`}>{current?.outcome.status ?? "—"} · local conformance</p>
+                <p className={`text-[12px] font-semibold ${current?.outcome.status === "FEASIBLE" ? "text-signal-green" : "text-signal-red"}`}>{current?.outcome.status ?? "—"} · local conformance · rev {sessionLog.length + 1}</p>
               </div>
               <div className="ml-auto flex flex-wrap gap-1.5">
                 <Button size="sm" onClick={() => inputRef.current?.click()}>Load another</Button>
-                <Button size="sm" disabled={!instance || running || Boolean(pending)} onClick={() => instance && void run(pins)}>{running ? "Optimising…" : "Re-run"}</Button>
+                <Button size="sm" title={pending ? "Apply or discard the proposed change before re-running." : undefined} disabled={!instance || running || Boolean(pending)} onClick={() => instance && void run(pins, undefined, false)}>{running ? "Optimising…" : "Re-run"}</Button>
                 <Button size="sm" aria-pressed={lowGlare} onClick={() => setLowGlare((value) => !value)}>{lowGlare ? "Light mode" : "Low-glare"}</Button>
                 <Button size="sm" variant="primary" onClick={() => setProofOpen(true)}>Proof and export</Button>
               </div>
@@ -592,7 +601,7 @@ export function Ps1Workbench({
             {runProgress && <p className="mt-1 text-[10px] text-accent" role="status">{runProgress}</p>}
           </section>
 
-          <ScenarioComparison runs={runs} active={active} onSelect={setActive} diff={pending?.diff ?? lastDiff} />
+          <ScenarioComparison runs={runs} active={active} onSelect={setActive} diff={activeDiff} />
 
           <section id={`ps1-scenario-panel-${active}`} role="tabpanel" aria-labelledby={`ps1-scenario-tab-${active}`} className="ps1-panel">
             {currentReady && instance ? (
@@ -616,7 +625,7 @@ export function Ps1Workbench({
                   pins={pins}
                   rejectedPins={currentReady.outcome.diagnostics.rejectedPins}
                   disruptions={currentReady.disruptions}
-                  diff={pending?.diff ?? lastDiff}
+                  diff={activeDiff}
                   selection={selection}
                   onSelect={setSelection}
                   onPin={togglePin}
@@ -665,7 +674,17 @@ export function Ps1Workbench({
                 <Button disabled={sessionLog.length === 0} onClick={() => save("PS1_PLANNING_LOG.json", new Blob([planningLogJson(sessionLog)], { type: "application/json" }))}>Export session log</Button>
               </div>
               <p className="mt-2 text-[10px] text-ink-500">ZIP manifest: A/, B/ and C/, each containing RESULTS.csv, SCHEDULE_ACCESS.csv and SCHEDULE_OCCUPANCY.csv. The handover and planning log are never included.</p>
-              {currentReady && <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-sm border border-rule bg-surface p-2 text-[10px] text-ink-700">{handoverText({ run: currentReady, pins, sessionLog, diff: pending?.diff ?? lastDiff })}</pre>}
+              {currentReady && (
+                <>
+                  <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] sm:grid-cols-4">
+                    <Stat label="Starts tried" value={currentReady.outcome.diagnostics.startsTried} />
+                    <Stat label="Candidates" value={currentReady.outcome.diagnostics.candidatesEvaluated} />
+                    <Stat label="Elapsed" value={`${currentReady.outcome.diagnostics.elapsedMs} ms`} />
+                    <Stat label="Warnings" value={currentReady.outcome.diagnostics.warnings.length} />
+                  </dl>
+                  <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-sm border border-rule bg-surface p-2 text-[10px] text-ink-700">{buildHandoverSummary({ scenario: currentReady.scenario, report: currentReady.outcome.validation, pins, disruptions: currentReady.disruptions, recentAction: sessionLog.at(-1)?.action ?? null, diff: activeDiff })}</pre>
+                </>
+              )}
             </section>
             <SubmissionCheck
               instance={instance}
@@ -690,8 +709,10 @@ function ChangeReview({
   onCancel: () => void;
 }) {
   const { diff } = pending;
+  const proposed = pending.runs.find((run) => run.scenario === pending.scenario);
+  const rejectedPins = proposed?.outcome.diagnostics.rejectedPins ?? [];
   return (
-    <section className="ps1-panel border-accent" aria-labelledby="ps1-change-review-title">
+    <section className="ps1-panel sticky bottom-2 z-40 border-accent shadow-[0_-8px_24px_rgba(20,22,26,.12)]" aria-labelledby="ps1-change-review-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="workspace-eyebrow">Review before apply</p>
@@ -704,9 +725,10 @@ function ChangeReview({
           {diff.feasibleAfter ? "Feasible" : `${diff.newViolations.length} new violations`}
         </span>
       </div>
-      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-5">
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-6">
         <Stat label="Score" value={`${diff.scoreBefore ?? "n/a"} → ${diff.scoreAfter ?? "n/a"}`} />
         <Stat label="Moved accesses" value={diff.movedAccesses} />
+        <Stat label="Held still" value={`${diff.unchangedAccessPercent}%`} />
         <Stat label="Activities" value={diff.movedActivityIds.length} />
         <Stat label="Contracts" value={diff.changedContracts.length} />
         <Stat label="Resolved violations" value={diff.resolvedViolations.length} />
@@ -715,6 +737,18 @@ function ChangeReview({
         <p className="mt-2 text-[11px] text-ink-500">
           Moved: {diff.movedActivityIds.slice(0, 18).join(", ")}
           {diff.movedActivityIds.length > 18 ? ` and ${diff.movedActivityIds.length - 18} more` : ""}
+        </p>
+      )}
+      {diff.completionChanges.length > 0 && (
+        <ul className="mt-2 grid gap-1 text-[10px] text-ink-700 sm:grid-cols-2">
+          {diff.completionChanges.slice(0, 6).map((change) => (
+            <li key={change.contractNumber}><span className="font-semibold text-ink-900">{change.contractNumber}</span> {change.beforeDate ?? "—"} → {change.afterDate ?? "—"}</li>
+          ))}
+        </ul>
+      )}
+      {rejectedPins.length > 0 && (
+        <p className="mt-2 rounded-sm border border-signal-red bg-signal-red-soft p-2 text-[11px] text-signal-red">
+          {rejectedPins.length} rejected pin{rejectedPins.length === 1 ? "" : "s"}: {rejectedPins.slice(0, 3).map((pin) => `${pin.activityId}@wk${pin.week}`).join(", ")}
         </p>
       )}
       <div className="mt-3 flex gap-2">
@@ -746,7 +780,7 @@ function Stat({
 }
 
 /** Objectives are policy-specific, so the cards compare facts without declaring a winner. */
-function ScenarioComparison({
+export function ScenarioComparison({
   runs,
   active,
   onSelect,
@@ -850,30 +884,4 @@ function dominantCost(scores: { priorityWeightedScore: number; excessAccessNight
   return [...terms].sort((a, b) => b[1] - a[1])[0][1] > 0
     ? [...terms].sort((a, b) => b[1] - a[1])[0][0]
     : "none";
-}
-
-function handoverText({
-  run,
-  pins,
-  sessionLog,
-  diff,
-}: {
-  run: Extract<ScenarioRun, { outcome: { status: "FEASIBLE" } }> | ScenarioRun;
-  pins: Pin[];
-  sessionLog: SessionEntry[];
-  diff: PlanDiff | null;
-}): string {
-  if (!isReadyScenario(run)) return "No feasible scenario is selected.";
-  const report = run.outcome.validation;
-  return [
-    `PS1 planning handover — Scenario ${run.scenario}`,
-    `Validation: ${report.feasible ? "FEASIBLE" : "INVALID"}; local conformance; objective ${report.objectiveScore ?? "n/a"}`,
-    `Pins: ${pins.length ? pins.map((pin) => `${pin.activityId}@wk${pin.week}`).join(", ") : "none"}`,
-    `Disruptions: ${run.disruptions.length ? run.disruptions.map((item) => `${item.locationId}@wk${item.fromWeek}-${item.toWeek ?? "open"}→${item.capacity}`).join(", ") : "none"}`,
-    `Recent change: ${sessionLog.at(-1)?.action ?? "none"}`,
-    `Schedule stability: ${diff ? `${diff.unchangedAccessPercent}% unchanged; ${diff.movedAccesses} moved accesses` : "no applied comparison"}`,
-    `Unresolved violations: ${report.hardViolations.length}`,
-    "Undecidable locally: cross-possession physical-night alignment (official output has no global night identifier).",
-    "Official ZIP: A/B/C × RESULTS.csv, SCHEDULE_ACCESS.csv and SCHEDULE_OCCUPANCY.csv only.",
-  ].join("\n");
 }

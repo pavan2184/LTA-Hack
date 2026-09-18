@@ -59,6 +59,15 @@ describe("workspace state and policy comparison", () => {
     await user.keyboard("{ArrowRight}");
     expect(screen.getByRole("tab", { name: /Policy A/ })).toHaveAttribute("aria-selected", "true");
   });
+
+  it("preserves the active policy when the current instance is re-run", async () => {
+    const user = userEvent.setup();
+    renderWorkbench();
+    await solve(user);
+    await user.click(screen.getByRole("tab", { name: /Policy A/ }));
+    await user.click(screen.getByRole("button", { name: "Re-run" }));
+    expect(await screen.findByRole("tab", { name: /Policy A/ })).toHaveAttribute("aria-selected", "true");
+  });
 });
 
 describe("instance loading", () => {
@@ -156,6 +165,29 @@ describe("proof, conformance and export", () => {
   });
 });
 
+describe("reviewed urgent maintenance", () => {
+  it("previews a validated replan, applies it, and can undo it", async () => {
+    const user = userEvent.setup();
+    renderWorkbench();
+    await solve(user);
+    await user.click(screen.getByRole("button", { name: /Test urgent maintenance/ }));
+    const replan = screen.getByRole("button", { name: /Re-plan around it/ });
+    expect(replan).toBeEnabled();
+    await user.click(replan);
+    const adopt = await screen.findByRole("button", { name: /Adopt this schedule/ });
+    expect(adopt).toBeEnabled();
+    await user.click(adopt);
+    expect(await screen.findByText("Review before apply")).toBeInTheDocument();
+    expect(screen.getByText(/current schedule is unchanged until/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Apply reviewed change/ }));
+    expect(screen.queryByText("Review before apply")).not.toBeInTheDocument();
+    const undo = screen.getByRole("button", { name: "Undo" });
+    expect(undo).toBeEnabled();
+    await user.click(undo);
+    expect(screen.getByText(/rev 3/)).toBeInTheDocument();
+  }, 20_000);
+});
+
 describe("responsive controls", () => {
   it("offers mobile triage, review and proof views while marking the matrix desktop-only", async () => {
     const user = userEvent.setup();
@@ -165,6 +197,10 @@ describe("responsive controls", () => {
       expect(screen.getByRole("tab", { name })).toBeInTheDocument();
     }
     expect(screen.getByText(/larger screen to edit the full location-week matrix/)).toBeInTheDocument();
+    const attention = screen.getByRole("tab", { name: "Attention" });
+    attention.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Selected" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("supports the session-only low-glare toggle", async () => {

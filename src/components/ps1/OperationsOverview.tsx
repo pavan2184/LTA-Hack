@@ -78,6 +78,19 @@ export function OperationsOverview({
 }) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("attention");
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const onMobileTabKey = (event: KeyboardEvent<HTMLButtonElement>, current: MobileTab) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const index = MOBILE_TABS.findIndex((item) => item.id === current);
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? MOBILE_TABS.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + MOBILE_TABS.length) % MOBILE_TABS.length;
+    const next = MOBILE_TABS[nextIndex].id;
+    setMobileTab(next);
+    document.getElementById(`ps1-mobile-tab-${next}`)?.focus();
+  };
 
   const inspector = (
     <OperationsInspector
@@ -144,10 +157,13 @@ export function OperationsOverview({
           {MOBILE_TABS.map((tab) => (
             <button
               key={tab.id}
+              id={`ps1-mobile-tab-${tab.id}`}
               type="button"
               role="tab"
               aria-selected={mobileTab === tab.id}
+              aria-controls={`ps1-mobile-panel-${tab.id}`}
               tabIndex={mobileTab === tab.id ? 0 : -1}
+              onKeyDown={(event) => onMobileTabKey(event, tab.id)}
               onClick={() => setMobileTab(tab.id)}
               className={`min-h-11 flex-1 whitespace-nowrap px-3 py-2 text-[12px] ${mobileTab === tab.id ? "border-b-2 border-accent font-semibold text-accent" : "text-ink-700"}`}
             >
@@ -155,7 +171,7 @@ export function OperationsOverview({
             </button>
           ))}
         </div>
-        <div role="tabpanel" className="rounded-b-sm border border-t-0 border-rule bg-surface p-3">
+        <div id={`ps1-mobile-panel-${mobileTab}`} role="tabpanel" aria-labelledby={`ps1-mobile-tab-${mobileTab}`} className="rounded-b-sm border border-t-0 border-rule bg-surface p-3">
           {mobileTab === "attention" ? queue : null}
           {mobileTab === "selected" ? inspector : null}
           {mobileTab === "review" ? <ChangeSummary diff={diff} /> : null}
