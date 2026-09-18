@@ -1,5 +1,20 @@
 # Testing Plan
 
+## PS1 hardened conformance and operations workspace — 2026-09-18
+
+Regression coverage now mutates the published reference to prove rejection of
+forged RESULTS, duplicate activity-weeks, invalid/gapped access identity,
+out-of-range nights, missing/extra/duplicate/orphan occupancy and cross-line Live
+ECLO-window breaches. Loader cases cover exact headers, RFC-style quoting,
+duplicate IDs, invalid references and predecessor cycles.
+
+Every public-scenario optimiser outcome must validate after serialization and
+remain deterministic. Score ceilings are A 25.2, B 44 and C 39.2. UI verification
+covers the linked queue/timeline/inspector, complete keyboard tabs, reviewed
+pin/disruption changes, apply/undo, deterministic Q&A, download gating, exact ZIP
+contents and separate session-log export. Release gates remain typecheck, lint,
+the full test suite, production build and a browser walkthrough at desktop/mobile.
+
 ## Reconciled merge verification — 2026-09-15
 
 The current sandbox tests cover one shared dashboard, section redirects, request/

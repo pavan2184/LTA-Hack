@@ -1,6 +1,6 @@
 import type { Ps1Instance, Submission } from "../types/ps1";
 import { buildNetwork, type Network } from "./network";
-import { scheduleInstance, type Pin, type RejectedPin } from "./schedule";
+import { solveInstance, type Pin, type RejectedPin } from "./schedule";
 
 /**
  * Urgent maintenance takes a location's nights away mid-horizon.
@@ -182,6 +182,26 @@ export function replanForDisruption(
   network: Network = buildNetwork(instance),
 ): ReplanOutcome {
   const impact = assessDisruption(instance, submission, disruptions, network);
+  if (impact.displaced.length === 0) {
+    return {
+      submission: Object.assign(
+        {
+          scenario: submission.scenario,
+          access: [...submission.access],
+          occupancy: [...submission.occupancy],
+          results: [...submission.results],
+        },
+        { rejectedPins: [] as RejectedPin[] },
+      ),
+      impact,
+      churn: {
+        unchangedAccesses: submission.access.length,
+        movedAccesses: 0,
+        movedActivityIds: [],
+        percentUnchanged: 100,
+      },
+    };
+  }
   const displacedKeys = new Set(
     impact.displaced.map((entry) => `${entry.activityId}|${entry.week}`),
   );
@@ -190,11 +210,17 @@ export function replanForDisruption(
     .filter((row) => !displacedKeys.has(`${row.activityId}|${row.week}`))
     .map((row) => ({ activityId: row.activityId, week: row.week, eclo: row.eclo }));
 
-  const replanned = scheduleInstance(
+  const outcome = solveInstance(
     instance,
     { scenario: submission.scenario, pins, disruptions },
     network,
   );
+  if (!outcome.submission) {
+    throw new Error(outcome.diagnostics.warnings[0] ?? "No disrupted schedule could be produced");
+  }
+  const replanned = Object.assign(outcome.submission, {
+    rejectedPins: outcome.diagnostics.rejectedPins,
+  });
 
   const before = new Map<string, Set<number>>();
   for (const row of submission.access) {

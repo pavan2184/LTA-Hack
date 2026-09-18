@@ -1,5 +1,25 @@
 # Architecture
 
+## Public PS1 optimiser workspace — 2026-09-18
+
+`/ps1` remains an unauthenticated, database-free client boundary. Exact CSV
+parsing and instance validation happen before a hidden instance enters the pure
+`@railplan/ps1` engine. A module Web Worker runs deterministic multi-start
+construction and bounded reconstruction search; every candidate is independently
+checked by `validate()` and only a complete feasible result is downloadable.
+
+The official format cannot identify one physical night across separate contract
+possessions. The validator therefore reports `local` conformance and the named
+`cross_possession_night_alignment` undecidable rule. It does enforce every
+represented identity, workload, occupancy, result, capacity, mix, allocation,
+workfront, predecessor and ECLO invariant. Closure expansion remains one shared
+function for validation, solving, explanation and the schematic network.
+
+Client state separates the applied schedule from a proposed pin or disruption.
+A proposal carries a computed diff and must be applied explicitly. Applied
+snapshots support single-step undo and append to a memory-only session log. The
+log exports separately and never enters the official nine-file ZIP.
+
 ## Reconciled composition — 2026-09-15
 
 The current Night overview remains the queue/timeline/inspector workspace.

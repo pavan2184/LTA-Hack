@@ -1,5 +1,14 @@
 # Project Brief
 
+## Public challenge workspace update — 2026-09-18
+
+The unauthenticated `/ps1` path is the submission-facing product: judges can load
+the published or hidden eight-file instance, optimise all three scenarios locally,
+inspect the linked queue/timeline/network, review changes and download the exact
+nine-file result without creating an account. RailPlan's durable authenticated
+workflow remains separate. Browser-local conformance is explicit about the one
+physical-night relationship the official files cannot encode.
+
 Last updated: 2026-09-15 · RailPlan v0.4.0
 
 RailPlan is a non-operational rail-maintenance planning prototype for planners and

@@ -1,5 +1,20 @@
 # Data Model
 
+## Browser-only PS1 planning model — 2026-09-18
+
+`SolveOutcome` has `FEASIBLE`, `INFEASIBLE` and `INVALID_INSTANCE` states plus an
+optional submission/validation pair and deterministic search diagnostics.
+`ValidationReport.conformance` records local mode and the one rule the official
+files cannot decide. `PlanRevision`/`PlanDiff` describe session-only reviewed
+changes; `QaAnswer` carries deterministic text, supporting facts and linked
+activity/location IDs. None is persisted or sent to the RailPlan database.
+
+Official `Submission` CSV entities remain unchanged. Instance records now require
+unique IDs, valid references, positive integer limits/workload, real ISO dates and
+an acyclic predecessor graph. Submission access identity is one row per
+activity/week with contiguous sequence numbers; occupancy is an exact expansion
+of each scheduled activity/week; RESULTS is an exact recomputation per contract.
+
 ## Carry-forward active identity — 2026-09-15
 
 `work_item_active_occurrences` is private, one row per work item. Its active request,

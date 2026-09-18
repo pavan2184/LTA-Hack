@@ -4,8 +4,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { loadInstance, PS1_FILES } from "../io/load";
-import { scheduleInstance } from "./schedule";
+import { scheduleInstance, solveInstance } from "./schedule";
 import { validate } from "./validate";
+import { writeSubmission } from "../io/write";
 import type { Scenario } from "../types/ps1";
 
 const instance = loadInstance(
@@ -81,5 +82,34 @@ describe("scenario levers differ as the brief prices them", () => {
     for (const report of [a, b, c]) expect(report.objectiveScore).toBeGreaterThanOrEqual(0);
     // B carries no overrun term at all: its dates are rigid by construction.
     expect(b.softScores.overrunDaysTotal).toBe(0);
+  });
+});
+
+describe("deterministic multi-start optimisation", () => {
+  it.each([
+    ["A", 25.2],
+    ["B", 44],
+    ["C", 39.2],
+  ] as const)("keeps public Scenario %s at or below %s", (scenario, ceiling) => {
+    const outcome = solveInstance(instance, { scenario });
+    expect(outcome.status).toBe("FEASIBLE");
+    expect(outcome.validation?.objectiveScore).toBeLessThanOrEqual(ceiling);
+    expect(outcome.diagnostics.startsTried).toBe(24);
+    expect(outcome.diagnostics.candidatesEvaluated).toBeGreaterThanOrEqual(24);
+  });
+
+  it("returns byte-identical files for identical inputs", () => {
+    const first = solveInstance(instance, { scenario: "A" });
+    const second = solveInstance(instance, { scenario: "A" });
+    expect(first.status).toBe("FEASIBLE");
+    expect(second.status).toBe("FEASIBLE");
+    expect(writeSubmission(first.submission!)).toEqual(writeSubmission(second.submission!));
+  });
+
+  it("never emits an access beyond the declared horizon", () => {
+    const outcome = solveInstance(instance, { scenario: "C" });
+    expect(
+      outcome.submission?.access.every((row) => row.week <= instance.parameters.horizonWeeks),
+    ).toBe(true);
   });
 });

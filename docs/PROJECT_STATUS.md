@@ -1,5 +1,40 @@
 # Project Status
 
+## PS1 hardened optimiser and operations workspace — 2026-09-18
+
+The public PS1 path now has strict RFC-style CSV parsing, cross-file instance
+integrity checks and a reconciliatory submission validator. The false positives
+found in the audit are closed: forged RESULTS, invalid access nights, duplicate
+workload rows, sequence gaps and mismatched occupancy are hard failures. Live ECLO
+windows use the full closure expansion on both affected lines. The checker labels
+itself local because global night alignment is absent from the official format.
+
+The greedy baseline remains available internally, while the product uses a
+deterministic 24-start optimiser with bounded reconstruction, topological
+predecessor order, unbounded scored Scenario-B possessions, evaluated Scenario-C
+ECLO and a strict horizon. The published instance remains A 25.2 / B 44 / C 39.2.
+Solves run in a browser worker with progress and cancellation by replacement.
+
+The result workspace adds an activity/contract queue, linked timeline selection,
+sticky four-tab inspector, closure-derived two-line schematic, deterministic Q&A,
+review-before-apply for pins/disruptions, undo and a separate memory-only planning
+log export. Infeasible scenarios cannot be downloaded; the official ZIP remains
+exactly three CSVs under each A/B/C folder. Verification evidence is recorded at
+the end of this implementation session.
+
+Verification completed on the final implementation:
+
+- `npm test` — 963 tests passed across 113 files.
+- `npm run typecheck` and `npm run lint` — clean.
+- `npm run build` — production build succeeds with `/ps1` statically generated.
+- Direct HTTP smoke checks — `/` and `/ps1` both return 200.
+- Production-browser smoke check — public instance solving runs in the Web
+  Worker, all three public scenarios are locally conformant at A 25.2 / B 44 /
+  C 39.2, the linked operations workspace renders, and deterministic Q&A cites
+  the selected activity's computed schedule facts.
+- The implementation branch is synchronized with its GitHub upstream before
+  release (`HEAD...origin/ps1-judging-surface-ux` is `0 0`).
+
 ## PS1 restructured against scheduling-tool conventions — 2026-09-18
 
 The page worked but read as a report: one column, roughly 4,000px, every panel

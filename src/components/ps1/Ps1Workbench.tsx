@@ -1,17 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { loadInstance, PS1_FILES, type Ps1FileName } from "@railplan/ps1/io/load";
 import { writeSubmission } from "@railplan/ps1/io/write";
 import { zipArchive } from "@railplan/ps1/io/zip";
-import { scheduleInstance, type Pin, type RejectedPin } from "@railplan/ps1/engine/schedule";
+import { solveInstance, type Pin, type RejectedPin } from "@railplan/ps1/engine/schedule";
 import type { Disruption, ReplanOutcome } from "@railplan/ps1/engine/disruption";
 import { validate } from "@railplan/ps1/engine/validate";
+import { comparePlans, planningLogJson } from "@railplan/ps1/engine/revision";
 import { buildNetwork, type Network as Ps1Network } from "@railplan/ps1/engine/network";
 import type {
   Ps1Instance,
+  PlanDiff,
   Scenario,
+  SolveOutcome,
   Submission,
   ValidationReport,
 } from "@railplan/ps1/types/ps1";
@@ -22,6 +25,11 @@ import { ExplainPanel } from "@/components/ps1/ExplainPanel";
 import { PossessionTimeline } from "@/components/ps1/PossessionTimeline";
 import { DisruptionPanel } from "@/components/ps1/DisruptionPanel";
 import { SubmissionCheck } from "@/components/ps1/SubmissionCheck";
+import { OperationsOverview } from "@/components/ps1/OperationsOverview";
+import type {
+  Ps1WorkerRequest,
+  Ps1WorkerResponse,
+} from "@/workers/ps1.worker";
 
 const SCENARIOS: Scenario[] = ["A", "B", "C"];
 
@@ -48,7 +56,28 @@ interface Solved {
   solveMs: number;
   network: Ps1Network;
   rejectedPins: RejectedPin[];
+  startsTried: number;
+  candidatesEvaluated: number;
+  disruptions: Disruption[];
 }
+
+interface PendingChange {
+  label: string;
+  solved: Solved[];
+  pins: Pin[];
+  diff: PlanDiff;
+}
+
+interface SessionEntry {
+  id: number;
+  at: string;
+  action: string;
+  scenario: Scenario;
+  diff: PlanDiff;
+}
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_ROWS = 50_000;
 
 /**
  * The judging surface: upload an instance, solve all three scenarios, read the
@@ -76,7 +105,18 @@ export function Ps1Workbench({
   const [dragging, setDragging] = useState(false);
   const [cutTarget, setCutTarget] = useState<{ locationId: string; week: number } | null>(null);
   const [disruptionOpen, setDisruptionOpen] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [runProgress, setRunProgress] = useState("");
+  const [pending, setPending] = useState<PendingChange | null>(null);
+  const [history, setHistory] = useState<{ solved: Solved[]; pins: Pin[] }[]>([]);
+  const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
+  const [lastDiff, setLastDiff] = useState<PlanDiff | null>(null);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const runIdRef = useRef(0);
+
+  useEffect(() => () => workerRef.current?.terminate(), []);
 
   const missing = useMemo(
     () => PS1_FILES.filter((name) => !(name in files)),
@@ -112,17 +152,35 @@ export function Ps1Workbench({
     if (!list.length) return;
     const next: Record<string, string> = {};
     const skipped: string[] = [];
+    let totalRows = 0;
     for (const file of list) {
       // Accept the published names regardless of the folder a judge drags from.
       const name = PS1_FILES.find((candidate) => file.name.endsWith(candidate));
-      if (name) next[name] = await file.text();
+      if (name) {
+        if (file.size > MAX_FILE_BYTES) {
+          setRunError(`${file.name} exceeds the 5 MB browser-safety limit.`);
+          return;
+        }
+        const text = await file.text();
+        totalRows += Math.max(0, text.split(/\r\n|\n|\r/).length - 1);
+        next[name] = text;
+      }
       else skipped.push(file.name);
+    }
+    if (totalRows > MAX_TOTAL_ROWS) {
+      setRunError(`The selected files contain about ${totalRows} rows; the limit is ${MAX_TOTAL_ROWS}.`);
+      return;
     }
     setSolved(null);
     setSource("upload");
     // Pins name activity ids from the instance they were set against, so they
     // cannot survive a different one being loaded over the top.
     setPins([]);
+    setPending(null);
+    setHistory([]);
+    setSessionLog([]);
+    setLastDiff(null);
+    setSelectedActivityId(null);
     setIgnored(skipped);
     setFiles((current) => ({ ...current, ...next }));
   }, []);
@@ -133,33 +191,92 @@ export function Ps1Workbench({
    * the handler that sets the files — the freshly parsed one has to be passed
    * in rather than read off state that has not caught up yet.
    */
+  const solveScenarios = useCallback(
+    async (target: Ps1Instance, withPins: Pin[]): Promise<Solved[]> => {
+      const network = buildNetwork(target);
+      const id = ++runIdRef.current;
+      const toSolved = (outcomes: SolveOutcome[]): Solved[] =>
+        outcomes.map((outcome, index) => {
+          const scenario = SCENARIOS[index];
+          if (!outcome.submission || !outcome.validation) {
+            throw new Error(outcome.diagnostics.warnings[0] ?? `Scenario ${scenario} produced no schedule.`);
+          }
+          return {
+            scenario,
+            submission: outcome.submission,
+            report: outcome.validation,
+            solveMs: outcome.diagnostics.elapsedMs,
+            network,
+            rejectedPins: outcome.diagnostics.rejectedPins,
+            startsTried: outcome.diagnostics.startsTried,
+            candidatesEvaluated: outcome.diagnostics.candidatesEvaluated,
+            disruptions: [],
+          };
+        });
+
+      if (typeof Worker === "undefined") {
+        return toSolved(
+          SCENARIOS.map((scenario) => solveInstance(target, { scenario, pins: withPins }, network)),
+        );
+      }
+
+      workerRef.current?.terminate();
+      const worker = new Worker(new URL("../../workers/ps1.worker.ts", import.meta.url), {
+        type: "module",
+      });
+      workerRef.current = worker;
+      return await new Promise<Solved[]>((resolve, reject) => {
+        worker.onmessage = (event: MessageEvent<Ps1WorkerResponse>) => {
+          const message = event.data;
+          if (message.id !== id) return;
+          if (message.type === "progress") {
+            setRunProgress(`Scenario ${message.scenario} complete · ${message.completed}/${message.total}`);
+            return;
+          }
+          worker.terminate();
+          if (workerRef.current === worker) workerRef.current = null;
+          if (message.type === "error") reject(new Error(message.message));
+          else resolve(toSolved(message.outcomes));
+        };
+        worker.onerror = (event) => {
+          worker.terminate();
+          if (workerRef.current === worker) workerRef.current = null;
+          reject(new Error(event.message || "The browser optimisation worker failed."));
+        };
+        worker.postMessage({
+          id,
+          instance: target,
+          scenarios: SCENARIOS,
+          pins: withPins,
+        } satisfies Ps1WorkerRequest);
+      });
+    },
+    [],
+  );
+
   const run = useCallback(
-    (withPins: Pin[], override?: Ps1Instance) => {
+    async (withPins: Pin[], override?: Ps1Instance) => {
       const target = override ?? instance;
       if (!target) return;
+      setRunning(true);
+      setRunProgress("Starting deterministic multi-start search…");
       try {
-        const network = buildNetwork(target);
-        setSolved(
-          SCENARIOS.map((scenario) => {
-            const started = performance.now();
-            const submission = scheduleInstance(target, { scenario, pins: withPins }, network);
-            const solveMs = Math.round((performance.now() - started) * 100) / 100;
-            return {
-              scenario,
-              submission,
-              report: validate(target, submission, network),
-              solveMs,
-              network,
-              rejectedPins: submission.rejectedPins,
-            };
-          }),
-        );
+        const next = await solveScenarios(target, withPins);
+        setSolved(next);
+        setPending(null);
+        setHistory([]);
+        setSessionLog([]);
+        setLastDiff(null);
+        setSelectedActivityId(target.activities[0]?.activityId ?? null);
         setRunError(null);
       } catch (cause) {
         setRunError(cause instanceof Error ? cause.message : String(cause));
+      } finally {
+        setRunning(false);
+        setRunProgress("");
       }
     },
-    [instance],
+    [instance, solveScenarios],
   );
 
   /**
@@ -174,8 +291,9 @@ export function Ps1Workbench({
     setSource("public");
     setPins([]);
     setIgnored([]);
+    setRunError(null);
     try {
-      run([], loadInstance(publicInstance as Record<Ps1FileName, string>));
+      void run([], loadInstance(publicInstance as Record<Ps1FileName, string>));
     } catch {
       // The parse memo renders the same failure with the same message; letting
       // it do that keeps one error path rather than two that can disagree.
@@ -189,23 +307,56 @@ export function Ps1Workbench({
    * rather than being annotated after the fact.
    */
   const togglePin = useCallback(
-    (pin: Pin) => {
-      setPins((current) => {
-        const key = `${pin.activityId}|${pin.week}`;
-        const next = current.some((item) => `${item.activityId}|${item.week}` === key)
-          ? current.filter((item) => `${item.activityId}|${item.week}` !== key)
-          : [...current, pin];
-        run(next);
-        return next;
-      });
+    async (pin: Pin) => {
+      if (!instance || !solved) return;
+      const key = `${pin.activityId}|${pin.week}`;
+      const nextPins = pins.some((item) => `${item.activityId}|${item.week}` === key)
+        ? pins.filter((item) => `${item.activityId}|${item.week}` !== key)
+        : [...pins, pin];
+      setRunning(true);
+      setRunProgress("Preparing a pin change for review…");
+      try {
+        const nextSolved = await solveScenarios(instance, nextPins);
+        const before = solved.find((entry) => entry.scenario === active)!;
+        const after = nextSolved.find((entry) => entry.scenario === active)!;
+        setPending({
+          label: nextPins.length < pins.length ? `Release ${pin.activityId} from wk${pin.week}` : `Pin ${pin.activityId} to wk${pin.week}`,
+          solved: nextSolved,
+          pins: nextPins,
+          diff: comparePlans(before.submission, before.report, after.submission, after.report),
+        });
+        setRunError(null);
+      } catch (cause) {
+        setRunError(cause instanceof Error ? cause.message : String(cause));
+      } finally {
+        setRunning(false);
+        setRunProgress("");
+      }
     },
-    [run],
+    [active, instance, pins, solveScenarios, solved],
   );
 
-  const clearPins = useCallback(() => {
-    setPins([]);
-    run([]);
-  }, [run]);
+  const clearPins = useCallback(async () => {
+    if (!instance || !solved || pins.length === 0) return;
+    setRunning(true);
+    setRunProgress("Preparing a clear-pins change for review…");
+    try {
+      const nextSolved = await solveScenarios(instance, []);
+      const before = solved.find((entry) => entry.scenario === active)!;
+      const after = nextSolved.find((entry) => entry.scenario === active)!;
+      setPending({
+        label: `Clear ${pins.length} pin${pins.length === 1 ? "" : "s"}`,
+        solved: nextSolved,
+        pins: [],
+        diff: comparePlans(before.submission, before.report, after.submission, after.report),
+      });
+    } catch (cause) {
+      setRunError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setRunning(false);
+      setRunProgress("");
+    }
+  }, [active, instance, pins.length, solveScenarios, solved]);
 
   /**
    * Adopt a replan for the scenario in view. The disruption stays in force, so
@@ -214,24 +365,74 @@ export function Ps1Workbench({
    */
   const adoptReplan = useCallback(
     (outcome: ReplanOutcome, disruptions: Disruption[]) => {
-      if (!instance) return;
-      setSolved((current) =>
-        (current ?? []).map((entry) =>
+      if (!instance || !solved) return;
+      const nextSolved = solved.map((entry) =>
           entry.scenario === active
             ? {
                 ...entry,
                 submission: outcome.submission,
                 report: validate(instance, outcome.submission, entry.network, disruptions),
                 rejectedPins: outcome.submission.rejectedPins,
+                disruptions,
               }
             : entry,
-        ),
       );
+      const before = solved.find((entry) => entry.scenario === active)!;
+      const after = nextSolved.find((entry) => entry.scenario === active)!;
+      setPending({
+        label: `Apply urgent-maintenance replan to Scenario ${active}`,
+        solved: nextSolved,
+        pins,
+        diff: comparePlans(before.submission, before.report, after.submission, after.report),
+      });
+      setDisruptionOpen(false);
     },
-    [instance, active],
+    [instance, solved, active, pins],
   );
 
+  const applyPending = useCallback(() => {
+    if (!pending || !solved) return;
+    setHistory((current) => [...current, { solved, pins }]);
+    setSolved(pending.solved);
+    setPins(pending.pins);
+    setLastDiff(pending.diff);
+    setSessionLog((current) => [
+      ...current,
+      {
+        id: current.length + 1,
+        at: new Date().toISOString(),
+        action: pending.label,
+        scenario: active,
+        diff: pending.diff,
+      },
+    ]);
+    setPending(null);
+  }, [active, pending, pins, solved]);
+
+  const undo = useCallback(() => {
+    const previous = history.at(-1);
+    if (!previous || !solved) return;
+    const before = solved.find((entry) => entry.scenario === active)!;
+    const after = previous.solved.find((entry) => entry.scenario === active)!;
+    const diff = comparePlans(before.submission, before.report, after.submission, after.report);
+    setSolved(previous.solved);
+    setPins(previous.pins);
+    setHistory((current) => current.slice(0, -1));
+    setLastDiff(diff);
+    setSessionLog((current) => [
+      ...current,
+      {
+        id: current.length + 1,
+        at: new Date().toISOString(),
+        action: "Undo the latest applied change",
+        scenario: active,
+        diff,
+      },
+    ]);
+  }, [active, history, solved]);
+
   const download = useCallback((entry: Solved) => {
+    if (!entry.report.feasible) return;
     for (const [name, text] of Object.entries(writeSubmission(entry.submission))) {
       save(`${entry.scenario}_${name}`, new Blob([text], { type: "text/csv" }));
     }
@@ -246,7 +447,7 @@ export function Ps1Workbench({
    * judge has no way to tell which. One archive either arrives or does not.
    */
   const downloadAll = useCallback(() => {
-    if (!solved?.length) return;
+    if (!solved || solved.length !== SCENARIOS.length || solved.some((entry) => !entry.report.feasible)) return;
     const files: Record<string, string> = {};
     for (const entry of solved) {
       for (const [name, text] of Object.entries(writeSubmission(entry.submission))) {
@@ -258,6 +459,9 @@ export function Ps1Workbench({
 
   const current = solved?.find((entry) => entry.scenario === active) ?? null;
   const error = parsed.error ?? runError;
+  const allDownloadable = Boolean(
+    solved && solved.length === SCENARIOS.length && solved.every((entry) => entry.report.feasible),
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -355,24 +559,28 @@ export function Ps1Workbench({
       <section className="ps1-panel">
         <h2>2. Schedule</h2>
         <p className="mt-1 text-[12px] text-ink-700">
-          Solves all three scenarios and validates each against the nine hard rules.
+          Runs a deterministic multi-start search for all three scenarios in a browser worker,
+          then checks every decidable submission rule with the local conformance validator.
         </p>
         <div className="mt-3 flex flex-col items-start gap-1">
           <Button
             variant="primary"
-            disabled={!instance}
+            disabled={!instance || running}
             aria-describedby="ps1-note-run"
-            onClick={() => run(pins)}
+            onClick={() => void run(pins)}
           >
-            Run all three scenarios
+            {running ? "Optimising…" : "Run all three scenarios"}
           </Button>
           <ActionNote id="ps1-note-run">
             {instance
               ? "Solves A, B and C from scratch. Any pins you have set enter the solve as hard constraints rather than being applied afterwards."
               : "Load an instance first — this stays disabled until all eight files are present."}
           </ActionNote>
+          {runProgress && <p className="text-[11px] text-accent" role="status">{runProgress}</p>}
         </div>
       </section>
+
+      {pending && <ChangeReview pending={pending} onApply={applyPending} onCancel={() => setPending(null)} />}
 
       {solved && (
         <section className="ps1-panel">
@@ -389,8 +597,20 @@ export function Ps1Workbench({
             {solved.map((entry) => (
               <button
                 key={entry.scenario}
+                id={`ps1-scenario-tab-${entry.scenario}`}
                 role="tab"
                 aria-selected={entry.scenario === active}
+                aria-controls={`ps1-scenario-panel-${entry.scenario}`}
+                tabIndex={entry.scenario === active ? 0 : -1}
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                  event.preventDefault();
+                  const index = SCENARIOS.indexOf(entry.scenario);
+                  const delta = event.key === "ArrowRight" ? 1 : -1;
+                  const next = SCENARIOS[(index + delta + SCENARIOS.length) % SCENARIOS.length];
+                  setActive(next);
+                  document.getElementById(`ps1-scenario-tab-${next}`)?.focus();
+                }}
                 onClick={() => setActive(entry.scenario)}
                 className={`rounded-md border px-3 py-1.5 text-[12px] ${
                   entry.scenario === active
@@ -413,7 +633,12 @@ export function Ps1Workbench({
           </div>
 
           {current && (
-            <div className="mt-4">
+            <div
+              id={`ps1-scenario-panel-${current.scenario}`}
+              role="tabpanel"
+              aria-labelledby={`ps1-scenario-tab-${current.scenario}`}
+              className="mt-4"
+            >
               <p className="text-[12px] text-ink-700">{SCENARIO_BLURB[current.scenario]}</p>
 
               <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-3 lg:grid-cols-6">
@@ -432,6 +657,12 @@ export function Ps1Workbench({
                 <Stat label="Solved in" value={`${current.solveMs} ms`} />
               </dl>
 
+              <p className="mt-2 text-[11px] text-ink-500">
+                {current.startsTried} starts · {current.candidatesEvaluated} candidates · local
+                conformance. Cross-possession physical-night alignment cannot be inferred from
+                the official files.
+              </p>
+
               {current.report.hardViolations.length > 0 && (
                 <ul className="mt-3 grid gap-1 rounded-md border border-signal-red bg-signal-red-soft p-3 text-[12px] text-signal-red">
                   {current.report.hardViolations.slice(0, 20).map((violation, index) => (
@@ -448,6 +679,7 @@ export function Ps1Workbench({
                 <div className="flex flex-col items-start gap-1">
                   <Button
                     variant="primary"
+                    disabled={!allDownloadable || Boolean(pending)}
                     aria-describedby="ps1-note-download-zip"
                     onClick={downloadAll}
                   >
@@ -474,7 +706,11 @@ export function Ps1Workbench({
                   </ActionNote>
                 </div>
                 <div className="flex flex-col items-start gap-1">
-                  <Button aria-describedby="ps1-note-download" onClick={() => download(current)}>
+                  <Button
+                    disabled={!current.report.feasible || Boolean(pending)}
+                    aria-describedby="ps1-note-download"
+                    onClick={() => download(current)}
+                  >
                     Scenario {current.scenario} only
                   </Button>
                   <ActionNote id="ps1-note-download">
@@ -482,6 +718,28 @@ export function Ps1Workbench({
                     in the column order the brief publishes.
                   </ActionNote>
                 </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-start gap-3 border-t border-rule pt-3">
+                <Button size="sm" disabled={history.length === 0 || Boolean(pending)} onClick={undo}>
+                  Undo last applied change
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={sessionLog.length === 0}
+                  onClick={() =>
+                    save(
+                      "PS1_PLANNING_LOG.json",
+                      new Blob([planningLogJson(sessionLog)], { type: "application/json" }),
+                    )
+                  }
+                >
+                  Export session log
+                </Button>
+                <span className="text-[11px] text-ink-500">
+                  {sessionLog.length} session event{sessionLog.length === 1 ? "" : "s"}; the log
+                  is never added to the official ZIP.
+                </span>
               </div>
 
               {current.rejectedPins.length > 0 && (
@@ -503,6 +761,23 @@ export function Ps1Workbench({
                 after, it means pointing at the dark band.
               */}
               {instance && (
+                <OperationsOverview
+                  instance={instance}
+                  submission={current.submission}
+                  report={current.report}
+                  comparisons={Object.fromEntries(
+                    solved.map((entry) => [entry.scenario, entry.report]),
+                  )}
+                  network={current.network}
+                  pins={pins}
+                  disruptions={current.disruptions}
+                  diff={pending?.diff ?? lastDiff}
+                  selectedActivityId={selectedActivityId}
+                  onSelectActivity={setSelectedActivityId}
+                />
+              )}
+
+              {instance && (
                 <PossessionTimeline
                   instance={instance}
                   submission={current.submission}
@@ -510,6 +785,8 @@ export function Ps1Workbench({
                   pins={pins}
                   onPin={togglePin}
                   onClearPins={clearPins}
+                  selectedActivityId={selectedActivityId}
+                  onSelectActivity={setSelectedActivityId}
                   onCut={(next) => {
                     setCutTarget(next);
                     setDisruptionOpen(true);
@@ -563,6 +840,51 @@ export function Ps1Workbench({
         />
       )}
     </div>
+  );
+}
+
+function ChangeReview({
+  pending,
+  onApply,
+  onCancel,
+}: {
+  pending: PendingChange;
+  onApply: () => void;
+  onCancel: () => void;
+}) {
+  const { diff } = pending;
+  return (
+    <section className="ps1-panel border-accent" aria-labelledby="ps1-change-review-title">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="workspace-eyebrow">Review before apply</p>
+          <h2 id="ps1-change-review-title">{pending.label}</h2>
+          <p className="mt-1 text-[12px] text-ink-700">
+            The current schedule is unchanged until this proposal is applied.
+          </p>
+        </div>
+        <span className={diff.feasibleAfter ? "text-[12px] font-semibold text-signal-green" : "text-[12px] font-semibold text-signal-red"}>
+          {diff.feasibleAfter ? "Feasible" : `${diff.newViolations.length} new violations`}
+        </span>
+      </div>
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-5">
+        <Stat label="Score" value={`${diff.scoreBefore ?? "n/a"} → ${diff.scoreAfter ?? "n/a"}`} />
+        <Stat label="Moved accesses" value={diff.movedAccesses} />
+        <Stat label="Activities" value={diff.movedActivityIds.length} />
+        <Stat label="Contracts" value={diff.changedContracts.length} />
+        <Stat label="Resolved violations" value={diff.resolvedViolations.length} />
+      </dl>
+      {diff.movedActivityIds.length > 0 && (
+        <p className="mt-2 text-[11px] text-ink-500">
+          Moved: {diff.movedActivityIds.slice(0, 18).join(", ")}
+          {diff.movedActivityIds.length > 18 ? ` and ${diff.movedActivityIds.length - 18} more` : ""}
+        </p>
+      )}
+      <div className="mt-3 flex gap-2">
+        <Button variant="primary" disabled={!diff.feasibleAfter} onClick={onApply}>Apply reviewed change</Button>
+        <Button onClick={onCancel}>Keep current schedule</Button>
+      </div>
+    </section>
   );
 }
 

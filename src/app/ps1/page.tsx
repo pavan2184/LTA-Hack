@@ -9,7 +9,7 @@ import { Ps1Workbench } from "@/components/ps1/Ps1Workbench";
 export const metadata: Metadata = {
   title: "PS1 track access scheduler",
   description:
-    "Upload a NebulaX PS1 instance, schedule all three scenarios, validate against the nine hard rules, and download the submission files.",
+    "Upload a NebulaX PS1 instance, optimise all three scenarios locally, review changes, validate the official CSVs, and download the submission archive.",
 };
 
 /**
@@ -44,9 +44,10 @@ export default function Ps1Page() {
           <h1>Railway track access scheduler</h1>
           <p className="max-w-3xl">
             Decides which contracted activities get the track, in which weeks, across Line Alpha
-            and Line Beta — then checks its own answer against the nine hard rules and reports the
-            scenario score. Every activity is scheduled in full; the schedule flexes on dates,
-            capacity and early-closure instead of dropping work.
+            and Line Beta — then checks every rule that can be decided from the official CSVs and
+            reports the scenario score. A linked queue, timeline, network inspector and reviewed
+            change log keep the answer operationally explainable without sending the instance off
+            the device.
           </p>
         </div>
         <span className="workspace-prototype whitespace-nowrap">

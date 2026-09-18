@@ -90,4 +90,35 @@ describe("PS1 instance loading", () => {
     };
     expect(() => loadInstance(broken)).toThrow(/Somewhat live/);
   });
+
+  it("parses quoted commas, escaped quotes and embedded newlines", () => {
+    const quoted = {
+      ...files,
+      "01_LINES.csv": 'line_code,line_name\r\nALP,"Alpha, \"\"primary\"\"\nline"\r\nBET,Beta Line\r\n',
+    };
+    expect(loadInstance(quoted).lines[0].lineName).toBe('Alpha, "primary"\nline');
+  });
+
+  it("rejects a header that is missing, reordered or extended", () => {
+    const broken = { ...files, "01_LINES.csv": "line_name,line_code,extra\nAlpha,ALP,x\n" };
+    expect(() => loadInstance(broken)).toThrow(/expected header/);
+  });
+
+  it("rejects duplicate ids and predecessor cycles", () => {
+    const duplicate = {
+      ...files,
+      "01_LINES.csv": "line_code,line_name\nALP,Alpha\nALP,Again\n",
+    };
+    expect(() => loadInstance(duplicate)).toThrow(/duplicate line_code ALP/);
+
+    const rows = files["08_ACTIVITY_DETAILS.csv"].trimEnd().split("\n");
+    const cycled = rows.map((row, index) => {
+      if (index === 1) return row.replace(",,2", ",A002,2");
+      if (index === 2) return row.replace(",,3", ",A001,3");
+      return row;
+    });
+    expect(() => loadInstance({ ...files, "08_ACTIVITY_DETAILS.csv": `${cycled.join("\n")}\n` })).toThrow(
+      /predecessor cycle/,
+    );
+  });
 });

@@ -209,6 +209,9 @@ describe("the timeline drives the rest of the page", () => {
     const pin = await screen.findByRole("button", { name: /Pin to this week/ });
     await user.click(pin);
 
+    expect(await screen.findByText("Review before apply")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Apply reviewed change" }));
+
     expect(await screen.findByRole("button", { name: /Pinned here/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Clear 1 pin/ })).toBeInTheDocument();
   });

@@ -43,6 +43,8 @@ export function PossessionTimeline({
   onPin,
   onClearPins,
   onCut,
+  selectedActivityId,
+  onSelectActivity,
 }: {
   instance: Ps1Instance;
   submission: Submission;
@@ -52,6 +54,8 @@ export function PossessionTimeline({
   onClearPins: () => void;
   /** Send a location-week to urgent maintenance as its target. */
   onCut: (target: { locationId: string; week: number }) => void;
+  selectedActivityId?: string | null;
+  onSelectActivity?: (activityId: string) => void;
 }) {
   const timeline = useMemo(
     () => buildTimeline(instance, submission, network),
@@ -277,6 +281,9 @@ export function PossessionTimeline({
                         const pinnedHere = cell?.activityIds.some((id) =>
                           pinnedIds.has(`${id}|${week}`),
                         );
+                        const containsSelected = Boolean(
+                          selectedActivityId && cell?.activityIds.includes(selectedActivityId),
+                        );
                         return (
                           <td
                             key={week}
@@ -289,7 +296,14 @@ export function PossessionTimeline({
                             {cell ? (
                               <button
                                 type="button"
-                                onClick={() => setSelected({ row, cell })}
+                                onClick={() => {
+                                  setSelected({ row, cell });
+                                  const activityId =
+                                    (selectedActivityId && cell.activityIds.includes(selectedActivityId)
+                                      ? selectedActivityId
+                                      : cell.activityIds[0]) ?? null;
+                                  if (activityId) onSelectActivity?.(activityId);
+                                }}
                                 aria-pressed={isSelected}
                                 title={`${locationName(row)} wk${week}: ${cell.possessions}/${cell.capacity} possessions, ${cell.activityIds.length} activities${pinnedHere ? ", pinned" : ""}`}
                                 aria-label={`${locationName(row)} week ${week}, ${cell.possessions} of ${cell.capacity} possessions${pinnedHere ? ", pinned" : ""}${over ? ", over capacity" : ""}`}
@@ -299,7 +313,7 @@ export function PossessionTimeline({
                                 // them. Both survive greyscale.
                                 className={`block h-4 w-full ${over ? "bar-conflict" : ""} ${
                                   pinnedHere ? "bar-pinned" : ""
-                                } ${isSelected ? "outline-2 -outline-offset-1 outline-ink-900" : ""}`}
+                                } ${isSelected ? "outline-2 -outline-offset-1 outline-ink-900" : ""} ${containsSelected ? "ring-2 ring-inset ring-accent" : ""}`}
                                 // `backgroundColor`, never the `background`
                                 // shorthand: the shorthand resets
                                 // background-image and would erase the patterns.

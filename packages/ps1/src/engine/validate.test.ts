@@ -124,7 +124,11 @@ describe("hard rules reject what they claim to", () => {
   });
 
   it("hard-fails any overrun in Scenario B", () => {
-    const asB = { ...sample, scenario: "B" as const };
+    const asB = {
+      ...sample,
+      scenario: "B" as const,
+      results: sample.results.map((row) => ({ ...row, scenario: "B" as const })),
+    };
     const report = validate(instance, asB);
     // The sample overruns three contracts, which Scenario B does not permit.
     expect(report.hardViolations.some((v) => v.rule === "planned_date")).toBe(true);
@@ -139,5 +143,85 @@ describe("hard rules reject what they claim to", () => {
           "scenario,contract_number,simulated_completion_date,overrun_days\nA,C001,2027-06-13,0\nB,C002,2027-07-04,0\n",
       }),
     ).toThrow(/exactly one scenario/);
+  });
+
+  it("rejects forged RESULTS values and duplicate contract rows", () => {
+    const forged = {
+      ...sample,
+      results: sample.results.map((row, index) =>
+        index === 0
+          ? { ...row, simulatedCompletionDate: "2099-01-01", overrunDays: 0 }
+          : row,
+      ),
+    };
+    expect(validate(instance, forged).hardViolations.some((v) => v.rule === "schema")).toBe(true);
+    const duplicate = { ...sample, results: [...sample.results, sample.results[0]] };
+    expect(validate(instance, duplicate).hardViolations.some((v) => /duplicate contract/.test(v.detail))).toBe(true);
+  });
+
+  it("rejects out-of-range nights, duplicate weeks and non-contiguous sequences", () => {
+    const badNight = {
+      ...sample,
+      access: sample.access.map((row, index) => (index === 0 ? { ...row, accessNight: 999 } : row)),
+    };
+    expect(validate(instance, badNight).hardViolations.some((v) => v.rule === "weekly_allocation")).toBe(true);
+
+    const first = sample.access[0];
+    const duplicate = {
+      ...sample,
+      access: [...sample.access, { ...first, accessSeq: 99 }],
+    };
+    const duplicateReport = validate(instance, duplicate);
+    expect(duplicateReport.feasible).toBe(false);
+    expect(duplicateReport.hardViolations.some((v) => /more than one access/.test(v.detail))).toBe(true);
+
+    const gap = {
+      ...sample,
+      access: sample.access.map((row, index) => (index === 0 ? { ...row, accessSeq: 88 } : row)),
+    };
+    expect(validate(instance, gap).hardViolations.some((v) => /contiguous/.test(v.detail))).toBe(true);
+  });
+
+  it("requires occupancy to match every access exactly", () => {
+    const target = sample.occupancy[0];
+    const missing = { ...sample, occupancy: sample.occupancy.slice(1) };
+    expect(validate(instance, missing).hardViolations.some((v) => /does not occupy/.test(v.detail))).toBe(true);
+
+    const duplicate = { ...sample, occupancy: [...sample.occupancy, target] };
+    expect(validate(instance, duplicate).hardViolations.some((v) => /duplicate occupancy/.test(v.detail))).toBe(true);
+
+    const activityWeeks = new Set(
+      sample.access.filter((row) => row.activityId === target.activityId).map((row) => row.week),
+    );
+    const orphanWeek = Array.from(
+      { length: instance.parameters.horizonWeeks },
+      (_, index) => index + 1,
+    ).find((week) => !activityWeeks.has(week))!;
+    const orphan = { ...sample, occupancy: [...sample.occupancy, { ...target, week: orphanWeek }] };
+    expect(validate(instance, orphan).hardViolations.some((v) => /orphan occupancy/.test(v.detail))).toBe(true);
+
+    const otherLocation = instance.locationSupply.find(
+      (row) => !sample.occupancy.some((item) => item.activityId === target.activityId && item.week === target.week && item.locationId === row.locationId),
+    )!;
+    const extra = {
+      ...sample,
+      occupancy: [...sample.occupancy, { ...target, locationId: otherLocation.locationId }],
+    };
+    expect(validate(instance, extra).hardViolations.some((v) => /extra occupancy/.test(v.detail))).toBe(true);
+  });
+
+  it("applies Scenario C's ECLO window to both lines touched by Live work", () => {
+    const asC = {
+      ...sample,
+      scenario: "C" as const,
+      results: sample.results.map((row) => ({ ...row, scenario: "C" as const })),
+      access: sample.access.map((row) =>
+        row.activityId === "A074" || row.activityId === "A075"
+          ? { ...row, eclo: 1 as const }
+          : row,
+      ),
+    };
+    const report = validate(instance, asC);
+    expect(report.hardViolations.some((v) => v.rule === "eclo_window" && /ALP|BET/.test(v.detail))).toBe(true);
   });
 });

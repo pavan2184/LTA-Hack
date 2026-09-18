@@ -1,5 +1,20 @@
 # Decisions
 
+## 2026-09-18 — PS1 uses honest local conformance and a browser worker optimiser
+
+Status: **Accepted.** Keep the public PS1 path account-free and solve hidden
+instances in a Web Worker. Use deterministic multi-start construction plus bounded
+reconstruction rather than a server solver. Require independent validation of
+every candidate and block export for incomplete or invalid outcomes.
+
+The submission schema has no global physical-night ID across separate possessions,
+so cross-possession buffer alignment is not locally decidable. The product names
+that boundary instead of inventing a rule that rejects the published reference.
+All represented closure expansion, Live mirroring/interchange, occupancy,
+allocation and result invariants remain hard checks. RailPlan contributes its
+master-detail, reviewed-change and grounded-explanation patterns, not its database
+or minute-resolution domain model.
+
 ## 2026-09-17 — Named crew rostering: recommended no-go, pending the owner's decision
 
 Status: **Proposed — awaiting Pavan's decision as data controller.** This is the

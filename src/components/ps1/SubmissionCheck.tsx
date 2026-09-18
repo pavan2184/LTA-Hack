@@ -144,9 +144,9 @@ export function SubmissionCheck({
     >
       <h2>4. Check a submission</h2>
       <p className="mt-1 text-[12px] text-ink-700">
-        Runs the same nine hard rules over a submission this tool did not produce, against the
-        instance loaded above. Drop the three CSVs here, or check the reference answer published
-        with the brief.
+        Runs the local conformance validator over a submission this tool did not produce, against
+        the instance loaded above. It checks every rule decidable from the CSVs; global physical
+        night alignment across separate possessions is not represented by the format.
       </p>
 
       <div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-3">
@@ -208,7 +208,7 @@ export function SubmissionCheck({
               }`}
             >
               {checked.report.feasible
-                ? "Feasible — zero hard violations"
+                ? "Feasible — zero hard violations (local conformance)"
                 : `${checked.report.hardViolations.length} hard violations`}
             </p>
           </div>
