@@ -1,5 +1,96 @@
 # Project Status
 
+## PS1 evidence calibration and spec sync — 2026-09-18
+
+Documentation-only session closing issues #35–#40. No behavioural change: the
+engine, API, schema and dependencies are untouched. `packages/ps1` tests pass
+(125 tests across 14 files) after the comment renumbering below.
+
+### Upstream spec update: predecessor precedence
+
+The official problem statement was updated on 2026-09-18 at 06:57 UTC, 33 minutes
+after our last commit to `main` (`0bd613d`, 06:24 UTC). Verified directly against
+`aochinwen/NebulaX-Hackathon-ProblemStatement` at **`966c976`**, file
+`PS1/PS1_README.md`, rather than from the issue description alone.
+
+**Predecessor Precedence** is inserted as strict rule 3: an activity naming another
+as `predecessor_activity_id` must not start until that predecessor has finished —
+finish-to-start, zero lag (`FS+0`). "Finished" is the week of the predecessor's last
+scheduled access night; the successor's first scheduled access night must fall in a
+strictly later week. Cross-contract links are allowed; cycles are not. There are now
+**ten** strict rules, not nine, and every rule from 3 onward is renumbered.
+
+**The engine already conforms. No engine change was required.**
+
+| Spec requirement | Implementation | Status |
+| --- | --- | --- |
+| Field parsed | `io/load.ts:85`, `:325` | Present |
+| "Finished" = last access week | `engine/validate.ts` — `max(predecessor weeks)` | Matches |
+| Successor first access strictly later | `successorStart <= predecessorEnd` fails | Matches |
+| Scheduler enforces FS+0 | `engine/schedule.ts:347` — `max(predecessor weeks) + 1` | Matches |
+| Cross-contract links allowed | Global topological sort, `schedule.ts:128-149` | Supported |
+| Cycles rejected | `load.ts:412` (`InstanceError`) and `schedule.ts:149` | Rejected |
+| Unknown predecessor rejected | `load.ts:399` | Rejected |
+| Self-precedence rejected | `load.ts:402` | Rejected |
+
+An earlier upstream commit (`16526c0`, 2026-09-17) corrected the penalty worked
+example from "10 days" to "7 days". The arithmetic always used 7, so this was a
+content-bug fix with no scoring change.
+
+### Documentation drift corrected
+
+Issue #40 named two stale comments. A full sweep of `packages/ps1` found **seven**:
+
+| Location | Was | Now |
+| --- | --- | --- |
+| `engine/validate.ts:213` | *(no rule marker)* | `rule 3: predecessor precedence` |
+| `engine/validate.ts:292` | `rules 4 and 5` | `rules 5 and 6` |
+| `engine/validate.ts:347` | `rule 3: closures and buffers` | `rule 4` |
+| `engine/validate.ts:366` | `rules 6 and 7` | `rules 7 and 8` |
+| `engine/validate.ts:398` | `rules 8 and 9: ECLO` | `rules 9 and 10` |
+| `engine/schedule.ts:400` | `Rule 9` (ECLO continuity) | `Rule 10` |
+| `engine/validate.ts:83`, `README.md:22`, `package.json:6` | "nine hard rules" | "ten hard rules" |
+
+Rules 1 and 2 are unchanged, so `engine/pins.test.ts:64` needed no edit.
+
+### Evidence calibration
+
+A deep-research pass extracted 85 claims; 25 reached adversarial verification,
+**11 confirmed and 14 killed**. The result is now recorded in
+[PS1_EVIDENCE_BASE.md](PS1_EVIDENCE_BASE.md), including a **do-not-say list** so
+refuted claims are not re-derived by accident. Only 9 of the 14 killed claims are
+individually documented; that record-keeping gap is stated in the file.
+
+Four positioning corrections followed from it:
+
+- **The Singapore incumbent is named.** SMRT's TAMS has performed rules-based
+  conflict checking on NSEWL since 16 August 2021 and reached the Circle Line by
+  2025. `README.md` and [PROJECT_BRIEF.md](PROJECT_BRIEF.md) now lead with
+  *contention resolution between competing requests* and the binding constraint,
+  which is the part TAMS is not documented as doing — not with conflict detection,
+  which is deployed capability here.
+- **The scarcity premise is re-sourced** to the PS1 challenge wording. LTA's
+  February 2026 joint release states that *more* engineering hours will be set
+  aside, so it cannot support a fixed-envelope framing; footnote 4 of
+  [NEBULAX_PRODUCT_RESEARCH.md](NEBULAX_PRODUCT_RESEARCH.md) is now scope-limited
+  to the four things it does support.
+- **Differentiation bets 1, 2 and 4 are downgraded** to gaps in *published*
+  capability. Coverage rests on two operators; eight named commercial vendors
+  produced zero verified findings. "No competitor does this" is now a prohibited
+  phrase.
+- **Bet 3 is the lead differentiator**, carrying the only independent quantified
+  baseline: ORR/GHD, April 2021, 17–22% of agreed possessions cancelled before
+  delivery. Four citation rules constrain its use, including past tense and
+  problem-baseline-only framing.
+
+### Still open
+
+Issues #41 (planner usability pilot) and #42 (LTA's own tooling and a commercial
+vendor survey) remain open and are **not** blockers for submission — #38's framing
+discipline is precisely what makes the missing vendor survey safe to lack. #17
+remains the open release gate.
+
+
 ## PS1 exception-first workspace implementation — 2026-09-18
 
 Implemented on `codex/ps1-operations-workspace` in two feature checkpoints:

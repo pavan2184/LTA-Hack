@@ -80,7 +80,7 @@ function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {
 }
 
 /**
- * Validate a submission against the nine hard rules and score it.
+ * Validate a submission against the ten hard rules and score it.
  *
  * This mirrors the reference validator the judges run; it is not that program.
  * Where the brief is ambiguous, behaviour is pinned to the published reference
@@ -210,7 +210,9 @@ export function validate(
     }
   }
 
-  // A predecessor must complete in an earlier week than its successor begins.
+  // --- rule 3: predecessor precedence --------------------------------------
+  // Finish-to-start, zero lag: the successor's first access week must be
+  // strictly later than the week of the predecessor's last access night.
   for (const activity of instance.activities) {
     if (!activity.predecessorActivityId) continue;
     const predecessor = accessByActivity.get(activity.predecessorActivityId) ?? [];
@@ -287,7 +289,7 @@ export function validate(
     }
   }
 
-  // --- rules 4 and 5: capacity and legal mixes, per location-week -----------
+  // --- rules 5 and 6: capacity and legal mixes, per location-week -----------
   // `supply_capacity` limits *possessions*, not activities: co-sharing packs
   // several activities into one access-night slot, which is precisely how the
   // brief says co-sharing increases capacity. Verified against the reference
@@ -342,7 +344,7 @@ export function validate(
     }
   }
 
-  // --- rule 3: closures and buffers ----------------------------------------
+  // --- rule 4: closures and buffers ----------------------------------------
   // Deliberately not enforced across separate possessions, and this is a real
   // limit of the submission format rather than an omission.
   //
@@ -361,7 +363,7 @@ export function validate(
   // overlap, so treating that as illegal would produce strictly worse schedules
   // than the published answer while gaining no safety the validator rewards.
 
-  // --- rules 6 and 7: weekly allocation and workfronts ----------------------
+  // --- rules 7 and 8: weekly allocation and workfronts ----------------------
   const accessWithContract = submission.access.map((row) => {
     const activity = activityById.get(row.activityId)!;
     return { ...row, activity, contract: contractByNumber.get(activity.contractNumber)! };
@@ -393,7 +395,7 @@ export function validate(
     }
   }
 
-  // --- rules 8 and 9: ECLO ---------------------------------------------------
+  // --- rules 9 and 10: ECLO -------------------------------------------------
   const ecloRows = submission.access.filter((row) => row.eclo === 1);
   const ecloNights = ecloRows.length;
   if (scenario === "A" && ecloNights > 0) {
