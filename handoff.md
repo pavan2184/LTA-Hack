@@ -1,6 +1,6 @@
 # RailPlan project handoff
 
-Last updated: 15 September 2026 (Singapore)
+Last updated: 18 September 2026 (Singapore)
 
 Application version: `0.4.0`
 
@@ -8,9 +8,9 @@ Repository: <https://github.com/pavan2184/LTA-Hack>
 
 Production: <https://railplan-nine.vercel.app>
 
-Production deployment: `dpl_7pMBfJBr7bfHNMori2uQ2JhfjWvu` (`Ready`)
+Production deployment: Vercel Git deployment from `main` (`Ready`)
 
-Deployed source commit: `ef727b0a25cfa25bb026a9c3da189e9e58cd8a1e`
+PS1 implementation merge commit: `cc004c73af0efde968b85f82e3068fbaf68eb318`
 
 ## 1. Executive summary
 
@@ -22,16 +22,20 @@ groups:
 - contractor organisations, which prepare requests and see their own published
   slots.
 
-The latest work turns the project from a collection of partly disconnected
-workspaces into one role-aware product. It introduces a shared white, light-grey
-and blue visual system; connects the request-to-publication journey; makes Night
-overview the authoritative saved-planning workspace; and preserves the sandbox as
-a separate, clearly fabricated place for experimentation.
+The product now contains two deliberately separated planning surfaces. The
+authenticated RailPlan workspace connects the request-to-publication journey and
+keeps Night overview as the authoritative saved-planning surface. The public
+`/ps1` workspace solves the NebulaX PS1 challenge entirely in the browser, with a
+hardened local conformance validator, deterministic multi-start optimiser,
+linked operations workspace and exact nine-file submission export. Both use the
+same white, light-grey and blue design system, while the sandbox remains a
+separate, clearly fabricated place for experimentation.
 
-The final GitHub reconciliation resolved 29 textual conflicts and combined the
-approved local work with upstream `main`. Open PR #27, which adds contractor
-schedule acknowledgements, was deliberately excluded. The reconciled result was
-pushed to `main` and explicitly deployed to Vercel.
+The original GitHub reconciliation resolved 29 textual conflicts and combined
+the approved local work with upstream `main`. Open PR #27, which adds contractor
+schedule acknowledgements, was deliberately excluded. The PS1 hardening and
+workspace release was then merged through PR #34, deployed from `main`, and
+smoke-tested at the canonical production URL.
 
 ## 2. Product boundary
 
@@ -46,6 +50,11 @@ The planning engine and validator are deterministic TypeScript. Generative AI is
 optional and may extract supported request fields or phrase an explanation; it is
 not allowed to approve a request, establish feasibility, invent an operating rule
 or certify railway safety.
+
+The PS1 assistant is not generative. It answers only supported question
+categories from solver, validator and revision facts already in memory. It cites
+the relevant activities, contracts, locations, weeks and objective terms, and
+returns its supported categories for an unsupported question.
 
 All baseline requests, topology, workforce and scenario data are fabricated. The
 geographic view is illustrative and is not an operational network map. A plan is
@@ -90,7 +99,8 @@ organisation confirms through its established process.
 
 | Route | Role | Purpose and current behaviour |
 | --- | --- | --- |
-| `/` | Authenticated users | Role-aware Home guide explaining preparation through tracking. |
+| `/` | Public entry | Product landing page with direct access to the public PS1 scheduler and authenticated RailPlan entry. |
+| `/ps1` | Public | Browser-only NebulaX PS1 solver, local conformance validator, linked operations workspace and official submission export. |
 | `/login` | Public entry | Supabase sign-in with a safe, role-checked local return path. |
 | `/plans` | Planner | Night overview: queue, engineering timeline, inspector, plan controls and publication journey. |
 | `/plans/history` | Planner | Cursor-paged immutable plan history and exact version reopening. |
@@ -204,7 +214,126 @@ return paths are rejected.
 - Clock inputs explicitly distinguish midnight, next-day times and unknown values.
 - Unsaved creation, correction and transcript edits are protected during navigation.
 
-## 6. Planning, persistence and workflow changes
+## 6. Public PS1 scheduler and operations workspace
+
+### Runtime and privacy boundary
+
+- `/ps1` is public and requires no account. Instance parsing, solving,
+  validation, explanations and revision history run locally in the browser.
+- Solves run in a Web Worker. Starting another solve replaces and terminates the
+  previous worker; test environments without Worker support use the same engine
+  through a main-thread fallback.
+- Plans, pins, disruptions and history are session-only and are cleared by a
+  refresh. No PS1 database, authentication flow, secret or environment variable
+  was introduced.
+- Uploads are limited to 5 MB per file and approximately 50,000 total rows. The
+  UI reports actionable errors instead of attempting an unbounded parse.
+
+### Instance and submission boundary
+
+- `packages/ps1/src/io/csv.ts` is the shared RFC-style CSV implementation. It
+  supports quoted fields, doubled quotes, embedded newlines and CRLF/LF, and
+  enforces exact headers and row widths.
+- All eight instance files reject duplicate identifiers or parameters, missing
+  and ambiguous records, invalid integers/ranges/booleans/dates, invalid foreign
+  keys, inconsistent activity types, self-predecessors and predecessor cycles.
+- Submission parsing preserves the official wire format and exact column order.
+  It requires one RESULTS row per contract under one scenario and recomputes
+  every completion date, overrun and objective input rather than trusting the
+  submitted values.
+- Access rows require integer weeks/nights, one row per activity/week,
+  contiguous unique `access_seq` values and a night within the applicable
+  contract/type/week possession count. A row can satisfy workload only once.
+- Occupancy is reconstructed from each access location, direction, workfront,
+  buffers, Live mirroring and interchange effects. Missing, duplicate, extra and
+  orphan occupancy rows are hard failures.
+- Scenario C's two-week ECLO window is validated against every affected line,
+  including cross-line effects created by Live work. Official Scenario A/B/C
+  capacity, co-sharing and objective semantics remain unchanged.
+
+### Local conformance boundary
+
+Closure expansion is one authoritative implementation shared by the solver,
+validator, timeline, schematic network and explanations. The checker is labelled
+`local conformance validator`: the official output identifies `access_night`
+only within contract/type possessions, so a global physical night cannot be
+reconstructed across contracts. The UI and `ValidationReport` disclose
+`cross_possession_night_alignment` as undecidable instead of inventing a
+cross-contract collision rule. If the organiser supplies a reference validator,
+it should become a final gate without changing the nine-file submission format.
+
+### Deterministic optimiser
+
+- Activities are scheduled in deterministic topological order, so every
+  predecessor completes before its successor starts.
+- The optimiser runs 24 seeded construction starts using deadline, slack,
+  priority, bottleneck, duration and predecessor-aware orderings, followed by a
+  bounded reconstruction/local-neighbour search. The configured ceiling is
+  2,500 evaluations; the public instance currently completes after 120.
+- Candidate moves cover week shifts, ordering/repacking choices, co-sharing,
+  ECLO and excess-possession trade-offs. Every incumbent is validated and only a
+  feasible score improvement can replace it.
+- Scenario B no longer has the artificial `supply + 2` cap. It may buy all
+  required excess possessions and pays the official objective cost.
+- Scenario C evaluates ECLO, extra nights, co-sharing and delay by their actual
+  objective deltas rather than disabling ECLO.
+- `horizon_weeks` is the hard output boundary. An instance that cannot be
+  completed within it returns a non-submittable `INFEASIBLE` outcome instead of
+  rows the validator would reject.
+- Pins and disruptions are hard constraints. An unsatisfiable proposed revision
+  returns diagnostics and cannot be applied or downloaded.
+- Repeated runs with the same input/options produce byte-identical CSV output.
+
+The public-instance objectives remain A 25.2, B 44 and C 39.2.
+
+### RailPlan-inspired workspace
+
+- A comparison header shows feasibility, objective, overrun, excess nights,
+  ECLO use, access-nights and solver effort for all scenarios without ranking
+  scores that use different rules.
+- The searchable activity/contract queue filters Late, Pinned, Live, ECLO,
+  Disrupted and Warning items and stays linked to timeline and inspector
+  selection.
+- The central location-by-week possession timeline exposes capacity pressure,
+  filters and selection without fabricating geographic coordinates.
+- A sticky inspector provides accessible Summary, Why, Network and Changes tabs.
+  The schematic dual-line network is derived only from uploaded locations and
+  the authoritative closure expansion, including workfront, buffers, Live
+  mirroring, interchange effects, disruptions and capacity pressure.
+- Scenario and inspector tabs implement tab/tabpanel relationships and keyboard
+  navigation. The workspace has responsive desktop/mobile layouts and labelled
+  interactive controls.
+- Deterministic Q&A explains placement or movement, contract overrun,
+  bottlenecks, scenario differences, pins/disruptions, and ECLO/excess use from
+  computed facts. It never speculates outside those categories.
+
+### Reviewed changes, history and export
+
+- Pins, unpins and disruption replans produce a comparison preview before they
+  affect the active plan. The preview reports score/feasibility changes, changed
+  completion dates, moved activities/accesses, churn and validation changes.
+- Apply creates an in-memory revision. Undo restores the preceding revision.
+  The Changes inspector and exported `PS1_PLANNING_LOG.json` record the session.
+- The planning log is never added to the official submission ZIP.
+- CSV and ZIP actions are disabled for pending, invalid or incomplete scenarios.
+  The official ZIP contains exactly `A/`, `B/` and `C/`, each with
+  `RESULTS.csv`, `SCHEDULE_ACCESS.csv` and `SCHEDULE_OCCUPANCY.csv`.
+
+### Public PS1 interfaces
+
+- `SolveOutcome` distinguishes `FEASIBLE`, `INFEASIBLE` and
+  `INVALID_INSTANCE`, with optional submission, score, diagnostics, warnings,
+  starts, candidates and elapsed time.
+- `SolveOptions` carries scenario, pins, disruptions and the deterministic
+  optimisation budget.
+- `ValidationReport` includes local-conformance status and undecidable-rule
+  disclosures.
+- `PlanRevision` and `PlanDiff` represent review/apply/undo state, score deltas,
+  churn and validation changes.
+- `QaAnswer` contains answer text, supporting facts and linked entities.
+- The official `Submission` wire type and published CSV schemas did not change.
+
+## 7. Planning, persistence and workflow changes
 
 ### Saved planning
 
@@ -258,7 +387,7 @@ return paths are rejected.
 - Contractor creation continues to derive organisation from the authenticated
   profile; a client cannot override it.
 
-## 7. API changes and trust boundaries
+## 8. API changes and trust boundaries
 
 The current public application routes are under `src/app/api`. The main additions
 or extensions are:
@@ -283,7 +412,11 @@ accepts only the strategy, exact locks and a bounded violation identifier. It lo
 facts and recomputes the finding on the server. Browser state is never an
 authorization source.
 
-## 8. Authentication, security and privacy
+PS1 deliberately adds no API route. Its instance and submission files never
+cross an application HTTP boundary: parsing, solving, validation, deterministic
+Q&A and export all execute in the browser bundle.
+
+## 9. Authentication, security and privacy
 
 - Supabase Auth verifies identity; a trusted profile supplies the planner or
   contractor role.
@@ -304,12 +437,17 @@ authorization source.
   plan or bypass the validator.
 - The reconciliation introduced no RLS relaxation, authentication policy change or
   client-side scheduling authority.
+- PS1 is an explicit public, browser-only exception to the authenticated RailPlan
+  boundary. It has no persistence or external assistant, rejects oversized and
+  malformed uploads before solving, and does not log uploaded instance contents.
 
-## 9. Architecture map
+## 10. Architecture map
 
 | Area | Main location | Responsibility |
 | --- | --- | --- |
 | Domain engine | `packages/core/src` | Serializable facts, validator, heuristic solver, metrics, alternatives, explanations and conflict grouping. |
+| PS1 engine | `packages/ps1/src` | Official instance/submission I/O, closure expansion, deterministic optimiser, scoring, local conformance validation, revisions and grounded Q&A. |
+| PS1 worker/UI | `src/workers/ps1.worker.ts`, `src/components/ps1` | Browser worker orchestration, scenario comparison, queue, timeline, inspector, review/apply/undo and exact submission export. |
 | App routes | `src/app` | Role-gated pages and authenticated HTTP boundaries. |
 | Saved planning | `src/lib/plans`, `src/components/plans` | Overview reads, analysis, immutable generation, review and publication UI. |
 | Requests | `src/lib/requests`, `src/components/requests` | Intake, immutable revisions, private proposals and review journeys. |
@@ -318,11 +456,13 @@ authorization source.
 | Persistence | `src/lib/db`, `supabase/migrations` | Authenticated transactions, RLS-backed workflows and source revisioning. |
 | Tooling | `scripts/db`, `scripts/e2e` | Migration, seed/parity, authorization, concurrency and authenticated HTTP verification. |
 
-The core invariant is: the solver proposes, but the independent validator decides
-whether a complete result is feasible. UI state, AI output and stored metrics are
-never treated as the feasibility authority.
+The core invariant is: a solver proposes, but the corresponding independent
+validator decides whether a complete result is feasible. PS1 additionally uses
+one closure expansion everywhere that occupancy is computed or explained. UI
+state, AI output and stored metrics are never treated as the feasibility
+authority.
 
-## 10. Important implementation decisions
+## 11. Important implementation decisions
 
 - Keep one sandbox dashboard and redirect former subpages to sections.
 - Keep saved planning and sandbox state separate even when navigation carries the
@@ -340,12 +480,44 @@ never treated as the feasibility authority.
   evidence.
 - Exclude PR #27 contractor acknowledgements until it is separately reviewed and
   approved.
+- Keep PS1 browser-only and session-only; do not add auth, persistence, external
+  LLM calls or secrets to a hidden-instance workflow.
+- Enforce `horizon_weeks` as the submission boundary until an organiser validator
+  proves overflow weeks are legal.
+- Describe PS1 validation as local conformance and disclose rules the official
+  output cannot decide; do not fabricate global night alignment.
+- Keep closure expansion authoritative across solving, validation, visualisation
+  and explanations.
+- Require review before applying pins or disruptions, and keep the auxiliary
+  planning log outside the official submission archive.
 
 See `docs/DECISIONS.md` for the full rationale and superseded historical choices.
 
-## 11. Verification completed for the reconciled release
+## 12. Verification completed for the current release
 
-The final reconciliation was verified with:
+The PS1 hardening and workspace release was verified with:
+
+- full Vitest run: 963/963 tests passed across 113 files;
+- focused PS1 engine/UI regression run: 136/136 passed across 13 files;
+- strict parser and integrity fixtures for quoted CSV, numeric/range/reference
+  failures, duplicate parameters and predecessor cycles;
+- validator regressions for forged RESULTS, invalid nights, duplicate workload,
+  non-contiguous sequences, occupancy reconciliation and Live/ECLO cross-line
+  windows;
+- solver regressions for deterministic byte-identical output, strict horizons,
+  congestion, reordered identifiers, Scenario B demand and Scenario C trade-offs;
+- review/apply/undo, grounded Q&A, invalid-download blocking, worker progress and
+  exact ZIP-content coverage;
+- lint, TypeScript and Next.js production build: passed;
+- public-instance score gates: A 25.2, B 44 and C 39.2;
+- GitHub post-merge CI: passed; and
+- production HTTP and browser checks: `/` and `/ps1` returned 200, the Web Worker
+  solved all scenarios, the linked operations workspace rendered, deterministic
+  Q&A cited schedule facts, and the official ZIP action completed.
+
+The current Vercel Git deployment reached `Ready` from `main` and the canonical
+production alias served the new `/ps1` content. The earlier RailPlan reconciliation
+was separately verified with:
 
 - full Vitest run: 820/820 tests passed across 98 files;
 - independent-session concurrency: 13/13 passed across five files;
@@ -359,21 +531,27 @@ The final reconciliation was verified with:
   workforce, keyboard dialog focus, working legacy redirects/anchors, correct
   white surfaces and consistent fabricated emergency data.
 
-The final Vercel deployment compiled successfully, completed TypeScript and static
-page generation, and reached `Ready` in 48 seconds. Post-deployment probes returned
-HTTP 200 for `/`, `/login` and `/sandbox`. No runtime errors were observed during
-those probes.
+That earlier Vercel deployment compiled successfully, completed TypeScript and
+static page generation, and reached `Ready` in 48 seconds. Its post-deployment
+probes returned HTTP 200 for `/`, `/login` and `/sandbox`.
 
 The first full reconciliation run had three failures caused by tests asserting
 superseded UI structures. The tests were rewritten around the approved server
 preview, dedicated notification settings page and explicit discard guard. They
 were not removed to make the suite pass.
 
-## 12. Verification limitations and known risks
+## 13. Verification limitations and known risks
 
 - No operational LTA rules or real maintenance data have been validated.
 - The heuristic produces a feasible candidate within the encoded model; it does
   not prove global optimality. CP-SAT remains a future benchmark candidate.
+- The PS1 optimiser is deterministic and bounded, but still heuristic; a feasible
+  outcome is locally conformant, not a proof of global optimality.
+- Cross-contract physical-night collisions are undecidable from the official PS1
+  files because they expose no global night identifier. An organiser reference
+  validator has not been provided, so local conformance remains the release gate.
+- Synthetic hidden-instance fixtures cover malformed inputs, congestion and
+  trade-offs, but the actual private judging instances were not available.
 - Reduced meeting time and planner effort are hypotheses, not measured outcomes.
 - Live Anthropic success and a real Telegram delivery were not exercised in the
   final controlled-provider suite.
@@ -390,7 +568,7 @@ were not removed to make the suite pass.
   (`esbuild` and `unrs-resolver`). The production build still passed; review this
   policy before changing package installation behaviour.
 
-## 13. Deliberately excluded or deferred work
+## 14. Deliberately excluded or deferred work
 
 - PR #27 contractor schedule acknowledgements.
 - Named-worker scheduling, leave, personal qualifications or location tracking.
@@ -400,8 +578,11 @@ were not removed to make the suite pass.
 - External source integrations until provider, scope and data handling are agreed.
 - CP-SAT replacement; benchmark it against the current heuristic first.
 - Any claim of operational safety approval or automatic execution.
+- Any claim that the PS1 local checker decides global physical-night alignment.
+- Importing RailPlan's authenticated APIs, Supabase data or minute-level models
+  into the PS1 browser-only surface.
 
-## 14. How to run the project
+## 15. How to run the project
 
 Use Node.js 22.13+ on the Node 22 line, or Node 24, with npm. The project runs
 directly in Node; Docker is not part of the supported workflow.
@@ -412,6 +593,14 @@ cp .env.example .env.local
 npm run db:migrate
 npm run db:verify
 npm run dev
+```
+
+Open `http://localhost:3000/ps1` for the public browser-only challenge workflow.
+No database or authentication setup is required for that route. The published
+instance can also be solved from the command line with:
+
+```bash
+npm run ps1:solve
 ```
 
 Only seed a dedicated empty RailPlan development database:
@@ -438,7 +627,7 @@ Database and E2E tests use shared hosted resources and should run serially in a
 coordinated window. The E2E harness creates exact temporary fixtures and cleans
 them up. Do not use real provider tokens or recipients for the controlled suite.
 
-## 15. Environment configuration
+## 16. Environment configuration
 
 Check `.env.example`; do not invent variable names. The main settings are:
 
@@ -454,24 +643,31 @@ The verified Supabase connection uses the transaction pooler on port 6543 with
 certificate and hostname validation. Migration checksums are immutable; add a new
 migration rather than editing one already applied.
 
-## 16. Git and deployment record
+## 17. Git and deployment record
 
 - `18c32d3`: complete local checkpoint before upstream reconciliation.
 - `e3e7cc8`: carry-forward source revision identity correction.
 - `1fc5441`: reviewed carry-forward workflow and verification.
 - `c70ecef`: upstream `main` used for the final merge.
 - `ef727b0`: reconciled merge, pushed to `origin/main` and deployed.
+- `985a639`: PS1 parser, validator, optimiser, worker, operations workspace,
+  revision/Q&A flows, tests and documentation.
+- `f8195c6`: CI timing correction for the complete PS1 pin-review test; no
+  production behaviour changed.
+- `cc004c7`: PR #34 squash merge to `main`, deployed to production.
 
 Recoverable backup refs were retained:
 
 - `refs/codex-backups/pre-sync-20260915`
 - `refs/codex-backups/reconciliation-checkpoint-20260915`
 
-The production alias is `https://railplan-nine.vercel.app`. Deployment was made
-with pinned Vercel CLI `50.1.6`; the remote build used Vercel CLI `59.16.0` and
-detected Next.js `16.3.4`.
+The production alias is `https://railplan-nine.vercel.app`; the public challenge
+route is `https://railplan-nine.vercel.app/ps1`. The earlier reconciled release
+used pinned Vercel CLI `50.1.6`. The current PS1 release was deployed by the
+repository's Vercel Git integration after PR #34 merged. The remote build detected
+Next.js `16.3.4`.
 
-## 17. Recommended next steps
+## 18. Recommended next steps
 
 ### Execution update — 2026-09-16
 
@@ -494,6 +690,10 @@ detected Next.js `16.3.4`.
   benchmark rather than a production replacement.
 - **Demo — prepared, not recorded.** The storyboard exists and the controlled
   end-to-end journey passed. A human-paced rehearsal and recording remain.
+- **PS1 — implemented and deployed.** Parser/validator hardening, deterministic
+  optimisation, the browser worker, operations workspace, reviewed changes,
+  grounded Q&A and exact export are live. The organiser reference validator and
+  actual hidden judging instances remain external dependencies.
 
 Detailed evidence and limitations are recorded in
 `docs/RELEASE_VERIFICATION_2026-09-16.md`.
@@ -512,8 +712,13 @@ Detailed evidence and limitations are recorded in
 7. Prepare the 2–3 minute hackathon demonstration around one complete story:
    request → exact clash → reviewed repair → validated version → publication →
    contractor-scoped slot.
+8. If the organiser publishes an executable reference validator, add it as the
+   final PS1 release/submission gate and reconcile any demonstrated difference
+   without changing the official CSV schemas.
+9. Re-run the deterministic PS1 property and score suites against any authorised
+   hidden or additional benchmark instances before the final judging submission.
 
-## 18. Source-of-truth documents
+## 19. Source-of-truth documents
 
 - `docs/PROJECT_BRIEF.md` — product intent, users, scope and success evidence.
 - `docs/ARCHITECTURE.md` — system shape and authoritative boundaries.
