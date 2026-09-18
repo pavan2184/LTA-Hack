@@ -3,8 +3,11 @@ import { afterEach, expect, it, vi } from "vitest";
 import { WorkspaceNavigation } from "@/components/layout/WorkspaceNavigation";
 import Home from "@/app/page";
 import Sandbox from "@/app/sandbox/page";
-const { actor } = vi.hoisted(() => ({ actor: vi.fn() }));
-vi.mock("@/lib/auth/page", () => ({ workspaceActor: actor }));
+// `Home` resolves who is asking through `landingAccess`, which distinguishes
+// anonymous from unassigned so the bare domain can offer the open PS1 page.
+// The sandbox still gates on `workspaceActor`, so both are mocked here.
+const { actor, landing } = vi.hoisted(() => ({ actor: vi.fn(), landing: vi.fn() }));
+vi.mock("@/lib/auth/page", () => ({ workspaceActor: actor, landingAccess: landing }));
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
     throw new Error(`redirect:${path}`);
@@ -68,14 +71,14 @@ it("does not offer planner-wide workspaces to contractors", () => {
   expect(screen.queryByRole("link", { name: "Notification settings" })).not.toBeInTheDocument();
 });
 it("offers the full workflow with planner actions on Home", async () => {
-  actor.mockResolvedValue({ role: "planner" });
+  landing.mockResolvedValue({ state: "workspace", actor: { role: "planner" } });
   render(await Home());
   expect(screen.getByRole("heading", { name: "How RailPlan works" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Open night overview" })).toHaveAttribute("href", "/plans");
   expect(screen.getByRole("link", { name: "Prepare a private draft" })).toHaveAttribute("href", "/requests/drafts");
 });
 it("keeps contractor Home actions scoped while explaining the planner stages", async () => {
-  actor.mockResolvedValue({ role: "contractor" });
+  landing.mockResolvedValue({ state: "workspace", actor: { role: "contractor" } });
   render(await Home());
   expect(screen.getByRole("heading", { name: "How RailPlan works" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Open your requests" })).toHaveAttribute("href", "/contractor");
@@ -84,13 +87,13 @@ it("keeps contractor Home actions scoped while explaining the planner stages", a
   expect(screen.queryByRole("link", { name: "Try the demo sandbox" })).not.toBeInTheDocument();
 });
 it("retains the selected engineering night through Home without forwarding arbitrary query data", async () => {
-  actor.mockResolvedValue({ role: "planner" });
+  landing.mockResolvedValue({ state: "workspace", actor: { role: "planner" } });
   render(await Home({ searchParams: Promise.resolve({ night: "2026-09-16", plan: "saved-version", request: "M-001", transcript: "private" }) }));
   expect(screen.getByRole("link", { name: "Open night overview" })).toHaveAttribute("href", "/plans?night=2026-09-16&plan=saved-version&request=M-001");
   expect(screen.getByRole("link", { name: "Review submitted requests" })).toHaveAttribute("href", "/requests?planningNight=2026-09-16&plan=saved-version&planRequest=M-001");
 });
 it("keeps unassigned identities at an explicit access-pending page", async () => {
-  actor.mockResolvedValue(null);
+  landing.mockResolvedValue({ state: "unassigned" });
   render(await Home());
   expect(
     screen.getByRole("heading", { name: "Workspace access pending" }),

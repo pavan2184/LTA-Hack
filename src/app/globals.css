@@ -66,6 +66,21 @@
   --color-cf-window: #3a4048;
   --color-cf-window-soft: #e8e6e0;
 
+  /*
+   * PS1's two lines.
+   *
+   * Same idea as the corridor colours below — identity, so sixty-seven location
+   * rows read as two lines before anyone reads a label — but deliberately NOT
+   * the MRT hues. Line Alpha and Line Beta are fabricated lines in a challenge
+   * instance; dressing them in North-South red would assert a correspondence to
+   * the real network that does not exist. Two quiet neutrals carry the grouping
+   * without making a claim, and stay far below the intensity of any status.
+   */
+  --color-line-alpha-tint: #eceff4;
+  --color-line-alpha-ink: #46506a;
+  --color-line-beta-tint: #f0eeea;
+  --color-line-beta-ink: #5e5647;
+
   /* Corridor identity: the real MRT line colours. */
   --color-line-ns: #d42e12;
   --color-line-ew: #009645;
@@ -159,6 +174,18 @@ body {
 }
 .gutter-cc {
   background-color: #fbeccd;
+}
+
+/*
+ * PS1 row gutters. The sticky location column is tinted, never the cells: the
+ * cells already carry load as accent density, and two tints competing in one
+ * square would make neither legible.
+ */
+.gutter-alpha {
+  background-color: var(--color-line-alpha-tint);
+}
+.gutter-beta {
+  background-color: var(--color-line-beta-tint);
 }
 
 .lane-ns {

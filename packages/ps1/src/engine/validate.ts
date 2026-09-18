@@ -16,7 +16,7 @@ import {
   type Submission,
   type ValidationReport,
 } from "../types/ps1";
-import { buildNetwork, expandSpan, type Network } from "./network";
+import { buildNetwork, closureFor, expandSpan, type Network } from "./network";
 import { capacityAt, type Disruption } from "./disruption";
 
 /** One PM alone, or one PC plus three co-workers, or four co-workers. */
@@ -108,8 +108,17 @@ export function validate(
     if (!activityById.has(row.activityId)) {
       fail("schema", `SCHEDULE_ACCESS references unknown activity ${row.activityId}`);
     }
-    if (row.week < 1 || row.week > horizonWeeks) {
+    if (!Number.isInteger(row.accessSeq) || row.accessSeq < 1) {
+      fail("schema", `${row.activityId}: access_seq must be a positive integer`);
+    }
+    if (!Number.isInteger(row.week) || row.week < 1 || row.week > horizonWeeks) {
       fail("schema", `${row.activityId}: week ${row.week} is outside the ${horizonWeeks}-week horizon`);
+    }
+    if (!Number.isInteger(row.accessNight) || row.accessNight < 1) {
+      fail("schema", `${row.activityId}: access_night must be a positive integer`);
+    }
+    if (row.eclo !== 0 && row.eclo !== 1) {
+      fail("schema", `${row.activityId}: eclo must be 0 or 1`);
     }
   }
   for (const row of submission.occupancy) {
@@ -119,6 +128,34 @@ export function validate(
     if (!network.supply.has(row.locationId)) {
       fail("schema", `${row.activityId}: unknown location ${row.locationId}`);
     }
+    if (!Number.isInteger(row.week) || row.week < 1 || row.week > horizonWeeks) {
+      fail("schema", `${row.activityId}: occupancy week ${row.week} is outside the horizon`);
+    }
+    if (!row.coShareGroup.trim()) {
+      fail("schema", `${row.activityId}: co_share_group must not be empty`);
+    }
+  }
+
+  const resultContracts = new Set<string>();
+  for (const row of submission.results) {
+    if (row.scenario !== scenario) {
+      fail("schema", `${row.contractNumber}: RESULTS scenario ${row.scenario} does not match ${scenario}`);
+    }
+    if (!contractByNumber.has(row.contractNumber)) {
+      fail("schema", `RESULTS references unknown contract ${row.contractNumber}`);
+    }
+    if (resultContracts.has(row.contractNumber)) {
+      fail("schema", `RESULTS contains duplicate contract ${row.contractNumber}`);
+    }
+    resultContracts.add(row.contractNumber);
+    if (!Number.isInteger(row.overrunDays) || row.overrunDays < 0) {
+      fail("schema", `${row.contractNumber}: overrun_days must be a non-negative integer`);
+    }
+  }
+  for (const contract of instance.contracts) {
+    if (!resultContracts.has(contract.contractNumber)) {
+      fail("schema", `RESULTS is missing contract ${contract.contractNumber}`);
+    }
   }
   if (violations.length) {
     return report(scenario, violations, emptyScores(scenario), 0, 0, []);
@@ -126,6 +163,35 @@ export function validate(
 
   const accessByActivity = groupBy(submission.access, (row) => row.activityId);
   const occupancyByActivity = groupBy(submission.occupancy, (row) => row.activityId);
+
+  // Submission identity: an access is one activity in one week, in contiguous
+  // sequence order. Without this, duplicate rows can manufacture workload.
+  for (const activity of instance.activities) {
+    const rows = accessByActivity.get(activity.activityId) ?? [];
+    const weeks = new Set<number>();
+    const sequences = new Set<number>();
+    for (const row of rows) {
+      if (weeks.has(row.week)) {
+        fail("schema", `${activity.activityId}: more than one access in wk${row.week}`);
+      }
+      weeks.add(row.week);
+      if (sequences.has(row.accessSeq)) {
+        fail("schema", `${activity.activityId}: duplicate access_seq ${row.accessSeq}`);
+      }
+      sequences.add(row.accessSeq);
+      const contract = contractByNumber.get(activity.contractNumber)!;
+      if (row.accessNight > contract.numberOfMaximumAccessPerWeek) {
+        fail(
+          "weekly_allocation",
+          `${activity.activityId}: access_night ${row.accessNight} exceeds ${contract.contractNumber}'s cap ${contract.numberOfMaximumAccessPerWeek}`,
+        );
+      }
+    }
+    const ordered = [...sequences].sort((a, b) => a - b);
+    if (ordered.some((value, index) => value !== index + 1)) {
+      fail("schema", `${activity.activityId}: access_seq must be contiguous from 1`);
+    }
+  }
 
   // --- rule 1: workload conservation ---------------------------------------
   for (const activity of instance.activities) {
@@ -140,6 +206,22 @@ export function validate(
       fail(
         "workload",
         `${activity.activityId}: yields ${yielded} against total_accesses ${activity.totalAccesses}`,
+      );
+    }
+  }
+
+  // A predecessor must complete in an earlier week than its successor begins.
+  for (const activity of instance.activities) {
+    if (!activity.predecessorActivityId) continue;
+    const predecessor = accessByActivity.get(activity.predecessorActivityId) ?? [];
+    const successor = accessByActivity.get(activity.activityId) ?? [];
+    if (!predecessor.length || !successor.length) continue;
+    const predecessorEnd = Math.max(...predecessor.map((row) => row.week));
+    const successorStart = Math.min(...successor.map((row) => row.week));
+    if (successorStart <= predecessorEnd) {
+      fail(
+        "predecessor",
+        `${activity.activityId}: starts wk${successorStart} before ${activity.predecessorActivityId} completes wk${predecessorEnd}`,
       );
     }
   }
@@ -167,14 +249,37 @@ export function validate(
       expandSpan(network, activity.startLocationId, activity.endLocationId),
     );
     const byWeek = groupBy(rows, (row) => row.week);
+    for (const [week, inWeek] of byWeek) {
+      if (!weeks.has(week)) {
+        for (const row of inWeek) {
+          fail("schema", `${activity.activityId}: orphan occupancy ${row.locationId} in wk${week}`);
+        }
+      }
+    }
     for (const week of weeks) {
       const inWeek = byWeek.get(week) ?? [];
       const got = new Set(inWeek.map((row) => row.locationId));
+      const rowKeys = new Set<string>();
+      for (const row of inWeek) {
+        const key = `${row.locationId}|${row.coShareGroup}`;
+        if (rowKeys.has(key)) {
+          fail("schema", `${activity.activityId}: duplicate occupancy ${row.locationId} in wk${week}`);
+        }
+        rowKeys.add(key);
+      }
       for (const locationId of expected) {
         if (!got.has(locationId)) {
           fail(
             "schema",
             `${activity.activityId}: wk${week} does not occupy ${locationId} from its declared span`,
+          );
+        }
+      }
+      for (const row of inWeek) {
+        if (!expected.has(row.locationId)) {
+          fail(
+            "schema",
+            `${activity.activityId}: wk${week} has extra occupancy ${row.locationId}`,
           );
         }
       }
@@ -302,10 +407,21 @@ export function validate(
     const weeksByLine = new Map<string, number[]>();
     for (const row of ecloRows) {
       const activity = activityById.get(row.activityId)!;
-      const lineCode = activity.startLocationId.split(":")[1];
-      const list = weeksByLine.get(lineCode) ?? [];
-      list.push(row.week);
-      weeksByLine.set(lineCode, list);
+      const contract = contractByNumber.get(activity.contractNumber)!;
+      const affectedLines = new Set(
+        closureFor(
+          network,
+          expandSpan(network, activity.startLocationId, activity.endLocationId),
+          contract.natureOfActivity,
+        )
+          .map((locationId) => network.supply.get(locationId)?.lineCode)
+          .filter((lineCode): lineCode is string => Boolean(lineCode)),
+      );
+      for (const lineCode of affectedLines) {
+        const list = weeksByLine.get(lineCode) ?? [];
+        list.push(row.week);
+        weeksByLine.set(lineCode, list);
+      }
     }
     for (const [lineCode, list] of weeksByLine) {
       const span = Math.max(...list) - Math.min(...list) + 1;
@@ -350,6 +466,25 @@ export function validate(
       fail(
         "planned_date",
         `${contract.contractNumber}: overruns ${contract.plannedCompletionDate} by ${overrun} days, forbidden in Scenario B`,
+      );
+    }
+  }
+
+  const resultByContract = new Map(submission.results.map((row) => [row.contractNumber, row]));
+  for (const contract of instance.contracts) {
+    const week = lastWeek.get(contract.contractNumber);
+    const simulated =
+      week === undefined ? contract.plannedCompletionDate : isoDate(weekEnd(horizonStart, week));
+    const planned = new Date(`${contract.plannedCompletionDate}T00:00:00Z`);
+    const overrun = Math.max(0, dayDiff(planned, new Date(`${simulated}T00:00:00Z`)));
+    const supplied = resultByContract.get(contract.contractNumber);
+    if (
+      supplied &&
+      (supplied.simulatedCompletionDate !== simulated || supplied.overrunDays !== overrun)
+    ) {
+      fail(
+        "schema",
+        `${contract.contractNumber}: RESULTS declares ${supplied.simulatedCompletionDate}/${supplied.overrunDays}, expected ${simulated}/${overrun}`,
       );
     }
   }
@@ -431,6 +566,10 @@ function report(
     hardViolations,
     softScores,
     detail: { capacityHotspots, nightsScheduled, ecloNights },
+    conformance: {
+      mode: "local",
+      undecidableRules: ["cross_possession_night_alignment"],
+    },
     ...(feasible
       ? {
           objectiveScore: Math.round(objectiveScore(scenario, softScores) * 10) / 10,

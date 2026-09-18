@@ -1,5 +1,20 @@
 # Security Review
 
+## PS1 hidden-instance boundary — 2026-09-18
+
+Hidden instance and submission files remain in the browser and are sent to no
+route, model, analytics service or database. A module worker receives structured
+clones only. Each selected file is limited to 5 MB and a selection to roughly
+50,000 records; the strict parser rejects malformed quoting, unexpected columns
+and oversized tables before solving. React renders uploaded labels as text, and
+download filenames are fixed rather than derived from CSV content.
+
+Deterministic Q&A accepts questions only as local intent text and answers from an
+engine-built fact set. It makes no LLM or network call and cannot change
+feasibility. Session history is memory-only, clears on reload and is exported only
+on explicit action. The submission ZIP contains a fixed allowlist of nine paths;
+the planning log is never included.
+
 ## Release gate re-audit — 2026-09-17
 
 Dependency audit at commit `9ca5630`: `npm audit` reports **0 vulnerabilities**.

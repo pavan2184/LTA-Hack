@@ -1,5 +1,215 @@
 # Project Status
 
+## PS1 hardened optimiser and operations workspace — 2026-09-18
+
+The public PS1 path now has strict RFC-style CSV parsing, cross-file instance
+integrity checks and a reconciliatory submission validator. The false positives
+found in the audit are closed: forged RESULTS, invalid access nights, duplicate
+workload rows, sequence gaps and mismatched occupancy are hard failures. Live ECLO
+windows use the full closure expansion on both affected lines. The checker labels
+itself local because global night alignment is absent from the official format.
+
+The greedy baseline remains available internally, while the product uses a
+deterministic 24-start optimiser with bounded reconstruction, topological
+predecessor order, unbounded scored Scenario-B possessions, evaluated Scenario-C
+ECLO and a strict horizon. The published instance remains A 25.2 / B 44 / C 39.2.
+Solves run in a browser worker with progress and cancellation by replacement.
+
+The result workspace adds an activity/contract queue, linked timeline selection,
+sticky four-tab inspector, closure-derived two-line schematic, deterministic Q&A,
+review-before-apply for pins/disruptions, undo and a separate memory-only planning
+log export. Infeasible scenarios cannot be downloaded; the official ZIP remains
+exactly three CSVs under each A/B/C folder. Verification evidence is recorded at
+the end of this implementation session.
+
+Verification completed on the final implementation:
+
+- `npm test` — 963 tests passed across 113 files.
+- `npm run typecheck` and `npm run lint` — clean.
+- `npm run build` — production build succeeds with `/ps1` statically generated.
+- Direct HTTP smoke checks — `/` and `/ps1` both return 200.
+- Production-browser smoke check — public instance solving runs in the Web
+  Worker, all three public scenarios are locally conformant at A 25.2 / B 44 /
+  C 39.2, the linked operations workspace renders, and deterministic Q&A cites
+  the selected activity's computed schedule facts.
+- The implementation branch is synchronized with its GitHub upstream before
+  release (`HEAD...origin/ps1-judging-surface-ux` is `0 0`).
+
+## PS1 restructured against scheduling-tool conventions — 2026-09-18
+
+The page worked but read as a report: one column, roughly 4,000px, every panel
+open at once, and a grid of sixty-seven rows with no way to narrow it. Changes
+below follow what comparable tools actually do, with sources recorded in
+`docs/DECISIONS.md` rather than invented.
+
+**Master-detail, not stacked panels.** Selecting a cell used to open a block
+*below* a scrolling table, so clicking a row near the top pushed the page and
+left the cell off screen. The detail now sits beside the grid and sticks while
+the grid scrolls. Palantir's scheduling Gantt widget and the long-standing
+"two-panel selector" screen pattern both put the detail adjacent, not beneath.
+
+**A toolbar that narrows the grid.** Search by location name or id, plus filters
+for At capacity, Pinned, Alpha and Beta, with a live count. This is the widget's
+"violation rules filter" idea — toggle to focus on what needs attention — and
+NN/g's finding that table design should serve the specific task: find, compare,
+or act. Finding a bottleneck previously meant scrolling sixty-seven rows; "At
+capacity" now cuts it to fifteen in one press.
+
+**Progressive disclosure on what was always open.** Urgent maintenance is a
+what-if, so it moved into a dialog reached from the grid or the result actions —
+the same place RailPlan keeps its own disruption tester. The contract table now
+shows the two contracts that overrun rather than all fourteen, twelve of which
+say "on time"; the rest are one press away. NN/g's 2006 study is the basis:
+deferring secondary controls measurably speeds initial task completion while
+keeping them discoverable.
+
+**Toolbar controls lost their per-button paragraphs.** Every action carrying a
+visible sentence is right for actions that change a schedule — pin, adopt,
+download, check — and wrong for view toggles, where the notes were louder than
+the grid they described. Sort, filter and search now carry tooltips and a live
+status line ("15 of 67 locations · along the line") instead. Consequential
+actions keep their notes.
+
+Verification: `npm run typecheck`, `npx eslint .` and the full suite pass — 946
+tests across 111 files, including four new ones covering search, the capacity
+filter, the empty-result escape and the detail panel opening and closing. The
+flow was walked in a browser at 1280px: filter to fifteen rows, select a cell,
+pin it, open urgent maintenance aimed at that cell.
+
+**Not done.** The widget also keeps a change log of edits with a review step
+before committing; PS1 still has no record of which pins were set or which
+replans were adopted. That is the next thing worth building and is not in this
+change.
+
+## PS1 adopts RailPlan's design system — 2026-09-18
+
+`/ps1` was built as its own package and had drifted into its own look: softer
+radii, flat panels, a 20px page heading against the workspace's 29px, and a
+metric grid that printed all eight formulas at once. Same repo, same author,
+two visual languages. This pulls PS1 onto the system `globals.css` already
+defines, reusing RailPlan's components and classes rather than copying them.
+
+**The `fx` control is now shared.** `Figure` took `MetricValue` from
+`@railplan/core`; it now takes a structural `FigureMetric`, which both that type
+and PS1's `Metric` satisfy. PS1's eight figures use the real component, so the
+arithmetic folds away behind `fx` instead of filling the panel. The unit suffix
+deliberately stays limited to percent and minutes — "ECLO nights" followed by
+"0 nights" says nothing twice.
+
+**Non-colour redundancy reached the possession grid.** It was colour-only: an
+over-capacity cell was red and nothing else, and a pinned week had no grid
+representation at all. Over-capacity cells now carry `.bar-conflict` and pinned
+weeks `.bar-pinned` — the same hatch and ruling the planner timeline uses, so
+both survive greyscale and colour-vision deficiency. Pins are also now visible
+as a *span*: pinning A028 marks all five locations it occupies that week, which
+is what a pin actually constrains.
+
+Finding that required fixing a real bug: the cells set the `background`
+shorthand inline, which resets `background-image`, so any pattern class was
+silently erased. It is `backgroundColor` now.
+
+**Line identity, without borrowing the MRT colours.** Twelve block rows read as
+three corridors in RailPlan because the gutter is tinted per line. Sixty-seven
+PS1 rows now read as two lines the same way — but with new
+`--color-line-alpha-tint` / `--color-line-beta-tint` neutrals, not North-South
+red and East-West green. Alpha and Beta are fabricated lines in a challenge
+instance; dressing them in real MRT hues would assert a correspondence that does
+not exist. A hidden instance naming a third line gets the plain surface rather
+than an invented colour.
+
+**Also:** a rule every fifth week column, so a row thirty weeks wide can be
+tracked across; `.ps1-panel` on the workspace card's border, radius and
+`--rail-panel` gradient, with a live drop target borrowing `--rail-selected`;
+and the page adopting `.workspace-page` typography, `.workspace-eyebrow` and the
+prototype chip, which also widens the page to 1600px so the timeline has room.
+
+Verification: `npm run typecheck`, `npx eslint .` and `npm run build` clean; 942
+tests across 111 files still pass, including the RailPlan dashboard suite that
+exercises `Figure` from the other side. The grid was checked in a browser for
+distinct gutter tints, six week rules, and a pinned cell keeping both its
+pattern and its load colour.
+
+## PS1 judging-surface usability pass — 2026-09-18
+
+Seven changes to `/ps1` and its entry point, from a walkthrough of the page as
+the two people who actually use it: a judging panel opening the bare domain
+cold, and a works controller reading the schedule it produces. No engine
+behaviour changed except one explainability fix, and the scheduler's output on
+the published instance is unchanged (A 25.2 / B 44 / C 39.2).
+
+**The domain no longer answers with a password box.** `/` gated on
+`workspaceActor()`, which redirects anonymous visitors to `/login`, and `/login`
+linked nowhere onward. The PS1 scheduler — deliberately public, no account, no
+server — was reachable only by typing the path. `landingAccess()` in
+`src/lib/auth/page.ts` now distinguishes anonymous from unassigned without
+redirecting, and anonymous visitors get `PublicLanding`: the open scheduler
+first, the workspace sign-in second. `/login` and the access-pending page also
+link to `/ps1`. `src/test/public-landing.test.tsx` guards all three states.
+
+**All three scenarios are compared in one table**, above the tabs, with the
+objective now on each tab label. There is deliberately no "best" column: each
+scenario scores under its own rules, so ranking the objectives would be a
+category error, and the caption says so. The physical columns — overrun days,
+excess nights, ECLO nights, access-nights — are the comparable ones and are the
+actual story. Loading the public instance now also solves it, in one click.
+
+**The explanation no longer contradicts itself.** `explain.ts` computed
+`predecessorBlock` separately from `blockers`, so A038's summary blamed A037
+finishing late while all seven week rows beneath it read "no rule blocked this
+week". Weeks before a predecessor's finish are now `kind: "predecessor"`, and
+the summary accounts separately for any weeks after it cleared. Every slip on
+the published instance is now attributed; the pre-existing "is honest when
+nothing blocked the earlier weeks" test lost its fixture as a result and was
+rewritten to construct the case rather than search for one, which is what it
+should have done originally.
+
+**The submission downloads as one archive.** `packages/ps1/src/io/zip.ts` is a
+stored-entry ZIP writer with a fixed timestamp, so identical content produces
+identical bytes; it is tested against the system `unzip`. Nine separate
+downloads was both tedious and unreliable, since browsers throttle repeated
+downloads silently. Per-scenario CSVs remain as a secondary action. Instance
+upload now accepts drag-and-drop and **names the files it ignored** — previously
+an unrecognised filename was dropped in silence, leaving a judge with eight
+"missing file" lines and nothing connecting them to what they had selected.
+
+**The validator can be pointed at a submission we did not write.** A new
+"4. Check a submission" section validates any three submission CSVs against the
+loaded instance, reading the scenario from `RESULTS.csv` rather than the open
+tab. One click checks the organisers' published reference: it comes back
+**feasible with zero hard violations, objective 32.2 under Scenario A**, against
+our 25.2 on the same instance under the same rules. That is the evidence for the
+claim in `packages/ps1/README.md` that our reading of the ambiguous rules is not
+stricter than the judges' — previously asserted in prose only.
+
+**The timeline reads as one vocabulary and drives the rest of the page.** The
+grid said `ALP S01 EB · platform · cap 2` while the panel below it and the
+disruption picker beside it said `PLAT:ALP:S01:EB`; `location.ts` now formats
+every reference, with the raw id kept as the secondary form. The selected cell
+carries an outline, the detail panel closes, and `TimelineRow.peak` — computed
+by the engine and never rendered — drives a "busiest first" sort and a count of
+locations reaching capacity. Urgent maintenance moved *below* the timeline and
+can be aimed at a clicked location-week, and its capacity now defaults to one
+night fewer than nominal rather than a flat 1, which was not a cut at all on the
+capacity-1 sections that make up most of the network.
+
+**Every action states what it will do** before you press it, as rendered text
+tied to its control with `aria-describedby` rather than a tooltip. Several
+change with state: the disabled run button explains why it is disabled, and the
+replan button says what to fix when the cut displaces nothing.
+
+Verification: `npm run typecheck`, `npx eslint .` and `npm run build` clean;
+942 tests pass across 111 files, including 13 new PS1 workbench tests and 5 ZIP
+writer tests covering a real `unzip` round-trip. The judging flow was walked in
+a browser end to end: cold load, one-click solve, scenario comparison, cell
+selection, pin and release, cut-and-replan, reference check and ZIP download.
+Database-backed suites were not re-run; nothing here touches them.
+
+Not done, and deliberately: `/ps1` still does not accept a zipped instance as
+*input*, the scenario tabs remain an incomplete ARIA tab widget (`role="tab"`
+with no `tabpanel` or arrow-key handling), and at 375px the timeline's location
+column takes most of the width. None changes a judging outcome; all three are
+listed for after the deadline.
+
 ## Issue #21 named crew rostering evaluation — 2026-09-17
 
 Issue #21 asks for an evaluation and an accepted decision, and explicitly forbids

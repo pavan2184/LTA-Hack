@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { SignOut } from "@/components/auth/SignOut";
+import { PublicLanding } from "@/components/layout/PublicLanding";
 import { WorkspaceNavigation } from "@/components/layout/WorkspaceNavigation";
-import { workspaceActor } from "@/lib/auth/page";
+import { landingAccess } from "@/lib/auth/page";
 import { safeReturnTo } from "@/lib/auth/return-path";
 
 export default async function Home({ searchParams }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 } = {}) {
-  const actor = await workspaceActor();
-  if (!actor)
+  const access = await landingAccess();
+  // Signed out lands on the public entry rather than a password box, because
+  // the PS1 scheduler behind it needs no account at all.
+  if (access.state === "anonymous") return <PublicLanding />;
+  if (access.state === "unassigned")
     return (
       <main className="workspace-page mx-auto max-w-lg p-12">
         <h1 className="text-2xl font-semibold">Workspace access pending</h1>
@@ -16,9 +20,14 @@ export default async function Home({ searchParams }: {
           Your account is signed in, but a workspace administrator must assign
           your role before you can continue.
         </p>
+        <p className="my-4 text-sm text-ink-500">
+          The <Link className="underline" href="/ps1">PS1 track access scheduler</Link> is open to
+          everyone and needs no role.
+        </p>
         <SignOut />
       </main>
     );
+  const actor = access.actor;
   const planner = actor.role === "planner";
   const raw = await searchParams ?? {};
   const query = new URLSearchParams(Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === "string"));

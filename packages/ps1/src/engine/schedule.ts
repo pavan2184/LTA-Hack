@@ -8,10 +8,17 @@ import {
   type Ps1Instance,
   type ResultRow,
   type Scenario,
+  type SolveOutcome,
   type Submission,
 } from "../types/ps1";
 import { buildNetwork, expandSpan, type Network } from "./network";
-import { isoDate, weekEnd, weekOf, MAX_ACTIVITIES_PER_POSSESSION } from "./validate";
+import {
+  isoDate,
+  weekEnd,
+  weekOf,
+  MAX_ACTIVITIES_PER_POSSESSION,
+  validate,
+} from "./validate";
 import { capacityAt, type Disruption } from "./disruption";
 
 /**
@@ -48,12 +55,16 @@ export interface Pin {
 
 export interface ScheduleOptions {
   scenario: Scenario;
-  /** Weeks beyond the horizon the scheduler may use before giving up. */
-  overflowWeeks?: number;
   /** Weeks fixed by hand. Placed first; the rest of the schedule works around them. */
   pins?: Pin[];
   /** Capacity cuts to respect while solving, from urgent maintenance. */
   disruptions?: Disruption[];
+  /** Deterministic construction variant used by the multi-start optimiser. */
+  constructionSeed?: number;
+  optimizationBudget?: {
+    starts?: number;
+    maxNeighbourEvaluations?: number;
+  };
 }
 
 /** A pin the scheduler could not honour, and why. */
@@ -71,8 +82,6 @@ interface WeekLoad {
   /** access_night index to the activities running on it. */
   nights: Map<number, Set<string>>;
 }
-
-const DEFAULT_OVERFLOW_WEEKS = 26;
 
 /** Local copy of the disruption predicate, to keep the import surface small. */
 function appliesToLocationWeek(
@@ -94,19 +103,51 @@ function contractWeight(contract: Contract): number {
  * priority, then the longest jobs, then the earliest planned start. Long jobs go
  * early because they need the most distinct weeks and are hardest to fit later.
  */
-function scheduleOrder(instance: Ps1Instance): Activity[] {
+function scheduleOrder(instance: Ps1Instance, seed = 0): Activity[] {
   const contractByNumber = new Map(instance.contracts.map((c) => [c.contractNumber, c]));
-  return [...instance.activities].sort((a, b) => {
+  const rank = (a: Activity, b: Activity): number => {
     const ca = contractByNumber.get(a.contractNumber)!;
     const cb = contractByNumber.get(b.contractNumber)!;
-    return (
-      contractWeight(cb) - contractWeight(ca) ||
-      a.activityPriority - b.activityPriority ||
-      b.totalAccesses - a.totalAccesses ||
-      a.plannedStartDate.localeCompare(b.plannedStartDate) ||
-      a.activityId.localeCompare(b.activityId)
-    );
-  });
+    const deadline = ca.plannedCompletionDate.localeCompare(cb.plannedCompletionDate);
+    const planned = a.plannedStartDate.localeCompare(b.plannedStartDate);
+    const variant = seed % 6;
+    const orders = [
+      contractWeight(cb) - contractWeight(ca) || a.activityPriority - b.activityPriority,
+      deadline || contractWeight(cb) - contractWeight(ca),
+      b.totalAccesses - a.totalAccesses || deadline,
+      planned || contractWeight(cb) - contractWeight(ca),
+      a.activityPriority - b.activityPriority || b.totalAccesses - a.totalAccesses,
+      contractWeight(cb) - contractWeight(ca) || deadline || planned,
+    ];
+    return orders[variant] || b.totalAccesses - a.totalAccesses || a.activityId.localeCompare(b.activityId);
+  };
+
+  // Kahn's algorithm makes dependency order structural rather than accidental.
+  const byId = new Map(instance.activities.map((activity) => [activity.activityId, activity]));
+  const children = new Map<string, Activity[]>();
+  const indegree = new Map<string, number>();
+  for (const activity of instance.activities) {
+    indegree.set(activity.activityId, activity.predecessorActivityId ? 1 : 0);
+    if (activity.predecessorActivityId) {
+      const list = children.get(activity.predecessorActivityId) ?? [];
+      list.push(activity);
+      children.set(activity.predecessorActivityId, list);
+    }
+  }
+  const ready = instance.activities.filter((activity) => !activity.predecessorActivityId);
+  const ordered: Activity[] = [];
+  while (ready.length) {
+    ready.sort(rank);
+    const chosen = ready.shift()!;
+    ordered.push(chosen);
+    for (const child of children.get(chosen.activityId) ?? []) {
+      const next = (indegree.get(child.activityId) ?? 1) - 1;
+      indegree.set(child.activityId, next);
+      if (next === 0) ready.push(child);
+    }
+  }
+  if (ordered.length !== byId.size) throw new Error("Activity predecessor graph contains a cycle");
+  return ordered;
 }
 
 export function scheduleInstance(
@@ -115,8 +156,7 @@ export function scheduleInstance(
   network: Network = buildNetwork(instance),
 ): Submission & { rejectedPins: RejectedPin[] } {
   const { scenario } = options;
-  const overflow = options.overflowWeeks ?? DEFAULT_OVERFLOW_WEEKS;
-  const lastWeek = instance.parameters.horizonWeeks + overflow;
+  const lastWeek = instance.parameters.horizonWeeks;
   const contractByNumber = new Map(instance.contracts.map((c) => [c.contractNumber, c]));
 
   const slots = new Map<string, Slot>();
@@ -154,7 +194,7 @@ export function scheduleInstance(
     const supply = capacityAt(network, disruptions, locationId, week);
     // B pays for extra nights rather than slipping dates; C gets one per
     // location-week. A has no elasticity at all.
-    const elastic = scenario === "B" ? supply + 2 : scenario === "C" ? supply + 1 : supply;
+    const elastic = scenario === "B" ? Number.POSITIVE_INFINITY : scenario === "C" ? supply + 1 : supply;
     // Never let elasticity exceed what the disruption physically left behind.
     return disruptions.some((d) => appliesToLocationWeek(d, locationId, week))
       ? supply
@@ -296,7 +336,7 @@ export function scheduleInstance(
     }
   }
 
-  for (const activity of scheduleOrder(instance)) {
+  for (const activity of scheduleOrder(instance, options.constructionSeed ?? 0)) {
     const contract = contractByNumber.get(activity.contractNumber)!;
     const span = spanFor(activity);
     let earliest = Math.max(1, weekOf(instance.parameters.horizonStart, activity.plannedStartDate));
@@ -333,7 +373,7 @@ export function scheduleInstance(
         scenario !== "A" &&
         remaining > STANDARD_YIELD &&
         remaining > weeksLeft &&
-        ecloAllowed(scenario);
+        ecloAllowed(scenario, contract, options.constructionSeed ?? 0);
 
       if (!commit(activity, contract, span, week, useEclo)) continue;
       taken.add(week);
@@ -366,8 +406,138 @@ export function scheduleInstance(
  * access-night per location-week, is both cheaper per unit (3x against 5x) and
  * free of a continuity constraint, so C leans on that and leaves ECLO alone.
  */
-function ecloAllowed(scenario: Scenario): boolean {
-  return scenario === "B";
+function ecloAllowed(scenario: Scenario, contract: Contract, seed: number): boolean {
+  if (scenario === "B") return true;
+  if (scenario !== "C") return false;
+  // Half the construction starts retain the proven no-ECLO baseline. The
+  // others may buy ECLO only where avoiding a week of delay can beat its cost.
+  return seed % 2 === 1 && contractWeight(contract) * 7 > 2 * 5;
+}
+
+/**
+ * Deterministic multi-start optimisation with a bounded reconstruction search.
+ * Every candidate passes through the independent validator; rejected pins make
+ * an otherwise feasible candidate non-applicable.
+ */
+export function solveInstance(
+  instance: Ps1Instance,
+  options: ScheduleOptions,
+  network?: Network,
+): SolveOutcome {
+  const started = Date.now();
+  let activeNetwork: Network;
+  try {
+    activeNetwork = network ?? buildNetwork(instance);
+  } catch (cause) {
+    return {
+      status: "INVALID_INSTANCE",
+      diagnostics: {
+        startsTried: 0,
+        candidatesEvaluated: 0,
+        elapsedMs: Date.now() - started,
+        warnings: [cause instanceof Error ? cause.message : String(cause)],
+        rejectedPins: [],
+      },
+    };
+  }
+  const starts = Math.max(1, Math.min(24, options.optimizationBudget?.starts ?? 24));
+  const neighbourBudget = Math.max(
+    0,
+    Math.min(2_500, options.optimizationBudget?.maxNeighbourEvaluations ?? 2_500),
+  );
+  let candidatesEvaluated = 0;
+  let best:
+    | { submission: Submission & { rejectedPins: RejectedPin[] }; report: ReturnType<typeof validate> }
+    | undefined;
+
+  const consider = (submission: Submission & { rejectedPins: RejectedPin[] }) => {
+    candidatesEvaluated += 1;
+    const report = validate(instance, submission, activeNetwork, options.disruptions ?? []);
+    if (!report.feasible || submission.rejectedPins.length > 0) return;
+    const score = report.objectiveScore ?? Number.POSITIVE_INFINITY;
+    const bestScore = best?.report.objectiveScore ?? Number.POSITIVE_INFINITY;
+    const stable = JSON.stringify(submission.access);
+    const bestStable = best ? JSON.stringify(best.submission.access) : "";
+    if (!best || score < bestScore || (score === bestScore && stable < bestStable)) {
+      best = { submission, report };
+    }
+  };
+
+  for (let seed = 0; seed < starts; seed += 1) {
+    consider(scheduleInstance(instance, { ...options, constructionSeed: seed }, activeNetwork));
+  }
+
+  // Shift selected accesses one week either side and reconstruct around that
+  // hard choice. Reconstruction naturally exercises swaps, re-packing, ECLO
+  // and excess-possession alternatives without mutating a candidate in place.
+  if (best && neighbourBudget > 0) {
+    const baseline = best.submission;
+    const rows = [...baseline.access]
+      .sort((a, b) => b.week - a.week || a.activityId.localeCompare(b.activityId))
+      .slice(0, Math.min(48, baseline.access.length));
+    let neighbours = 0;
+    for (const row of rows) {
+      for (const delta of [-1, 1]) {
+        if (neighbours >= neighbourBudget) break;
+        const week = row.week + delta;
+        if (week < 1 || week > instance.parameters.horizonWeeks) continue;
+        const originalPins = options.pins ?? [];
+        if (originalPins.some((pin) => pin.activityId === row.activityId && pin.week !== row.week)) {
+          continue;
+        }
+        consider(
+          scheduleInstance(
+            instance,
+            {
+              ...options,
+              constructionSeed: neighbours % starts,
+              pins: [
+                ...originalPins.filter(
+                  (pin) => !(pin.activityId === row.activityId && pin.week === row.week),
+                ),
+                { activityId: row.activityId, week, eclo: row.eclo },
+              ],
+            },
+            activeNetwork,
+          ),
+        );
+        neighbours += 1;
+      }
+    }
+  }
+
+  const rejectedPins = best?.submission.rejectedPins ?? [];
+  if (!best) {
+    const diagnostic = scheduleInstance(instance, { ...options, constructionSeed: 0 }, activeNetwork);
+    const validation = validate(instance, diagnostic, activeNetwork, options.disruptions ?? []);
+    return {
+      status: "INFEASIBLE",
+      submission: diagnostic,
+      validation,
+      diagnostics: {
+        startsTried: starts,
+        candidatesEvaluated,
+        elapsedMs: Date.now() - started,
+        warnings: [
+          "No complete, locally conforming schedule was found inside the declared horizon.",
+        ],
+        rejectedPins: diagnostic.rejectedPins,
+      },
+    };
+  }
+
+  return {
+    status: "FEASIBLE",
+    submission: best.submission,
+    validation: best.report,
+    diagnostics: {
+      startsTried: starts,
+      candidatesEvaluated,
+      elapsedMs: Date.now() - started,
+      warnings: [],
+      rejectedPins,
+    },
+  };
 }
 
 /** Contract completion is the Sunday of its last scheduled week. */

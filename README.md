@@ -7,7 +7,7 @@
   <p>
     <a href="docs/PROJECT_BRIEF.md"><strong>Read the product brief</strong></a>
     <br />
-    <a href="https://railplan-nine.vercel.app/login">Open prototype</a>
+    <a href="https://railplan-nine.vercel.app/ps1">Open the public PS1 scheduler</a>
     &middot;
     <a href="https://github.com/pavan2184/LTA-Hack/issues/new">Report a bug</a>
     &middot;
@@ -147,7 +147,9 @@ or reseed it. The seed command refuses existing workflow records. Then start the
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000) and sign in. Without AI credentials,
+Open the public PS1 workspace at [localhost:3000/ps1](http://localhost:3000/ps1),
+or open [localhost:3000](http://localhost:3000) and sign in for the durable RailPlan
+workspace. Without AI credentials,
 manual intake and scheduling work; the sandbox assistant uses deterministic
 answers. Meeting-text extraction requires `ANTHROPIC_API_KEY`. Missing Telegram
 credentials affect delivery, not whether a plan can be saved or published.
@@ -156,9 +158,11 @@ credentials affect delivery, not whether a plan can be saved or published.
 
 ## Usage
 
-The [hosted prototype](https://railplan-nine.vercel.app/login) requires a provisioned
-RailPlan login. Obtain demo access from the project team. See [current status](docs/PROJECT_STATUS.md)
-for differences between the hosted deployment, GitHub and local work.
+The [PS1 scheduler](https://railplan-nine.vercel.app/ps1) is public, browser-only and
+requires no account. Hidden instance files remain on the device. The separate durable
+[RailPlan workspace](https://railplan-nine.vercel.app/login) requires provisioned access.
+See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
+GitHub and local work.
 
 ### Contractor to planner
 

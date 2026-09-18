@@ -147,6 +147,7 @@ export interface Submission {
 export type ViolationRule =
   | "workload"
   | "start_date"
+  | "predecessor"
   | "closure"
   | "capacity"
   | "mix"
@@ -187,9 +188,68 @@ export interface ValidationReport {
     nightsScheduled: number;
     ecloNights: number;
   };
+  /** The local checker cannot infer a physical night across separate possessions. */
+  conformance: {
+    mode: "local";
+    undecidableRules: readonly ["cross_possession_night_alignment"];
+  };
   /** Present only when feasible, per the brief's output contract. */
   objectiveScore?: number;
   formulaVersion?: string;
+}
+
+export type SolveStatus = "FEASIBLE" | "INFEASIBLE" | "INVALID_INSTANCE";
+
+export interface SolveDiagnostics {
+  startsTried: number;
+  candidatesEvaluated: number;
+  elapsedMs: number;
+  warnings: string[];
+  rejectedPins: { activityId: string; week: number; eclo?: 0 | 1; reason: string }[];
+}
+
+export interface SolveOutcome {
+  status: SolveStatus;
+  submission?: Submission;
+  validation?: ValidationReport;
+  diagnostics: SolveDiagnostics;
+}
+
+export interface PlanDiff {
+  scoreBefore: number | null;
+  scoreAfter: number | null;
+  feasibleBefore: boolean;
+  feasibleAfter: boolean;
+  movedAccesses: number;
+  movedActivityIds: string[];
+  changedContracts: string[];
+  newViolations: HardViolation[];
+  resolvedViolations: HardViolation[];
+}
+
+export interface PlanRevision {
+  id: number;
+  scenario: Scenario;
+  createdAt: string;
+  reason: string;
+  submission: Submission;
+  report: ValidationReport;
+  diff: PlanDiff | null;
+}
+
+export interface QaAnswer {
+  kind:
+    | "activity-placement"
+    | "contract-overrun"
+    | "bottleneck"
+    | "scenario-comparison"
+    | "change-impact"
+    | "scenario-lever"
+    | "unsupported";
+  text: string;
+  facts: string[];
+  activityIds: string[];
+  locationIds: string[];
 }
 
 /** Contract-tier weights for the overrun penalty band. */

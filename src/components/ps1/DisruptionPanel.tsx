@@ -14,6 +14,14 @@ import type { Network } from "@railplan/ps1/engine/network";
 import type { Ps1Instance, Submission } from "@railplan/ps1/types/ps1";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ActionNote } from "@/components/ps1/ActionNote";
+import { locationDetail } from "@/components/ps1/location";
 
 /**
  * Urgent maintenance takes nights away; this works out what that costs and
@@ -28,11 +36,18 @@ export function DisruptionPanel({
   submission,
   network,
   onApply,
+  target,
+  open,
+  onOpenChange,
 }: {
   instance: Ps1Instance;
   submission: Submission;
   network: Network;
   onApply: (outcome: ReplanOutcome, disruptions: Disruption[]) => void;
+  /** A location-week chosen in the timeline, which seeds this panel. */
+  target?: { locationId: string; week: number } | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const timeline = useMemo(
     () => buildTimeline(instance, submission, network),
@@ -53,10 +68,29 @@ export function DisruptionPanel({
     return best;
   }, [timeline]);
 
-  const [locationId, setLocationId] = useState(busiest.locationId);
-  const [fromWeek, setFromWeek] = useState(busiest.week);
-  const [toWeek, setToWeek] = useState(busiest.week);
-  const [capacity, setCapacity] = useState(1);
+  /**
+   * Ordered by pressure rather than by position on the line. Cutting a location
+   * that is already at capacity is the case worth testing, and it was the one
+   * buried deepest in a list of sixty-seven raw ids.
+   */
+  const options = useMemo(() => {
+    const total = (row: (typeof timeline.rows)[number]) =>
+      [...row.cells.values()].reduce((sum, cell) => sum + cell.possessions, 0);
+    return [...timeline.rows].sort(
+      (a, b) => b.peak - a.peak || total(b) - total(a) || a.seq - b.seq,
+    );
+  }, [timeline]);
+
+  const seed = target ?? busiest;
+  const [locationId, setLocationId] = useState(seed.locationId);
+  const [fromWeek, setFromWeek] = useState(seed.week);
+  const [toWeek, setToWeek] = useState(seed.week);
+  // One night fewer than the location actually has. A flat default of 1 is not
+  // a cut at all on a capacity-1 location — which is most of the tunnel
+  // sections — so the panel opened saying it displaced nothing.
+  const [capacity, setCapacity] = useState(() =>
+    Math.max(0, (network.supply.get(seed.locationId)?.supplyCapacity ?? 1) - 1),
+  );
   const [outcome, setOutcome] = useState<ReplanOutcome | null>(null);
 
   const disruptions: Disruption[] = useMemo(
@@ -78,12 +112,13 @@ export function DisruptionPanel({
   const nominal = network.supply.get(locationId)?.supplyCapacity ?? 0;
 
   return (
-    <section className="mt-6 rounded-lg border border-rule bg-surface p-4">
-      <h3 className="text-[13px] font-semibold text-ink-900">Urgent maintenance</h3>
-      <p className="mt-1 text-[12px] text-ink-700">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[min(760px,calc(100vw-32px))]">
+      <DialogTitle>Urgent maintenance</DialogTitle>
+      <DialogDescription>
         Cut a location&apos;s nightly quota mid-horizon, see what it displaces, and re-plan around
         it while holding everything it did not touch.
-      </p>
+      </DialogDescription>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-[12px] text-ink-700">
@@ -96,9 +131,10 @@ export function DisruptionPanel({
               setOutcome(null);
             }}
           >
-            {timeline.rows.map((row) => (
+            {options.map((row) => (
               <option key={row.locationId} value={row.locationId}>
-                {row.locationId} (cap {row.capacity})
+                {locationDetail(row)}
+                {row.peak > 0 ? ` · full in ${row.peak} wk` : ""}
               </option>
             ))}
           </select>
@@ -170,16 +206,35 @@ export function DisruptionPanel({
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          variant="primary"
-          disabled={impact.displaced.length === 0}
-          onClick={() => setOutcome(replanForDisruption(instance, submission, disruptions, network))}
-        >
-          Re-plan around it
-        </Button>
+      <div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-3">
+        <div className="flex flex-col items-start gap-1">
+          <Button
+            variant="primary"
+            disabled={impact.displaced.length === 0}
+            aria-describedby="ps1-note-replan"
+            onClick={() =>
+              setOutcome(replanForDisruption(instance, submission, disruptions, network))
+            }
+          >
+            Re-plan around it
+          </Button>
+          <ActionNote id="ps1-note-replan">
+            {impact.displaced.length === 0
+              ? "Nothing to re-plan — choose a location-week where the cut actually displaces work."
+              : "Works out a schedule under the reduced quota, pinning every access the cut did not touch so it is held in place rather than merely likely to stay. Nothing is replaced until you adopt it."}
+          </ActionNote>
+        </div>
         {outcome && (
-          <Button onClick={() => onApply(outcome, disruptions)}>Adopt this schedule</Button>
+          <div className="flex flex-col items-start gap-1">
+            <Button aria-describedby="ps1-note-adopt" onClick={() => onApply(outcome, disruptions)}>
+              Adopt this schedule
+            </Button>
+            <ActionNote id="ps1-note-adopt">
+              Replaces the scenario&apos;s result with this one. The cut stays in force, so every
+              figure above it afterwards describes the disrupted plan. Run the scenarios again to
+              go back.
+            </ActionNote>
+          </div>
         )}
       </div>
 
@@ -229,6 +284,7 @@ export function DisruptionPanel({
           )}
         </div>
       )}
-    </section>
+      </DialogContent>
+    </Dialog>
   );
 }

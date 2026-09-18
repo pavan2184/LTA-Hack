@@ -1,5 +1,20 @@
 # API Contract
 
+## Public PS1 client interfaces — 2026-09-18
+
+No HTTP route or environment variable was added. `solveInstance(instance,
+options)` returns a `SolveOutcome`; options carry scenario, hard pins, capacity
+disruptions and a bounded deterministic optimisation budget. The default runs 24
+construction starts and at most 2,500 reconstruction neighbours inside
+`horizon_weeks`. An infeasible result may include a diagnostic partial submission,
+but the UI cannot export it.
+
+The worker message contains only the parsed instance and local solve options. It
+emits per-scenario progress followed by three outcomes, or a sanitized error. CSV
+uploads are limited to 5 MB per file and approximately 50,000 total records.
+Official CSV headers, column order and the A/B/C nine-file ZIP contract are
+unchanged. `PS1_PLANNING_LOG.json` is a separate optional artifact.
+
 ## Requested-time conflict review — 2026-09-15
 
 The existing planner-only `POST /api/plans/:id/analysis` additionally accepts:
