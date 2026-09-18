@@ -46,15 +46,24 @@
 
 ## About the project
 
-Maintenance, upgrades and renewals compete for the same short engineering windows.
-A scheduler must reconcile track access, compatible work and available engineers;
-a change that fixes one clash can create another elsewhere. This is the coordination
-problem behind [Nebula X's PS1 challenge](https://nebulax.com.sg/#ps-1).
+The PS1 challenge describes maintenance, upgrades and renewals "squeezed into short
+engineering hours when services pause, flooding schedulers with competing track
+requests". A scheduler must reconcile track access, compatible work and available
+engineers; a change that fixes one clash can create another elsewhere. This is the
+coordination problem behind [Nebula X's PS1 challenge](https://nebulax.com.sg/#ps-1).
 
-**RailPlan helps the scheduler see what conflicts, understand why, and choose a
-feasible plan to share with contractors.** The intended benefit is less time spent
-reconciling requests and a clearer record of what was agreed. That benefit still
-needs measurement with real planners.
+Rules-based conflict checking on track access is **already deployed in Singapore**.
+SMRT's Track Access Management System has run on the North-South and East-West Lines
+since 2021 and reached the Circle Line by 2025, checking each scheduled track access
+request against safety requirements.
+
+**RailPlan addresses the next step: resolving contention between competing requests
+for a shared resource, and naming the constraint that bound.** Testing one request
+against safety rules is a different problem from deciding which of two requests gets
+a block they both need. The intended benefit is less time spent reconciling requests
+and a clearer record of what was agreed. That benefit still needs measurement with
+real planners. Claims and their evidence are recorded in
+[PS1_EVIDENCE_BASE.md](docs/PS1_EVIDENCE_BASE.md).
 
 ```mermaid
 flowchart LR
@@ -70,15 +79,15 @@ four-hour engineering window**. These are demo inputs, not universal rail rules.
 For example, work spanning `NS10–NS12` and `NS11–NS13` shares block `NS11–NS12`;
 different sector labels do not prevent a collision.
 
-| Need | What RailPlan provides |
-| --- | --- |
-| Collect usable requests | Structured contractor intake and optional private proposals extracted from meeting text |
-| Keep decisions accountable | Planner review, explicit approval and immutable request revisions |
-| Find feasible schedules | Five objective profiles using the same constraint validator |
-| Understand the result | Linked Gantt, workforce, request and geographic views, plus inspectable metric formulas |
-| Share the agreed version | Immutable saved plans, publication history, contractor-scoped access and JSON/CSV exports |
-| Explore alternatives | A separate sandbox for conflict repairs, exact pins, alternative slots and disruption replanning |
-| Explain and notify | Optional engine-grounded assistant and separately audited Telegram delivery |
+| Need                       | What RailPlan provides                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| Collect usable requests    | Structured contractor intake and optional private proposals extracted from meeting text          |
+| Keep decisions accountable | Planner review, explicit approval and immutable request revisions                                |
+| Find feasible schedules    | Five objective profiles using the same constraint validator                                      |
+| Understand the result      | Linked Gantt, workforce, request and geographic views, plus inspectable metric formulas          |
+| Share the agreed version   | Immutable saved plans, publication history, contractor-scoped access and JSON/CSV exports        |
+| Explore alternatives       | A separate sandbox for conflict repairs, exact pins, alternative slots and disruption replanning |
+| Explain and notify         | Optional engine-grounded assistant and separately audited Telegram delivery                      |
 
 The scheduler remains responsible for decisions. Generative AI assists with reviewed
 intake and language; deterministic code checks feasibility. The geographic view
@@ -86,14 +95,14 @@ provides orientation, not an authoritative operational topology.
 
 ### Built with
 
-| Layer | Technology |
-| --- | --- |
-| Application | Next.js 16, React 19, TypeScript 6 |
-| Interface | Tailwind CSS 4, Radix UI, Recharts, Zustand |
-| Planning | Pure TypeScript `@railplan/core` validator, heuristic solver and analytics |
-| Identity and persistence | Supabase Auth, PostgreSQL and row-level security |
-| Optional integrations | Anthropic SDK for language/extraction; Telegram Bot API for delivery |
-| Verification | Vitest, Testing Library, hosted database and production HTTP journey suites |
+| Layer                    | Technology                                                                  |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Application              | Next.js 16, React 19, TypeScript 6                                          |
+| Interface                | Tailwind CSS 4, Radix UI, Recharts, Zustand                                 |
+| Planning                 | Pure TypeScript `@railplan/core` validator, heuristic solver and analytics  |
+| Identity and persistence | Supabase Auth, PostgreSQL and row-level security                            |
+| Optional integrations    | Anthropic SDK for language/extraction; Telegram Bot API for delivery        |
+| Verification             | Vitest, Testing Library, hosted database and production HTTP journey suites |
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
@@ -122,13 +131,13 @@ chmod 600 .env.local
 
 For a fresh clone, uncomment and populate the documented settings in `.env.local`:
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Server-only connection to the dedicated development database |
-| `NEXT_PUBLIC_SUPABASE_URL` | Auth endpoint for that same project |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public client key; never a service-role or secret key |
-| `ANTHROPIC_API_KEY` | Optional language assistant and meeting-text extraction |
-| `TELEGRAM_BOT_TOKEN` | Optional server-only notification delivery |
+| Variable                               | Purpose                                                      |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`                         | Server-only connection to the dedicated development database |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Auth endpoint for that same project                          |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public client key; never a service-role or secret key        |
+| `ANTHROPIC_API_KEY`                    | Optional language assistant and meeting-text extraction      |
+| `TELEGRAM_BOT_TOKEN`                   | Optional server-only notification delivery                   |
 
 Keep `.env.local` and credentials out of Git. Follow the [teammate handoff](docs/TEAM_HANDOFF.md)
 to apply migrations and provision confirmed users. For a **new, dedicated empty
@@ -214,21 +223,21 @@ measures movement from requested times; it is not a general published-plan repai
 <details>
   <summary>The 13 encoded constraint rules</summary>
 
-| Rule | Constraint |
-| --- | --- |
-| `BLOCK_CAPACITY` | Atomic track occupancy, including clearance |
-| `CONFLICT_ZONE` | Shared isolation or crossover capacity |
-| `ADJACENT_WORK` | Hazard separation across neighbouring blocks |
-| `TEAM_CAPACITY` | Concurrent crew assignments |
+| Rule                 | Constraint                                            |
+| -------------------- | ----------------------------------------------------- |
+| `BLOCK_CAPACITY`     | Atomic track occupancy, including clearance           |
+| `CONFLICT_ZONE`      | Shared isolation or crossover capacity                |
+| `ADJACENT_WORK`      | Hazard separation across neighbouring blocks          |
+| `TEAM_CAPACITY`      | Concurrent crew assignments                           |
 | `WORKFORCE_CAPACITY` | Anonymous role headcounts and defined staffing demand |
-| `EQUIPMENT_CAPACITY` | Serviceable units and turnaround |
-| `SKILL_COVERAGE` | Assigned-team skill requirements |
-| `WORK_COMPATIBILITY` | Permitted combinations of simultaneous work |
-| `DEPENDENCY_ORDER` | Predecessor completion, clearance and lag |
-| `TIME_WINDOW` | Request and engineering-window bounds |
-| `HANDBACK` | Completion and clearance before the deadline |
-| `TRAVEL_TIME` | Travel between jobs for single-crew teams |
-| `SHIFT_AVAILABILITY` | Team shifts and withdrawals |
+| `EQUIPMENT_CAPACITY` | Serviceable units and turnaround                      |
+| `SKILL_COVERAGE`     | Assigned-team skill requirements                      |
+| `WORK_COMPATIBILITY` | Permitted combinations of simultaneous work           |
+| `DEPENDENCY_ORDER`   | Predecessor completion, clearance and lag             |
+| `TIME_WINDOW`        | Request and engineering-window bounds                 |
+| `HANDBACK`           | Completion and clearance before the deadline          |
+| `TRAVEL_TIME`        | Travel between jobs for single-crew teams             |
+| `SHIFT_AVAILABILITY` | Team shifts and withdrawals                           |
 
 </details>
 
