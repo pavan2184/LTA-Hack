@@ -4,10 +4,23 @@
 
 `SolveOutcome` has `FEASIBLE`, `INFEASIBLE` and `INVALID_INSTANCE` states plus an
 optional submission/validation pair and deterministic search diagnostics.
+The UI wraps each result in `ScenarioRun { scenario, outcome, network,
+disruptions }`; it never narrows the collection to feasible submissions.
+`WorkspaceSelection` is a discriminated activity/location-week/null union shared
+across every operations surface.
 `ValidationReport.conformance` records local mode and the one rule the official
 files cannot decide. `PlanRevision`/`PlanDiff` describe session-only reviewed
-changes; `QaAnswer` carries deterministic text, supporting facts and linked
+changes. `PlanDiff` includes per-contract completion before/after values and the
+percentage of byte-identical access rows retained. `AttentionItem` is a pure,
+stable severity/kind projection with linked activities, contracts, locations and
+weeks. `QaAnswer` carries deterministic text, supporting facts and linked
 activity/location IDs. None is persisted or sent to the RailPlan database.
+
+Timeline cells carry nominal capacity, disruption-adjusted effective capacity
+and a disruption flag. Both the timeline and disruption impact use the same
+`capacityAt()` authority. The planning handover is derived text over the active
+scenario, report, pins, disruptions and latest diff; it is not part of
+`Submission` and has no persistence identity.
 
 Official `Submission` CSV entities remain unchanged. Instance records now require
 unique IDs, valid references, positive integer limits/workload, real ISO dates and

@@ -1,5 +1,43 @@
 # Project Status
 
+## PS1 exception-first workspace implementation — 2026-09-18
+
+Implemented on `codex/ps1-operations-workspace` in two feature checkpoints:
+`4bb2e7a` (state/layout foundation) and `7a945e2` (reviewed interactions and
+accessibility), followed by a release-readiness checkpoint. The public solver
+now retains each A/B/C outcome independently,
+opens C after a fresh solve, preserves the active policy on re-run, and rejects
+stale asynchronous results through an operation epoch.
+
+The solved experience now has a compact command bar, accessible policy cards,
+exception-first attention queue, one-tab-stop location/week grid, disruption
+capacity overlays, linked Summary/Why/Network/Changes inspector, grounded Q&A,
+sticky review shelf, apply/undo history, proof drawer, copyable handover and exact
+official export gate. Desktop and mobile have explicit distinct responsibilities;
+low-glare mode is browser-session-only. No backend/API/schema/dependency change
+was introduced.
+
+Release verification:
+
+- `npm test` — 967 tests passed across 116 files after the final queue refinement.
+- `npm run typecheck`, `npm run lint` and `npm run build` — clean; Next.js 16.3.4
+  statically generates `/ps1`.
+- Direct production HTTP checks — `/` and `/ps1` both return 200.
+- Production-browser solve — A 25.2, B 44 and C 39.2, with Scenario C selected
+  initially and all three outcomes locally conformant.
+- Review workflow — selected hotspot, imposed a one-night capacity cut, previewed
+  impact, re-planned, confirmed export remained blocked pending review, applied
+  revision 2 and undid to revision 3.
+- Responsive checks at 390, 768, 1280, 1440 and 1920 CSS pixels found no page
+  overflow; mobile exposes Attention/Selected/Review/Proof and hides matrix
+  editing, while desktop retains the three-pane workspace. Narrow-width reflow
+  equivalent to a 200% desktop zoom also passed without horizontal page overflow.
+- Keyboard/AX smoke — policy cards, mobile tabs and the one-tab-stop grid expose
+  labelled controls and expected focus semantics; automated VoiceOver speech was
+  not available in this environment and remains a manual release check.
+- Grounded Q&A cited the selected activity, contract and scheduled weeks; Proof
+  showed the exact nine-file manifest; browser error/warning logs were empty.
+
 ## PS1 hardened optimiser and operations workspace — 2026-09-18
 
 The public PS1 path now has strict RFC-style CSV parsing, cross-file instance

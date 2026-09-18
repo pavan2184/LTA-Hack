@@ -56,6 +56,18 @@ describe("PS1 attention queue", () => {
     expect(item?.severity).toBe("critical");
   });
 
+  it("collapses repeated capacity pressure into one item per location", () => {
+    const items = buildAttentionItems({
+      instance,
+      submission,
+      report: validate(instance, submission),
+    });
+    const capacityItems = items.filter((item) => item.kind === "capacity");
+
+    expect(new Set(capacityItems.map((item) => item.locationIds[0])).size).toBe(capacityItems.length);
+    expect(capacityItems.some((item) => item.weeks.length > 1)).toBe(true);
+  });
+
   it("reports missing activity workload as blocking", () => {
     const activityId = instance.activities[0].activityId;
     const partial = {

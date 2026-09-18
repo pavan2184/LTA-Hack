@@ -164,6 +164,15 @@ requires no account. Hidden instance files remain on the device. The separate du
 See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
 GitHub and local work.
 
+After a solve, `/ps1` opens Scenario C in an exception-first operations workspace.
+Use the policy cards to switch A/B/C without comparing their unlike objectives as
+one ranking; use the attention queue and location-by-week grid to drive the shared
+inspector. The intended demo path is: select a capacity hotspot, impose urgent
+maintenance, review the minimum-churn proposal, then apply or undo it. Proof,
+external-submission checking, the exact nine-file ZIP and a separate handover are
+available from the persistent command bar. On mobile, the workspace supports
+triage, inspection, review and export; dense matrix editing remains a larger-screen task.
+
 ### Contractor to planner
 
 1. **Contractor:** open `/contractor`, create a draft, complete the required details

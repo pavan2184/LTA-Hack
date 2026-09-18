@@ -124,14 +124,45 @@ export function buildAttentionItems(input: AttentionInput): AttentionItem[] {
   if (submission) {
     const timeline = buildTimeline(instance, submission, network, disruptions);
     for (const row of timeline.rows) {
-      for (const cell of row.cells.values()) {
-        if (cell.load < 1 && !cell.disrupted) continue;
+      const capacityCells = [...row.cells.values()]
+        .filter((cell) => cell.load >= 1 && !cell.disrupted)
+        .sort((a, b) => b.load - a.load || a.week - b.week);
+
+      // Capacity pressure is useful as a location-level exception, not as one
+      // queue row for every occupied week. Keep the peak weeks linked so the
+      // planner can still inspect each occurrence without drowning the queue.
+      const peakLoad = capacityCells[0]?.load;
+      const peakCells = peakLoad === undefined
+        ? []
+        : capacityCells.filter((cell) => cell.load === peakLoad);
+      if (peakCells.length > 0) {
+        const activityIds = [...new Set(peakCells.flatMap((cell) => cell.activityIds))].sort();
+        const contractNumbers = [...new Set(
+          activityIds
+            .map((id) => activityById.get(id)?.contractNumber)
+            .filter((id): id is string => Boolean(id)),
+        )].sort();
         items.push({
-          id: `capacity:${row.locationId}:${cell.week}`,
+          id: `capacity:${row.locationId}`,
+          severity: peakLoad > 1 ? "critical" : "warning",
+          kind: "capacity",
+          label: `${row.label} reaches capacity`,
+          detail: `${peakCells[0].possessions}/${peakCells[0].effectiveCapacity} effective possessions across ${peakCells.length} peak week${peakCells.length === 1 ? "" : "s"}.`,
+          activityIds,
+          contractNumbers,
+          locationIds: [row.locationId],
+          weeks: peakCells.map((cell) => cell.week).sort((a, b) => a - b),
+        });
+      }
+
+      for (const cell of row.cells.values()) {
+        if (!cell.disrupted) continue;
+        items.push({
+          id: `disruption:${row.locationId}:${cell.week}`,
           severity: cell.load > 1 ? "critical" : "warning",
-          kind: cell.disrupted ? "disruption" : "capacity",
-          label: `${row.label} wk${cell.week} ${cell.disrupted ? "is disrupted" : "is at capacity"}`,
-          detail: `${cell.possessions}/${cell.effectiveCapacity} effective possessions${cell.disrupted ? ` (nominal ${cell.nominalCapacity})` : ""}.`,
+          kind: "disruption",
+          label: `${row.label} wk${cell.week} is disrupted`,
+          detail: `${cell.possessions}/${cell.effectiveCapacity} effective possessions (nominal ${cell.nominalCapacity}).`,
           activityIds: cell.activityIds,
           contractNumbers: [...new Set(cell.activityIds.map((id) => activityById.get(id)?.contractNumber).filter((id): id is string => Boolean(id)))].sort(),
           locationIds: [row.locationId],

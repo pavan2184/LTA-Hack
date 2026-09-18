@@ -11,7 +11,7 @@ import {
 
 import type { Disruption } from "@railplan/ps1/engine/disruption";
 import { closureFor, expandSpan, type Network } from "@railplan/ps1/engine/network";
-import { buildTimeline, type TimelineCell, type TimelineRow } from "@railplan/ps1/engine/timeline";
+import { buildTimeline, type TimelineRow } from "@railplan/ps1/engine/timeline";
 import type { Pin } from "@railplan/ps1/engine/schedule";
 import type { Ps1Instance, Submission } from "@railplan/ps1/types/ps1";
 
@@ -144,13 +144,6 @@ export function PossessionTimeline({
   }, [byLoad, filters, pinnedIds, query, showEmpty, timeline]);
 
   useEffect(() => {
-    setActive((current) => ({
-      row: Math.min(current.row, Math.max(0, rows.length - 1)),
-      column: Math.min(current.column, Math.max(0, timeline.weeks.length - 1)),
-    }));
-  }, [rows.length, timeline.weeks.length]);
-
-  useEffect(() => {
     const element = gridRef.current;
     if (!element || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => setViewportHeight(element.clientHeight || 420));
@@ -170,8 +163,10 @@ export function PossessionTimeline({
   const visibleRows = rows.slice(start, end);
   const topSpace = start * dimensions.row;
   const bottomSpace = Math.max(0, (rows.length - end) * dimensions.row);
+  const activeRow = Math.min(active.row, Math.max(0, rows.length - 1));
+  const activeColumn = Math.min(active.column, Math.max(0, timeline.weeks.length - 1));
   const activeId = rows.length && timeline.weeks.length
-    ? gridCellId(rows[active.row]?.locationId ?? "none", timeline.weeks[active.column])
+    ? gridCellId(rows[activeRow]?.locationId ?? "none", timeline.weeks[activeColumn])
     : undefined;
 
   const selectCell = (row: TimelineRow, week: number) => {
@@ -196,8 +191,8 @@ export function PossessionTimeline({
 
   const onGridKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!rows.length || !timeline.weeks.length) return;
-    let row = active.row;
-    let column = active.column;
+    let row = activeRow;
+    let column = activeColumn;
     if (event.key === "ArrowUp") row -= 1;
     else if (event.key === "ArrowDown") row += 1;
     else if (event.key === "ArrowLeft") column -= 1;
@@ -344,7 +339,7 @@ export function PossessionTimeline({
                 </div>
                 {timeline.weeks.map((week, columnIndex) => {
                   const cell = row.cells.get(week);
-                  const isActive = active.row === rowIndex && active.column === columnIndex;
+                  const isActive = activeRow === rowIndex && activeColumn === columnIndex;
                   const isSelected = selection?.kind === "location-week" && selection.locationId === row.locationId && selection.week === week;
                   const containsSelected = Boolean(selectedActivityId && cell?.activityIds.includes(selectedActivityId));
                   const closureOnly = Boolean(selectedActivityId && selectedAccessWeeks.has(week) && selectedClosure.has(row.locationId) && !containsSelected);

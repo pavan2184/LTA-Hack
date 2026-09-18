@@ -1,6 +1,38 @@
 # Teammate Handoff
 
-Last updated: 2026-09-15 · RailPlan v0.4.0
+Last updated: 2026-09-18 · RailPlan v0.4.0
+
+## Public PS1 operations workspace
+
+`/ps1` is public and independent of Supabase, login and server APIs. From a clean
+checkout, `npm ci && npm run dev`, then open `http://localhost:3000/ps1`. Use
+“Load the public instance and run”; a fresh result opens Scenario C. The primary
+demo is: choose a bottleneck in the attention queue or grid, impose urgent
+maintenance, re-plan, adopt into the review shelf, inspect churn/completion and
+violations, Apply, then Undo. Proof and export contains local-conformance evidence,
+worker diagnostics, external submission checking and the exact ZIP manifest.
+
+Important boundaries:
+
+- Hidden files, schedules, revisions, low-glare preference and history stay in
+  the browser session. Refresh clears them.
+- A failed scenario stays visible beside the other policy outcomes.
+- The timeline is the desktop/tablet planning surface; mobile is for triage,
+  inspection, reviewed apply/undo and export.
+- Cross-possession physical-night alignment is explicitly undecidable because
+  the official output has no global night identity.
+- `PS1_PLANNING_LOG.json` and the copyable handover are never included in the
+  official A/B/C ZIP.
+- No PS1 backend, HTTP route, environment variable, database or auth setup is
+  required. Do not add one to “support” this workspace.
+
+Before release run `npm test`, `npm run typecheck`, `npm run lint` and
+`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 44/C 39.2,
+hotspot review/apply/undo and ZIP download at the target responsive widths.
+The 2026-09-18 release candidate completed those gates: 967 tests across 116
+files, clean typecheck/lint/build, HTTP 200 for `/` and `/ps1`, clean browser
+logs and responsive checks at 390/768/1280/1440/1920px. Automated VoiceOver
+speech was not available; repeat that one check manually on the release host.
 
 ## Run the application without Docker
 

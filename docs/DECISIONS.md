@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-18 — PS1 is an exception-first linked workspace
+
+Status: **Accepted.** Replace the solved page's stacked report sections and
+duplicate inspectors with a persistent command bar, non-ranked policy cards,
+attention queue, one-focus location-week grid, single entity-aware inspector,
+review shelf and proof drawer. Keep Scenario C as the fresh-instance default,
+while retaining the chosen scenario during same-instance replans.
+
+Mobile is intentionally a triage and approval surface, not a compressed matrix
+editor. Low-glare mode is optional and session-only. All selections and answers
+must link to engine identities, and all capacity displays must use the disruption
+engine's shared authority. Proposed changes cannot replace the applied plan or
+unlock export until separately validated and applied.
+
+This is a presentation and browser-state decision. It changes no solver/scoring
+rule, official CSV schema, worker protocol, HTTP API, database, authentication
+flow, dependency or environment variable. Auxiliary handover and planning-log
+exports remain outside the official nine-file ZIP.
+
 ## 2026-09-18 — PS1 uses honest local conformance and a browser worker optimiser
 
 Status: **Accepted.** Keep the public PS1 path account-free and solve hidden

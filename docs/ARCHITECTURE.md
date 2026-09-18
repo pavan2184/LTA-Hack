@@ -1,5 +1,36 @@
 # Architecture
 
+## PS1 exception-first operations workspace — 2026-09-18
+
+The browser client retains all three `ScenarioRun` outcomes, including
+`INFEASIBLE` and `INVALID_INSTANCE`, so one failed policy never erases usable
+results from the other two. A monotonically increasing operation epoch prevents
+an older solve/replan from replacing newer state. Fresh instances open Scenario C;
+same-instance replans preserve the operator's active policy.
+
+The solved UI is one linked master-detail system. `WorkspaceSelection` is the
+shared activity or location-week identity used by the attention queue, ARIA grid,
+inspector and deterministic Q&A. `buildAttentionItems()` is a pure projection of
+engine facts and orders blockers, priority risk, rejected constraints, disruption
+pressure, scenario levers and recent changes before routine work. The timeline
+uses `buildTimeline(..., disruptions)` and the shared `capacityAt()` function, so
+nominal and effective capacity cannot drift from the disruption engine.
+
+Desktop uses queue/timeline/inspector panes; the inspector becomes a drawer at
+intermediate widths. Below `lg`, the explicit product boundary is triage and
+approval through Attention, Selected, Review and Proof views; the dense grid is
+not presented as a mobile editor. The grid has one page tab stop with an active
+descendant, arrow/Home/End navigation, 28px standard cells and fixed-row
+virtualization above 200 rows. Low-glare mode is session-only and scoped to PS1.
+
+Applied and proposed state stay separate. Pins and urgent-maintenance replans
+produce a `PlanDiff` review shelf; export remains blocked until Apply or Discard.
+Apply creates an in-memory revision and Undo restores its snapshot. Proof exposes
+local-conformance limits, worker diagnostics and the immutable official manifest.
+The copyable handover and planning log are auxiliary artifacts and are never added
+to the official ZIP. No HTTP route, database, authentication or environment
+variable changed.
+
 ## Public PS1 optimiser workspace — 2026-09-18
 
 `/ps1` remains an unauthenticated, database-free client boundary. Exact CSV

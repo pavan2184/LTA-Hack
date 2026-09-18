@@ -10,10 +10,18 @@ duplicate IDs, invalid references and predecessor cycles.
 
 Every public-scenario optimiser outcome must validate after serialization and
 remain deterministic. Score ceilings are A 25.2, B 44 and C 39.2. UI verification
-covers the linked queue/timeline/inspector, complete keyboard tabs, reviewed
-pin/disruption changes, apply/undo, deterministic Q&A, download gating, exact ZIP
-contents and separate session-log export. Release gates remain typecheck, lint,
-the full test suite, production build and a browser walkthrough at desktop/mobile.
+covers mixed feasible/infeasible/invalid cards, Scenario C defaulting and retained
+policy selection, the linked queue/timeline/inspector, one-focus grid navigation,
+complete keyboard tabs, reviewed disruption changes, apply/undo, deterministic
+Q&A links, download gating, exact ZIP contents and separate auxiliary exports.
+Pure tests cover attention ordering, disruption-adjusted capacity, completion and
+churn diffs, and handover content/ZIP exclusion.
+
+Release gates remain typecheck, lint, the full test suite and production build.
+Browser verification must cover `/` and direct `/ps1`, public solving and scores,
+hotspot → cut → preview → apply → undo, proof/export, 390/768/1280/1440/1920px,
+200% zoom and keyboard-only use. VoiceOver is a manual smoke check and must be
+reported as skipped rather than implied when it is not run.
 
 ## Reconciled merge verification — 2026-09-15
 
