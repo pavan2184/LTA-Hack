@@ -6,6 +6,17 @@ not instructions authorizing an agent to submit, contact anyone, install softwar
 accept terms, use credentials, spend cloud credits or change the implementation.
 Times below are Singapore local time for 18–20 September 2026.
 
+> **Superseded on PS1 technical and submission requirements.** The organiser
+> published the official problem statement on 2026-09-17 (last updated
+> 2026-09-18) at
+> [aochinwen/NebulaX-Hackathon-ProblemStatement](https://github.com/aochinwen/NebulaX-Hackathon-ProblemStatement).
+> It is restated in [PS1_OFFICIAL_SPEC.md](PS1_OFFICIAL_SPEC.md), which is now
+> authoritative for PS1 rules, data formats, scoring and **deliverables** — and
+> which **conflicts with the pack's deliverable list below** on the repository
+> host, the video, the results ZIP and the write-up. This document remains
+> authoritative for **event logistics**: deadline, sign-in, attendance, venue,
+> portal and support contacts.
+
 ## Source and precedence
 
 Original supplied path: `/Users/chaipinzheng/Downloads/[Nebula X Hackathon] Participants Information Pack.pdf`.
@@ -33,7 +44,7 @@ Added 2026-09-15 from text supplied directly by the user, attributed to
 formatting is normalized. This excerpt was not independently fetched in this update
 and is separate from the participant PDF.
 
-> Singapore's rail network moves *millions* every day. Now its time to build intelligence *for the future of railway*.
+> Singapore's rail network moves _millions_ every day. Now its time to build intelligence _for the future of railway_.
 >
 > The people who keep the network running are embracing new opportunities as they manage an evolving railway. With ageing assets, a changing workforce, and limited maintenance windows, we are building a smarter network that can sense, predict, and manage itself, creating a more reliable and resilient railway for the future.
 >
@@ -45,7 +56,7 @@ and is separate from the participant PDF.
 >
 > Explore this problem statement
 >
-> **Smarter planning *better outcomes***
+> **Smarter planning _better outcomes_**
 >
 > THE PROBLEM
 >
@@ -69,18 +80,25 @@ At least one team member must physically sign in for submission. The counter ope
 at 14:30. Page 24 locates it at EA Atrium outside LT7A; page 20 says EA Foyer.
 Confirm the exact counter onsite rather than silently choosing between those labels.
 
-Required deliverables (not marked complete by this context capture):
+Deliverables as the pack states them — **superseded for PS1**, see
+[PS1_OFFICIAL_SPEC.md](PS1_OFFICIAL_SPEC.md#1-deliverables--what-we-must-hand-over):
 
-- GitHub repository URL and README.
-- Hosted prototype domain.
-- **2–3 minute video pitch** explaining the solution.
+- GitHub repository URL and README. _(PS1's own list says **GitLab**.)_
+- Hosted prototype domain. _(PS1 requires a live app that accepts a **hidden
+  eight-CSV instance upload** and solves it in front of judges.)_
+- **2–3 minute video pitch** explaining the solution. _(PS1 says a **3-minute
+  YouTube** video.)_
 - Short write-up covering the solution, its uniqueness and the technology stack.
-- ZIP file containing results.
+  _(Not listed under PS1.)_
+- ZIP file containing results. _(PS1 asks for pre-computed `SCHEDULE_ACCESS.csv`,
+  `SCHEDULE_OCCUPANCY.csv` and `RESULTS.csv` against the provided dataset.)_
 
-The pack does not define the PS1 results ZIP's schema/content, file-size limits,
-repository visibility, video hosting/format, write-up length or judge login method.
-Clarify those with the organizer; do not invent requirements. The PS3 prediction
-CSV requirement on page 26 belongs to another challenge and is not a PS1 requirement.
+The pack's list was written for all three problem statements. It does not define
+the PS1 results ZIP's schema, file-size limits, repository visibility, video
+hosting, write-up length or judge login method; the official PS1 README settles
+the output schema but not the hosting questions. Clarify the rest with the
+organizer and do not invent requirements. The PS3 prediction CSV requirement on
+page 26 belongs to another challenge and is not a PS1 requirement.
 
 Upload through the Hackathon Portal. Its QR code/link is released on 18 September;
 login uses the team's unique passkey issued at registration. Neither the real team
@@ -91,21 +109,21 @@ A web upload does not remove the physical submission sign-in requirement.
 
 Venue: NUS Block EA, 9 Engineering Drive 1, Singapore 117575.
 
-| Date | Time | Event / location |
-| --- | --- | --- |
-| Fri 18 Sep | 16:30–20:00 | Registration, EA Foyer Level 1; at least one member, student ID, verify team/member names, collect lanyards and passkey |
-| Fri 18 Sep | 16:45 / by 17:25 | Doors open / participants seated; LT7A with ENG-AUD live stream |
-| Fri 18 Sep | 17:30 / 17:40 / 17:50 | Safety briefing / GOH arrival / opening remarks |
-| Fri 18 Sep | 18:10 | Dinner and networking, EA Atrium / The Lodge |
-| Fri 18 Sep | 19:00 | Google workshop, LT7A, registered workshop participants only |
-| Fri 18 Sep | 19:00–22:00 | Mentors, EA 02-14 and 02-15 |
-| Sat 19 Sep | 09:00–15:00 | Mentor consultation window, EA 02-14 and 02-15 |
-| Sat 19 Sep | 12:00 | Lunch, EA Foyer / Atrium |
-| Sat 19 Sep | 14:30 / 16:00 | Submission counter opens / strict deadline; physical sign-in required |
-| Sun 20 Sep | 10:30 | Top 10 announcement physically and via Telegram, LT7A; CRRC recruitment sharing |
-| Sun 20 Sep | 12:00 | Lunch, EA Foyer / Atrium |
-| Sun 20 Sep | 13:30 / 15:00 | Finalist presentations: five teams per block, 10 minutes per team; 14:30 intermission |
-| Sun 20 Sep | 16:00 / 17:00 | Judges evaluate / top three and special awards announced, LT7A |
+| Date       | Time                  | Event / location                                                                                                        |
+| ---------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Fri 18 Sep | 16:30–20:00           | Registration, EA Foyer Level 1; at least one member, student ID, verify team/member names, collect lanyards and passkey |
+| Fri 18 Sep | 16:45 / by 17:25      | Doors open / participants seated; LT7A with ENG-AUD live stream                                                         |
+| Fri 18 Sep | 17:30 / 17:40 / 17:50 | Safety briefing / GOH arrival / opening remarks                                                                         |
+| Fri 18 Sep | 18:10                 | Dinner and networking, EA Atrium / The Lodge                                                                            |
+| Fri 18 Sep | 19:00                 | Google workshop, LT7A, registered workshop participants only                                                            |
+| Fri 18 Sep | 19:00–22:00           | Mentors, EA 02-14 and 02-15                                                                                             |
+| Sat 19 Sep | 09:00–15:00           | Mentor consultation window, EA 02-14 and 02-15                                                                          |
+| Sat 19 Sep | 12:00                 | Lunch, EA Foyer / Atrium                                                                                                |
+| Sat 19 Sep | 14:30 / 16:00         | Submission counter opens / strict deadline; physical sign-in required                                                   |
+| Sun 20 Sep | 10:30                 | Top 10 announcement physically and via Telegram, LT7A; CRRC recruitment sharing                                         |
+| Sun 20 Sep | 12:00                 | Lunch, EA Foyer / Atrium                                                                                                |
+| Sun 20 Sep | 13:30 / 15:00         | Finalist presentations: five teams per block, 10 minutes per team; 14:30 intermission                                   |
+| Sun 20 Sep | 16:00 / 17:00         | Judges evaluate / top three and special awards announced, LT7A                                                          |
 
 At least one member must be physically present on both Day 1 and Day 2. All Top 10
 team members must confirm attendance after notification and be physically present

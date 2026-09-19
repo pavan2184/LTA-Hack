@@ -1,5 +1,43 @@
 # Project Status
 
+## Official PS1 specification captured as repo context — 2026-09-19
+
+The spec sync below verified the engine against the organiser's statement but
+left the requirements themselves outside `docs/`. Nothing in the documentation
+set stated the rules, scoring formulas, output schema or deliverables we are
+judged against, so readers fell back to the 2026-09-15 website excerpt and the
+participant PDF pack.
+
+[PS1_OFFICIAL_SPEC.md](PS1_OFFICIAL_SPEC.md) now restates the official statement
+from `aochinwen/NebulaX-Hackathon-ProblemStatement` at `966c976` — the four
+non-negotiables, network and demand models, the ten strict rules, Scenarios
+A/B/C with their hard-fail conditions and penalty formulas, the three-CSV output
+schema, the validator report shape, the judging rubric and the four deliverables
+— and is declared authoritative for PS1 in `docs/README.md`, `AGENTS.md`,
+`CLAUDE.md` and the root `README.md`. It complements rather than repeats the
+predecessor-rule verification recorded below. Documentation only; no code,
+schema, dependency or behaviour change.
+
+Findings from the reconciliation:
+
+- The eight vendored instance files in `packages/ps1/data/public/` are
+  **byte-identical** to the organiser's `PS1/01_data/` (SHA-256 after newline
+  normalisation, all eight matching).
+- **PS1's deliverables conflict with the participant pack's generic list** on
+  four points: GitLab versus GitHub, a 3-minute YouTube video versus a 2–3 minute
+  pitch, pre-computed result CSVs versus an undefined results ZIP, and a
+  write-up PS1 does not list. Unresolved; recorded as open questions for the
+  organiser rather than decided here.
+- Deliverables 1 and 2 are met by existing work (`packages/ps1/data/results/` and
+  the `/ps1` hidden-instance upload path). **Deliverable 3 does not exist** — no
+  video has been produced. **Deliverable 4 has no GitLab mirror.**
+- Our local checker's rule tags are a superset of the four the organiser's
+  example shows; the extra names are ours and must not be presented as the
+  reference validator's.
+
+Verification: markdown-only change; internal document links and the
+cross-document anchors were checked by hand. No test, typecheck, lint or build
+run was required or claimed.
 ## PS1 evidence calibration and spec sync — 2026-09-18
 
 Documentation-only session closing issues #35–#40. No behavioural change: the
@@ -216,7 +254,7 @@ below follow what comparable tools actually do, with sources recorded in
 `docs/DECISIONS.md` rather than invented.
 
 **Master-detail, not stacked panels.** Selecting a cell used to open a block
-*below* a scrolling table, so clicking a row near the top pushed the page and
+_below_ a scrolling table, so clicking a row near the top pushed the page and
 left the cell off screen. The detail now sits beside the grid and sticks while
 the grid scrolls. Palantir's scheduling Gantt widget and the long-standing
 "two-panel selector" screen pattern both put the detail adjacent, not beneath.
@@ -274,7 +312,7 @@ over-capacity cell was red and nothing else, and a pinned week had no grid
 representation at all. Over-capacity cells now carry `.bar-conflict` and pinned
 weeks `.bar-pinned` — the same hatch and ruling the planner timeline uses, so
 both survive greyscale and colour-vision deficiency. Pins are also now visible
-as a *span*: pinning A028 marks all five locations it occupies that week, which
+as a _span_: pinning A028 marks all five locations it occupies that week, which
 is what a pin actually constrains.
 
 Finding that required fixing a real bug: the cells set the `background`
@@ -360,7 +398,7 @@ disruption picker beside it said `PLAT:ALP:S01:EB`; `location.ts` now formats
 every reference, with the raw id kept as the secondary form. The selected cell
 carries an outline, the detail panel closes, and `TimelineRow.peak` — computed
 by the engine and never rendered — drives a "busiest first" sort and a count of
-locations reaching capacity. Urgent maintenance moved *below* the timeline and
+locations reaching capacity. Urgent maintenance moved _below_ the timeline and
 can be aimed at a clicked location-week, and its capacity now defaults to one
 night fewer than nominal rather than a flat 1, which was not a cut at all on the
 capacity-1 sections that make up most of the network.
@@ -378,7 +416,7 @@ selection, pin and release, cut-and-replan, reference check and ZIP download.
 Database-backed suites were not re-run; nothing here touches them.
 
 Not done, and deliberately: `/ps1` still does not accept a zipped instance as
-*input*, the scenario tabs remain an incomplete ARIA tab widget (`role="tab"`
+_input_, the scenario tabs remain an incomplete ARIA tab widget (`role="tab"`
 with no `tabpanel` or arrow-key handling), and at 375px the timeline's location
 column takes most of the width. None changes a judging outcome; all three are
 listed for after the deadline.
@@ -450,19 +488,19 @@ host CPU, core count, memory, Node/Python/OR-Tools versions, time limit, seed an
 worker count alongside seven fixtures. `npm run benchmark:cpsat` reproduces it in
 about 105 seconds.
 
-| Fixture | Heuristic | CP-SAT |
-| --- | --- | --- |
-| baseline-feasible | 17 placed, 88.2%, 735 move, 22 ms | 19, 95.3%, 1320 move, 6.0 s |
-| shortened-window-disruption | 15, 84.7%, 720 move, 14 ms | 18, 92.9%, 1080 move, 2.3 s |
-| team-unavailable-disruption | 17, 88.2%, 735 move, 24 ms | 18, 90.6%, 1395 move, 4.0 s |
-| locked-planner-pins | 17, 88.2%, 735 move, 22 ms | 19, 95.3%, 1350 move, 3.5 s |
-| adversarial-tight-windows | 16, 84.7%, 480 move, 11 ms | 17, 90.6%, 480 move, 2.2 s |
-| larger-cloned-night (33) | 19, 74.6%, 1230 move, 33 ms | 20, 76.9%, 1065 move, 75.2 s |
-| mandatory-blocks-closed | INFEASIBLE, 4/5, 49 ms | INFEASIBLE, proved, 0.3 s |
+| Fixture                     | Heuristic                         | CP-SAT                       |
+| --------------------------- | --------------------------------- | ---------------------------- |
+| baseline-feasible           | 17 placed, 88.2%, 735 move, 22 ms | 19, 95.3%, 1320 move, 6.0 s  |
+| shortened-window-disruption | 15, 84.7%, 720 move, 14 ms        | 18, 92.9%, 1080 move, 2.3 s  |
+| team-unavailable-disruption | 17, 88.2%, 735 move, 24 ms        | 18, 90.6%, 1395 move, 4.0 s  |
+| locked-planner-pins         | 17, 88.2%, 735 move, 22 ms        | 19, 95.3%, 1350 move, 3.5 s  |
+| adversarial-tight-windows   | 16, 84.7%, 480 move, 11 ms        | 17, 90.6%, 480 move, 2.2 s   |
+| larger-cloned-night (33)    | 19, 74.6%, 1230 move, 33 ms       | 20, 76.9%, 1065 move, 75.2 s |
+| mandatory-blocks-closed     | INFEASIBLE, 4/5, 49 ms            | INFEASIBLE, proved, 0.3 s    |
 
 **The decision is recorded.** `DECISIONS.md` now carries
 `2026-09-17 — No CP-SAT solver service; the TypeScript heuristic stands`, which
-resolves the previously `Proposed` *Real optimisation solver* entry. CP-SAT
+resolves the previously `Proposed` _Real optimisation solver_ entry. CP-SAT
 produces better plans — one to three more jobs, +2.3 to +8.2 points of weighted
 completion — at 157-2278x the runtime, and is rejected on latency, not quality.
 The decision names the operational failure modes a service would add and what
@@ -725,8 +763,7 @@ was caught and corrected during verification. All 24 dashboard tests then passed
 (14.19s), followed by typecheck and focused lint. Other dashboard banner/KPI counts
 still use their existing definitions and need reconciliation before final release;
 the saved-plan grouped-conflict surface is also pending. Production build and
-whitespace checks passed. Preview restarted at http://127.0.0.1:3000 (session
-39301) with AI/Telegram process overrides still disabled; login HTTP 200. Browser
+whitespace checks passed. Preview restarted at http://127.0.0.1:3000 (session 39301) with AI/Telegram process overrides still disabled; login HTTP 200. Browser
 interaction/visual verification was not performed. Existing Vite advisory remains.
 No merge/push/deployment.
 
@@ -1986,7 +2023,7 @@ what.
 
 **The migration has never been applied and the seed has never run.** The Docker
 daemon became unresponsive while pulling the Supabase images, so the round trip
-is written but unproven. What *is* verified: the migration parses under the real
+is written but unproven. What _is_ verified: the migration parses under the real
 Postgres parser (`libpg-query`) as 2 enums, 16 tables, 3 indexes and 16 RLS
 statements, all 16 tables have RLS enabled, and all 18 foreign keys target
 tables defined in the same migration.
@@ -2019,7 +2056,7 @@ working by falling back to the literal world.
 Two consequences worth knowing:
 
 - **Strategy profiles express a reserve, not a clock time.** `planningWindowEnd:
-  WINDOW_END - 45` became `windowReserveMinutes: 45`. "Keep the last 45 minutes
+WINDOW_END - 45` became `windowReserveMinutes: 45`. "Keep the last 45 minutes
   clear" survives a night with a different handback deadline; "stop at 03:15"
   silently means something else.
 - **`inputHash` now identifies which night was planned**, not just how. It
@@ -2065,7 +2102,7 @@ Defects fixed, each with a test:
 **Six solves per question became one.** `comparisonTable()` takes no arguments
 and solves the unmodified request set, so it is constant for the life of the
 process and is now computed once. The rest of the fact sheet is cached on
-`inputHash`, with the *measured* solve time assembled per call and never cached —
+`inputHash`, with the _measured_ solve time assembled per call and never cached —
 a cached sheet quoting a previous run's timing would be a figure the engine
 produced, but not one describing the run in front of the planner.
 
@@ -2128,7 +2165,7 @@ The engine was already right; the interface was describing the tool rather than
 the job. This session reframed it around what a scheduler actually does.
 
 - **Three named steps** replace the "as submitted / as planned" toggle:
-  *Requested plan → Conflicts → Optimised schedule*, each a control, each
+  _Requested plan → Conflicts → Optimised schedule_, each a control, each
   showing its own state. "Solve" is now "Generate optimal schedule".
 - **Conflicts have a kind.** Six planner-facing categories — sector overlap,
   engineer availability, incompatible work, equipment, sequencing, engineering
@@ -2160,7 +2197,7 @@ the job. This session reframed it around what a scheduler actually does.
 "Planner time saved" is the only figure on the dashboard that is not arithmetic
 over the plan. It multiplies conflicts resolved by
 `ASSUMED_MINUTES_PER_MANUAL_CONFLICT` (12), a named constant in `engine/metrics.ts`.
-The figure is labelled *estimated*, its `fx` panel says "assumption, not a
+The figure is labelled _estimated_, its `fx` panel says "assumption, not a
 measurement", and its baseline is the conflict count in the requests **as
 submitted** — not the count after the tool's own fixes, which would let the tool
 quietly lower the bar it is judged against. A test asserts that baseline.

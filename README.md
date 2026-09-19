@@ -287,17 +287,22 @@ gaps are recorded in [project status](docs/PROJECT_STATUS.md).
 
 ## Documentation
 
+- [PS1 official spec](docs/PS1_OFFICIAL_SPEC.md) — **authoritative** rules, scenarios, scoring, output schema, judging rubric and deliverables. Read this first.
 - [Product brief](docs/PROJECT_BRIEF.md) — the problem, users, intended workflow and success criteria.
-- [Participant context](docs/NEBULAX_PARTICIPANT_CONTEXT.md) — source wording, deadlines and submission requirements.
+- [Participant context](docs/NEBULAX_PARTICIPANT_CONTEXT.md) — event logistics, deadlines and attendance.
 - [Product research](docs/NEBULAX_PRODUCT_RESEARCH.md) — dated comparisons, operator questions and proposals.
 - [Architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md) and [API contract](docs/API_CONTRACT.md).
 - [Project status](docs/PROJECT_STATUS.md), [testing](docs/TESTING.md) and [security review](docs/SECURITY_REVIEW.md).
 - [Full documentation index](docs/README.md).
 
-For PS1, the participant pack requires a repository/README, hosted prototype,
-**2–3 minute video**, short write-up and results ZIP by **19 September 2026,
-16:00 Singapore time**, plus in-person submission sign-in. The event context
-records details and unresolved questions.
+PS1's own problem statement asks for four deliverables: **pre-computed results**
+for the provided dataset, a **hosted live app** judges can upload a hidden
+eight-CSV instance into, a **3-minute YouTube video**, and a **GitLab repository
+URL**. The participant pack's generic list differs — GitHub, a 2–3 minute video,
+a write-up and a results ZIP — and those conflicts are unresolved; both are
+tabulated in the [PS1 official spec](docs/PS1_OFFICIAL_SPEC.md#1-deliverables--what-we-must-hand-over).
+Everything is due **19 September 2026, 16:00 Singapore time**, with in-person
+submission sign-in from 14:30.
 
 ## Contributing
 
