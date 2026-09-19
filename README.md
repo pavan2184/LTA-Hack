@@ -173,14 +173,22 @@ requires no account. Hidden instance files remain on the device. The separate du
 See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
 GitHub and local work.
 
-After a solve, `/ps1` opens Scenario C in an exception-first operations workspace.
-Use the policy cards to switch A/B/C without comparing their unlike objectives as
-one ranking; use the attention queue and location-by-week grid to drive the shared
-inspector. The intended demo path is: select a capacity hotspot, impose urgent
-maintenance, review the minimum-churn proposal, then apply or undo it. Proof,
+After a solve, `/ps1` opens Scenario C in the work schedule: expandable contracts,
+actual weekly activity allocations, planned starts and completion targets. Switch
+A/B/C using the compact policy controls, and open the attention queue or location
+occupancy view when needed. The intended demo path is: select a capacity hotspot,
+impose urgent maintenance, review the proposal that preserves unaffected accesses,
+then apply or undo it. Proof,
 external-submission checking, the exact nine-file ZIP and a separate handover are
 available from the persistent command bar. On mobile, the workspace supports
 triage, inspection, review and export; dense matrix editing remains a larger-screen task.
+
+For submission, `npm run ps1:solve` generates the public result CSVs and
+`output/PS1-public-results.zip`. `npm run ps1:benchmark` checks the public and
+12 synthetic inputs for full workload, local conformance and exact CSV round-trips.
+See the [measured solver comparison](docs/PS1_BENCHMARK.md) and
+[submission checklist](docs/PS1_SUBMISSION_CHECKLIST.md) for release evidence,
+the three-minute demo script and remaining publication steps.
 
 ### Contractor to planner
 

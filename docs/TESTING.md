@@ -1,5 +1,25 @@
 # Testing Plan
 
+## PS1 candidate reuse and submission readiness — 2026-09-19
+
+`optimization.test.ts` covers zero-cost feasible alternatives for mixed inputs,
+rejection of deadline-breaking A schedules in B, immutable candidate inputs,
+changed capacity cuts, exact operator pins through reconstruction, separated C
+ECLO demand, independent line windows and Live interchange coupling. Exported
+outputs are reparsed and checked under their own scenario.
+
+Run `npm run ps1:benchmark -- --output /tmp/ps1-baseline.json --runs 3` before
+solver changes, then `npm run ps1:benchmark -- --compare /tmp/ps1-baseline.json
+--output /tmp/ps1-after.json --runs 3`. All 39 dataset/scenario outcomes must
+deliver full workload, pass local checks, preserve CSV headers/identities and be
+deterministic. Comparisons fail on score/feasibility regression or changed inputs;
+runtime is recorded separately. See [PS1_BENCHMARK.md](PS1_BENCHMARK.md).
+
+`npm run ps1:solve` regenerates public CSVs plus `output/PS1-public-results.zip`
+with exactly nine official CSV entries. Inspect actual browser downloads and
+recheck their extracted files. Node timings, dev-browser timings and hosted
+results are distinct evidence; none establishes reference-validator parity.
+
 ## PS1 hardened conformance and operations workspace — 2026-09-18
 
 Regression coverage now mutates the published reference to prove rejection of
@@ -9,7 +29,7 @@ ECLO-window breaches. Loader cases cover exact headers, RFC-style quoting,
 duplicate IDs, invalid references and predecessor cycles.
 
 Every public-scenario optimiser outcome must validate after serialization and
-remain deterministic. Score ceilings are A 25.2, B 44 and C 39.2. UI verification
+remain deterministic. Score ceilings are A 25.2, B 44 and C 25.2. UI verification
 covers mixed feasible/infeasible/invalid cards, Scenario C defaulting and retained
 policy selection, the linked queue/timeline/inspector, one-focus grid navigation,
 complete keyboard tabs, reviewed disruption changes, apply/undo, deterministic

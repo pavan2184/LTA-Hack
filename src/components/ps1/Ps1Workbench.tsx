@@ -255,15 +255,17 @@ export function Ps1Workbench({
         }));
 
       if (typeof Worker === "undefined") {
-        return toRuns(
-          SCENARIOS.map((scenario) =>
-            solveInstance(target, {
-              scenario,
-              pins: withPins,
-              disruptions: withDisruptions[scenario] ?? [],
-            }, network),
-          ),
-        );
+        const outcomes: SolveOutcome[] = [];
+        for (const scenario of SCENARIOS) {
+          outcomes.push(solveInstance(target, {
+            scenario,
+            pins: withPins,
+            disruptions: withDisruptions[scenario] ?? [],
+            initialCandidates: outcomes.flatMap((outcome) =>
+              outcome.status === "FEASIBLE" && outcome.submission ? [outcome.submission] : []),
+          }, network));
+        }
+        return toRuns(outcomes);
       }
 
       cancelWorkerRef.current?.();

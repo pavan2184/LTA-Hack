@@ -27,12 +27,27 @@ Important boundaries:
   required. Do not add one to “support” this workspace.
 
 Before release run `npm test`, `npm run typecheck`, `npm run lint` and
-`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 44/C 39.2,
+`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 44/C 25.2,
 hotspot review/apply/undo and ZIP download at the target responsive widths.
 The 2026-09-18 release candidate completed those gates: 967 tests across 116
 files, clean typecheck/lint/build, HTTP 200 for `/` and `/ps1`, clean browser
 logs and responsive checks at 390/768/1280/1440/1920px. Automated VoiceOver
 speech was not available; repeat that one check manually on the release host.
+
+For the current release, use the [submission checklist](PS1_SUBMISSION_CHECKLIST.md),
+[measured solver comparison](PS1_BENCHMARK.md),
+[three-minute demo script](../assets/submission/DEMO_SCRIPT.md) and
+[PS1 write-up](../assets/submission/PS1_WRITEUP.md).
+`npm run ps1:solve` regenerates public outputs and the exact nine-CSV archive at
+`output/PS1-public-results.zip`. The archive excludes local validation JSONs.
+`npm run ps1:benchmark` checks all public/synthetic outcomes and can compare an
+earlier JSON baseline; see its `--help` for options.
+
+Git deployments are intentionally disabled. Publish the tested commit manually
+through the existing `railplan` project in `pavanmadhup-1254s-projects`, using an
+account with access to that team. Do not create a replacement project in another
+account. As of this check, the local CLI is signed into `ducksss` and only lists
+`ducksss-projects`; the Vercel dashboard requires login. Deployment is outstanding.
 
 ## Run the application without Docker
 
