@@ -1,0 +1,54 @@
+name: Mirror main to GitLab
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitlab-main-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.repository == 'pavan2184/LTA-Hack' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out current main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push main and verify GitLab commit
+        env:
+          GITLAB_MIRROR_SSH_KEY: ${{ secrets.GITLAB_MIRROR_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$GITLAB_MIRROR_SSH_KEY" ]]; then
+            echo '::error::GITLAB_MIRROR_SSH_KEY is missing. See docs/GITLAB_MIRROR.md.'
+            exit 1
+          fi
+          umask 077
+          mirror_dir="$(mktemp -d)"
+          trap 'rm -rf "$mirror_dir"' EXIT
+          printf '%s\n' "$GITLAB_MIRROR_SSH_KEY" > "$mirror_dir/key"
+          unset GITLAB_MIRROR_SSH_KEY
+          # Pinned to the GitLab host key already trusted by the setup machine.
+          printf '%s\n' 'gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf' > "$mirror_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $mirror_dir/key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$mirror_dir/known_hosts"
+          mirror_url='git@gitlab.com:Ducksss/lta-hack.git'
+          git push "$mirror_url" HEAD:refs/heads/main
+          expected="$(git rev-parse HEAD)"
+          actual="$(git ls-remote "$mirror_url" refs/heads/main | cut -f1)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "::error::GitLab main ($actual) does not match this run ($expected)."
+            exit 1
+          fi
+          echo "Mirrored main at $expected" >> "$GITHUB_STEP_SUMMARY"

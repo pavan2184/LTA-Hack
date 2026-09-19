@@ -117,6 +117,14 @@ the [solver benchmark](PS1_BENCHMARK.md),
 
 ## Deployment and submission gates
 
+GitLab publication update, 2026-09-19: GitHub main `3f0cee7` was successfully
+fast-forwarded to `Ducksss/lta-hack` over authenticated SSH. A main-only GitHub
+Actions mirror and [runbook](GITLAB_MIRROR.md) are prepared; workflow YAML and
+shell syntax pass. Activation and an actual Actions run remain pending the
+dedicated deploy key setup. The GitLab UI confirms private visibility, so source
+publication does not by itself establish judge access. No application code was
+changed or application tests rerun for this repository automation work.
+
 Algorithm Lab is public on Vercel at
 <https://railplan-theta.vercel.app/algorithm-lab>. Deployment
 `dpl_59NhKKk9Nt8AftwbcBQHd7tHUJqM` publishes release source `ff05848`, based on
@@ -143,11 +151,10 @@ VM, which was terminated after the benchmark; it is not a durable judge deployme
 Deploy the merged Node/Python runtime using [PS1_NATIVE_DEPLOYMENT.md](PS1_NATIVE_DEPLOYMENT.md)
 and confirm the intended commit before recording/submitting the release.
 
-This checkout has GitHub `origin` and a configured GitLab remote at
-`git@gitlab.com-personal:Ducksss/lta-hack.git` (observed 2026-09-19). Remote
-configuration alone does not establish a current, judge-accessible GitLab mirror.
-Earlier notes saying no GitLab repository exists are superseded by this limited
-observation. Verify its contents, access and submission URL separately.
+The source is published at <https://gitlab.com/Ducksss/lta-hack>; authenticated
+remote verification confirmed main `3f0cee7` after the initial synchronization.
+Earlier notes saying no GitLab repository exists are superseded. The project is
+private; verify judge membership and the submitted URL separately.
 
 No completed video/YouTube publication, portal receipt or physical sign-in is
 recorded here. The official PS1 specification governs technical deliverables;
