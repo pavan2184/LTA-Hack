@@ -1,5 +1,19 @@
 # Architecture
 
+## Standalone algorithm teaching service — 2026-09-19
+
+`demos/algorithm-lab` is an independently deployable Flask/Gunicorn service with
+native browser assets. `model.py` owns the fixed CP-SAT model and a separate
+plain-Python output check; `main.py` owns bounded public JSON, a nonblocking solve
+lock and a 54-entry result cache. `static/app.js` renders real results and derives
+comparisons/selection without mutating them. No existing PS1 upload, worker,
+solver, export, authentication or database path imports this companion.
+
+Cloud Run source builds are configured without local Docker. The included script
+requires an explicit project, region and existing dedicated service account,
+checks readiness and source inclusion, and publishes only the lab directory.
+The actual deployment remains a separate recorded event.
+
 ## Native PS1 solver service — 2026-09-19
 
 Supersedes the browser-only execution choice below. `/ps1` sends one scenario at

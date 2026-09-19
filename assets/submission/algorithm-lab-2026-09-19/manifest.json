@@ -1,0 +1,109 @@
+{
+  "captureOrigin": "local preview",
+  "cloudDeploymentVerified": false,
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 10172,
+      "sha256": "a34e6aff6db01df41b1487e0b6eef9672235e19cb89bf575c1df7c99e4bd2eb7"
+    },
+    {
+      "file": "captions.md",
+      "bytes": 4269,
+      "sha256": "eb8dcc6eb5e248fa2a628264dce5c71563e04aaa74c4be99b433abb04ed6f427"
+    },
+    {
+      "file": "images/01-algorithm-lab-cover.jpg",
+      "bytes": 470420,
+      "sha256": "adf9cff7e661c6737b70ebe2dececafbc245c9feaaf6a14399e2b49a8dacc320",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "images/02-how-cp-sat-works.png",
+      "bytes": 180436,
+      "sha256": "0c48e2c46ac8799b53af88c327cf9035ff5a2a946e95e5630ae87ac485fbcc1a",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/03-interactive-demo.png",
+      "bytes": 253663,
+      "sha256": "2ddd69b0c6891ac65e28c3551666a3aeb9ae45f93cdfb8aa022a63227797560f",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/04-close-a-week.png",
+      "bytes": 268764,
+      "sha256": "d5a86fd73652fc46486fbda08242b6473371bb6dc12d9482768dedfd2b08b1d6",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/05-proof.png",
+      "bytes": 362763,
+      "sha256": "66b34ee9f41c3283c06220b1736117fbd48eed4fb486a1669f53e3e2c8aaecfc",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "screenshots/01-default.png",
+      "bytes": 161010,
+      "sha256": "7387a45e7420c2869d10ae9c934fc9834f30db0588c376c85687dddf8b645b2f",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "screenshots/02-closed-week.png",
+      "bytes": 164918,
+      "sha256": "8d0633147ce93ff413f242b4cbf57a66e1638809ccbf2dca492e6e989980e368",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "screenshots/03-model-proof.png",
+      "bytes": 208480,
+      "sha256": "d98b99f45653376246f24ec6595170571ad29b246b7f5b5a67dc0d72d5edb303",
+      "width": 1456,
+      "height": 925
+    },
+    {
+      "file": "screenshots/04-infeasible.png",
+      "bytes": 147378,
+      "sha256": "88806d66c69e8e21596c555c198f37391c63e90cfeff2367bfd15057dbbde345",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "source/cover-prompt.json",
+      "bytes": 1580,
+      "sha256": "615be5e0138f903116ba93ab39c453a02fa11f2c50ccb3ed9d5cb5271bbcbad0"
+    },
+    {
+      "file": "source/fonts/OFL.txt",
+      "bytes": 4362,
+      "sha256": "d741e57d5f865e294df801f96b7b5161a88b211df65887e4358d271c9fc5fb4f"
+    },
+    {
+      "file": "source/fonts/plex-mono-latin.woff2",
+      "bytes": 10052,
+      "sha256": "c36f509c0a8f9f85f29cb44bc8701d8a9e0b14c499e77a884f789ead7093a7ac"
+    },
+    {
+      "file": "source/fonts/plex-sans-latin.woff2",
+      "bytes": 40240,
+      "sha256": "056e4e2459f57a0033c8c9c844ff19d6e42ac8602027803d4345823bcc939818"
+    },
+    {
+      "file": "source/gallery.html",
+      "bytes": 16846,
+      "sha256": "d33f30c3e16842c42b07876d908b74fd2ae8c7f93fce2c6e6b8f3c7557cb3d0f"
+    },
+    {
+      "file": "source/render-checks.json",
+      "bytes": 934,
+      "sha256": "193631a83ab278a4c22d8618f303c14b30e41642a25e17af94e586c76a379671"
+    }
+  ]
+}

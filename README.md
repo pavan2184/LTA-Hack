@@ -380,6 +380,14 @@ The [Devpost asset pack](assets/submission/devpost-2026-09-19/README.md) include
 cover and social artwork, four product gallery images, captions, submission copy
 and editable sources.
 
+The [Algorithm Lab](demos/algorithm-lab/README.md) adds a real Python OR-Tools
+CP-SAT teaching demo and a three-step explanation: model the work, search within
+the rules, then prove and explain the result. Its separate
+[Devpost pack](assets/submission/algorithm-lab-2026-09-19/README.md) includes five
+visuals and a narrated walkthrough script. Cloud Run deployment is prepared;
+no public lab URL has been verified. This six-job educational model is separate
+from the full-instance native PS1 optimiser.
+
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Roadmap
