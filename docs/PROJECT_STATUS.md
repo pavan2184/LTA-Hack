@@ -1,5 +1,61 @@
 # Project Status
 
+## README and Devpost assets prepared for repository handoff — 2026-09-19
+
+The redesign is already on `main` through PR #46. The documentation follow-up
+was rebased onto the solver improvements in PR #48 and adds the template-aligned README plus the
+versioned pack at `assets/submission/devpost-2026-09-19/`. The pack includes all
+six finished images, four original product captures, captions, copy, editable
+HTML, generation prompts and a refreshed checksum manifest. The root README
+links to it. A full-resolution JPEG cover keeps every added file below the
+repository's 2 MB limit; the original PNG and ZIP remain under local `output/`.
+
+Verification: template structure, relative paths/anchors, npm commands, file
+sizes, image dimensions, checksums and `git diff --check`. The existing build
+and PS1 verification evidence is unchanged; this follow-up adds no application
+behavior. No server was started for this handoff. The conflict resolution
+preserves PR #48's complete status entry and updates the README for the optimiser
+CLI, result ZIP, benchmark, demo script and submission checklist. Gallery captures
+retain their original commit provenance and explicitly note the newer C score.
+
+## README aligned with Best-README-Template — 2026-09-19
+
+Updated the root README to the template's eight-section structure, with a
+centered RailPlan introduction, the chosen tagline, linked technology badges,
+nested table of contents, current schedule screenshot and back-to-top links.
+The primary setup and usage now describe the public weekly PS1 scheduler;
+Supabase/database configuration is an optional section for the separate
+authenticated workspace. Clarified local conformance, complete-workload and
+nine-CSV requirements, different policy objectives, and the CLI constructor's
+distinction from browser optimisation. Existing licence status is unchanged.
+
+Aligned the local Devpost asset guide to the same template and refreshed its
+manifest and sharing ZIP. Verification checked all eight template sections,
+required subsections, local paths/anchors, documented npm scripts, tracked
+screenshot and absence of placeholder values. The existing hosted `/ps1` link
+returned HTTP 200; this does not verify deployment parity with this branch.
+Documentation only: no application tests or build rerun. No new server started;
+the existing preview remains http://127.0.0.1:3000/ps1.
+
+## Devpost visual asset pack — 2026-09-19
+
+Created a refreshed six-image pack for the PS1 workspace using the chosen
+tagline, “RailPlan — Railway access planning, explained.” The local deliverable
+is `output/devpost-railplan/`: a 3:2 project cover, square social artwork, four
+1920×1080 gallery graphics built from actual application screenshots, raw
+captures, captions/alt text, paste-ready Devpost copy and editable HTML/CSS.
+The cover and square use built-in image generation; the gallery preserves
+real product content. The sharing ZIP is `output/railplan-devpost-assets.zip`.
+
+Captured the latest compact layout from a freshly built production preview,
+including A004's predecessor explanation, an unapplied maintenance proposal
+and expanded policy metrics. The production build passed. All images were
+visually inspected and PNG signatures, dimensions, thumbnail ratio and file
+sizes checked. No application code changed and no new regression suite was
+needed. No Devpost upload, deployment or video creation is claimed. Files under
+`output/` are local ignored artifacts. The existing dev URL remains
+http://127.0.0.1:3000/ps1; temporary capture servers are stopped after packaging.
+
 ## PS1 solver quality and submission readiness — 2026-09-19
 
 Implemented on `codex/ps1-solver-readiness`, based on merged main `b6e661e`.

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RailPlan — Devpost gallery</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#f1f5f5;color:#082d3c;font-family:Arial,Helvetica,sans-serif}body{width:1920px;height:1080px;overflow:hidden}.sheet{width:1920px;height:1080px;position:relative;background:#f3f7f7;overflow:hidden}.sheet::before{content:"";position:absolute;inset:0;background-image:linear-gradient(#006b8306 1px,transparent 1px),linear-gradient(90deg,#006b8306 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(to right,transparent,#000)}.dark{background:#082d3c;color:#f4fafb}.top{position:absolute;left:64px;right:64px;top:44px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #b3c7cd;padding-bottom:25px}.brand{font-weight:750;font-size:34px;letter-spacing:-1.4px;display:flex;gap:15px;align-items:center}.mark{height:27px;width:26px;display:flex;justify-content:space-between;transform:skewY(-24deg)}.mark i{width:6px;background:#006b83;display:block}.dark .mark i{background:#57c7db}.top p{font-size:17px;letter-spacing:.5px;color:#58717b;margin:0}.dark .top p{color:#b0c8ce}.dark .top{border-color:#41606b}.copy{position:absolute;left:64px;top:194px;width:430px}.eyebrow{font-size:16px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#006b83;margin:0 0 37px;display:flex;align-items:center;gap:18px}.eyebrow::before{content:"";width:40px;height:3px;background:#c18f43}.dark .eyebrow{color:#68cede}h1{font-size:61px;font-weight:750;line-height:1.055;letter-spacing:-2.7px;margin:0 0 32px;max-width:430px}h1 em{font-style:normal;color:#006b83}.dark h1 em{color:#67d1e2}.desc{font-size:24px;line-height:1.45;color:#536d77;max-width:370px;margin:0}.dark .desc{color:#b2cbd2}.facts{margin-top:76px;padding-top:27px;border-top:1px solid #bfd0d3;max-width:360px}.dark .facts{border-color:#41606b}.fact{font-size:18px;line-height:1.55;margin:10px 0;color:#46636e;display:flex;gap:18px}.dark .fact{color:#c1d6db}.fact span{color:#006b83;font-size:14px;letter-spacing:1px;min-width:23px;padding-top:4px}.dark .fact span{color:#64cdde}.product{position:absolute;left:560px;top:163px;width:1296px;height:810px;border:1px solid #b9cbcf;background:white;box-shadow:0 22px 48px #05263618;border-radius:7px;overflow:hidden}.product img{width:100%;height:100%;object-fit:contain;display:block;background:white}.dark .product{border-color:#5f8590;box-shadow:0 28px 65px #0005}.bottom{position:absolute;bottom:33px;left:64px;right:64px;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#607780;letter-spacing:.4px}.dark .bottom{color:#95b4be}.index{letter-spacing:3px;font-size:15px}.feature-note{position:absolute;left:560px;top:995px;font-size:14px;color:#607780;margin:0;letter-spacing:.3px}.dark .feature-note{color:#95b4be}
+</style>
+<main class="sheet" id="sheet">
+ <header class="top"><div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>RailPlan</div><p>Railway access planning, explained.</p></header>
+ <section class="copy"><p class="eyebrow" id="eyebrow"></p><h1 id="title"></h1><p class="desc" id="desc"></p><div class="facts" id="facts"></div></section>
+ <figure class="product" style="margin:0"><img id="product" alt=""></figure>
+ <p class="feature-note">Working prototype · Published PS1 instance · Actual application capture</p>
+ <footer class="bottom"><span>NEBULA X / PS1</span><span class="index" id="index"></span></footer>
+</main>
+<script>
+const pages={
+ '02':{label:'01 / Work schedule',title:'See the<br><em>whole plan.</em>',desc:'From contracts to activities, every week stays in view.',facts:['54 activities. 14 contracts.','A 30-week planning horizon.','Expand. Inspect. Navigate.'],file:'02-work-schedule.png',alt:'RailPlan public-instance weekly schedule with contracts, access blocks and a horizon navigator.'},
+ '03':{label:'02 / Explanations',title:'Understand<br><em>why it lands<br>here.</em>',desc:'The reasoning stays beside the work you are reviewing.',facts:['Trace predecessor dependencies.','Inspect planned and scheduled starts.','Ask about this schedule.'],file:'03-explanations.png',alt:'A004 selected with an explanation that it starts in week 16 because A003 finishes in week 15.',dark:true},
+ '04':{label:'03 / Change review',title:'Review<br><em>before<br>you apply.</em>',desc:'Test a maintenance change. Inspect its impact. Keep the final decision.',facts:['Preview a capacity reduction.','See what moves and what stays.','Apply or keep the current plan.'],file:'04-change-review.png',alt:'Maintenance proposal review with impact metrics and Apply reviewed change and Keep current schedule buttons.'},
+ '05':{label:'04 / Policy comparison',title:'Compare<br><em>the trade-offs.</em>',desc:'Three policies. One complete workload. Make the constraints visible.',facts:['A — Fixed supply.','B — Fixed completion targets.','C — Bounded flexibility.'],file:'05-policy-comparison.png',alt:'Expanded A, B and C policy metrics showing different delay, excess and ECLO trade-offs.',dark:true}
+};
+const key=new URLSearchParams(location.search).get('slide')||'02';
+const p=pages[key]||pages['02'];
+document.title='RailPlan — '+p.label;
+document.getElementById('sheet').classList.toggle('dark',!!p.dark);
+document.getElementById('eyebrow').textContent=p.label;
+document.getElementById('title').innerHTML=p.title;
+document.getElementById('desc').textContent=p.desc;
+document.getElementById('facts').innerHTML=p.facts.map((text,i)=>'<p class="fact"><span>0'+(i+1)+'</span>'+text+'</p>').join('');
+document.getElementById('product').src='../screenshots/'+p.file;
+document.getElementById('product').alt=p.alt;
+document.getElementById('index').textContent=String(Number(key)-1).padStart(2,'0')+' / 04';
+</script>
+</html>
