@@ -111,6 +111,7 @@ Archived snapshots, not current instructions. Read [current status](PROJECT_STAT
 for implementation state, verification and remaining work. Old next steps,
 branches, accounts, server URLs, deployment claims and test counts apply only to
 the milestone that recorded them. Historical local artifacts may no longer exist.
+Old `docs/superpowers/` paths now resolve under `docs/archive/planning/`; see [the archive index](archive/README.md).
 
 ## Snapshot archived 2026-09-19
 

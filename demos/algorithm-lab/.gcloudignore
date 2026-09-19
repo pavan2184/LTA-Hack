@@ -1,0 +1,16 @@
+# Deny by default. Keep this list in sync with deploy.sh.
+*
+!.gcloudignore
+!.python-version
+!Procfile
+!requirements.txt
+!main.py
+!model.py
+!static/
+!static/index.html
+!static/style.css
+!static/app.js
+!static/icon.svg
+!static/fonts/
+!static/fonts/*.woff2
+!static/fonts/OFL.txt

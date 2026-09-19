@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Change weekly capacity, close a week, and discover how constraint optimisation schedules every required access. A live Google OR-Tools CP-SAT teaching model from RailPlan.">
+    <meta name="theme-color" content="#006b83">
+    <title>RailPlan Algorithm Lab — Constraint optimisation, explained</title>
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to the demo</a>
+    <header class="masthead">
+      <a class="wordmark" href="/" aria-label="RailPlan Algorithm lab home">RailPlan</a>
+      <span class="product-name">Algorithm lab</span>
+      <nav aria-label="Main navigation">
+        <a href="#model">The model</a>
+        <a href="https://railplan-nine.vercel.app/ps1" target="_blank" rel="noopener">Open RailPlan <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7M21 3l-9 9M10 5H4v15h15v-6"/></svg></a>
+      </nav>
+    </header>
+    <main id="main">
+      <div class="workspace">
+        <section class="schedule-area" aria-labelledby="headline">
+          <h1 id="headline">Why did this work move?</h1>
+          <p class="intro">Change a constraint. Watch the schedule respond.</p>
+          <div class="run-line"><span id="run-status" role="status" aria-live="polite">Loading the teaching model…</span><span id="run-meta"></span></div>
+          <div class="schedule-scroll" role="region" aria-label="Eight-week teaching schedule" tabindex="0">
+            <table id="schedule" aria-describedby="legend schedule-basis">
+              <caption class="sr-only">Six work orders over eight weeks. Select a work order to inspect its placement. Each filled cell is one access.</caption>
+              <thead><tr><th scope="col">Work order</th><th scope="col">W1</th><th scope="col">W2</th><th scope="col">W3</th><th scope="col">W4</th><th scope="col">W5</th><th scope="col">W6</th><th scope="col">W7</th><th scope="col">W8</th></tr></thead>
+              <tbody id="schedule-body"><tr><td colspan="9" class="empty-row">The model is loading. No schedule has been calculated yet.</td></tr></tbody>
+              <tfoot><tr id="usage-row"><th scope="row">Used / available</th><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr></tfoot>
+            </table>
+          </div>
+          <div id="legend" class="legend"><span><i class="key access-key"></i>Scheduled access</span><span><i class="key late-key"></i>After due week</span><span><i class="key due-key"></i>Due week</span><span><i class="key closed-key"></i>Unavailable</span></div>
+          <p id="schedule-basis" class="basis">Six work orders. Nine required accesses. Eight weeks.</p>
+          <div class="metrics" aria-label="Solve result">
+            <div><strong id="jobs-metric">— / 6</strong><span>work orders complete</span></div>
+            <div><strong id="accesses-metric">— / 9</strong><span>accesses scheduled</span></div>
+            <div><strong id="cost-metric">—</strong><span>weighted delay <span class="muted">· lower is better</span></span></div>
+          </div>
+          <p id="comparison" class="comparison">Every required access must fit. The model never drops work to improve its score.</p>
+          <div id="error" class="error" role="alert" hidden></div>
+        </section>
+        <aside class="controls" aria-label="Model controls and placement explanation">
+          <form id="settings" novalidate>
+            <h2>Change the rules</h2>
+            <label for="capacity">Weekly capacity</label>
+            <select id="capacity" name="capacity"><option value="1">1 access</option><option value="2" selected>2 accesses</option><option value="3">3 accesses</option></select>
+            <label for="closed-week">Unavailable week</label>
+            <select id="closed-week" name="closedWeek"><option value="">None</option><option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option><option value="5">Week 5</option><option value="6">Week 6</option><option value="7">Week 7</option><option value="8">Week 8</option></select>
+            <label class="checkbox" for="predecessors"><input id="predecessors" name="enforcePredecessors" type="checkbox" checked>Enforce predecessors</label>
+            <button id="solve" class="primary" type="submit" disabled>Run CP-SAT</button>
+            <p id="settings-state" class="settings-state" aria-live="polite">A real solver run, using a small teaching model.</p>
+          </form>
+          <section class="inspector" aria-labelledby="why-title">
+            <h2 id="why-title">Why this placement?</h2>
+            <div id="explanation"><p class="muted">Select a work order after solving.</p></div>
+          </section>
+        </aside>
+      </div>
+      <section id="model" class="model-section" aria-labelledby="model-title">
+        <div class="model-heading"><h2 id="model-title">How CP-SAT works</h2><span>A three-step walkthrough · not a live search trace</span></div>
+        <p class="model-intro"><strong>CP</strong> means constraint programming; <strong>SAT</strong> means satisfiability. Together, they turn scheduling into precise choices, rule out impossible combinations and search for the best valid plan.</p>
+        <div class="walkthrough" role="group" aria-label="Three steps of CP-SAT">
+          <button type="button" data-step="0" aria-pressed="true" aria-controls="step-detail" disabled><span class="step-number">1</span><span><strong>Model the work</strong><span>Define the choices, the hard rules and what a better plan means.</span></span></button>
+          <button type="button" data-step="1" aria-pressed="false" aria-controls="step-detail" disabled><span class="step-number">2</span><span><strong>Search within the rules</strong><span>Propagate constraints, explore choices and learn from conflicts.</span></span></button>
+          <button type="button" data-step="2" aria-pressed="false" aria-controls="step-detail" disabled><span class="step-number">3</span><span><strong>Prove and explain</strong><span>Report what was proved. Independently check every scheduled access.</span></span></button>
+        </div>
+        <div id="step-detail" class="model-detail" aria-live="polite"><div><h3 id="step-title">Turn a planning question into a mathematical model.</h3><p id="step-description"></p><ul id="step-points"></ul></div><div class="model-example"><span class="example-label">In this demo</span><p id="step-example"></p><code id="step-formula"></code></div></div>
+        <details id="proof"><summary>Solver result, checks and model limits</summary><div class="proof-content"><div><h3>Result evidence</h3><p id="proof-summary">Run the solver to inspect its result.</p><ul id="checks"></ul><button type="button" class="secondary" id="download" disabled>Download result JSON</button></div><div><h3>What this model includes</h3><p>Six fabricated work orders, a shared weekly access pool, full workload, optional predecessors and a weighted-delay objective. At most one access per work order per week; accesses can be nonconsecutive.</p><h3>Where the model stops</h3><p>This is an eight-week teaching model, not the official PS1 solver or scoring formula. It omits track geometry, safety buffers, Live mirroring, interchange rules, legal work mixes, co-sharing, contract caps and ECLO policies. “Optimal” applies only to this model.</p><p class="source-links"><a href="https://developers.google.com/optimization/cp/cp_solver" target="_blank" rel="noopener">Solver statuses</a> · <a href="https://github.com/google/or-tools/blob/stable/ortools/sat/docs/solver.md" target="_blank" rel="noopener">How Google’s solver searches</a></p></div></div></details>
+      </section>
+    </main>
+    <footer><p>A small teaching model, separate from RailPlan’s full PS1 planner.</p><span><strong>RailPlan</strong> Railway access planning, explained.</span></footer>
+    <noscript><p class="error">JavaScript is needed for the interactive schedule. Enable it and reload to run this demo.</p></noscript>
+  </body>
+</html>

@@ -15,6 +15,25 @@ source and input digests. A 60-second total-pipeline experiment is separate from
 the older 60-second native-search experiment. Tests and builds must not overlap
 timed solver runs. See the benchmark README for reproducible cloud worker sweeps.
 
+
+## Standalone Algorithm Lab — 2026-09-19
+
+Run `python -m unittest discover -s demos/algorithm-lab -p 'test_*.py'` with its
+pinned dependencies installed. Tests compare all 54 settings against an
+independent dynamic-programming enumeration, mutate invalid results, check
+explanation facts and cover strict JSON, body limits, cache semantics,
+concurrency, sanitized errors and static traversal/security headers.
+
+`scripts/algorithm-lab/verify-and-capture.mjs` takes a Playwright module path,
+service URL and output directory. It exercises real solves, closure effects,
+infeasibility, full workload, predecessor changes, row inspection, the three-step
+explanation, dirty/pending states, retry after a simulated service failure,
+actual JSON downloads, keyboard order, narrow widths and reduced motion. It
+saves actual screenshots and local evidence for Devpost packaging. CUA browser
+inspection is the primary manual verification; the script provides reproducible
+file-backed captures and failure injection. Test cloud publication separately;
+local checks do not establish a live Google Cloud URL.
+
 ## Native algorithm comparison and cloud controls — 2026-09-19
 
 Run both Python suites (`scripts/ps1/benchmark/test_cp_sat.py` and `test_scip.py`),

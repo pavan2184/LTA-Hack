@@ -16,6 +16,35 @@ evidence. This protocol is distinct from the earlier native-search-only budget.
 Production remains on the accepted full native portfolio until results justify
 a change. Target-machine worker scaling remains the cloud engineer's check.
 
+
+## 2026-09-19 — A separate, bounded CP-SAT teaching lab
+
+The user requested a public Google Cloud algorithm demo and Devpost assets, then
+asked for a fuller three-step explanation of CP-SAT. Implement it as the separate
+`demos/algorithm-lab` Python service. This does not replace the full-instance native PS1
+service or repurpose the older maintenance-night benchmark as PS1.
+
+Google OR-Tools solves a fixed six-job/eight-week model: every access is mandatory,
+capacity and closures are hard constraints, predecessors are optional for teaching,
+and the objective is weighted weeks late. Its limited assumptions and solver
+status remain visible. Independent enumeration of the complete 54-setting space
+checks returned optima/infeasibility; separate result checks run in the service.
+The three-step explanation describes modelling, propagation/search and proof,
+not a captured internal search trace. Production PS1 input never goes to this lab.
+
+Serve native HTML/CSS/JavaScript with Flask and Gunicorn; no Next.js dependency,
+database, account or local Docker is needed. Public inputs are three bounded
+settings, not an arbitrary instance or uploaded file. A single two-second solver
+worker, request limits, concurrency guard and finite cache bound the work.
+Cloud Run source deployment is prepared for an explicit existing project and
+dedicated unprivileged runtime identity, with min zero/max one instances.
+Actual cloud publication requires the user's project/account; it is not inferred
+from a working local server or from the presence of deployment files.
+
+Concept artwork is labelled as conceptual. Devpost product images use actual
+local solver results and name the teaching-model scope. Cloud-hosting claims and
+a public URL are added only after a real deployed run is verified.
+
 ## 2026-09-19 — 32-vCPU cloud target and 60-second native comparison
 
 Status: **Accepted owner direction.** Target 32 vCPUs / 64 GiB RAM with 60 seconds of

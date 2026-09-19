@@ -35,5 +35,5 @@ GitHub: https://github.com/pavan2184/LTA-Hack
 
 Before submission, confirm the hosted commit and add the actual YouTube URL and
 required GitLab URL (or organiser-approved repository alternative) to the portal.
-This file is the PS1-specific short write-up; the older `devpost-copy.md`
+This file is the PS1-specific short write-up; the archived 2026-09-15 Devpost copy
 describes the separate authenticated product and should not replace it.

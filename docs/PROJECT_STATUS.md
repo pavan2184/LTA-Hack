@@ -17,6 +17,7 @@ next steps, test counts or local server URLs as current instructions.
   certificates withheld from search, with separate development/holdout seeds.
   The service still uses its existing formulation and 60-second search default.
 
+
 - **Public PS1 judge path:** `/ps1` accepts the published or uploaded eight-file
   instance without login or database access and sends one policy at a time to a
   bounded same-origin native CP-SAT service. Uploaded data is not persisted. The
@@ -48,16 +49,36 @@ next steps, test counts or local server URLs as current instructions.
   `npm run ps1:benchmark:cloud` compares native engines and search profiles;
   `npm run ps1:benchmark:regression` checks public/synthetic quality and determinism.
 
+- **Algorithm Lab companion:** a standalone Python OR-Tools CP-SAT educational
+  service covers six fictional jobs, nine accesses and eight weeks. Its page
+  explains modelling, constraint propagation/search and proof/checking in three
+  interactive steps. Capacity, one closed week and predecessor controls drive
+  real solves; all 54 settings were independently cross-checked. The
+  [new asset pack](../assets/submission/algorithm-lab-2026-09-19/README.md) contains
+  five gallery/cover images, actual local captures, copy and a narration script.
+  This does not replace or change the full-instance native PS1 service. The
+  companion is rebased onto PR #47, with current solver descriptions and a
+  dedicated Python CI job.
+
 ## Latest recorded verification
 
-The first two rows are fresh checks of the combined merge; later rows retain
-their historical scope.
+README benchmark coverage now includes the four-case warm/cold/LNS-only CP-SAT
+comparison alongside SCIP and both TypeScript hybrid modes, with explicit
+scores, bounds, proof counts and selection rationale. Figures were checked
+against the tracked benchmark JSON; historical scoring-v1 and unmeasured
+candidates remain separate. Documentation links and whitespace were checked.
+No new solver runs, application tests or cloud measurements were performed for
+this documentation update.
+
+The Algorithm Lab row records this companion feature. The combined-merge rows
+and subsequent evidence retain their earlier scope.
 The native comparison is the `d1e0a8f` snapshot (source `a10cbe7b…`, scoring v2).
 The incoming TypeScript ECLO constructor changes can alter its heuristic baseline
 and warm starts; do not relabel the stored comparison as a rerun of the new tree.
 
 | Scope | Evidence | Limit |
 | --- | --- | --- |
+| Algorithm Lab, 2026-09-19 | 21 backend tests; all 54 settings checked against independent exact dynamic programming; 14 browser scenarios; lint, typecheck, Gunicorn config, ShellCheck and strict UI audit passed | Local Python service; no public Cloud Run revision verified; see [verification](ALGORITHM_LAB_VERIFICATION.md) |
 | Final combined merge, 2026-09-19 | 1,079 tests passed across 113 files, 79 database-dependent tests skipped; lint, typecheck and webpack production build passed; real native API-function/CLI public smokes retained A 25.2 / B 30 / C 25.2, all OPTIMAL, default 60s and exactly nine CLI CSVs | Database/browser/hosted-release/cloud-scaling checks not rerun; non-failing React act/Vite warnings remain |
 | Post-merge heuristic check, 2026-09-19 | All 39 hybrid baselines and 39 extended-hybrid outcomes locally valid; capacity-pressure C improves 1118.8 → 1105.5 in both, other 38 scores unchanged | Fresh heuristic-only comparison; native models/checker unchanged, original native timing cohorts not rerun |
 | Local 60-second native comparison, `d1e0a8f` snapshot | 119 native runs: 100 OPTIMAL, 11 FEASIBLE, eight INFEASIBLE; all 111 returned schedules locally checked; main CP-SAT/SCIP matrix ties on all 39 scores | M3 Pro/eight workers, not target-cloud performance; recorded before incoming heuristic changes |
@@ -77,6 +98,12 @@ the [solver benchmark](PS1_BENCHMARK.md),
 [authenticated release report](RELEASE_VERIFICATION_2026-09-17.md) for details.
 
 ## Deployment and submission gates
+
+Algorithm Lab is running locally at <http://127.0.0.1:8088>. Its isolated Cloud
+Run deployment script is prepared, but no `gcloud` account/project is configured
+here. The user must identify the intended Google Cloud project and authenticated
+deployment context before publication. Asset captions currently say local
+preview; do not claim a Google Cloud-hosted lab until the public URL is verified.
 
 Use [PS1_SUBMISSION_CHECKLIST.md](PS1_SUBMISSION_CHECKLIST.md) as the actionable
 release/submission checklist. The canonical judge URL is
@@ -120,18 +147,21 @@ access, unseen-instance performance and actual screen-reader speech remain unver
   are not operational safety approval. See [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
   and [DECISIONS.md](DECISIONS.md) for the boundaries and accepted decisions.
 
-## Context maintenance — 2026-09-19
+## Repository context and artifact cleanup — 2026-09-19
 
-Archived the complete previous status log, replaced the root handoff with an
-orientation index, refreshed teammate setup/release guidance and corrected stale
-roadmap/submission pointers. Historical evidence remains available; old server
-URLs and account observations are not current environment guarantees.
+Current status and handoff are concise; complete previous status snapshots remain
+in the history file. Removed the unused project starter guide/bootstrap, obsolete
+`.env` validation script and mismatched FastAPI Cursor rule. Historical plans
+moved unchanged into [docs/archive](archive/README.md). The submission index now
+points to the current versioned pack, demo and write-up; superseded campaign copy
+is recoverable from Git history. Design evidence, current submission media,
+complete synthetic fixtures, application code and runtime configuration remain.
 
-Verification: archive preservation, changed-document local paths/anchors,
-documented npm scripts, tracked public scores, deployment configuration and
-`git diff --check`. Application tests/build were not rerun for documentation-only
-changes. No server was started and no existing local server was verified here.
-For setup use [TEAM_HANDOFF.md](TEAM_HANDOFF.md); keep future status updates concise
+Verification: archived-plan content preservation, removed-path reference checks,
+active-document local paths/anchors, npm commands, current asset checksums and
+`git diff --check`. Application tests/build were not rerun for this documentation
+and unused-tooling cleanup. No server was started or verified. Use
+[TEAM_HANDOFF.md](TEAM_HANDOFF.md) for setup; keep future status updates concise
 and put detailed chronological evidence in the history file.
 
 ## Native benchmark reconciliation — 2026-09-19

@@ -304,6 +304,7 @@ See [full experiment details and reproduction](docs/PS1_NATIVE_SEARCH_EXPERIMENT
 
 **Earlier CP-SAT/SCIP comparison (different timing protocol):**
 
+
 **Measured snapshot:** [d1e0a8f](https://github.com/pavan2184/LTA-Hack/tree/d1e0a8f),
 with solver-source SHA-256 `a10cbe7bb8bbd252c27726aa8b222d67b20abcec785829496c61970d1ca1768e`.
 The tables describe that snapshot. Later merged changes improve the TypeScript
@@ -322,6 +323,10 @@ native OR-Tools CP-SAT. **All PS1 scores are penalties: lower is better.** We
 compared that pipeline with an independently formulated SCIP MIP and an extended
 TypeScript hybrid search on the public instance plus 12 synthetic datasets,
 covering **39 dataset/scenario combinations** under scoring `ps1-objective-v2`.
+We also tested **cold CP-SAT and LNS-only CP-SAT on four shared C cases**;
+their smaller coverage is shown separately below.
+
+#### Full 39-case comparison
 
 | Algorithm | Cases tested | Locally valid schedules | Improved over the TypeScript baseline | Full-model optimality proofs |
 | --- | ---: | ---: | ---: | ---: |
@@ -351,6 +356,50 @@ same four cases; the extended hybrid retained its baseline scores:
 | Priority contention / B | 483 | 279 | 279 |
 | Priority contention / C | 340.4 | 300.7 | 300.7 |
 
+#### CP-SAT vs LNS-only, cold search, SCIP and hybrid
+
+The following comparison uses the **same four inputs, Scenario C, seed 1,
+eight native workers and a 60-second native search cap**. Warm CP-SAT, SCIP and
+hybrid rows come from the main cohort; cold and LNS-only rows come from the
+ablation cohort at the same source snapshot. Every returned schedule passed the
+local checker. Native cells show the solver's own objective, not a fallback score.
+
+| Algorithm / search mode | Public C | Capacity pressure C | Priority contention C | Mixed 240 C |
+| --- | ---: | ---: | ---: | ---: |
+| TypeScript hybrid baseline | 25.2 | 1118.8 | 340.4 | 0 |
+| Extended TypeScript hybrid | 25.2 | 1118.8 | 340.4 | 0 |
+| **Full CP-SAT, warm start (chosen)** | **25.2** | **1090.8** | **300.7** | **0** |
+| Full CP-SAT, cold start | 25.2 | 1090.8 | 300.7 | 0 |
+| CP-SAT, LNS-only | 25.2 | 1090.8 | 300.7 | 0 |
+| SCIP MIP, warm start | 25.2 | 1090.8 | 300.7 | 0 |
+
+Equal scores do not imply equal proof strength. A **higher lower bound is
+stronger** for these minimisation problems; a bound equal to the schedule's score
+closes the optimality gap. A bound is not a promised attainable score.
+
+| Native search mode | Full-model optima, these four cases | Capacity C lower bound | Priority C lower bound | Capacity C measured stage time |
+| --- | ---: | ---: | ---: | ---: |
+| Full CP-SAT, warm start | 2/4 | 1061.1 | 252.4 | 60.703 s |
+| Full CP-SAT, cold start | 3/4 | 1090.8 | 258.3 | 46.763 s |
+| CP-SAT, LNS-only | 2/4 | 0 | 0 | 60.558 s |
+| SCIP MIP, warm start | 3/4 | 1090.8 | 244.4144 | 7.494 s |
+
+Stage time includes startup, model construction, search and checking, so it can
+exceed the search cap. The two hybrid modes supply no solver proof; all methods
+reach zero on Mixed 240 C, which reaches the nonnegative objective's lower limit.
+
+**LNS-only is a CP-SAT mode (`use_lns_only=True`), not a separate solver or a
+custom ALNS implementation.** The chosen full CP-SAT portfolio already includes
+large neighbourhood search alongside other search and bound-producing workers.
+Restricting it to LNS-only gave **no score improvement in 4/4 cases**, while
+leaving both difficult-case bounds at zero. That supports retaining the full
+portfolio. Cold CP-SAT also tied all four scores and produced stronger proofs
+on these hard cases: hints are useful starting schedules, not a guaranteed
+speedup. We retain the checked hybrid warm start as a practical incumbent and
+fallback; these results do not establish that warm search always beats cold.
+
+#### Repeated runs and selection rationale
+
 We then repeated the two difficult C cases with seeds 2 and 3 under the same
 eight-worker, 60-second settings. Together with the original seed-1 runs:
 
@@ -369,6 +418,51 @@ challenger: it proved capacity-pressure C optimal in all three runs. In the
 seed-1 run, CP-SAT found that score after approximately 0.74 seconds but did not
 prove it by its limit; SCIP completed the proof in approximately 7.25 seconds.
 Neither solver proved the priority-contention C score optimal.
+
+| Candidate | Decision supported by the measurements |
+| --- | --- |
+| Full CP-SAT with checked hybrid warm start | Default native engine: best observed scores, consistent hard-case quality across three seeds, bounds and integrated fallback |
+| Cold CP-SAT | Keep as a benchmark challenger; tied warm scores on four cases and sometimes improved proofs |
+| LNS-only CP-SAT | Keep as an experiment; no score gain on four cases and weaker difficult-case bounds than the full portfolio |
+| SCIP MIP | Keep as an independent challenger; tied all 39 main scores and often proved optima faster, but varied on the hardest repeated case |
+| TypeScript hybrid / extended hybrid | Retain for initial schedules and fallback; additional search improved none of the 39 snapshot baselines |
+
+We chose **CP-SAT as the primary native engine**, with the hybrid still part of
+the pipeline. The evidence supports this default; it does not show that every
+alternative is inferior on every instance.
+
+#### Other experiments and evidence boundaries
+
+The earlier [five-second native matrix](scripts/ps1/benchmark/native-results.json)
+also compares **legacy construction, the standard hybrid and CP-SAT**, using
+scoring v2 across 39 cases. This is a separate source run, with iteration-budget
+heuristics and a five-second native search cap, not an equal-time race.
+
+| Method in the earlier v2 matrix | Feasible outcomes | Better / tied / worse than legacy | Public A / B / C |
+| --- | ---: | --- | --- |
+| Legacy TypeScript construction/search | 39/39 | 0 / 39 / 0 | 25.2 / 44 / 39.2 |
+| Standard TypeScript hybrid | 39/39 | 14 / 25 / 0 | 25.2 / 30 / 25.2 |
+| Native CP-SAT, five-second cap | 39/39 | 17 / 22 / 0 | 25.2 / 30 / 25.2 |
+
+That native run proved 37 optima and achieved the same 39 scores as the later
+60-second matrix. It supports the hybrid improvement over legacy and additional
+native improvements; the separate runs do not establish a latency comparison.
+Earlier scoring-v1 tests of legacy/hybrid search, single-worker full CP-SAT and
+frozen repairs remain in [historical results](scripts/ps1/benchmark/results.json).
+Those scores are superseded, and repair proofs cover only the frozen subproblem;
+neither belongs in the current full-model ranking.
+
+The current v2 holdout cohort also tested CP-SAT on 24 seeded Scenario B
+perturbations: 16 were feasible and proven optimal (10 improved the heuristic,
+six tied); eight were proven infeasible within the encoded full model. SCIP and
+LNS-only were not run on those holdouts, so this is robustness evidence, not a
+head-to-head win. Public B was an additional control at 30.
+
+IBM CP Optimizer, Hexaly, Gurobi and HiGHS were considered in the research but
+**not benchmarked** here. The optional `cpsat-base-lin0` setting is also outside
+the final measured v2 comparison; it must not be presented as an LP-free
+portfolio. See the [candidate inventory and caveats](docs/PS1_NATIVE_SOLVER_RESEARCH.md#candidates-and-research)
+and [reproduction commands](scripts/ps1/benchmark/README.md#60-second-cloud-comparison).
 
 These measurements used **Apple M3 Pro, 11 available CPUs, 18 GiB RAM, eight
 requested native workers and a 60-second search cap per scenario**. The main
@@ -403,6 +497,14 @@ For implementation details, see the [architecture](docs/ARCHITECTURE.md),
 The [Devpost asset pack](assets/submission/devpost-2026-09-19/README.md) includes
 cover and social artwork, four product gallery images, captions, submission copy
 and editable sources.
+
+The [Algorithm Lab](demos/algorithm-lab/README.md) adds a real Python OR-Tools
+CP-SAT teaching demo and a three-step explanation: model the work, search within
+the rules, then prove and explain the result. Its separate
+[Devpost pack](assets/submission/algorithm-lab-2026-09-19/README.md) includes five
+visuals and a narrated walkthrough script. Cloud Run deployment is prepared;
+no public lab URL has been verified. This six-job educational model is separate
+from the full-instance native PS1 optimiser.
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
@@ -458,7 +560,6 @@ Project: [pavan2184/LTA-Hack](https://github.com/pavan2184/LTA-Hack).
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Acknowledgments
-
 - [Nebula X PS1](https://github.com/aochinwen/NebulaX-Hackathon-ProblemStatement/tree/main/PS1) for the challenge specification and published instance.
 - [Best-README-Template](https://github.com/othneildrew/Best-README-Template) for this README's structure.
 - [Siemens Opcenter Scheduling SMT](https://blogs.sw.siemens.com/opcenter/new-opcenter-scheduling-smt-2410/) for the industrial scheduling reference; no affiliation is implied.

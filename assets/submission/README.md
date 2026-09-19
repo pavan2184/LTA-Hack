@@ -1,40 +1,27 @@
-# RailPlan submission asset pack
+# RailPlan submission materials
 
-Created 15 September 2026. Original campaign illustrations generated with the
-built-in image_gen tool; copy reflects the documented local prototype.
+Last updated: 2026-09-19. Use the versioned PS1 pack below for the current
+schedule-first workspace. These are prepared materials; they do not establish
+that deployment, recording or submission has happened.
 
-| Asset | Dimensions | Use |
-| --- | --- | --- |
-| [Devpost cover](railplan-devpost-cover.png) | 1536 × 1024 | Project thumbnail / gallery cover |
-| [Wide banner](railplan-video-social-wide.png) | 1659 × 948 | Social banner or video title artwork; approximately 16:9 |
-| [Square card](railplan-social-square.png) | 1254 × 1254 | Square social post |
-| [Devpost copy](devpost-copy.md) | Markdown | Tagline, project story, stack and links |
-| [Social copy](social-copy.md) | Markdown | Two captions and image alt text |
-| [Generation prompts](generation-prompts.md) | Markdown | Exact prompts for future variants |
-| [PS1 demo script](DEMO_SCRIPT.md) | Markdown | Three-minute narration, actual UI actions and recording checks |
-| [PS1 write-up](PS1_WRITEUP.md) | Markdown | Submission copy for the public eight-file upload and planning workspace |
-| [PS1 submission checklist](../../docs/PS1_SUBMISSION_CHECKLIST.md) | Markdown | Release, result files, judge journey, video, source and sign-in handover |
+| Material | Purpose |
+| --- | --- |
+| [Devpost asset pack](devpost-2026-09-19/README.md) | Six finished images, original product captures, editable source and checksum manifest |
+| [Project copy](devpost-2026-09-19/copy/devpost-copy.md) | Current tagline, product story, technology and links |
+| [Captions and alt text](devpost-2026-09-19/copy/captions.md) | Descriptions for the current gallery images |
+| [PS1 demo script](DEMO_SCRIPT.md) | Three-minute narration, actual UI actions and recording checks |
+| [PS1 write-up](PS1_WRITEUP.md) | Submission copy for the public eight-file upload and planning workspace |
+| [Submission checklist](../../docs/PS1_SUBMISSION_CHECKLIST.md) | Hosted release, exact results, source access, video, portal and sign-in gates |
 
-For the PS1 submission, use the PS1-specific write-up and script. The older
-Devpost copy describes the separate authenticated RailPlan workflow. The new
-documents are preparation artifacts: a recorded video, published YouTube URL,
-GitLab destination and submission receipt still need to be supplied and verified.
-The PNG artwork referenced below is not present in this checkout; recover the
-original local files if needed. It is not required for the screen-recorded demo.
+The official results archive is generated separately with `npm run ps1:solve`
+at `output/PS1-public-results.zip`: exactly nine CSVs across A/B/C. Artwork,
+validation reports and planning logs do not belong in that archive.
 
-![RailPlan cover](railplan-devpost-cover.png)
+Confirm the hosted commit and supply the real video/source/submission evidence
+using the checklist before handing over these materials. The current gallery
+records its capture provenance; do not treat earlier screenshots as proof of the
+latest solver scores or current deployment.
 
-The cover follows Devpost.com's recommended 3:2 thumbnail ratio and is below its
-5 MB limit. See [Devpost submission guidance](https://help.devpost.com/article/126-know-your-submission-steps).
-All three PNGs are below 5 MB. The wide image is approximately 16:9, not an exact
-video frame; fit it proportionally inside the video's frame rather than stretching.
-
-Visual QA checked spelling, legibility, margins and prototype labelling on every
-image. Dimensions and file sizes were checked locally. These are illustrations,
-not product screenshots or proof of outcomes. They contain no supplied map data,
-operator logos, credentials or performance claims.
-
-The Nebula X participant pack specifies its own Hackathon Portal. This reusable
-Devpost pack has not been submitted there or posted anywhere. The asset ZIP is
-an artwork/copy bundle, not a claim to satisfy the event's undefined results ZIP.
-Review deployment freshness and supply the real video URL before using the copy.
+The superseded 2026-09-15 campaign copy and prompts remain available through
+[the historical-material index](../../docs/archive/README.md). The missing local
+artwork from that campaign is no longer linked as a deliverable here.
