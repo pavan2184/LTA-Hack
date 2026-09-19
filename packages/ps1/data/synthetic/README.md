@@ -1,6 +1,6 @@
 # Synthetic PS1 datasets
 
-Six complete input instances for RailPlan's `/ps1` upload flow. These are
+Twelve complete input instances for RailPlan's `/ps1` upload flow. These are
 fabricated test workloads, not organiser data or predictions of hidden tests.
 The official public instance remains in `../public/` and is still the input for
 the hackathon's public-results deliverable.
@@ -13,9 +13,15 @@ the hackathon's public-results deliverable.
 | `04-dependency-chains` | 5 | 15 | 30 | 12 | Three five-stage chains crossing contracts, staggered starts, rows in reverse dependency order |
 | `05-capacity-pressure` | 9 | 9 | 22 | 0 | Exclusive PM contention, priority tiers, delayed completion, extra capacity and ECLO trade-offs |
 | `06-mixed-120` | 24 | 120 | 300 | 24 | Larger mixed workload, all priorities/natures/access types, both lines/bounds and staggered starts |
+| `07-long-spans` | 6 | 12 | 30 | 0 | Overlapping multi-sector work and reversed endpoints, including Live and consist buffers |
+| `08-workfront-limits` | 4 | 40 | 40 | 0 | Matched one- and two-workfront contracts at both the Live and non-live weekly caps |
+| `09-separated-eclo-windows` | 4 | 4 | 12 | 0 | Early and late ECLO demand on each line distinguishes B from C's continuity rule |
+| `10-horizon-boundary` | 8 | 16 | 24 | 4 | Week-30 completion, week-29 predecessors, late long spans and quoted CSV descriptions |
+| `11-priority-contention` | 9 | 9 | 27 | 0 | Every contract/activity priority pair competes for a single possession slot |
+| `12-mixed-240` | 40 | 240 | 480 | 80 | Larger mixed workload with variable span lengths and two dependencies per contract |
 
-Total: **48 CSV files, 178 activities and 420 accesses of requested work** across
-six independent instances. Each dataset is solved separately under A, B and C.
+Total: **96 CSV files, 499 activities and 1,033 accesses of requested work** across
+twelve independent instances. Each dataset is solved separately under A, B and C.
 The folder numbers identify input datasets, not the three scheduling scenarios.
 
 ## Use in the web app
@@ -46,10 +52,12 @@ vendored public instance: two lines, ten station rows per line, 18 tunnel sector
 `manifest.json`. The authoritative requirements are
 [`docs/PS1_OFFICIAL_SPEC.md`](../../../../docs/PS1_OFFICIAL_SPEC.md).
 
-Only project/activity demand is fabricated, plus two deliberate supply changes:
+Only project/activity demand is fabricated, plus three deliberate supply changes:
 `02-co-sharing` sets all location capacities to 1; `05-capacity-pressure` sets
-`SEC:ALP:S02_S03:EB` and its S02/S03 EB platforms to 1. Other supply stays as
-published. The Live weekly cap stays 2 and other contracts stay at 3. Buffer
+`SEC:ALP:S02_S03:EB` and its S02/S03 EB platforms to 1;
+`11-priority-contention` sets `SEC:BET:S12_S13:WB` and its S12/S13 WB platforms
+to 1. Other supply stays as published. The Live weekly cap stays 2 and other
+contracts stay at 3. Buffer
 rules, ECLO yield, priorities and legal mixes are not weakened.
 
 All activity endpoints are tunnel sectors. The engine expands these to the
@@ -65,6 +73,13 @@ contract's fifth activity follows its first. Starts range from weeks 1–8 and
 planned completion is week 26. This is a larger functional fixture, not a
 production-scale performance benchmark.
 
+The 240-activity case uses contract index `i=0..39` and activity index `j=0..5`.
+Workload is `1 + (i + j) mod 3`, start week is `1 + (i + 2j) mod 8`, and
+activity priority is `1 + (i + j) mod 3`. Activities five and six follow the
+same contract's first and second activities respectively. Every third activity
+extends to the next sector when one exists. Planned completion is week 28.
+The first six dataset folders are unchanged by this second batch.
+
 ## Verification and expected behaviour
 
 Run from the repository root:
@@ -74,10 +89,13 @@ npx vitest run packages/ps1/src/io/datasets.test.ts
 ```
 
 The tests load the actual files through the same pure loader used by `/ps1`,
-solve all 18 dataset/scenario combinations with the default optimiser, serialize
+solve all 36 dataset/scenario combinations with the default optimiser, serialize
 and reparse all three output CSVs, and independently run the local checker.
 They also check workload delivery, strict later-week dependencies, source
 digests, legal endpoint expansion, four-way sharing and Live crossover coverage.
+The second batch adds assertions for reversed spans, saturated workfront and
+weekly caps, the ECLO continuity distinction, priority ordering and exact
+week-30 completion. CSV quoted descriptions must survive parsing intact.
 Every dataset currently produces a complete locally feasible result for A/B/C.
 
 In `05-capacity-pressure`, eight PM contracts request two accesses each on one
@@ -85,6 +103,23 @@ sector with capacity 1 and a week-6 target. A must spread those possessions
 across at least 16 weeks. A separate six-access renewal has a week-4 target:
 B needs four ECLO nights to finish it on time. C's two-week ECLO window allows
 only two ECLO nights for that activity, so it must finish after week 4.
+
+In `08-workfront-limits`, non-live contracts each have 12 one-access activities
+and Live contracts each have eight. With one workfront, they take four weeks;
+with two workfronts, they take two. The weekly distinct-night caps stay at 3
+and 2 respectively, so the improvement comes from concurrent workfronts.
+
+In `09-separated-eclo-windows`, each line has a three-access job starting in
+week 1 with a week-2 deadline and another starting in week 6 with a week-7
+deadline. B meets both using ECLO in weeks 1/2 and 6/7. The tests reclassify that
+same schedule as C and require an `eclo_window` rejection. A and C must accept
+some overrun. The current C heuristic uses no ECLO here; this fixture exposes
+its window-selection quality gap without changing the engine or easing rules.
+
+In `11-priority-contention`, all nine combinations of contract priority 1/2/3
+and activity priority 1/2/3 compete as exclusive PM possessions for one slot per
+week. Each requests three accesses and has a week-9 target. A finishes all
+Priority-1 contracts first and on time, then Priority-2, then Priority-3.
 
 Initial observed penalty scores, useful for comparison rather than optimality
 claims or immutable test expectations:
@@ -97,6 +132,12 @@ claims or immutable test expectations:
 | Dependency chains | 0 | 0 | 0 |
 | Capacity pressure | 2184 | 293 | 1123 |
 | Mixed 120 | 0 | 378 | 308 |
+| Long spans | 0 | 133 | 133 |
+| Workfront limits | 0 | 0 | 0 |
+| Separated ECLO windows | 3640 | 40 | 3640 |
+| Horizon boundary | 0 | 0 | 0 |
+| Priority contention | 1768.2 | 483 | 340.4 |
+| Mixed 240 | 0 | 826 | 665 |
 
 The B/C results in several cases spend extra capacity even though A finishes on
 time. These datasets expose that heuristic quality gap; a feasible result does

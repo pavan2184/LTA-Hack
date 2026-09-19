@@ -1,0 +1,5 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+08-C001,Synthetic non-live 1-workfront campaign,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-04-25,1,C,3
+08-C002,Synthetic non-live 2-workfront campaign,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-04-25,2,C,3
+08-C003,Synthetic Live 1-workfront campaign,2026-09-01,Renewal,Live,2,2027-08-01,2027-04-25,1,C,2
+08-C004,Synthetic Live 2-workfront campaign,2026-09-01,Renewal,Live,2,2027-08-01,2027-04-25,2,C,2

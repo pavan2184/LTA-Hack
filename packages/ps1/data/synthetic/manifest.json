@@ -1,6 +1,6 @@
 {
   "kind": "synthetic-ps1-test-inputs",
-  "version": 1,
+  "version": 2,
   "horizonStart": "2027-01-04",
   "horizonWeeks": 30,
   "source": "../public",
@@ -87,6 +87,84 @@
       "activities": 120,
       "totalAccesses": 300,
       "dependencyLinks": 24,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "07-long-spans",
+      "description": "Multi-sector spans, reversed endpoints and overlapping long possessions on both lines and bounds.",
+      "contracts": 6,
+      "activities": 12,
+      "totalAccesses": 30,
+      "dependencyLinks": 0,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "08-workfront-limits",
+      "description": "Matched one- and two-workfront contracts saturate non-live three-night and Live two-night weekly allocations.",
+      "contracts": 4,
+      "activities": 40,
+      "totalAccesses": 40,
+      "dependencyLinks": 0,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "09-separated-eclo-windows",
+      "description": "Early and late three-access deadlines require disjoint ECLO windows on each line; B can meet all deadlines but C cannot.",
+      "contracts": 4,
+      "activities": 4,
+      "totalAccesses": 12,
+      "dependencyLinks": 0,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "10-horizon-boundary",
+      "description": "Week-30 delivery, week-29 predecessors, long-span late starts and CSV quoted descriptions at the horizon boundary.",
+      "contracts": 8,
+      "activities": 16,
+      "totalAccesses": 24,
+      "dependencyLinks": 4,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "11-priority-contention",
+      "description": "Nine exclusive contracts combine every contract/activity priority pair at a one-slot bottleneck.",
+      "contracts": 9,
+      "activities": 9,
+      "totalAccesses": 27,
+      "dependencyLinks": 0,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "12-mixed-240",
+      "description": "Forty contracts and 240 activities with variable span lengths, all work natures, priorities and access types, and 80 dependencies.",
+      "contracts": 40,
+      "activities": 240,
+      "totalAccesses": 480,
+      "dependencyLinks": 80,
       "expectedScenarios": {
         "A": "FEASIBLE",
         "B": "FEASIBLE",

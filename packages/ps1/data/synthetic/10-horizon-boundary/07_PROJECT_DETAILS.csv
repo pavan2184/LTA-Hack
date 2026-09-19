@@ -1,0 +1,9 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+10-C001,"Synthetic ""last-week"", programme 1",2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-08-01,2,PC,3
+10-C002,"Synthetic ""last-week"", programme 2",2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-08-01,2,C,3
+10-C003,"Synthetic ""last-week"", programme 3",2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-08-01,2,C,3
+10-C004,"Synthetic ""last-week"", programme 4",2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-08-01,2,PC,3
+10-C005,"Synthetic ""last-week"", programme 5",2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-08-01,2,C,3
+10-C006,"Synthetic ""last-week"", programme 6",2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-08-01,2,C,3
+10-C007,"Synthetic ""last-week"", programme 7",2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-08-01,2,PC,3
+10-C008,"Synthetic ""last-week"", programme 8",2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-08-01,2,C,3

@@ -1,0 +1,5 @@
+activity_id,contract_number,activity_type,start_location_id,end_location_id,total_accesses,planned_start_date,predecessor_activity_id,activity_priority
+09-A001,09-C001,Renewal,SEC:ALP:S01_S02:EB,SEC:ALP:S01_S02:EB,3,2027-01-04,,1
+09-A002,09-C002,Renewal,SEC:ALP:S07_S08:WB,SEC:ALP:S07_S08:WB,3,2027-02-08,,1
+09-A003,09-C003,Renewal,SEC:BET:S11_S12:EB,SEC:BET:S11_S12:EB,3,2027-01-04,,1
+09-A004,09-C004,Renewal,SEC:BET:S17_S18:WB,SEC:BET:S17_S18:WB,3,2027-02-08,,1

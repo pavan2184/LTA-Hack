@@ -1,0 +1,7 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+07-C001,Synthetic corridor renewal 1,2026-09-01,Renewal,Live,1,2027-08-01,2027-06-20,1,PM,2
+07-C002,Synthetic corridor renewal 2,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-06-20,1,PC,3
+07-C003,Synthetic corridor renewal 3,2026-09-01,Renewal,Non-live (Consist),3,2027-08-01,2027-06-20,1,C,3
+07-C004,Synthetic corridor renewal 4,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-06-20,1,PM,3
+07-C005,Synthetic corridor renewal 5,2026-09-01,Renewal,Non-live (Consist),2,2027-08-01,2027-06-20,1,PC,3
+07-C006,Synthetic corridor renewal 6,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-06-20,1,C,3

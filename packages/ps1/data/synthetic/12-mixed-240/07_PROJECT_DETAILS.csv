@@ -1,0 +1,41 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+12-C001,Synthetic extended network programme 001,2026-09-01,Renewal,Live,1,2027-08-01,2027-07-18,2,PC,2
+12-C002,Synthetic extended network programme 002,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,C,3
+12-C003,Synthetic extended network programme 003,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,C,3
+12-C004,Synthetic extended network programme 004,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,C,3
+12-C005,Synthetic extended network programme 005,2026-09-01,Renewal,Non-live (Consist),2,2027-08-01,2027-07-18,1,PM,3
+12-C006,Synthetic extended network programme 006,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,PC,3
+12-C007,Synthetic extended network programme 007,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,C,3
+12-C008,Synthetic extended network programme 008,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,C,3
+12-C009,Synthetic extended network programme 009,2026-09-01,Renewal,Non-live (Consist),3,2027-08-01,2027-07-18,1,C,3
+12-C010,Synthetic extended network programme 010,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,PM,3
+12-C011,Synthetic extended network programme 011,2026-09-01,Renewal,Live,2,2027-08-01,2027-07-18,1,PC,2
+12-C012,Synthetic extended network programme 012,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,C,3
+12-C013,Synthetic extended network programme 013,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-18,2,C,3
+12-C014,Synthetic extended network programme 014,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,C,3
+12-C015,Synthetic extended network programme 015,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,PM,3
+12-C016,Synthetic extended network programme 016,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,PC,3
+12-C017,Synthetic extended network programme 017,2026-09-01,Renewal,Non-live (Consist),2,2027-08-01,2027-07-18,1,C,3
+12-C018,Synthetic extended network programme 018,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,C,3
+12-C019,Synthetic extended network programme 019,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,C,3
+12-C020,Synthetic extended network programme 020,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,PM,3
+12-C021,Synthetic extended network programme 021,2026-09-01,Renewal,Live,3,2027-08-01,2027-07-18,1,PC,2
+12-C022,Synthetic extended network programme 022,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,C,3
+12-C023,Synthetic extended network programme 023,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,C,3
+12-C024,Synthetic extended network programme 024,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,C,3
+12-C025,Synthetic extended network programme 025,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-18,2,PM,3
+12-C026,Synthetic extended network programme 026,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,PC,3
+12-C027,Synthetic extended network programme 027,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,C,3
+12-C028,Synthetic extended network programme 028,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,C,3
+12-C029,Synthetic extended network programme 029,2026-09-01,Renewal,Non-live (Consist),2,2027-08-01,2027-07-18,1,C,3
+12-C030,Synthetic extended network programme 030,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,PM,3
+12-C031,Synthetic extended network programme 031,2026-09-01,Renewal,Live,1,2027-08-01,2027-07-18,2,PC,2
+12-C032,Synthetic extended network programme 032,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,C,3
+12-C033,Synthetic extended network programme 033,2026-09-01,Renewal,Non-live (Consist),3,2027-08-01,2027-07-18,1,C,3
+12-C034,Synthetic extended network programme 034,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,C,3
+12-C035,Synthetic extended network programme 035,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,PM,3
+12-C036,Synthetic extended network programme 036,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,PC,3
+12-C037,Synthetic extended network programme 037,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-18,2,C,3
+12-C038,Synthetic extended network programme 038,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-18,1,C,3
+12-C039,Synthetic extended network programme 039,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-18,1,C,3
+12-C040,Synthetic extended network programme 040,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-07-18,2,PM,3

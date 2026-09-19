@@ -64,6 +64,17 @@ describe.each(fixtures)("synthetic input $id", (fixture) => {
       expect(span.length).toBeGreaterThanOrEqual(3);
       expect(span.every((location) => network.supply.has(location))).toBe(true);
     }
+    if (fixture.id === "07-long-spans") {
+      const [forward, reversed] = instance.activities;
+      expect(expandSpan(network, forward.startLocationId, forward.endLocationId)).toHaveLength(13);
+      expect(expandSpan(network, reversed.startLocationId, reversed.endLocationId)).toHaveLength(9);
+      expect(expandSpan(network, reversed.startLocationId, reversed.endLocationId)).toEqual(
+        expandSpan(network, reversed.endLocationId, reversed.startLocationId),
+      );
+    }
+    if (fixture.id === "10-horizon-boundary") {
+      expect(instance.contracts[0].contractDescription).toBe('Synthetic "last-week", programme 1');
+    }
   });
 
   it.each(scenarios)("delivers all work and round-trips valid Scenario %s output", (scenario) => {
@@ -125,6 +136,60 @@ describe.each(fixtures)("synthetic input $id", (fixture) => {
         if (scenario === "B") expect(report.softScores.overrunDaysTotal).toBe(0);
         if (scenario === "C") expect(report.softScores.overrunDaysTotal).toBeGreaterThan(0);
       }
+    }
+
+    if (fixture.id === "08-workfront-limits") {
+      for (const contract of fixture.instance.contracts) {
+        const activities = new Set(fixture.instance.activities
+          .filter((row) => row.contractNumber === contract.contractNumber)
+          .map((row) => row.activityId));
+        const access = submission.access.filter((row) => activities.has(row.activityId));
+        const firstWeek = access.filter((row) => row.week === 1);
+        expect(firstWeek).toHaveLength(contract.numberOfMaximumAccessPerWeek * contract.numberOfWorkfronts);
+        expect(new Set(firstWeek.map((row) => row.accessNight)).size).toBe(contract.numberOfMaximumAccessPerWeek);
+        for (const row of firstWeek) {
+          expect(firstWeek.filter((other) => other.accessNight === row.accessNight)).toHaveLength(contract.numberOfWorkfronts);
+        }
+        expect(Math.max(...access.map((row) => row.week))).toBe(contract.numberOfWorkfronts === 1 ? 4 : 2);
+      }
+    }
+
+    if (fixture.id === "09-separated-eclo-windows") {
+      if (scenario === "B") {
+        expect(report.softScores.overrunDaysTotal).toBe(0);
+        expect(report.softScores.ecloNightsTotal).toBe(8);
+        // B's early/late ECLO pattern is specifically illegal under C's
+        // per-line continuity rule, even though every deadline is met.
+        const underC = validate(fixture.instance, {
+          ...submission,
+          scenario: "C",
+          results: submission.results.map((row) => ({ ...row, scenario: "C" })),
+        });
+        expect(underC.hardViolations.some((row) => row.rule === "eclo_window")).toBe(true);
+      } else {
+        expect(report.softScores.overrunDaysTotal).toBeGreaterThan(0);
+      }
+    }
+
+    if (fixture.id === "10-horizon-boundary") {
+      expect(Math.max(...submission.access.map((row) => row.week))).toBe(30);
+      expect(submission.access.every((row) => row.week >= 27 && row.week <= 30)).toBe(true);
+      for (const row of submission.results) {
+        expect(row.simulatedCompletionDate).toBe("2027-08-01");
+        expect(row.overrunDays).toBe(0);
+      }
+    }
+
+    if (fixture.id === "11-priority-contention" && scenario === "A") {
+      const tierWeeks = [1, 2, 3].map((tier) => {
+        const contracts = new Set(fixture.instance.contracts.filter((row) => row.contractPriority === tier).map((row) => row.contractNumber));
+        const activities = new Set(fixture.instance.activities.filter((row) => contracts.has(row.contractNumber)).map((row) => row.activityId));
+        return submission.access.filter((row) => activities.has(row.activityId)).map((row) => row.week);
+      });
+      expect(Math.max(...tierWeeks[0])).toBeLessThan(Math.min(...tierWeeks[1]));
+      expect(Math.max(...tierWeeks[1])).toBeLessThan(Math.min(...tierWeeks[2]));
+      expect(report.softScores.priorityOverrun["1"]).toBe(0);
+      expect(report.softScores.priorityOverrun["3"]).toBeGreaterThan(report.softScores.priorityOverrun["2"]);
     }
   });
 });

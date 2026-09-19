@@ -1,5 +1,36 @@
 # Project Status
 
+## Six more synthetic PS1 datasets — 2026-09-19
+
+Added datasets 07–12: long spans with reversed endpoints, matched workfront
+limits, separated ECLO windows, horizon-boundary work, priority contention and
+a 240-activity mixed workload. This batch adds 48 CSVs, 71 contracts, 321
+activities, 613 requested accesses and 84 dependency links. The complete
+collection now has **12 datasets, 96 CSVs, 499 activities and 1,033 accesses**.
+The manifest and dataset README include the new cases, construction details
+and observed scores. The official public data and all first-batch CSVs remain
+unchanged. Only the priority-contention case in this batch changes supply: the
+Beta S12–S13 WB sector and both endpoint platforms have capacity 1.
+
+Verification: **all 36 A/B/C outcomes** deliver complete workloads and pass
+the local checker after output CSV serialization and reparsing. The dataset
+suite now has **50 passing tests**. Added assertions cover long/reversed span
+expansion, workfront saturation under unchanged weekly caps, quoted CSV fields,
+week-30 completion, priority-tier ordering and rejection of B's separated ECLO
+pattern when evaluated as C. Full `packages/ps1/` suite: **175 tests across 15
+files passed**. Typecheck, targeted ESLint and `git diff --check` passed.
+
+Known limits: the separated-window fixture exposes a C heuristic quality gap:
+it currently chooses no ECLO and incurs more delay than necessary. This is
+documented rather than hidden by changing demand. Scores are not optimality
+claims. The existing cross-possession physical-night alignment limitation
+still applies, and the local checker is not the organiser's reference validator.
+No application code, schema, dependency, environment or architectural decision
+changed. Browser UAT, full application/DB suites and production build were not
+rerun for this fixture-only addition. No server was started. Ignored local
+sharing bundles are `output/lta-ps1-datasets.zip` (all twelve) and
+`output/lta-ps1-datasets-07-12.zip` (the six new input folders).
+
 ## Synthetic PS1 upload datasets — 2026-09-19
 
 Added six complete eight-file input instances under
