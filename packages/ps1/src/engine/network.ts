@@ -176,6 +176,28 @@ export function closureFor(
   occupied: string[],
   nature: NatureOfWorks,
 ): string[] {
+  const initial = expandClosureSeeds(network, occupied, nature);
+  if (!network.bufferByNature.get(nature)?.mirror) return initial;
+
+  // A Live interchange closure carries its buffer onto the other line too.
+  // Seed that line's crossed tunnel, then expand from the original worksite.
+  // Expanding the already buffered set would incorrectly grow the first line's
+  // exclusion radius a second time.
+  const sourceLines = new Set(occupied.map((id) => parseLocationId(id).lineCode));
+  const crossedTunnels = initial.filter((id) => {
+    const location = parseLocationId(id);
+    return location.kind === "SEC" && !sourceLines.has(location.lineCode);
+  });
+  return crossedTunnels.length
+    ? expandClosureSeeds(network, [...occupied, ...crossedTunnels], nature)
+    : initial;
+}
+
+function expandClosureSeeds(
+  network: Network,
+  occupied: string[],
+  nature: NatureOfWorks,
+): string[] {
   const rule = network.bufferByNature.get(nature) ?? { sectors: 0, mirror: false };
   const closure = new Set<string>(occupied);
 
@@ -196,8 +218,13 @@ export function closureFor(
           // buffer never walks off Alpha's end onto Beta's start.
           if (sector.lineCode !== parsed.lineCode) continue;
           closure.add(`${sector.sectorId}:${parsed.bound}`);
-          closure.add(`PLAT:${sector.lineCode}:${sector.fromStationId}:${parsed.bound}`);
-          closure.add(`PLAT:${sector.lineCode}:${sector.toStationId}:${parsed.bound}`);
+          // Consist exclusion extends tunnel sectors; its platforms remain the
+          // occupied ones. Live power isolation also closes buffer platforms.
+          // This distinction is observable in the A025/A028 rejection details.
+          if (nature === "Live") {
+            closure.add(`PLAT:${sector.lineCode}:${sector.fromStationId}:${parsed.bound}`);
+            closure.add(`PLAT:${sector.lineCode}:${sector.toStationId}:${parsed.bound}`);
+          }
         }
       }
     }

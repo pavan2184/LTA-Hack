@@ -1,8 +1,8 @@
-"""PS1 weekly CP-SAT model, matching represented local-checker constraints.
+"""PS1 weekly CP-SAT with explicit possessions and closure components.
 
-No global physical night is encoded by the published CSVs. This model therefore
-cannot certify cross-possession buffer alignment or reference-validator parity.
-Possession packing is exact locally: PM alone, at most one PC and four members.
+Local co-sharing groups induce actual connected components. A rooted forest
+certifies that closure exemptions have a real path through those groups.
+No global physical-night identity is inferred from contract access-night labels.
 """
 import datetime as dt
 import json
@@ -52,7 +52,7 @@ class ImprovementTrace(cp_model.CpSolverSolutionCallback):
         self.points = []
 
     def on_solution_callback(self):
-        objective = self.objective_value / 10
+        objective = round(self.objective_value / 10, 1)
         if not self.points or objective < self.points[-1]["objective"]:
             self.points.append({"timeMs": self.wall_time * 1000,
                                 "objective": objective,
@@ -71,6 +71,8 @@ def process_peak_rss_mib():
 def solve(payload):
     if payload.get("schema") != "ps1-cpsat-v1":
         raise ValueError("Unsupported PS1 payload schema")
+    if payload.get("closureModelVersion") != "ps1-closure-v1":
+        raise ValueError("Unsupported or missing closureModelVersion")
     started = time.perf_counter()
     config = search_config(payload)
     tight = config.get("formulation", "baseline") == "tight"
@@ -81,6 +83,11 @@ def solve(payload):
     origin = dt.date.fromisoformat(instance["parameters"]["horizonStart"])
     contracts = {c["contractNumber"]: c for c in instance["contracts"]}
     activities = {a["activityId"]: a for a in instance["activities"]}
+    pairs = payload.get("closurePairs")
+    if not isinstance(pairs, list) or any(not isinstance(pair, list) or len(pair) != 2 or
+            any(not isinstance(aid, str) or aid not in activities for aid in pair) or pair[0] == pair[1]
+            for pair in pairs):
+        raise ValueError("closurePairs must contain pairs of distinct known activity IDs")
     movable = set(activities)
     if "movableActivityIds" in payload:
         requested = payload["movableActivityIds"]
@@ -155,22 +162,50 @@ def solve(payload):
             for week in weeks:
                 model.add(sum(x[aid, week] for aid in ids) <=
                           contract["numberOfWorkfronts"] * contract["numberOfMaximumAccessPerWeek"])
+    # One local group is anchored by its PC, by its sole PM, or by the smallest
+    # C member. This represents every legal local partition without group-label
+    # permutation symmetry. Nonself C assignments form a star for that group.
+    activity_order = {aid: index + 1 for index, aid in enumerate(sorted(activities))}
+    assignment, sharing_assignments = {}, {}
+    incumbent_groups = {}
+    for row in payload.get("incumbent", {}).get("occupancy", []):
+        key = row["locationId"], row["week"], row["coShareGroup"]
+        incumbent_groups.setdefault(key, []).append(row["activityId"])
+    incumbent_anchor = {}
+    for (loc, week, _), members in incumbent_groups.items():
+        hosts = [aid for aid in members if contracts[activities[aid]["contractNumber"]]["accessType"] != "C"]
+        anchor = hosts[0] if hosts else min(members, key=lambda aid: activity_order[aid])
+        for aid in members:
+            incumbent_anchor[loc, week, aid] = anchor
     objective = []
     for location in instance["locationSupply"]:
         loc = location["locationId"]
-        ids = [aid for aid in activities if loc in payload["spans"][aid]]
+        ids = sorted(aid for aid in activities if loc in payload["spans"][aid])
         if not ids:
             continue
         pm = [aid for aid in ids if contracts[activities[aid]["contractNumber"]]["accessType"] == "PM"]
         pc = [aid for aid in ids if contracts[activities[aid]["contractNumber"]]["accessType"] == "PC"]
-        shared = [aid for aid in ids if aid not in pm]
+        co_workers = [aid for aid in ids if aid not in pm and aid not in pc]
+        shared = pc + co_workers
         for week in weeks:
-            groups = model.new_int_var(0, len(ids), f"groups_{loc}_{week}")
-            rounded = model.new_int_var(0, len(ids), f"rounded_{loc}_{week}")
-            # Minimal number of non-PM possessions: max(PC, ceil((PC+C)/4)).
-            model.add_division_equality(rounded, sum(x[aid, week] for aid in shared) + 3, 4)
-            model.add_max_equality(groups, [sum(x[aid, week] for aid in pc), rounded])
-            count = groups + sum(x[aid, week] for aid in pm)
+            for aid in ids:
+                assignment[loc, week, aid, aid] = (model.new_bool_var(f"group_{loc}_{week}_{aid}")
+                                                   if aid in co_workers else x[aid, week])
+            members_by_anchor = {aid: [assignment[loc, week, aid, aid]] for aid in ids}
+            for aid in co_workers:
+                choices = [assignment[loc, week, aid, aid]]
+                for anchor in pc + [other for other in co_workers if activity_order[other] < activity_order[aid]]:
+                    variable = model.new_bool_var(f"join_{loc}_{week}_{aid}_{anchor}")
+                    assignment[loc, week, aid, anchor] = variable
+                    members_by_anchor[anchor].append(variable)
+                    model.add(variable <= assignment[loc, week, anchor, anchor])
+                    choices.append(variable)
+                    edge = tuple(sorted((aid, anchor))) + (week,)
+                    sharing_assignments.setdefault(edge, []).append(variable)
+                model.add(sum(choices) == x[aid, week])
+            for anchor in pc + co_workers:
+                model.add(sum(members_by_anchor[anchor]) <= 4 * assignment[loc, week, anchor, anchor])
+            count = sum(assignment[loc, week, aid, aid] for aid in ids)
             supply = payload["capacity"][loc][week - 1]
             allowance = 0 if payload["disrupted"][loc][week - 1] or scenario == "A" else (1 if scenario == "C" else len(ids))
             model.add(count <= supply + allowance)
@@ -186,6 +221,43 @@ def solve(payload):
             model.add_max_equality(excess, [0, count - supply])
             if scenario != "A":
                 objective.append(70 * excess)
+    if incumbent_groups:
+        for (loc, week, aid, anchor), variable in assignment.items():
+            if contracts[activities[aid]["contractNumber"]]["accessType"] == "C":
+                model.add_hint(variable, int(incumbent_anchor.get((loc, week, aid)) == anchor))
+
+    # Equal component labels alone could invent exemptions between disconnected
+    # spans. Every active vertex therefore selects itself as a unique root or
+    # a parent along an actual sharing edge, with strictly decreasing depth.
+    size = len(activities)
+    component, depth, root, parents = {}, {}, {}, {}
+    for aid in activities:
+        for week in weeks:
+            key = aid, week
+            component[key] = model.new_int_var(0, activity_order[aid], f"component_{aid}_{week}")
+            depth[key] = model.new_int_var(0, max(0, size - 1), f"depth_{aid}_{week}")
+            root[key] = model.new_bool_var(f"root_{aid}_{week}")
+            parents[key] = []
+            model.add(component[key] >= x[key])
+            model.add(component[key] <= size * x[key])
+            model.add(root[key] <= x[key])
+            model.add(component[key] == activity_order[aid]).only_enforce_if(root[key])
+            model.add(depth[key] <= max(0, size - 1) * (x[key] - root[key]))
+    for (first_id, second_id, week), choices in sharing_assignments.items():
+        shared_edge = model.new_bool_var(f"shared_{first_id}_{second_id}_{week}")
+        model.add_max_equality(shared_edge, choices)
+        model.add(component[first_id, week] == component[second_id, week]).only_enforce_if(shared_edge)
+        for child, parent in ((first_id, second_id), (second_id, first_id)):
+            variable = model.new_bool_var(f"parent_{child}_{parent}_{week}")
+            model.add(variable <= shared_edge)
+            model.add(depth[child, week] >= depth[parent, week] + 1).only_enforce_if(variable)
+            parents[child, week].append(variable)
+    for key in x:
+        model.add(root[key] + sum(parents[key]) == x[key])
+    for source, target in pairs:
+        for week in weeks:
+            model.add(component[source, week] == component[target, week]).only_enforce_if(
+                [x[source, week], x[target, week]])
     if scenario != "B":
         # PS1 §2.7 charges each late activity against its contract's planned
         # date, including activities that finish before the contract's last one.
@@ -215,7 +287,7 @@ def solve(payload):
     status = solver.solve(model, trace)
     solved = time.perf_counter()
     found = status in (cp_model.FEASIBLE, cp_model.OPTIMAL)
-    access = []
+    access, occupancy = [], []
     if found:
         for aid in activities:
             seq = 0
@@ -233,13 +305,16 @@ def solve(payload):
                         count = kinds.get(a["activityType"], 0)
                         row["accessNight"] = count // contract["numberOfWorkfronts"] + 1
                         kinds[a["activityType"]] = count + 1
+        occupancy = [{"activityId": aid, "week": week, "locationId": loc, "coShareGroup": "g:" + anchor}
+                     for (loc, week, aid, anchor), variable in assignment.items() if solver.value(variable)]
     return {"schema": "ps1-cpsat-v1", "digest": payload["digest"], "scenario": scenario,
+            "closureModelVersion": payload["closureModelVersion"],
             "formulaVersion": "ps1-objective-v2",
             "scope": "repair" if has_frozen_work else "full",
             "boundScope": "conditional_on_frozen_activities" if has_frozen_work else "encoded_full_model",
             "status": solver.status_name(status), "ortoolsVersion": ortools.__version__,
             "config": config,
-            "objective": solver.objective_value / 10 if found else None,
+            "objective": round(solver.objective_value / 10, 1) if found else None,
             "bound": solver.best_objective_bound / 10,
             "buildMs": (built - started) * 1000,
             "solveMs": solver.wall_time * 1000,
@@ -255,7 +330,7 @@ def solve(payload):
             "host": {"system": platform.system(), "architecture": platform.machine(),
                      "logicalCpuCount": os.cpu_count(), "pythonVersion": platform.python_version()},
             "peakRssMiB": process_peak_rss_mib(), "peakRssScope": "process_lifetime",
-            "access": access}
+            "access": access, "occupancy": occupancy}
 
 
 if __name__ == "__main__":

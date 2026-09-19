@@ -1,5 +1,14 @@
 # Project Brief
 
+## Closure conformance correction — 2026-09-19
+
+The organiser rejected a GCP public Scenario A result with 15 closure violations.
+Correcting the omitted hard rule takes priority over the earlier numerical score
+claims. Preserve full workload, real co-sharing, hidden uploads and exact CSV
+export. The cloud engineer owns redeployment; local verification and a Git merge
+do not establish that the deployed release is fixed. See
+[the correction record](PS1_CLOSURE_CORRECTION.md).
+
 ## Cloud resource decision — 2026-09-19
 
 The owner selected 32 vCPUs / 64 GiB RAM and a 60-second default search limit. The

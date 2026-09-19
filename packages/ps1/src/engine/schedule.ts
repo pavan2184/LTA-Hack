@@ -22,6 +22,7 @@ import {
   validate,
 } from "./validate";
 import { capacityAt, type Disruption } from "./disruption";
+import { closureConflicts, findClosureViolations } from "./closure";
 
 /**
  * Priority-ordered construction, followed by a validated portfolio and adaptive
@@ -170,6 +171,8 @@ export function scheduleInstance(
   const loads = new Map<string, WeekLoad>();
   const access: AccessRow[] = [];
   const occupancy: OccupancyRow[] = [];
+  const occupancyByWeek = new Map<number, OccupancyRow[]>();
+  const closurePairs = closureConflicts(instance, network);
 
   const slotAt = (locationId: string, week: number): Slot => {
     const key = `${locationId}|${week}`;
@@ -220,10 +223,10 @@ export function scheduleInstance(
     span: string[],
     week: number,
   ): Map<string, string> | null {
-    const chosen = new Map<string, string>();
+    const choices: { locationId: string; labels: string[] }[] = [];
     for (const locationId of span) {
       const slot = slotAt(locationId, week);
-      let label: string | null = null;
+      const labels: string[] = [];
 
       // Prefer co-sharing: it consumes no additional capacity, which is exactly
       // the lever the brief says increases nightly throughput.
@@ -239,18 +242,46 @@ export function scheduleInstance(
           if (types.includes("PM")) continue;
           // At most one host per possession.
           if (contract.accessType === "PC" && types.includes("PC")) continue;
-          label = candidate;
-          break;
+          labels.push(candidate);
         }
       }
 
-      if (label === null) {
+      if (labels.length === 0) {
         if (slot.possessions.size >= capacityFor(locationId, week)) return null;
-        label = `b${slot.possessions.size + 1}`;
+        labels.push(`b${slot.possessions.size + 1}`);
       }
-      chosen.set(locationId, label);
+      choices.push({ locationId, labels });
     }
-    return chosen;
+
+    // Sharing is transitive across locations: one C activity can connect two
+    // PC possessions without placing both PCs in the same location group.
+    // Check the complete tentative week, not isolated activity pairs. A first
+    // compatible group may be the wrong component, so try nearby alternative
+    // assignments before giving up this week. This bounded construction search
+    // never relaxes closures, capacity or legal mixes.
+    const assignments = [choices.map(() => 0)];
+    const seen = new Set([assignments[0].join(",")]);
+    const maxAssignments = 256;
+    for (let trial = 0; trial < assignments.length && trial < maxAssignments; trial += 1) {
+      const assignment = assignments[trial];
+      const proposed = choices.map(({ locationId, labels }, index) => ({
+        activityId: activity.activityId, week, locationId,
+        coShareGroup: labels[assignment[index]],
+      }));
+      if (findClosureViolations([...(occupancyByWeek.get(week) ?? []), ...proposed], closurePairs).length === 0) {
+        return new Map(proposed.map((row) => [row.locationId, row.coShareGroup]));
+      }
+      for (let index = 0; index < choices.length && assignments.length < maxAssignments; index += 1) {
+        if (assignment[index] + 1 >= choices[index].labels.length) continue;
+        const next = [...assignment];
+        next[index] += 1;
+        const key = next.join(",");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        assignments.push(next);
+      }
+    }
+    return null;
   }
 
   /** The access-night index to use, or null if the contract's week is full. */
@@ -330,7 +361,11 @@ export function scheduleInstance(
     for (const [locationId, label] of labels) {
       const slot = slotAt(locationId, week);
       slot.possessions.set(label, [...(slot.possessions.get(label) ?? []), activity.activityId]);
-      occupancy.push({ activityId: activity.activityId, week, locationId, coShareGroup: label });
+      const row = { activityId: activity.activityId, week, locationId, coShareGroup: label };
+      occupancy.push(row);
+      const inWeek = occupancyByWeek.get(week) ?? [];
+      inWeek.push(row);
+      occupancyByWeek.set(week, inWeek);
     }
     const load = loadAt(contract, activity.activityType, week);
     load.nights.set(night, new Set([...(load.nights.get(night) ?? []), activity.activityId]));

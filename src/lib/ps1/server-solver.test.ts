@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadInstance, PS1_FILES } from "@railplan/ps1/io/load";
 import * as schedule from "@railplan/ps1/engine/schedule";
 import type { SolveOutcome } from "@railplan/ps1/types/ps1";
-import { cpSatPayload, type CpSatResult } from "./cp-sat-model";
+import { cpSatPayload, decode, NativeModelSizeError, type CpSatResult } from "./cp-sat-model";
 
 const mocked = vi.hoisted(() => ({ spawn: vi.fn(), availableParallelism: vi.fn(() => 32) }));
 vi.mock("node:child_process", () => ({ spawn: mocked.spawn }));
@@ -21,10 +21,12 @@ const baseline = schedule.solveInstance(instance, { scenario: "A" });
 type Payload = ReturnType<typeof cpSatPayload>;
 
 function nativeResult(payload: Payload, changes: Partial<CpSatResult> = {}): CpSatResult {
+  const access = changes.access ?? baseline.submission!.access;
   return { schema: payload.schema, digest: payload.digest, scenario: payload.scenario,
+    closureModelVersion: payload.closureModelVersion,
     scope: "full", status: "OPTIMAL", ortoolsVersion: "test", objective: 0,
     bound: 0, solveMs: 5, modelAndSolveMs: 10,
-    access: baseline.submission!.access, ...changes };
+    access, occupancy: changes.occupancy ?? decode(instance, payload.scenario, access).occupancy, ...changes };
 }
 
 function fakeProcess(response?: (payload: Payload, child: ChildProcessWithoutNullStreams) => void) {
@@ -53,6 +55,17 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe("native PS1 solver boundary", () => {
+  it("rejects oversized sharing models before heuristic construction or spawning", async () => {
+    const input = { ...instance, activities: Array.from({ length: 400 }, (_, index) =>
+      ({ ...instance.activities[0], activityId: `dense-${index}`, predecessorActivityId: null })) };
+    const contractNumber = input.activities[0].contractNumber;
+    input.contracts = input.contracts.map((contract) => contract.contractNumber === contractNumber
+      ? { ...contract, accessType: "C" as const } : contract);
+    const heuristic = vi.spyOn(schedule, "solveInstance");
+    await expect(solveNative(input, { scenario: "A" })).rejects.toBeInstanceOf(NativeModelSizeError);
+    expect(heuristic).not.toHaveBeenCalled();
+    expect(mocked.spawn).not.toHaveBeenCalled();
+  });
   it("defaults to 60 seconds and 16 workers with a 75-second native process limit", async () => {
     const timeout = vi.spyOn(globalThis, "setTimeout");
     reply((payload) => {

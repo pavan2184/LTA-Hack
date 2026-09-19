@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { appliesTo, capacityAt, type Disruption } from "@railplan/ps1/engine/disruption";
+import { closureConflicts, CLOSURE_MODEL_VERSION } from "@railplan/ps1/engine/closure";
 import { buildNetwork, closureFor, expandSpan } from "@railplan/ps1/engine/network";
 import { resultsFor, type Pin } from "@railplan/ps1/engine/schedule";
 import { validate } from "@railplan/ps1/engine/validate";
@@ -18,6 +19,48 @@ export interface CpSatOptions {
   pins?: Pin[];
   disruptions?: Disruption[];
   movableActivityIds?: string[];
+}
+
+export class NativeModelSizeError extends Error {}
+
+/** Conservative construction limits for the explicit sharing/forest models. */
+export const NATIVE_CLOSURE_LIMITS = { variables: 1_000_000, constraints: 4_000_000, pairs: 100_000 } as const;
+
+function closureModelSize(instance: Ps1Instance, spans: Record<string, string[]>) {
+  const contracts = new Map(instance.contracts.map((contract) => [contract.contractNumber, contract]));
+  const byLocation = new Map<string, { pc: number; c: number }>();
+  let nonLiveC = 0, nonLivePc = 0;
+  for (const activity of instance.activities) {
+    const contract = contracts.get(activity.contractNumber)!;
+    const kind = contract.accessType;
+    if (contract.natureOfActivity !== "Live") {
+      if (kind === "C") nonLiveC += 1;
+      if (kind === "PC") nonLivePc += 1;
+    }
+    for (const location of spans[activity.activityId]) {
+      const counts = byLocation.get(location) ?? { pc: 0, c: 0 };
+      if (kind === "PC") counts.pc += 1;
+      if (kind === "C") counts.c += 1;
+      byLocation.set(location, counts);
+    }
+  }
+  let assignments = 0, possibleEdges = 0;
+  for (const { pc, c } of byLocation.values()) {
+    assignments += c * pc + c * (c + 1) / 2;
+    possibleEdges += c * pc + c * (c - 1) / 2;
+  }
+  // Repeated edges at different locations deliberately overestimate forest
+  // size. Include SCIP's first/last selectors and positive-part auxiliaries.
+  const n = instance.activities.length, h = instance.parameters.horizonWeeks, locations = byLocation.size;
+  // Only non-Live C/C and PC/C pairs are compatible before geometry. Count
+  // every other possible directed relation without materializing an O(n²)
+  // array of intersections. This is a conservative admission bound.
+  const possiblePairs = n * (n - 1) - nonLiveC * (nonLiveC - 1) - 2 * nonLiveC * nonLivePc;
+  return {
+    variables: (7 * n + assignments + 3 * possibleEdges + 2 * locations) * h + 3 * n + instance.lines.length,
+    constraints: (14 * n + 5 * assignments + 12 * possibleEdges + 6 * locations + 2 * possiblePairs) * h,
+    pairs: possiblePairs,
+  };
 }
 
 /** One serialization contract for the native service and offline comparisons. */
@@ -42,15 +85,22 @@ export function cpSatPayload(instance: Ps1Instance, options: CpSatOptions) {
   }
   const spans = Object.fromEntries(instance.activities.map((activity) => [activity.activityId,
     expandSpan(network, activity.startLocationId, activity.endLocationId)]));
+  const modelSize = closureModelSize(instance, spans);
+  if (modelSize.variables > NATIVE_CLOSURE_LIMITS.variables || modelSize.constraints > NATIVE_CLOSURE_LIMITS.constraints ||
+    modelSize.pairs > NATIVE_CLOSURE_LIMITS.pairs) {
+    throw new NativeModelSizeError("The explicit closure model exceeds the native construction size limit.");
+  }
+  const closurePairs = closureConflicts(instance, network).map(({ sourceId, targetId }) => [sourceId, targetId]);
   const fields = {
     schema: "ps1-cpsat-v1" as const,
+    closureModelVersion: CLOSURE_MODEL_VERSION as typeof CLOSURE_MODEL_VERSION,
     instance, scenario: options.scenario, seconds: options.seconds,
     workers: options.workers ?? 1, seed: options.seed ?? 1,
     ...(options.profile !== undefined ? { profile: options.profile } : {}),
     ...(options.formulation !== undefined ? { formulation: options.formulation } : {}),
     ...(options.incumbent ? { incumbent: options.incumbent } : {}),
     ...(options.movableActivityIds ? { movableActivityIds: options.movableActivityIds } : {}),
-    pins, spans,
+    pins, spans, closurePairs,
     affectedLines: Object.fromEntries(instance.activities.map((activity) => [activity.activityId,
       [...new Set(closureFor(network, spans[activity.activityId], contracts.get(activity.contractNumber)!.natureOfActivity)
         .map((id) => network.supply.get(id)!.lineCode))]])),
@@ -104,6 +154,7 @@ export function hasPins(submission: Submission, pins: Pin[]) {
 export type CpSatStatus = "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "UNKNOWN";
 export interface CpSatResult {
   schema: "ps1-cpsat-v1";
+  closureModelVersion: typeof CLOSURE_MODEL_VERSION;
   digest: string;
   scenario: Scenario;
   scope: "full" | "repair";
@@ -114,6 +165,7 @@ export interface CpSatResult {
   solveMs: number;
   modelAndSolveMs: number;
   access: AccessRow[];
+  occupancy: OccupancyRow[];
 }
 
 /** Native output is untrusted until provenance, CSVs, hard rules and score agree. */
@@ -121,11 +173,12 @@ export function checkedCpSatResult(payload: ReturnType<typeof cpSatPayload>, val
   disruptions: Disruption[] = []) {
   const result = value as CpSatResult | null;
   if (!result || result.digest !== payload.digest || result.schema !== payload.schema ||
+    result.closureModelVersion !== payload.closureModelVersion ||
     result.scenario !== payload.scenario || !["OPTIMAL", "FEASIBLE", "INFEASIBLE", "UNKNOWN"].includes(result.status) ||
     result.scope !== (payload.movableActivityIds && payload.movableActivityIds.length < payload.instance.activities.length ? "repair" : "full") ||
     !Number.isFinite(result.bound) || result.bound < 0 || !Number.isFinite(result.solveMs) || result.solveMs < 0 ||
     !Number.isFinite(result.modelAndSolveMs) || result.modelAndSolveMs < 0 ||
-    typeof result.ortoolsVersion !== "string" || !Array.isArray(result.access)) {
+    typeof result.ortoolsVersion !== "string" || !Array.isArray(result.access) || !Array.isArray(result.occupancy)) {
     throw new Error("CP-SAT returned an invalid result or mismatched provenance.");
   }
   let submission: Submission | undefined;
@@ -136,7 +189,10 @@ export function checkedCpSatResult(payload: ReturnType<typeof cpSatPayload>, val
       (result.status === "OPTIMAL" && Math.abs(result.bound - result.objective) > 1e-6)) {
       throw new Error("CP-SAT returned an inconsistent objective bound.");
     }
-    const csv = writeSubmission(decode(payload.instance, payload.scenario, result.access));
+    // Sharing is part of the solved model. Greedy regrouping here could break
+    // a transitive closure exemption or change the actual capacity penalty.
+    const csv = writeSubmission({ scenario: payload.scenario, access: result.access, occupancy: result.occupancy,
+      results: resultsFor(payload.instance, result.access, payload.scenario) });
     submission = parseSubmission({ access: csv["SCHEDULE_ACCESS.csv"],
       occupancy: csv["SCHEDULE_OCCUPANCY.csv"], results: csv["RESULTS.csv"] });
     report = validate(payload.instance, submission, undefined, disruptions);

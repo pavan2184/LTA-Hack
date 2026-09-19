@@ -1,0 +1,247 @@
+{
+  "purpose": "Bounded native integration correctness smoke; not a performance comparison or GCP measurement.",
+  "timingQualification": "Sequential solver calls, but unrelated tests/builds may run concurrently. Search caps exclude Python startup, model construction and validation.",
+  "startedAt": "2026-09-19T08:20:37.626Z",
+  "gitHead": "3f0cee7a1b17b5b28d767b84643bbef9a44a14c2",
+  "sourceHash": "5260e0811cd5ca7786cf2f1a9c620f1e307a87cd68e5a5f614de795598a23ba1",
+  "sourceFiles": {
+    "packages/ps1/src/engine/closure.ts": "605018bf23c4c1149f836242096e6d50c336a260ca21d7a0503c7fcc759dd3ad",
+    "packages/ps1/src/engine/disruption.ts": "b93f6221c1d9614b37c73a165e3a09e10abceeba127aeb006a37f4b585072c7e",
+    "packages/ps1/src/engine/network.ts": "e4fe45d737ae735914f97ededb3fbd913cce4eaa5653ed69d56666549e8e17a7",
+    "packages/ps1/src/engine/schedule.ts": "75b5474dcb8c575882ccbe6f4100ed886398c5c64467bd03f365e384663bcc29",
+    "packages/ps1/src/engine/validate.ts": "74a025b1d78692eb21dbd5e85d12b4b7f49756159c8a9065a63c0af3b77b7aa2",
+    "packages/ps1/src/io/load.ts": "5729f875917be39045edc8fdd92dbb2caeacf56b933680b1588a1584c6360c91",
+    "packages/ps1/src/io/submission.ts": "eb374dba75a26ce964eff922053c3fbcf9fa688253cd8eb247faa951b13dfff5",
+    "packages/ps1/src/io/write.ts": "fa83154f999562c4fbdcf9c617ef4ae1961f7d549bff54f01645314ffd3fb820",
+    "packages/ps1/src/types/ps1.ts": "90d266b759f1ce12c412f83e02488574cce23798e651567a4d4d546b2357d4be",
+    "scripts/ps1/benchmark/cp-sat.ts": "30166306c372830ea55af9b8debe6bf862131022a5803e9dff7922570b04fac1",
+    "scripts/ps1/benchmark/cp_sat.py": "7b01568e58e47959de4e44270a91995207144cd15ee94a1897f147e315780341",
+    "src/lib/ps1/cp-sat-model.ts": "500d2597079c3096c433b149d1f820e7e0c4061ca596ad9de504df5e58f41093"
+  },
+  "config": {
+    "engine": "cpsat",
+    "python": "/private/tmp/lta-ps1-cpsat/bin/python",
+    "seconds": 5,
+    "workers": 8,
+    "seed": 1,
+    "profile": "default",
+    "initialization": "cold",
+    "closureModelVersion": "ps1-closure-v1"
+  },
+  "host": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "cpu": "Apple M3 Pro",
+    "logicalCpus": 11,
+    "totalMemoryBytes": 19327352832
+  },
+  "runs": [
+    {
+      "dataset": "03-live-interchange",
+      "scenario": "A",
+      "inputHash": "a4a46caa233132436ecf4a4c325e2306352b2eb05b25d0e3238f5127d30c2b5e",
+      "requiredActivities": 12,
+      "requiredAccessUnits": 24,
+      "status": "OPTIMAL",
+      "rawObjective": 0,
+      "validatedScore": 0,
+      "bound": 0,
+      "scope": "full",
+      "closureModelVersion": "ps1-closure-v1",
+      "ortoolsVersion": "9.15.6755",
+      "validator": {
+        "checked": true,
+        "feasible": true,
+        "hardViolations": [],
+        "note": "Independent native occupancy/CSV round-trip/local checker passed."
+      },
+      "workload": {
+        "checked": true,
+        "complete": true,
+        "scheduledActivities": 12,
+        "accessRows": 28,
+        "scheduledYield": 28,
+        "shortfallActivityIds": []
+      },
+      "buildMs": 48.877375,
+      "solveMs": 178.056,
+      "elapsedMs": 1047.2000830000002,
+      "peakRssMiB": 123.0625,
+      "peakRssScope": "process_lifetime",
+      "modelStats": {
+        "variables": 3636,
+        "constraints": 8462
+      },
+      "error": null
+    },
+    {
+      "dataset": "03-live-interchange",
+      "scenario": "B",
+      "inputHash": "a4a46caa233132436ecf4a4c325e2306352b2eb05b25d0e3238f5127d30c2b5e",
+      "requiredActivities": 12,
+      "requiredAccessUnits": 24,
+      "status": "OPTIMAL",
+      "rawObjective": 0,
+      "validatedScore": 0,
+      "bound": 0,
+      "scope": "full",
+      "closureModelVersion": "ps1-closure-v1",
+      "ortoolsVersion": "9.15.6755",
+      "validator": {
+        "checked": true,
+        "feasible": true,
+        "hardViolations": [],
+        "note": "Independent native occupancy/CSV round-trip/local checker passed."
+      },
+      "workload": {
+        "checked": true,
+        "complete": true,
+        "scheduledActivities": 12,
+        "accessRows": 24,
+        "scheduledYield": 24,
+        "shortfallActivityIds": []
+      },
+      "buildMs": 52.50925000000001,
+      "solveMs": 82.197,
+      "elapsedMs": 620.580416,
+      "peakRssMiB": 111.953125,
+      "peakRssScope": "process_lifetime",
+      "modelStats": {
+        "variables": 3624,
+        "constraints": 8306
+      },
+      "error": null
+    },
+    {
+      "dataset": "03-live-interchange",
+      "scenario": "C",
+      "inputHash": "a4a46caa233132436ecf4a4c325e2306352b2eb05b25d0e3238f5127d30c2b5e",
+      "requiredActivities": 12,
+      "requiredAccessUnits": 24,
+      "status": "OPTIMAL",
+      "rawObjective": 0,
+      "validatedScore": 0,
+      "bound": 0,
+      "scope": "full",
+      "closureModelVersion": "ps1-closure-v1",
+      "ortoolsVersion": "9.15.6755",
+      "validator": {
+        "checked": true,
+        "feasible": true,
+        "hardViolations": [],
+        "note": "Independent native occupancy/CSV round-trip/local checker passed."
+      },
+      "workload": {
+        "checked": true,
+        "complete": true,
+        "scheduledActivities": 12,
+        "accessRows": 24,
+        "scheduledYield": 24,
+        "shortfallActivityIds": []
+      },
+      "buildMs": 51.94824999999997,
+      "solveMs": 342.071,
+      "elapsedMs": 888.1281670000001,
+      "peakRssMiB": 149.390625,
+      "peakRssScope": "process_lifetime",
+      "modelStats": {
+        "variables": 3638,
+        "constraints": 9062
+      },
+      "error": null
+    },
+    {
+      "dataset": "06-mixed-120",
+      "scenario": "A",
+      "inputHash": "e32504d96299ed6ee64041c8126612ccfc073804dfc13eb6ec5679a038082f0a",
+      "requiredActivities": 120,
+      "requiredAccessUnits": 300,
+      "status": "UNKNOWN",
+      "rawObjective": null,
+      "validatedScore": null,
+      "bound": 0,
+      "scope": "full",
+      "closureModelVersion": "ps1-closure-v1",
+      "ortoolsVersion": "9.15.6755",
+      "validator": {
+        "checked": false,
+        "feasible": null,
+        "hardViolations": [],
+        "note": "No native candidate was returned; no feasibility or infeasibility conclusion from UNKNOWN."
+      },
+      "workload": {
+        "checked": false,
+        "complete": null,
+        "scheduledActivities": null,
+        "accessRows": null,
+        "scheduledYield": null,
+        "shortfallActivityIds": null
+      },
+      "buildMs": 810.4272500000001,
+      "solveMs": 4473.923,
+      "elapsedMs": 5828.752708,
+      "peakRssMiB": 335.1875,
+      "peakRssScope": "process_lifetime",
+      "modelStats": {
+        "variables": 59280,
+        "constraints": 145932
+      },
+      "error": null
+    },
+    {
+      "dataset": "12-mixed-240",
+      "scenario": "C",
+      "inputHash": "67956ac090bc8912768fa92b3912ae529d5bd3a2582885faa30a18ba787c260c",
+      "requiredActivities": 240,
+      "requiredAccessUnits": 480,
+      "status": "UNKNOWN",
+      "rawObjective": null,
+      "validatedScore": null,
+      "bound": 0,
+      "scope": "full",
+      "closureModelVersion": "ps1-closure-v1",
+      "ortoolsVersion": "9.15.6755",
+      "validator": {
+        "checked": false,
+        "feasible": null,
+        "hardViolations": [],
+        "note": "No native candidate was returned; no feasibility or infeasibility conclusion from UNKNOWN."
+      },
+      "workload": {
+        "checked": false,
+        "complete": null,
+        "scheduledActivities": null,
+        "accessRows": null,
+        "scheduledYield": null,
+        "shortfallActivityIds": null
+      },
+      "buildMs": 3879.5897919999998,
+      "solveMs": 5119.765,
+      "elapsedMs": 9779.7225,
+      "peakRssMiB": 1241.25,
+      "peakRssScope": "process_lifetime",
+      "modelStats": {
+        "variables": 279482,
+        "constraints": 646460
+      },
+      "error": null
+    }
+  ],
+  "completedAt": "2026-09-19T08:20:55.838Z",
+  "sourceFilesAfter": {
+    "packages/ps1/src/engine/closure.ts": "605018bf23c4c1149f836242096e6d50c336a260ca21d7a0503c7fcc759dd3ad",
+    "packages/ps1/src/engine/disruption.ts": "b93f6221c1d9614b37c73a165e3a09e10abceeba127aeb006a37f4b585072c7e",
+    "packages/ps1/src/engine/network.ts": "e4fe45d737ae735914f97ededb3fbd913cce4eaa5653ed69d56666549e8e17a7",
+    "packages/ps1/src/engine/schedule.ts": "75b5474dcb8c575882ccbe6f4100ed886398c5c64467bd03f365e384663bcc29",
+    "packages/ps1/src/engine/validate.ts": "74a025b1d78692eb21dbd5e85d12b4b7f49756159c8a9065a63c0af3b77b7aa2",
+    "packages/ps1/src/io/load.ts": "5729f875917be39045edc8fdd92dbb2caeacf56b933680b1588a1584c6360c91",
+    "packages/ps1/src/io/submission.ts": "eb374dba75a26ce964eff922053c3fbcf9fa688253cd8eb247faa951b13dfff5",
+    "packages/ps1/src/io/write.ts": "fa83154f999562c4fbdcf9c617ef4ae1961f7d549bff54f01645314ffd3fb820",
+    "packages/ps1/src/types/ps1.ts": "90d266b759f1ce12c412f83e02488574cce23798e651567a4d4d546b2357d4be",
+    "scripts/ps1/benchmark/cp-sat.ts": "30166306c372830ea55af9b8debe6bf862131022a5803e9dff7922570b04fac1",
+    "scripts/ps1/benchmark/cp_sat.py": "7b01568e58e47959de4e44270a91995207144cd15ee94a1897f147e315780341",
+    "src/lib/ps1/cp-sat-model.ts": "500d2597079c3096c433b149d1f820e7e0c4061ca596ad9de504df5e58f41093"
+  },
+  "sourceHashAfter": "5260e0811cd5ca7786cf2f1a9c620f1e307a87cd68e5a5f614de795598a23ba1",
+  "sourceStable": true
+}

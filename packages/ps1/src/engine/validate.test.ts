@@ -265,6 +265,9 @@ describe("hard rules reject what they claim to", () => {
 
     const duplicate = { ...sample, occupancy: [...sample.occupancy, target] };
     expect(validate(instance, duplicate).hardViolations.some((v) => /duplicate occupancy/.test(v.detail))).toBe(true);
+    const forgedBridge = { ...sample, occupancy: [...sample.occupancy,
+      { ...target, coShareGroup: "another-possession" }] };
+    expect(validate(instance, forgedBridge).hardViolations.some((v) => /duplicate occupancy/.test(v.detail))).toBe(true);
 
     const activityWeeks = new Set(
       sample.access.filter((row) => row.activityId === target.activityId).map((row) => row.week),

@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { CLOSURE_MODEL_VERSION } from "@railplan/ps1/engine/closure";
 import { buildNetwork, expandSpan } from "@railplan/ps1/engine/network";
 import { validate } from "@railplan/ps1/engine/validate";
 import { validateInstance } from "@railplan/ps1/io/load";
@@ -8,6 +10,11 @@ import { writeSubmission } from "@railplan/ps1/io/write";
 import { generateStressInstances, STRESS_MANIFEST } from "./stress-instances";
 
 const cases = generateStressInstances();
+const recorded = JSON.parse(readFileSync("scripts/ps1/benchmark/stress-results.json", "utf8")) as {
+  cohorts: { config: { datasets: { id: string; inputSha256: string }[] } }[];
+};
+const recordedHashes = new Map(recorded.cohorts.flatMap((cohort) => cohort.config.datasets)
+  .map((dataset) => [dataset.id, dataset.inputSha256]));
 
 describe("declared PS1 stress instances", () => {
   it("keeps four development and four holdout definitions with disjoint fixed seeds", () => {
@@ -27,27 +34,36 @@ describe("declared PS1 stress instances", () => {
     expect(generateStressInstances("development")[0].instance.activities[0].totalAccesses).not.toBe(999);
   });
 
+  it("preserves every benchmarked v1 input instead of retuning invalid holdouts", () => {
+    for (const entry of cases) expect(entry.metadata.instanceSha256, entry.id).toBe(recordedHashes.get(entry.id));
+  });
+
   for (const entry of cases) {
-    it(`${entry.id}: preserves full workload in independently checked A/C certificates`, () => {
+    it(`${entry.id}: quarantines the original full-workload witness with its closure failures`, () => {
       const { instance } = entry;
       expect(() => validateInstance(instance)).not.toThrow();
       expect(instance.activities.length).toBeGreaterThanOrEqual(50);
       expect(instance.activities.length).toBeLessThanOrEqual(120);
       for (const scenario of ["A", "C"] as const) {
-        const csv = writeSubmission(entry.witnesses[scenario]);
+        expect(entry.witnesses[scenario]).toBeUndefined();
+        expect(entry.metadata.certificateStatus[scenario]).toBe("quarantined");
+        const csv = writeSubmission(entry.quarantinedWitnesses[scenario]!);
         const decoded = parseSubmission({ access: csv["SCHEDULE_ACCESS.csv"],
           occupancy: csv["SCHEDULE_OCCUPANCY.csv"], results: csv["RESULTS.csv"] });
         const report = validate(instance, decoded);
-        expect(report.hardViolations).toEqual([]);
-        expect(report.feasible).toBe(true);
-        expect(report.objectiveScore).toBe(entry.metadata.witnessScores[scenario]);
-        expect(report.objectiveScore).toBeGreaterThan(0);
+        expect(report.hardViolations.length).toBeGreaterThan(0);
+        expect(report.hardViolations.every((failure) => failure.rule === "closure")).toBe(true);
+        expect(report.hardViolations).toEqual(entry.metadata.certificateFailures[scenario]);
+        expect(report.feasible).toBe(false);
+        expect(report.objectiveScore).toBeUndefined();
+        expect(entry.metadata.witnessScores[scenario]).toBeNull();
         expect(decoded.access.every((row) => row.eclo === 0)).toBe(true);
         for (const activity of instance.activities) {
           expect(decoded.access.filter((row) => row.activityId === activity.activityId)).toHaveLength(activity.totalAccesses);
         }
       }
       expect(entry.metadata.certificateScope).toBe("local_checker_only");
+      expect(entry.metadata.certificateClosureModelVersion).toBe(CLOSURE_MODEL_VERSION);
       expect(entry.metadata.witnessPolicy).toBe("verification_only_not_solver_hints");
       expect(entry.metadata.scenarioBFeasibility).toBe("not_certified_keep_all_outcomes");
     });

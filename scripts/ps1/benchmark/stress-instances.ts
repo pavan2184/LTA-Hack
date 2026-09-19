@@ -4,18 +4,20 @@
  * The split is fixed: tune on development only, then evaluate holdout once.
  * Holdout instances share generation families, so they are not independent
  * operational data. Seeds are never rejected according to solver performance.
- * A/C certificates establish local feasibility only; never feed these witnesses
- * to a benchmark solver unless that separate experiment explicitly declares it.
+ * Original inputs and witness candidates are retained after checker corrections.
+ * Failed candidates are quarantined with their violations, never represented as
+ * feasibility certificates or fed to a benchmark solver.
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildNetwork, closureFor, expandSpan } from "@railplan/ps1/engine/network";
+import { CLOSURE_MODEL_VERSION } from "@railplan/ps1/engine/closure";
 import { isoDate, validate, weekEnd, weekStart } from "@railplan/ps1/engine/validate";
 import { loadInstance, PS1_FILES, validateInstance } from "@railplan/ps1/io/load";
 import { parseSubmission } from "@railplan/ps1/io/submission";
 import { writeSubmission } from "@railplan/ps1/io/write";
-import type { AccessRow, AccessType, Activity, Contract, NatureOfWorks, Ps1Instance, Submission } from "@railplan/ps1/types/ps1";
+import type { AccessRow, AccessType, Activity, Contract, HardViolation, NatureOfWorks, Ps1Instance, Submission } from "@railplan/ps1/types/ps1";
 import { decode } from "../../../src/lib/ps1/cp-sat-model";
 
 export type StressSplit = "development" | "holdout";
@@ -55,6 +57,9 @@ export interface StressInstance {
     splitPolicy: string;
     generation: string;
     certificateScope: "local_checker_only";
+    certificateClosureModelVersion: typeof CLOSURE_MODEL_VERSION;
+    certificateStatus: { A: "valid" | "quarantined"; C: "valid" | "quarantined" };
+    certificateFailures: { A: HardViolation[]; C: HardViolation[] };
     witnessPolicy: "verification_only_not_solver_hints";
     scenarioBFeasibility: "not_certified_keep_all_outcomes";
     counts: {
@@ -68,9 +73,12 @@ export interface StressInstance {
       minimumSupply: number;
       maximumSupply: number;
     };
-    witnessScores: { A: number; C: number };
+    witnessScores: { A: number | null; C: number | null };
   };
-  witnesses: { A: Submission; C: Submission };
+  /** Only currently checked complete certificates are available to consumers. */
+  witnesses: Partial<Record<"A" | "C", Submission>>;
+  /** Historical witness candidates retained for audit, not feasible export. */
+  quarantinedWitnesses: Partial<Record<"A" | "C", Submission>>;
 }
 
 function hash(value: unknown) {
@@ -85,15 +93,12 @@ function seededRandom(seed: number) {
   };
 }
 
-function verifiedCertificate(instance: Ps1Instance, scenario: "A" | "C", access: AccessRow[]) {
+function checkedWitness(instance: Ps1Instance, scenario: "A" | "C", access: AccessRow[]) {
   const csv = writeSubmission(decode(instance, scenario, structuredClone(access)));
   const submission = parseSubmission({ access: csv["SCHEDULE_ACCESS.csv"],
     occupancy: csv["SCHEDULE_OCCUPANCY.csv"], results: csv["RESULTS.csv"] });
   const report = validate(instance, submission);
-  if (!report.feasible) {
-    throw new Error(`Stress generator produced an invalid ${scenario} certificate: ${JSON.stringify(report.hardViolations)}`);
-  }
-  return { submission, score: report.objectiveScore! };
+  return { submission, score: report.feasible ? report.objectiveScore! : null, report };
 }
 
 function generate(definition: StressDefinition, topology: Ps1Instance): StressInstance {
@@ -123,8 +128,9 @@ function generate(definition: StressDefinition, topology: Ps1Instance): StressIn
       numberOfMaximumAccessPerWeek: live ? 2 : 3,
     };
     instance.contracts.push(contract);
-    // Two parallel three-stage chains establish a complete schedule without a
-    // solver. Maximum start 8 + three six-night stages + two one-week gaps < 30.
+    // Two parallel three-stage chains establish a full-workload candidate
+    // without a solver; this alone does not establish closure feasibility.
+    // Maximum start 8 + three six-night stages + two one-week gaps < 30.
     const cursor = [2 + random(7), 2 + random(7)];
     const previous: (string | null)[] = [null, null];
     let contractFinish = 0;
@@ -171,12 +177,13 @@ function generate(definition: StressDefinition, topology: Ps1Instance): StressIn
       previous[lane] = activityId;
     }
     // Tight deadlines create delay/capacity/ECLO trade-offs independently of
-    // solver results. A/C remain feasible; B may be infeasible and is not hidden.
+    // solver results. Feasibility is checked below, never inferred from this
+    // historical witness, which predates external-closure enforcement.
     const dueWeek = Math.max(5, contractFinish - 5 - random(6));
     contract.plannedCompletionDate = isoDate(weekEnd(origin, dueWeek));
   }
 
-  // Add cross-contract precedence without losing the explicit feasible witness.
+  // Add cross-contract precedence without losing the candidate's temporal order.
   // Temporal ordering precludes cycles; half the original chains stay intact.
   for (let index = 3; index < instance.activities.length; index += 4) {
     const activity = instance.activities[index];
@@ -197,7 +204,7 @@ function generate(definition: StressDefinition, topology: Ps1Instance): StressIn
   }
 
   // The public topology is reused, but each capacity is derived from this
-  // certificate's peak minimal possession count, never from optimiser output.
+  // historical candidate's peak possession count, never from optimiser output.
   const occupancy = decode(instance, "A", access).occupancy;
   const possessions = new Map<string, Set<string>>();
   for (const row of occupancy) {
@@ -211,8 +218,8 @@ function generate(definition: StressDefinition, topology: Ps1Instance): StressIn
       possessions.get(`${location.locationId}|${index + 1}`)?.size ?? 0));
   }
   validateInstance(instance);
-  const a = verifiedCertificate(instance, "A", access);
-  const c = verifiedCertificate(instance, "C", access);
+  const a = checkedWitness(instance, "A", access);
+  const c = checkedWitness(instance, "C", access);
   const network = buildNetwork(instance);
   const liveActivities = instance.activities.filter((activity) => contracts.get(activity.contractNumber)!.natureOfActivity === "Live");
   const crossLine = liveActivities.filter((activity) => new Set(closureFor(network,
@@ -228,6 +235,9 @@ function generate(definition: StressDefinition, topology: Ps1Instance): StressIn
       splitPolicy: "Fixed four development / four holdout seeds; no solver-based rejection or retuning of holdout.",
       generation: "Two three-stage chains per contract; seeded spans, workloads, priorities and compressed deadlines; exact peak witness possession capacities.",
       certificateScope: "local_checker_only", witnessPolicy: "verification_only_not_solver_hints",
+      certificateClosureModelVersion: CLOSURE_MODEL_VERSION,
+      certificateStatus: { A: a.report.feasible ? "valid" : "quarantined", C: c.report.feasible ? "valid" : "quarantined" },
+      certificateFailures: { A: a.report.hardViolations, C: c.report.hardViolations },
       scenarioBFeasibility: "not_certified_keep_all_outcomes",
       counts: {
         activities: instance.activities.length, contracts: instance.contracts.length, accessNights: access.length,
@@ -240,7 +250,8 @@ function generate(definition: StressDefinition, topology: Ps1Instance): StressIn
       },
       witnessScores: { A: a.score, C: c.score },
     },
-    witnesses: { A: a.submission, C: c.submission },
+    witnesses: { ...(a.report.feasible ? { A: a.submission } : {}), ...(c.report.feasible ? { C: c.submission } : {}) },
+    quarantinedWitnesses: { ...(!a.report.feasible ? { A: a.submission } : {}), ...(!c.report.feasible ? { C: c.submission } : {}) },
   };
 }
 

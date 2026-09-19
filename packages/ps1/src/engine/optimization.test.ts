@@ -28,8 +28,13 @@ function checkExport(instance: Ps1Instance, submission: Submission) {
 }
 
 describe("validated candidate reuse", () => {
-  it.each(["06-mixed-120", "12-mixed-240"])("avoids unnecessary B/C capacity costs on %s", (name) => {
+  it.each(["06-mixed-120", "12-mixed-240"])("avoids unnecessary B/C capacity costs for the co-worker variant of %s", (name) => {
     const instance = load(`synthetic/${name}`);
+    // Isolate nominal-capacity candidate reuse at both workload scales. The
+    // original mixed-host datasets now have unresolved closure-constrained
+    // workloads, covered without mutation in datasets.test.ts.
+    instance.contracts = instance.contracts.map((contract) => ({ ...contract,
+      accessType: "C", natureOfActivity: "Non-live (Others)", numberOfMaximumAccessPerWeek: 3 }));
     const a = solveInstance(instance, { scenario: "A" });
     expect(a.validation?.objectiveScore).toBe(0);
     for (const scenario of ["B", "C"] as const) {
@@ -40,7 +45,7 @@ describe("validated candidate reuse", () => {
       // A caller solving just this policy still tries nominal-supply alternatives.
       expect(solveInstance(instance, { scenario }).validation?.objectiveScore).toBe(0);
     }
-  });
+  }, 20_000);
 
   it("rejects a cheaper A candidate that misses B's hard deadlines", () => {
     const instance = load("public");

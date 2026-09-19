@@ -1,11 +1,32 @@
 # Project Status
 
+## Closure conformance correction — 2026-09-19
+
+The owner's GCP public Scenario A output was rejected with 15 organiser-validator
+closure violations. The corrected local checker now reproduces all 15 exact
+messages and still accepts the unchanged organiser sample. Native CP-SAT/SCIP
+models now represent real co-sharing groups and their transitive connectivity;
+the bridge preserves chosen occupancy groups. Live buffers cross both lines,
+and Consist buffers preserve the observed platform boundary. Earlier public
+scores and benchmark proofs below are historical results of an incomplete model.
+See [correction and evidence](PS1_CLOSURE_CORRECTION.md).
+
+Fresh native public A/B/C results are **32.2 / 30 / 26.1**, each with complete
+workloads, zero local hard violations and a matching full-local-model bound.
+The regenerated export contains exactly nine CSVs. Verification passed:
+**1,146 application tests** across 131 files (79 database-dependent tests
+skipped), **67 native Python tests**, lint, typecheck and the webpack production
+build. The exact 15-message regression and unchanged organiser sample both pass.
+The first GitHub CI run hit only the five-second test-harness timeout in the
+full-public disruption regression (5.24 seconds on that runner). Its timeout is
+now 30 seconds; the fixture, assertions and solver search budgets are unchanged.
+No organiser-validator attempts or GCP redeployment have been performed here.
+The cloud engineer must deploy the corrected release before another hosted run.
+
 Last updated: 2026-09-19. Application version: `0.4.0`.
-Native solver source matches `3179fe0`; integration also includes main through
-`b8bcdd3`, preserving the native service, workstation and published Algorithm Lab.
-The original native engine comparison remains the separately identified
-`d1e0a8f` snapshot; the new stress comparison uses source hash `e69b57b7…`.
-This is the current snapshot. Dated implementation and verification logs live in
+The earlier native comparisons identify their historical snapshots (`d1e0a8f`
+and stress source `e69b57b7…`). They predate the closure correction and do not
+rank the corrected model. Dated implementation and verification logs live in
 [PROJECT_STATUS_HISTORY.md](PROJECT_STATUS_HISTORY.md); do not treat their old
 next steps, test counts or local server URLs as current instructions.
 
@@ -13,9 +34,10 @@ next steps, test counts or local server URLs as current instructions.
 
 - **Native search experiments:** `ps1:benchmark:stress` compares full CP-SAT,
   redundant valid inequalities and targeted native repair under one end-to-end
-  deadline. Eight fixed 60–120-activity stress inputs have checked A/C feasibility
-  certificates withheld from search, with separate development/holdout seeds.
-  The service still uses its existing formulation and 60-second search default.
+  deadline. Eight fixed 60–120-activity stress inputs retain their original
+  development/holdout seeds. Their old A/C witness candidates are quarantined
+  after failing the corrected closure checks; they are not current feasibility
+  certificates. The service retains its 60-second search default.
 
 - **Public PS1 judge path:** `/ps1` accepts the published or uploaded eight-file
   instance without login or database access and sends one policy at a time to a
@@ -31,7 +53,7 @@ next steps, test counts or local server URLs as current instructions.
   nominal-supply alternatives, adaptive repair and independent two-week ECLO
   windows remain available to the heuristic. Complete workload and all encoded
   hard constraints remain mandatory.
-  Public objectives are **A 25.2 / B 30 / C 25.2**, as recorded in
+  Corrected public objectives are **A 32.2 / B 30 / C 26.1**, as recorded in
   [tracked results](../packages/ps1/data/results/SUMMARY.json).
   The local checker is not the organiser's reference validator.
 - **Authenticated workspace:** intake/review, anonymous workforce capacity,
@@ -64,6 +86,19 @@ next steps, test counts or local server URLs as current instructions.
   browser runtime; publication does not certify a full native PS1 deployment.
 
 ## Latest recorded verification
+
+The closure correction supersedes the solver-validity claims in the historical
+rows below. Fresh public native solves use `ps1-closure-v1`, the default
+60-second search cap and 11 available workers on the local M3 Pro. These runs
+were concurrent with other verification; their timings are not a controlled
+benchmark or a prediction for the target GCP instance. The
+[native smoke record](../scripts/ps1/benchmark/closure-smoke-results.json) also
+checks Live interchange A/B/C and records unresolved five-second cold searches
+for Mixed 120 A and Mixed 240 C. All 16 old stress witnesses are quarantined;
+the original dataset bytes remain unchanged. No browser, database, hosted GCP
+or reference-validator checks were run for this correction.
+
+The following documentation and implementation records predate the correction.
 
 The README now explains the CP-SAT choice with equations for full workload,
 precedence/ECLO windows, local possession packing, scoring-v2 objectives and the

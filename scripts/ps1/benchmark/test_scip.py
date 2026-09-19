@@ -104,5 +104,14 @@ class ScipModelTests(unittest.TestCase):
                 solve(p)
 
 
+class ScipClosureTests(test_cp_sat.ClosureModelTests):
+    def setUp(self):
+        self.original_solve = test_cp_sat.solve
+        test_cp_sat.solve = solve
+
+    def tearDown(self):
+        test_cp_sat.solve = self.original_solve
+
+
 if __name__ == "__main__":
     unittest.main()
