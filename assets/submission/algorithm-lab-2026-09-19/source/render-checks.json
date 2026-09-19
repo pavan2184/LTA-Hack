@@ -1,0 +1,42 @@
+[
+  {
+    "slide": "process",
+    "filename": "02-how-cp-sat-works.png",
+    "loadedImages": true,
+    "contentBottom": 949.5,
+    "footerTop": 992.703125,
+    "fontsLoaded": true,
+    "canvasWidth": 1920,
+    "canvasHeight": 1080
+  },
+  {
+    "slide": "demo",
+    "filename": "03-interactive-demo.png",
+    "loadedImages": true,
+    "contentBottom": 971.59375,
+    "footerTop": 992.703125,
+    "fontsLoaded": true,
+    "canvasWidth": 1920,
+    "canvasHeight": 1080
+  },
+  {
+    "slide": "disruption",
+    "filename": "04-close-a-week.png",
+    "loadedImages": true,
+    "contentBottom": 971.59375,
+    "footerTop": 992.703125,
+    "fontsLoaded": true,
+    "canvasWidth": 1920,
+    "canvasHeight": 1080
+  },
+  {
+    "slide": "proof",
+    "filename": "05-proof.png",
+    "loadedImages": true,
+    "contentBottom": 971.59375,
+    "footerTop": 992.703125,
+    "fontsLoaded": true,
+    "canvasWidth": 1920,
+    "canvasHeight": 1080
+  }
+]

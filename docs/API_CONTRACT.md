@@ -1,5 +1,22 @@
 # API Contract
 
+## Standalone Algorithm Lab API — 2026-09-19
+
+These endpoints belong only to the separately deployed `demos/algorithm-lab`
+service, not the Next.js PS1 application. `GET /api/model` returns the fixed six
+jobs, eight-week horizon, defaults, engine/model versions and assumptions.
+`POST /api/solve` accepts exactly `{capacity: 1|2|3, closedWeek: null|1..8,
+enforcePredecessors: boolean}` with strict JSON types and a 4 KiB body limit.
+Unknown/duplicate keys, non-finite numbers, encodings and API query arguments
+are rejected. No arbitrary model, uploads or authentication data is accepted.
+
+Results include actual solver status, settings, rows, objective/bound, original
+solver duration, independent checks, per-week capacity/usage and model scope.
+Nonfeasible/unknown outcomes expose no schedule or fabricated proof. Cache-hit
+metadata distinguishes a reused run from a fresh solve. Errors use
+`{error:{code,message}}`; concurrent computation returns 429 with Retry-After.
+`GET /healthz` reports process health. No response is an official PS1 submission.
+
 ## Cloud search budget and benchmark controls — 2026-09-19
 
 The target is 32 vCPUs / 64 GiB RAM, default 60 seconds of native search per scenario

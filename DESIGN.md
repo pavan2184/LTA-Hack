@@ -42,6 +42,26 @@ components:
 
 ## Overview
 
+### Algorithm Lab companion — 2026-09-19
+
+`demos/algorithm-lab` is a separate educational site, served by Python, with a
+six-work-order CP-SAT model. It retains the white, teal and IBM Plex identity,
+but uses an editorial headline and larger 16px explanatory type for visitors
+learning the algorithm. Its runtime owner is `static/style.css`; its native
+controls cannot import the Next.js React primitives. The primary composition is
+a real schedule on the left and a labelled controls/inspector column on the
+right. Below it, three selectable explanation steps cover modelling, search,
+and proof/checking. This companion does not change `/ps1` styling or behavior.
+
+The image-generated concept is retained under local
+`output/algorithm-lab/design-concept.png`. Intentional deviations replace its
+illustrative schedule with solver data, add labelled late-access marks and
+actual status/timing/proof, and expand four short labels into the user's
+requested three-step explanation. Images never substitute for functional UI.
+Font files are self-hosted with their OFL notice. There is no dark theme, account,
+upload, persistence, or private input. Native select popups are platform-owned;
+the document scrolls naturally, while the eight-week table may scroll horizontally.
+
 ### Creative North Star
 
 The approved reference is the [Siemens Opcenter Scheduling SMT workstation](https://blogs.sw.siemens.com/opcenter/new-opcenter-scheduling-smt-2410/): compact teal application chrome, an orderly command ribbon, hierarchical rows and a timeline that occupies most of the workspace. RailPlan adapts that planning grammar to the PS1 weekly model. Siemens branding, production orders and hourly bars are not product content to copy.

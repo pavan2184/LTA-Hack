@@ -1,5 +1,30 @@
 # RailPlan PS1 UX Contract
 
+## Algorithm Lab companion boundary — 2026-09-19
+
+The standalone `demos/algorithm-lab` teaching site follows a deliberately small
+variant of these interaction conventions. Its canonical owners are native
+labelled selects/checkboxes in `static/index.html`, selection/request state in
+`static/app.js`, and the local `static/style.css` scrollbar/focus tokens. Shared
+React controls do not cross this separately deployed Python service boundary.
+The maintained source is its README plus the algorithm-lab architecture decision.
+
+All six rows are rendered. Selecting a row changes only the explanation. Editing
+settings visibly marks the existing result as previous and disables its JSON
+download until settings match or another solve completes. A solve disables duplicate
+requests and controls; a bounded client timeout restores retry. Errors preserve
+the old result and label it as such. Returned infeasibility replaces the chart
+with an unfilled model and no invented partial solution. Three explanation
+buttons expose pressed state and update a live explanatory panel, not a search
+trace. Result JSON is an auxiliary teaching artifact, never official PS1 output.
+
+The only public inputs are enumerated capacity, closed week and predecessor
+settings. These non-private choices may appear in shareable query parameters.
+No upload or arbitrary model enters the backend. Native select popup geometry
+is intentional. Visible focus, natural document scrolling, a keyboard-focusable
+table scroller, narrow layout, reduced motion and persistent inline errors apply.
+There are no auth, billing, deletion, date-entry or CRUD user flows in this lab.
+
 ## Product context
 
 This contract covers `/ps1`, the account-free NebulaX planning workspace. Its primary users are access planners and works controllers who need to understand scheduled work, consequential exceptions, alternatives, changes and export readiness. It does not replace the authenticated RailPlan product's permission or publication contracts.

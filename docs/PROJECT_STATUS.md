@@ -42,16 +42,28 @@ next steps, test counts or local server URLs as current instructions.
   `npm run ps1:benchmark:cloud` compares native engines and search profiles;
   `npm run ps1:benchmark:regression` checks public/synthetic quality and determinism.
 
+- **Algorithm Lab companion:** a standalone Python OR-Tools CP-SAT educational
+  service covers six fictional jobs, nine accesses and eight weeks. Its page
+  explains modelling, constraint propagation/search and proof/checking in three
+  interactive steps. Capacity, one closed week and predecessor controls drive
+  real solves; all 54 settings were independently cross-checked. The
+  [new asset pack](../assets/submission/algorithm-lab-2026-09-19/README.md) contains
+  five gallery/cover images, actual local captures, copy and a narration script.
+  This does not replace or change the full-instance native PS1 service. The
+  companion is rebased onto PR #47, with current solver descriptions and a
+  dedicated Python CI job.
+
 ## Latest recorded verification
 
-The first two rows are fresh checks of the combined merge; later rows retain
-their historical scope.
+The Algorithm Lab row records this companion feature. The combined-merge rows
+and subsequent evidence retain their earlier scope.
 The native comparison is the `d1e0a8f` snapshot (source `a10cbe7b…`, scoring v2).
 The incoming TypeScript ECLO constructor changes can alter its heuristic baseline
 and warm starts; do not relabel the stored comparison as a rerun of the new tree.
 
 | Scope | Evidence | Limit |
 | --- | --- | --- |
+| Algorithm Lab, 2026-09-19 | 21 backend tests; all 54 settings checked against independent exact dynamic programming; 14 browser scenarios; lint, typecheck, Gunicorn config, ShellCheck and strict UI audit passed | Local Python service; no public Cloud Run revision verified; see [verification](ALGORITHM_LAB_VERIFICATION.md) |
 | Final combined merge, 2026-09-19 | 1,079 tests passed across 113 files, 79 database-dependent tests skipped; lint, typecheck and webpack production build passed; real native API-function/CLI public smokes retained A 25.2 / B 30 / C 25.2, all OPTIMAL, default 60s and exactly nine CLI CSVs | Database/browser/hosted-release/cloud-scaling checks not rerun; non-failing React act/Vite warnings remain |
 | Post-merge heuristic check, 2026-09-19 | All 39 hybrid baselines and 39 extended-hybrid outcomes locally valid; capacity-pressure C improves 1118.8 → 1105.5 in both, other 38 scores unchanged | Fresh heuristic-only comparison; native models/checker unchanged, original native timing cohorts not rerun |
 | Local 60-second native comparison, `d1e0a8f` snapshot | 119 native runs: 100 OPTIMAL, 11 FEASIBLE, eight INFEASIBLE; all 111 returned schedules locally checked; main CP-SAT/SCIP matrix ties on all 39 scores | M3 Pro/eight workers, not target-cloud performance; recorded before incoming heuristic changes |
@@ -71,6 +83,12 @@ the [solver benchmark](PS1_BENCHMARK.md),
 [authenticated release report](RELEASE_VERIFICATION_2026-09-17.md) for details.
 
 ## Deployment and submission gates
+
+Algorithm Lab is running locally at <http://127.0.0.1:8088>. Its isolated Cloud
+Run deployment script is prepared, but no `gcloud` account/project is configured
+here. The user must identify the intended Google Cloud project and authenticated
+deployment context before publication. Asset captions currently say local
+preview; do not claim a Google Cloud-hosted lab until the public URL is verified.
 
 Use [PS1_SUBMISSION_CHECKLIST.md](PS1_SUBMISSION_CHECKLIST.md) as the actionable
 release/submission checklist. The canonical judge URL is

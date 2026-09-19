@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, initial-scale=1">
+  <title>RailPlan — CP-SAT explained</title>
+  <style>
+    @font-face { font-family: "IBM Plex Sans"; src: url("fonts/plex-sans-latin.woff2") format("woff2"); font-style: normal; font-weight: 100 700; font-display: block; }
+    @font-face { font-family: "IBM Plex Mono"; src: url("fonts/plex-mono-latin.woff2") format("woff2"); font-style: normal; font-weight: 100 700; font-display: block; }
+    :root { --ink:#14161a; --teal:#006b83; --muted:#626972; --rule:#dce1e4; --soft:#edf5f6; --light:#f5f7f8; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#fff; color:var(--ink); }
+    body { font-family:"IBM Plex Sans", sans-serif; -webkit-font-smoothing:antialiased; }
+    .canvas { width:1920px; height:1080px; position:relative; padding:54px 72px 48px; overflow:hidden; }
+    .brand { display:flex; align-items:center; gap:16px; font-size:30px; font-weight:600; letter-spacing:-.8px; }
+    .brand svg { width:38px; height:38px; color:var(--teal); }
+    .brand .divider { height:24px; width:1px; background:var(--rule); margin:0 8px; }
+    .brand .lab { font-size:23px; color:var(--muted); font-weight:400; letter-spacing:0; }
+    .edition { position:absolute; top:63px; right:72px; color:var(--muted); font-family:"IBM Plex Mono", monospace; font-size:17px; letter-spacing:1.2px; }
+    .slide { display:none; }
+    .slide.active { display:block; }
+    .eyebrow { font-family:"IBM Plex Mono", monospace; font-size:17px; line-height:1.4; letter-spacing:2px; color:var(--teal); text-transform:uppercase; }
+    h1, h2, p { margin:0; }
+    h1 { font-size:76px; line-height:1.08; letter-spacing:-3.5px; font-weight:500; }
+    .process-header { margin-top:50px; }
+    .process-header h1 { margin-top:14px; }
+    .subtitle { font-size:30px; line-height:1.35; color:var(--muted); margin-top:20px; }
+    .process-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:66px; margin-top:42px; }
+    .step { min-width:0; }
+    .step-number { display:block; color:var(--teal); font-family:"IBM Plex Mono", monospace; font-size:28px; line-height:1; margin-bottom:17px; }
+    .step h2 { font-size:34px; line-height:1.12; letter-spacing:-.85px; font-weight:500; min-height:76px; }
+    .schematic { display:block; width:100%; height:260px; margin:13px 0 22px; }
+    .schematic text { font-family:"IBM Plex Sans",sans-serif; fill:var(--ink); }
+    .schematic .mono { font-family:"IBM Plex Mono",monospace; }
+    .step-copy { font-size:24px; line-height:1.4; max-width:510px; color:#424952; }
+    .step-copy strong { color:var(--ink); font-weight:500; }
+    .process-note { margin-top:34px; font-family:"IBM Plex Mono",monospace; color:var(--muted); font-size:18px; }
+    .showcase { display:grid; grid-template-columns:480px 1fr; gap:48px; margin-top:109px; align-items:start; }
+    .story h1 { font-size:66px; line-height:1.07; letter-spacing:-2.7px; margin-top:19px; }
+    .story-copy { font-size:26px; line-height:1.4; color:var(--muted); margin-top:26px; max-width:458px; }
+    .metrics { margin-top:44px; display:flex; flex-wrap:wrap; gap:34px 42px; }
+    .metric { min-width:174px; }
+    .metric-value { display:block; font-family:"IBM Plex Mono",monospace; font-size:58px; font-weight:400; line-height:1.05; color:var(--teal); letter-spacing:-2.5px; white-space:nowrap; }
+    .metric-label { display:block; font-size:21px; line-height:1.35; margin-top:10px; color:var(--muted); }
+    .metric-wide { flex-basis:100%; }
+    .metric-wide .metric-value { font-size:68px; }
+    .metric-wide .metric-label { font-size:23px; }
+    .story-note { border-top:1px solid var(--rule); margin-top:32px; padding-top:20px; font-size:21px; line-height:1.45; color:var(--muted); max-width:450px; }
+    .capture { margin:0; }
+    .capture-frame { width:1248px; height:726px; border:1px solid #d5dcdf; background:var(--light); padding:0; overflow:hidden; box-shadow:0 16px 44px rgba(20,22,26,.055); display:flex; align-items:center; justify-content:center; }
+    .capture-frame img { display:block; width:100%; height:100%; object-fit:contain; }
+    .capture figcaption { font-size:19px; line-height:1.4; color:var(--muted); margin-top:17px; }
+    .capture figcaption b { color:var(--ink); font-weight:500; }
+    .proof-math { display:flex; align-items:center; gap:28px; margin-top:44px; }
+    .proof-math .metric { min-width:0; }
+    .equals { color:#8b9399; font-family:"IBM Plex Mono",monospace; font-size:48px; margin-bottom:36px; }
+    .proof-label { margin-top:29px; color:var(--teal); font-family:"IBM Plex Mono",monospace; font-size:21px; letter-spacing:1px; }
+    .proof-checks { margin-top:24px; padding:0; list-style:none; font-size:24px; line-height:1.8; color:#424952; }
+    .proof-checks li::before { content:"✓"; color:var(--teal); margin-right:14px; }
+    #disruption .metrics { margin-top:30px; }
+    #disruption .story-note { margin-top:24px; padding-top:16px; font-size:20px; }
+    #proof .story-copy { font-size:25px; line-height:1.35; }
+    #proof .proof-math { margin-top:30px; }
+    #proof .proof-label { margin-top:22px; }
+    #proof .proof-checks { margin-top:20px; font-size:22px; line-height:1.55; }
+    #proof .story-note { margin-top:20px; padding-top:16px; font-size:20px; line-height:1.35; }
+    .footer { position:absolute; bottom:42px; left:72px; right:72px; border-top:1px solid var(--rule); padding-top:20px; display:flex; align-items:center; justify-content:space-between; gap:30px; color:var(--muted); font-size:18px; line-height:1.35; }
+    .footer .acronym { color:var(--ink); font-size:18px; }
+    .footer .scope { text-align:right; }
+    .page-number { position:absolute; top:64px; right:72px; font-family:"IBM Plex Mono",monospace; color:var(--muted); font-size:17px; }
+  </style>
+</head>
+<body>
+  <main class="canvas">
+    <div class="brand" aria-label="RailPlan Algorithm Lab">
+      <svg viewBox="0 0 38 38" fill="none" aria-hidden="true"><path d="M9 5v28M29 5v28M9 11h20M9 20h20M9 29h20" stroke="currentColor" stroke-width="3"/><path d="M4 35h30" stroke="currentColor" stroke-width="2"/></svg>
+      <span>RailPlan</span><span class="divider"></span><span class="lab">Algorithm Lab</span>
+    </div>
+    <div class="edition">RAILWAY ACCESS PLANNING, EXPLAINED.</div>
+
+    <section id="process" class="slide active" aria-label="How CP-SAT works">
+      <header class="process-header">
+        <p class="eyebrow">A look inside the algorithm</p>
+        <h1>How CP-SAT works.</h1>
+        <p class="subtitle">From work requests to a checked schedule, in three steps.</p>
+      </header>
+      <div class="process-grid">
+        <article class="step">
+          <span class="step-number">01</span>
+          <h2>Model the work</h2>
+          <svg id="binary-grid" class="schematic" viewBox="0 0 548 260" role="img" aria-label="Six jobs by eight weeks form 48 binary placement variables. Teal cells show the nine selected accesses in the default schedule."></svg>
+          <p class="step-copy"><strong>48 yes-or-no placement variables.</strong> Schedule all nine accesses. Capacity, closures and enabled dependencies are hard rules. Minimise weighted lateness.</p>
+        </article>
+        <article class="step">
+          <span class="step-number">02</span>
+          <h2>Search within the rules</h2>
+          <svg class="schematic" viewBox="0 0 548 260" role="img" aria-label="Conceptual search diagram: branch on choices, propagate rules, learn from conflicts and retain the best feasible schedule. This is not a recorded search trace.">
+            <path d="M268 53V77M268 77H124V119M268 77H408V119M124 157V190" fill="none" stroke="#b6c6cc" stroke-width="2"/>
+            <circle cx="268" cy="32" r="20" fill="#edf5f6" stroke="#006b83" stroke-width="2"/>
+            <path d="M261 32h14M268 25v14" stroke="#006b83" stroke-width="2"/>
+            <text x="304" y="40" font-size="22">Branch on a choice</text>
+            <circle cx="124" cy="138" r="19" fill="#006b83"/>
+            <path d="M116 138l5 5 11-12" fill="none" stroke="#fff" stroke-width="2.5"/>
+            <text x="124" y="105" text-anchor="middle" font-size="21">Rules hold</text>
+            <circle cx="408" cy="138" r="19" fill="#fff" stroke="#909aa2" stroke-width="2"/>
+            <path d="M402 132l12 12M414 132l-12 12" stroke="#626972" stroke-width="2"/>
+            <text x="408" y="105" text-anchor="middle" font-size="21">Conflict</text>
+            <text x="124" y="215" text-anchor="middle" font-size="22" font-weight="500">Keep best schedule</text>
+            <text x="408" y="185" text-anchor="middle" font-size="21">Learn and prune</text>
+            <text x="274" y="253" text-anchor="middle" font-size="17" fill="#626972">Conceptual search schematic</text>
+          </svg>
+          <p class="step-copy"><strong>Rule out impossible choices.</strong> Branch on what remains and learn from conflicts. Track the best schedule and a lower bound on cost.</p>
+        </article>
+        <article class="step">
+          <span class="step-number">03</span>
+          <h2>Prove and explain<br>the answer</h2>
+          <svg class="schematic" viewBox="0 0 548 260" role="img" aria-label="For the default demo the schedule cost is 5 and the best bound is 5, proving optimality for this model. A separate checker verifies the returned schedule.">
+            <text x="117" y="43" text-anchor="middle" font-size="20">Schedule cost</text>
+            <text x="411" y="43" text-anchor="middle" font-size="20">Best bound</text>
+            <text x="117" y="120" text-anchor="middle" font-size="72" class="mono" style="fill:#006b83">5</text>
+            <text x="264" y="113" text-anchor="middle" font-size="56" class="mono" style="fill:#8b9399">=</text>
+            <text x="411" y="120" text-anchor="middle" font-size="72" class="mono" style="fill:#006b83">5</text>
+            <path d="M30 153h488" stroke="#dce1e4"/>
+            <text x="274" y="193" text-anchor="middle" font-size="24" class="mono" style="fill:#006b83">OPTIMAL</text>
+            <text x="274" y="234" text-anchor="middle" font-size="21">Default demo · independently checked</text>
+          </svg>
+          <p class="step-copy"><strong>Cost meets bound: optimum proved.</strong> A separate checker verifies the returned schedule. Inspect every job’s completion and penalty. FEASIBLE alone does not prove optimality.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="demo" class="slide" aria-label="Default solver demo">
+      <div class="showcase">
+        <div class="story">
+          <p class="eyebrow">The complete workload</p>
+          <h1>Every access<br>accounted for.</h1>
+          <p class="story-copy">Six maintenance jobs. Eight weeks. One checked schedule that retains every required access.</p>
+          <div class="metrics">
+            <div class="metric"><span class="metric-value">6/6</span><span class="metric-label">jobs scheduled</span></div>
+            <div class="metric"><span class="metric-value">9/9</span><span class="metric-label">accesses retained</span></div>
+            <div class="metric metric-wide"><span class="metric-value">5</span><span class="metric-label">weighted lateness · optimum proved</span></div>
+          </div>
+          <p class="story-note">Default settings: two accesses per week, no closure, predecessor rules enabled.</p>
+        </div>
+        <figure class="capture">
+          <div class="capture-frame"><img src="../screenshots/01-default.png" alt="The actual RailPlan Algorithm Lab showing all six jobs scheduled across eight weeks with default settings and an optimal cost of five."></div>
+          <figcaption><b>The working demo.</b> Screenshot captured from the locally verified application.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="disruption" class="slide" aria-label="Closed week scenario">
+      <div class="showcase">
+        <div class="story">
+          <p class="eyebrow">A change you can explain</p>
+          <h1>Close a week.<br>See the<br>consequences.</h1>
+          <p class="story-copy">Close week two and solve again. The work stays; the timing and cost change.</p>
+          <div class="metrics">
+            <div class="metric metric-wide"><span class="metric-value">5 → 19</span><span class="metric-label">weighted lateness</span></div>
+            <div class="metric"><span class="metric-value">9/9</span><span class="metric-label">accesses retained</span></div>
+            <div class="metric"><span class="metric-value">4/6</span><span class="metric-label">jobs change weeks</span></div>
+          </div>
+          <p class="story-note">Two accesses per open week. Predecessor rules stay enabled.</p>
+        </div>
+        <figure class="capture">
+          <div class="capture-frame"><img src="../screenshots/02-closed-week.png" alt="The actual RailPlan Algorithm Lab after closing week two: every required access remains scheduled and the optimal weighted lateness is nineteen."></div>
+          <figcaption><b>Week two closed.</b> Screenshot captured from the locally verified application.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="proof" class="slide" aria-label="Inspecting the model and proof">
+      <div class="showcase">
+        <div class="story">
+          <p class="eyebrow">Evidence behind the answer</p>
+          <h1>A result you<br>can inspect.</h1>
+          <p class="story-copy">For the week-two closure, the best schedule meets the solver’s lower bound. No lower cost exists within this model.</p>
+          <div class="proof-math">
+            <div class="metric"><span class="metric-value">19</span><span class="metric-label">schedule cost</span></div>
+            <span class="equals">=</span>
+            <div class="metric"><span class="metric-value">19</span><span class="metric-label">best bound</span></div>
+          </div>
+          <p class="proof-label">OPTIMAL · SCOPE: THIS MODEL</p>
+          <ul class="proof-checks">
+            <li>All required work retained</li>
+            <li>Capacity and predecessors checked</li>
+            <li>Penalty arithmetic recalculated</li>
+          </ul>
+          <p class="story-note">A separate checker verifies the returned schedule. CP-SAT supplies the optimality result.</p>
+        </div>
+        <figure class="capture">
+          <div class="capture-frame"><img src="../screenshots/03-model-proof.png" alt="The actual RailPlan Algorithm Lab explaining the model, solver proof and independent checks for the week-two closure scenario with objective and best bound both nineteen."></div>
+          <figcaption><b>The model and its checks.</b> Screenshot captured from the locally verified application.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span class="acronym">CP = constraint programming · SAT = satisfiability</span>
+      <span class="scope">Educational model · real OR-Tools solves · separate from PS1 planner</span>
+    </footer>
+  </main>
+  <script>
+    const selected = new URLSearchParams(location.search).get("slide") || "process";
+    const names = ["process", "demo", "disruption", "proof"];
+    const active = names.includes(selected) ? selected : "process";
+    document.querySelectorAll(".slide").forEach(slide => {
+      slide.classList.toggle("active", slide.id === active);
+      slide.setAttribute("aria-hidden", String(slide.id !== active));
+    });
+    document.title = `RailPlan — ${active}`;
+    const svg = document.getElementById("binary-grid");
+    const ns = "http://www.w3.org/2000/svg";
+    function draw(tag, attributes, content) {
+      const element = document.createElementNS(ns, tag);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      if (content !== undefined) element.textContent = content;
+      svg.appendChild(element);
+    }
+    const schedule = [[1], [2, 3], [4], [2, 3], [1], [5, 6]];
+    for (let week = 1; week <= 8; week++) {
+      draw("text", { x:92 + (week - 1) * 54, y:23, "text-anchor":"middle", "font-size":17, class:"mono" }, `W${week}`);
+    }
+    schedule.forEach((weeks, index) => {
+      const y = 39 + index * 35;
+      draw("text", { x:0, y:y + 21, "font-size":19, class:"mono" }, `A0${index + 1}`);
+      for (let week = 1; week <= 8; week++) {
+        const present = weeks.includes(week);
+        const x = 71 + (week - 1) * 54;
+        draw("rect", { x, y, width:42, height:28, rx:2, fill:present ? "#006b83" : "#f1f4f5" });
+        draw("text", { x:x + 21, y:y + 20, "font-size":17, "text-anchor":"middle", class:"mono", style:`fill:${present ? "#fff" : "#7b868d"}` }, present ? "1" : "0");
+      }
+    });
+  </script>
+</body>
+</html>
