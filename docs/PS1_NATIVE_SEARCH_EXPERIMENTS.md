@@ -172,3 +172,14 @@ The cloud engineer can reproduce the comparisons using the commands in the
 then compare 8/16/32 workers on the actual 32-vCPU / 64-GiB host. Preserve the
 same total budget and repeat seeds before changing the deployed formulation.
 The eight new cases and existing difficult controls are included in that handoff.
+
+## Verification
+
+The experiment source passed 1,111 application tests (79 database-dependent
+tests skipped), 45 native Python tests, lint, typecheck and a production build.
+A fresh public native CLI run preserved A 25.2 / B 30 / C 25.2 with three
+full-model proofs and exactly nine CSVs. Integration with the later main branch
+left the measured solver source unchanged and passed 95 focused tests, lint,
+typecheck and a fresh build. Its first restricted build could not fetch the
+existing Google Fonts; the network-enabled retry passed. No browser, database,
+reference-validator or target-cloud verification is claimed for this change.
