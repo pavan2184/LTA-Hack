@@ -1,5 +1,15 @@
 # Data Model
 
+## Native PS1 transport — 2026-09-19
+
+The existing `Ps1Instance`, `Pin` and `Disruption` shapes now cross the same-origin
+HTTP boundary. Strict Zod scalar/shape validation precedes the existing CSV
+loader's exported referential checks and span expansion. No database schema or
+persistence was introduced. `SolveDiagnostics.solver` adds native status, full
+local-model scope, worker count, budget, lower bound, absolute/relative gaps,
+search time and incumbent source. CSV schemas are unchanged. Uploaded data is
+processed server-side and is not saved by the solve endpoint.
+
 ## Browser-only PS1 planning model — 2026-09-18
 
 `SolveOutcome` has `FEASIBLE`, `INFEASIBLE` and `INVALID_INSTANCE` states plus an

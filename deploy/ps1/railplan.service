@@ -1,0 +1,25 @@
+[Unit]
+Description=RailPlan web app and native PS1 solver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=railplan
+Group=railplan
+WorkingDirectory=/opt/railplan
+ExecStart=/bin/bash /opt/railplan/scripts/ps1/start-native.sh
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+MemoryMax=24G
+TasksMax=128
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

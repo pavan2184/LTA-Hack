@@ -22,7 +22,7 @@ import { appliesTo, capacityAt, type Disruption } from "./disruption";
 /** One PM alone, or one PC plus three co-workers, or four co-workers. */
 export const MAX_ACTIVITIES_PER_POSSESSION = 4;
 
-export const FORMULA_VERSION = "ps1-objective-v1";
+export const FORMULA_VERSION = "ps1-objective-v2";
 
 /** Monday of the given 1-based week. */
 export function weekStart(horizonStart: string, week: number): Date {
@@ -450,7 +450,6 @@ export function validate(
   let earlinessDaysTotal = 0;
   let contractsOverrunning = 0;
   const priorityOverrun: SoftScores["priorityOverrun"] = { "1": 0, "2": 0, "3": 0 };
-  const overrunByContract = new Map<string, number>();
 
   for (const contract of instance.contracts) {
     const week = lastWeek.get(contract.contractNumber);
@@ -459,7 +458,6 @@ export function validate(
     const planned = new Date(`${contract.plannedCompletionDate}T00:00:00Z`);
     const delta = dayDiff(planned, simulated);
     const overrun = Math.max(0, delta);
-    overrunByContract.set(contract.contractNumber, overrun);
     if (overrun > 0) {
       overrunDaysTotal += overrun;
       contractsOverrunning += 1;
@@ -501,11 +499,13 @@ export function validate(
   for (const [activityId, rows] of overrunActivities) {
     const activity = activityById.get(activityId)!;
     const contract = contractByNumber.get(activity.contractNumber)!;
-    const overrun = overrunByContract.get(contract.contractNumber) ?? 0;
-    if (!overrun) continue;
     const last = Math.max(...rows.map((row) => row.week));
-    // Only activities that actually run to the contract's last week are late.
-    if (last !== lastWeek.get(contract.contractNumber)) continue;
+    // PS1 §2.7 sums the weighted penalty per overrunning activity. An activity
+    // can be late even when another activity in its contract finishes later.
+    const overrun = Math.max(0, dayDiff(
+      new Date(`${contract.plannedCompletionDate}T00:00:00Z`),
+      weekEnd(horizonStart, last),
+    ));
     priorityWeightedScore +=
       CONTRACT_WEIGHT[contract.contractPriority] *
       (1 + ACTIVITY_NUDGE[activity.activityPriority]) *

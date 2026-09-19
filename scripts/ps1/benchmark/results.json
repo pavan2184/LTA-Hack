@@ -1,4 +1,6 @@
 {
+  "scoringVersion": "v1-superseded",
+  "warning": "Historical terminal-only lateness scoring. A/C scores and optimality evidence are superseded by per-activity ps1-objective-v2; do not compare these values directly with corrected runs. See native-results.json for regenerated v2 browser/native comparisons.",
   "hardware": "Apple M3 Pro",
   "localConformanceLimit": "cross_possession_night_alignment remains undecidable",
   "defaults": {

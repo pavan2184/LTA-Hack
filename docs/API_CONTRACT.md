@@ -1,5 +1,27 @@
 # API Contract
 
+## POST /api/ps1/solve — 2026-09-19
+
+Public, same-origin JSON. Body: `{instance: Ps1Instance, scenario: "A"|"B"|"C",
+pins?: Pin[], disruptions?: Disruption[]}`. Returns `{outcome: SolveOutcome}` with
+`Cache-Control: no-store`. Authentication is not required for judging. Each
+scenario is requested separately so the UI can show progress. Solver parameters,
+Python paths and claimed validation reports are not accepted from clients.
+
+Admission limits: 4 MiB streamed body with a 10-second read deadline, 2,000 activities/contracts, 260 weeks,
+60,000 activity-weeks, 120,000 location-weeks and 200,000 span-weeks. Oversized
+instances fail explicitly; work is never truncated. One active request per Node
+process; overlap receives 429 and Retry-After:5. Other errors use
+`{error:{code,message}}`: 400 invalid JSON/instance, 403 cross-origin, 413 body
+limit, 415 content type, 499 cancellation, 502 native failure, 503 missing native
+runtime. Internal output and uploaded data are not serialized in errors.
+
+A successful HTTP response can contain an unresolved/infeasible outcome.
+`diagnostics.solver.status` distinguishes native OPTIMAL/FEASIBLE/INFEASIBLE/UNKNOWN;
+legacy outer INFEASIBLE alone is not proof. The full local-model bound and gaps
+are separate from feasibility. Native errors never silently change execution to
+the browser. [Deployment](PS1_NATIVE_DEPLOYMENT.md).
+
 ## PS1 search options — 2026-09-19
 
 `ScheduleOptions` now accepts `initialCandidates` (always revalidated for the

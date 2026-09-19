@@ -1,5 +1,14 @@
 # Project Brief
 
+## Native PS1 execution — 2026-09-19
+
+The owner has authorized server-side compute. The PS1 upload UI now sends the
+validated instance to the same-origin native CP-SAT endpoint; browser-only solving
+is no longer a delivery requirement. The official PS1 README permits a service
+behind a thin UI. Keep the hidden eight-file upload, complete workload, local
+conformance disclosure and exact nine-file export. Google Compute Engine is the
+initial deployment target; see [native deployment](PS1_NATIVE_DEPLOYMENT.md).
+
 ## Public challenge workspace update — 2026-09-18
 
 The unauthenticated `/ps1` path is the submission-facing product: judges can load

@@ -167,8 +167,11 @@ credentials affect delivery, not whether a plan can be saved or published.
 
 ## Usage
 
-The [PS1 scheduler](https://railplan-nine.vercel.app/ps1) is public, browser-only and
-requires no account. Hidden instance files remain on the device. The separate durable
+The PS1 scheduler at `/ps1` is public and requires no account. It sends uploaded
+instances to a native CP-SAT service, with local validation before display/export.
+The [existing hosted demo](https://railplan-nine.vercel.app/ps1) is not assumed to
+contain this change; deploy the Node/Python runtime using the
+[native runbook](docs/PS1_NATIVE_DEPLOYMENT.md). The separate durable
 [RailPlan workspace](https://railplan-nine.vercel.app/login) requires provisioned access.
 See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
 GitHub and local work.

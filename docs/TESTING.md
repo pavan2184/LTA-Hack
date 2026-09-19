@@ -1,5 +1,23 @@
 # Testing Plan
 
+## Native PS1 service and scorer v2 — 2026-09-19
+
+Run `npx vitest run src/test/ps1-solve-api.test.ts src/lib/ps1/server-solver.test.ts`
+plus the PS1 engine/UI suites and Python `test_cp_sat.py`. API tests exercise
+cross-origin rejection, streamed body/model limits, cyclic inputs, pins/cuts,
+concurrent admission and missing runtime. Native boundary tests cover CSV/score
+agreement, provenance, unknown/no-incumbent, pins, process timeout/cancellation
+and valid-incumbent retention. UI tests use the HTTP contract and preserve
+review/apply/undo, cuts, uploads and export behavior.
+
+Independent arithmetic regressions distinguish per-activity lateness from the
+superseded terminal-only scoring bug. All new evidence uses ps1-objective-v2;
+legacy results.json is historical and cannot support A/C quality or proof claims.
+The native matrix records every full-model outcome and bound, including failures.
+Browser QA must exercise real native requests, hidden upload, progress, native
+status/proof, cancellation, and the nine-file ZIP. Local proof is not reference
+validator certification. Verification results are in PROJECT_STATUS.md.
+
 ## PS1 hybrid and native benchmark verification — 2026-09-19
 
 `search.test.ts` covers scenario reuse and target scoring, rejection of stale

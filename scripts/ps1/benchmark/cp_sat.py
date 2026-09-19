@@ -16,6 +16,9 @@ from ortools.sat.python import cp_model
 def solve(payload):
     if payload.get("schema") != "ps1-cpsat-v1":
         raise ValueError("Unsupported PS1 payload schema")
+    workers = payload.get("workers", 1)
+    if isinstance(workers, bool) or not isinstance(workers, int) or not 1 <= workers <= 8:
+        raise ValueError("workers must be an integer from 1 to 8")
     started = time.perf_counter()
     instance, scenario = payload["instance"], payload["scenario"]
     if scenario not in ("A", "B", "C"):
@@ -100,33 +103,24 @@ def solve(payload):
             model.add_max_equality(excess, [0, count - supply])
             if scenario != "A":
                 objective.append(70 * excess)
-    for number, contract in contracts.items():
-        ids = [aid for aid, a in activities.items() if a["contractNumber"] == number]
-        if not ids:
-            continue
-        finish = model.new_int_var(1, horizon, "contract_" + number)
-        model.add_max_equality(finish, [last[aid] for aid in ids])
-        if scenario != "B":
+    if scenario != "B":
+        # PS1 §2.7 charges each late activity against its contract's planned
+        # date, including activities that finish before the contract's last one.
+        for aid, activity in activities.items():
+            contract = contracts[activity["contractNumber"]]
             due_days = (dt.date.fromisoformat(contract["plannedCompletionDate"]) - origin).days
             limit = max(0, horizon * 7 - 1 - due_days)
-            late = model.new_int_var(0, limit, "late_" + number)
-            model.add_max_equality(late, [0, 7 * finish - 1 - due_days])
-            for aid in ids:
-                terminal = model.new_bool_var("terminal_" + aid)
-                model.add(last[aid] == finish).only_enforce_if(terminal)
-                model.add(last[aid] != finish).only_enforce_if(terminal.Not())
-                charged = model.new_int_var(0, limit, "charged_" + aid)
-                model.add(charged == late).only_enforce_if(terminal)
-                model.add(charged == 0).only_enforce_if(terminal.Not())
-                weight = {1: 100, 2: 10, 3: 1}[contract["contractPriority"]]
-                nudge = {1: 13, 2: 12, 3: 10}[activities[aid]["activityPriority"]]
-                objective.append(weight * nudge * charged)
+            late = model.new_int_var(0, limit, "late_" + aid)
+            model.add_max_equality(late, [0, 7 * last[aid] - 1 - due_days])
+            weight = {1: 100, 2: 10, 3: 1}[contract["contractPriority"]]
+            nudge = {1: 13, 2: 12, 3: 10}[activity["activityPriority"]]
+            objective.append(weight * nudge * late)
     if scenario != "A":
         objective.extend(50 * var for var in e.values())
     model.minimize(sum(objective))
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = payload.get("seconds", 5)
-    solver.parameters.num_search_workers = 1
+    solver.parameters.num_search_workers = workers
     solver.parameters.random_seed = payload.get("seed", 1)
     status = solver.solve(model)
     found = status in (cp_model.FEASIBLE, cp_model.OPTIMAL)

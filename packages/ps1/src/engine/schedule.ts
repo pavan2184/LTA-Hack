@@ -474,9 +474,9 @@ export function solveInstance(
       results: resultsFor(instance, submission.access, options.scenario),
     };
     const report = validate(instance, submission, activeNetwork, options.disruptions ?? []);
+    const accesses = new Set(submission.access.map((row) => `${row.activityId}|${row.week}|${row.eclo}`));
     if (!report.feasible || submission.rejectedPins.length > 0 ||
-      (options.pins ?? []).some((pin) => !submission.access.some((row) =>
-        row.activityId === pin.activityId && row.week === pin.week && row.eclo === (pin.eclo ?? 0)))) return;
+      (options.pins ?? []).some((pin) => !accesses.has(`${pin.activityId}|${pin.week}|${pin.eclo ?? 0}`))) return;
     const score = report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const bestScore = best?.report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const stable = JSON.stringify(submission.access);

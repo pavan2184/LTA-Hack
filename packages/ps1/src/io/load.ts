@@ -340,7 +340,8 @@ export function loadInstance(files: InstanceFiles): Ps1Instance {
   return instance;
 }
 
-function validateInstance(instance: Ps1Instance): void {
+/** Referential checks shared by CSV loading and the typed server boundary. */
+export function validateInstance(instance: Ps1Instance): void {
   unique(instance.lines, (row) => row.lineCode, "01_LINES.csv", "line_code");
   unique(
     instance.stations,

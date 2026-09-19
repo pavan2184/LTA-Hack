@@ -1,5 +1,30 @@
 # Decisions
 
+## 2026-09-19 — Native CP-SAT is the primary PS1 solver
+
+The owner explicitly removed the browser-only restriction and authorized Google
+Compute/Functions infrastructure. The organiser allows services behind a web UI;
+our previous restriction was an implementation choice. Use a Compute Engine VM
+running Next.js and Python directly, retaining the hosted upload UI. The existing
+no-Docker development preference remains compatible. No cloud resource has been
+provisioned by this change.
+
+Choose native CP-SAT's multiworker portfolio, seeded by our TypeScript hybrid.
+The model is called even without an incumbent. Eight-worker comparisons proved
+capacity-pressure B230 and priority-contention B279 optimal for the full local
+model; single-worker 30-second runs found those scores but left bounds120/180.
+Public A/C25.2 and B30 also have full-model proofs after the scoring correction.
+These results justify this primary solver; they do not establish the best method
+for every hidden instance. Extra custom LNS or commercial solvers need measured
+benefit before adding deployment and maintenance cost.
+
+Correct A/C weighting to each activity's own lateness. Official §2.7 says summed
+per overrunning activity; the former last-contract-week-only gate had no support
+and could reward delaying work. Version the change as ps1-objective-v2 and mark
+old benchmark evidence historical. CSV contract summary reporting stays intact.
+Full-model status/bounds are shown with the existing physical-night conformance
+limit. [Deployment rationale and runbook](PS1_NATIVE_DEPLOYMENT.md).
+
 ## 2026-09-19 — PS1 browser hybrid, native CP-SAT benchmark
 
 Status: **Accepted.** Use cross-scenario incumbents, nominal-capacity starts,

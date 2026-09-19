@@ -7,7 +7,7 @@ import { safeReturnTo } from "@/lib/auth/return-path";
 
 export default async function Home({ searchParams }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+}) {
   const access = await landingAccess();
   // Signed out lands on the public entry rather than a password box, because
   // the PS1 scheduler behind it needs no account at all.

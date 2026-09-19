@@ -5,7 +5,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { SandboxSessionBoundary } from "@/components/layout/SandboxSessionBoundary";
 import Link from "next/link";
 import { safeReturnTo } from "@/lib/auth/return-path";
-export default async function Sandbox({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> } = {}) {
+export default async function Sandbox({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const raw = await searchParams ?? {};
   const query = new URLSearchParams(Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
   const returnTo = safeReturnTo(`/sandbox?${query}`, "planner");

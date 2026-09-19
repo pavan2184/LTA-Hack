@@ -1,5 +1,61 @@
 # Project Status
 
+## Native PS1 solver, corrected scorer and Compute handoff — 2026-09-19
+
+The owner authorized server-side solving and requested an update to PR #47.
+The native CP-SAT service is now the primary `/ps1` solve/replan path. It validates
+bounded typed requests, uses a checked heuristic warm start, runs the full native
+model even when that heuristic fails, and independently checks official CSVs,
+pins and objective values. Eight CPU workers, a 20-second search budget, child
+wall timeout, cancellation and single-process admission bound server work.
+The client repeats conformance checks, shows native status/bound/gap, preserves
+capacity cuts and planner pins, and releases automatic successor retention pins
+when a disruption affects their dependency chain. Equal-score native padding
+cannot replace a shorter incumbent. Pin membership checks are indexed.
+
+Scoring v2 charges each activity's own lateness. The former terminal-only rule
+could reward delaying work; five independent arithmetic regressions distinguish
+the corrected interpretation. Old benchmark evidence is explicitly superseded.
+All 39 v2 public/synthetic full-model native runs are locally feasible: 37 OPTIMAL,
+two FEASIBLE. Native improves four hybrid cases, including B 293 → 230 and B 483 → 279;
+the selected portfolio improves 17 legacy cases without regressions. The matrix
+uses eight workers and five-second search limits, not the service's 20-second
+limit or equal wall time. Public A 25.2 / B 30 / C 25.2 all have full local-model proofs;
+native public CSVs, reports and summary were refreshed. The two open C cases are
+05: 1090.8, bound 1015.5 and 11: 300.7, bound 206.5. These are observed scores, not
+claims that the bounds are achievable. See native-results.json for exact evidence.
+
+The four Next.js entry-point type signatures blocking production builds are
+fixed with their direct-call tests. Google Compute deployment has a pinned Python
+runtime, startup script, systemd/nginx templates and an HTTPS runbook. No GCP
+resources were provisioned and no deployment was performed. Application uploads
+are not persisted or payload-logged; nginx may briefly buffer bodies to disk.
+Replan bounds include automatically retained accesses, explicit pins and cuts.
+Physical-night alignment remains undecidable locally; no reference-validator
+parity or unrestricted replan optimality is claimed.
+
+Verification:
+
+- Full suite: **1008 passed, 79 database-dependent tests skipped**, 110 passed test
+  files. After the final pin-index/proof changes, **101 targeted tests passed across eight
+  files** (scheduler/search, native service/API, client and rendered UI).
+- Python model: **12 tests passed**. Independent native service, API and browser
+  response tests cover timeout/cancellation, missing runtime, no incumbent,
+  contradictory proofs, hard pins/cuts and read/model limits.
+- `npm run build -- --webpack`: passed after existing Google Fonts downloads were
+  allowed. Lint, TypeScript and whitespace checks passed. Startup script syntax
+  passed; Linux systemd/nginx and actual GCP ingress remain untested locally.
+- Real production Chromium at http://127.0.0.1:3001/ps1: public A/B/C all native
+  OPTIMAL, capacity-cut replan → Adopt → Apply → Undo, independent eight-file
+  upload 09 → C 1840, proof metadata and real ZIP download all passed. ZIP contains
+  exactly nine files with exact headers/scenario identities. Desktop 1440×1000
+  and mobile 390×844 showed meaningful content, no framework overlay, no console
+  errors and no mobile horizontal overflow. Browser plugin unavailable; bundled
+  Playwright 1.62.1 used. Native screen-reader/zoom checks were not rerun.
+- Existing PR #47 workstation and handoff commits were preserved when aligning the
+  detached checkout to its latest head. No main-branch merge is authorized here. The task preview on port 3001 is stopped
+  after verification; the pre-existing port 3000 process is untouched.
+
 ## Solver PR reconciliation and engineer handoff — 2026-09-19
 
 Prepared `codex/ps1-hybrid-optimisation` against main at `b6e661e`, retaining

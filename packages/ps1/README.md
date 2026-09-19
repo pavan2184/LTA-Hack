@@ -77,11 +77,15 @@ validator the judges run.
 ## Running it
 
 ```sh
-npm run ps1:solve          # writes data/results/{A,B,C}/ and SUMMARY.json
+python3 -m venv .venv-cpsat
+.venv-cpsat/bin/pip install -r scripts/ps1/requirements.txt
+PATH="$PWD/.venv-cpsat/bin:$PATH" npm run ps1:solve # writes native results
 npx vitest run packages/ps1/
 ```
 
-The web surface is at `/ps1` — public, no account, solves in the browser.
+The web surface is at `/ps1` — public, no account, with native CP-SAT on the server.
+The pure TypeScript scheduler supplies warm starts; the client rechecks results.
+See [deployment](../../docs/PS1_NATIVE_DEPLOYMENT.md).
 
 Twelve additional [synthetic input datasets](data/synthetic/README.md) cover demos,
 co-sharing, Live interchange closures, dependencies, capacity pressure and a
@@ -96,9 +100,13 @@ outcomes. The official public instance and public-result files stay separate.
 | Scenario | Feasible | Overrun days | Excess nights | ECLO nights | Objective |
 | --- | --- | --- | --- | --- | --- |
 | A | yes | 21 | 0 | 0 | 25.2 |
-| B | yes | 0 | 2 | 6 | 44 |
-| C | yes | 21 | 2 | 0 | 39.2 |
+| B | yes | 0 | 0 | 6 | 30 |
+| C | yes | 21 | 0 | 0 | 25.2 |
 
 Scenario A places all 192 access-nights of work with two contracts overrunning;
 the reference submission overruns three. Every scenario schedules 100% of
 activities, which is the mandatory gate before any quality metric counts.
+
+All three scores have full local-model optimality proofs under the corrected
+per-activity scorer `ps1-objective-v2`. Reference-validator equivalence and
+cross-possession physical-night alignment remain unverified.

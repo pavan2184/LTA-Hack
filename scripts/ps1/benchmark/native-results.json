@@ -1,0 +1,1858 @@
+{
+  "schema": "ps1-native-matrix-v2",
+  "scoringVersion": "ps1-objective-v2",
+  "startedAt": "2026-09-19T05:31:42.336Z",
+  "browserGeneratedAt": "2026-09-19T05:30:23.049Z",
+  "node": "v22.22.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M3 Pro",
+  "logicalCpuCount": 11,
+  "modelSha256": "c2797900f0e7c29fc9e6cd9f661e0a15c753a11cd2bcb16e22abea4fc64e3545",
+  "scope": "full models only; no conditional repair proofs",
+  "budgets": {
+    "workers": 8,
+    "initialSearchSeconds": 5,
+    "unknownRetrySearchSeconds": 20,
+    "seed": 1
+  },
+  "comparison": "Default iteration-budget browser quality versus time-limited native quality; not equal wall time. Native total time includes payload, Python startup, model, solve and local checking.",
+  "conformance": "Local checker only; cross_possession_night_alignment remains undecidable.",
+  "completed": true,
+  "completedAt": "2026-09-19T05:32:23.002Z",
+  "results": [
+    {
+      "dataset": "public",
+      "scenario": "A",
+      "inputDigest": "a5d66aa95c814376c0ca006ac966bef4982b45d00ac23d72fd3d7a39cf660e7b",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 25.2,
+        "elapsedMs": 448
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 25.2,
+        "elapsedMs": 569
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 25.2,
+        "bound": 25.2,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "acb50e42862fde7f2167eff619e025cd544dc0fbf55dd40612cd8176804ef8a6",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 25.2,
+            "bound": 25.2,
+            "solveMs": 135.955,
+            "modelAndSolveMs": 226.45800000000006,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 915.200375,
+            "locallyFeasible": true,
+            "checkedScore": 25.2,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 25.2,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "public",
+      "scenario": "B",
+      "inputDigest": "a5d66aa95c814376c0ca006ac966bef4982b45d00ac23d72fd3d7a39cf660e7b",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 44,
+        "elapsedMs": 257
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 30,
+        "elapsedMs": 639
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 30,
+        "bound": 30,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "54d413e9ec09c382e5e08ceb51f5e3315f17465404fbf7c852405be9333366c0",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 30,
+            "bound": 30,
+            "solveMs": 123.26100000000001,
+            "modelAndSolveMs": 214.802333,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 565.5762500000001,
+            "locallyFeasible": true,
+            "checkedScore": 30,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 30,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "public",
+      "scenario": "C",
+      "inputDigest": "a5d66aa95c814376c0ca006ac966bef4982b45d00ac23d72fd3d7a39cf660e7b",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 39.2,
+        "elapsedMs": 239
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 25.2,
+        "elapsedMs": 712
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 25.2,
+        "bound": 25.2,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "5646bd32303e063ba5ff14078b0fce2f22055578029f19cb71ca527a8f9bf904",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 25.2,
+            "bound": 25.2,
+            "solveMs": 437.119,
+            "modelAndSolveMs": 594.028583,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 963.8205829999999,
+            "locallyFeasible": true,
+            "checkedScore": 25.2,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 25.2,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "01-small-demo",
+      "scenario": "A",
+      "inputDigest": "45674d573ede8ab78d3d276bd3f34d44476aa78e6413124dc2c8c44d7ea349d5",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 6
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 3
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "070ddb472c4c9253f3593d2f25d1af4949c610cd5230d8ccdf76b85198926d8a",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 15.414000000000001,
+            "modelAndSolveMs": 27.866708000000017,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 408.9651670000003,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "01-small-demo",
+      "scenario": "B",
+      "inputDigest": "45674d573ede8ab78d3d276bd3f34d44476aa78e6413124dc2c8c44d7ea349d5",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 6
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 4
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "0c0f152db6109869eafb3edc12d4ceb9193c2968ce7a6980a9221f5793d9d3a4",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 9.957,
+            "modelAndSolveMs": 27.994500000000034,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 580.2539999999999,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "01-small-demo",
+      "scenario": "C",
+      "inputDigest": "45674d573ede8ab78d3d276bd3f34d44476aa78e6413124dc2c8c44d7ea349d5",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 6
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 3
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "c98f67f359fbd6fc9b9b80c7e001d09f96f40cb54c9848e4cb00924c3e2a16d5",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 33.404,
+            "modelAndSolveMs": 48.276292,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 401.6266249999999,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "02-co-sharing",
+      "scenario": "A",
+      "inputDigest": "c562d14ac5169a0151a59c5232078ae77d3ae7e2c29f682c81705b23dd699322",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 24
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "2348c9872bf29b26048149113f0646d91ced89325135d32ae548e5d8e0e99754",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 40.166,
+            "modelAndSolveMs": 58.11983300000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 429.9672499999997,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "02-co-sharing",
+      "scenario": "B",
+      "inputDigest": "c562d14ac5169a0151a59c5232078ae77d3ae7e2c29f682c81705b23dd699322",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 84,
+        "elapsedMs": 20
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "d330ba3f2570ddd9cfff5bd59498cbcbdbe6cd733ec6ee6cc0c79e8b1daac836",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 20.031,
+            "modelAndSolveMs": 38.76341699999997,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 382.5907499999994,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "02-co-sharing",
+      "scenario": "C",
+      "inputDigest": "c562d14ac5169a0151a59c5232078ae77d3ae7e2c29f682c81705b23dd699322",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 84,
+        "elapsedMs": 16
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 6
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "80532bd16542fdf1f9a1c378f891ba0d75fd8d4c9ca20319ac8fe5171510ddba",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 124.09500000000001,
+            "modelAndSolveMs": 144.64333299999998,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 485.02599999999984,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "03-live-interchange",
+      "scenario": "A",
+      "inputDigest": "a4a46caa233132436ecf4a4c325e2306352b2eb05b25d0e3238f5127d30c2b5e",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 12
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "5e72f133b4f7bb6bfb5e2503324a3af83f272ae059a995610d40605e223ea60c",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 30.21,
+            "modelAndSolveMs": 51.418666,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 400.58708299999944,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "03-live-interchange",
+      "scenario": "B",
+      "inputDigest": "a4a46caa233132436ecf4a4c325e2306352b2eb05b25d0e3238f5127d30c2b5e",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 49,
+        "elapsedMs": 13
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "ea4f3c45bd8ad680f608a8ccdee94b7e78fee396657fde6861c5ac76cb508e33",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 23.423000000000002,
+            "modelAndSolveMs": 47.84170900000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 411.13124999999945,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "03-live-interchange",
+      "scenario": "C",
+      "inputDigest": "a4a46caa233132436ecf4a4c325e2306352b2eb05b25d0e3238f5127d30c2b5e",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 49,
+        "elapsedMs": 12
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "9e20e1417b71ac338f164d0d0094b1c9b90f6a475fd63594580c34aa965a0dfe",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 72.676,
+            "modelAndSolveMs": 100.68570800000003,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 468.8195420000002,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "04-dependency-chains",
+      "scenario": "A",
+      "inputDigest": "b363a88449051024673687342afcda24f5a615183a7655b11c40184690b04eda",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 17
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "05ea76b9745d425930eebeba043fa154404cdb1cfd13c94861a7627da7c3eea0",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 34.071000000000005,
+            "modelAndSolveMs": 52.454834000000005,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 422.4801669999997,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "04-dependency-chains",
+      "scenario": "B",
+      "inputDigest": "b363a88449051024673687342afcda24f5a615183a7655b11c40184690b04eda",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 17
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 6
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "61b817c376761b648f1bec961a12ab80cf752e70ffc30a360f179512adc7dedb",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 22.049000000000003,
+            "modelAndSolveMs": 42.083416999999955,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 423.15149999999994,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "04-dependency-chains",
+      "scenario": "C",
+      "inputDigest": "b363a88449051024673687342afcda24f5a615183a7655b11c40184690b04eda",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 17
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 5
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "af52b527e68264d836b2b222b5e260958d9e441c8096334d7e16668457348b79",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 77.382,
+            "modelAndSolveMs": 99.58050000000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 496.448042,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "05-capacity-pressure",
+      "scenario": "A",
+      "inputDigest": "133a226fac3d219f2f3849a3996e50d9d4d8cfc4b15a54515efad81b371a0634",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 2184,
+        "elapsedMs": 13
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 2184,
+        "elapsedMs": 75
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 2184,
+        "bound": 2184,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "d1b7638aa744d456d74eb0bd81ce2cb1aadccb0ae0f1ac41ed64daa93ab701cd",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 2184,
+            "bound": 2184,
+            "solveMs": 187.304,
+            "modelAndSolveMs": 199.77387499999998,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 567.776417,
+            "locallyFeasible": true,
+            "checkedScore": 2184,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 2184,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "05-capacity-pressure",
+      "scenario": "B",
+      "inputDigest": "133a226fac3d219f2f3849a3996e50d9d4d8cfc4b15a54515efad81b371a0634",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 293,
+        "elapsedMs": 8
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 293,
+        "elapsedMs": 54
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 230,
+        "bound": 230,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "24dbb6842c26e0fc78192ae543392f66495ec755049b7c15612de0863de526d5",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 230,
+            "bound": 230,
+            "solveMs": 149.505,
+            "modelAndSolveMs": 162.57179100000002,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 545.678750000001,
+            "locallyFeasible": true,
+            "checkedScore": 230,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 230,
+        "source": "native",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "05-capacity-pressure",
+      "scenario": "C",
+      "inputDigest": "133a226fac3d219f2f3849a3996e50d9d4d8cfc4b15a54515efad81b371a0634",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 1123,
+        "elapsedMs": 15
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 1118.8,
+        "elapsedMs": 82
+      },
+      "native": {
+        "status": "FEASIBLE",
+        "score": 1090.8,
+        "bound": 1015.5,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "cbc9b7f495147aca8ac028ca656c72fc6bdecc3e12a771d2aef7f03e79bffd72",
+            "scenario": "C",
+            "scope": "full",
+            "status": "FEASIBLE",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 1090.8,
+            "bound": 1015.5,
+            "solveMs": 5006.276000000001,
+            "modelAndSolveMs": 5021.07025,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 5392.0735,
+            "locallyFeasible": true,
+            "checkedScore": 1090.8,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 1090.8,
+        "source": "native",
+        "provenOptimalForLocalFullModel": false
+      }
+    },
+    {
+      "dataset": "06-mixed-120",
+      "scenario": "A",
+      "inputDigest": "e32504d96299ed6ee64041c8126612ccfc073804dfc13eb6ec5679a038082f0a",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 304
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 62
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "63c725eeaeae8117f80f120f959a195f7b0ef66be2364ae22427bbefcec41981",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 338.214,
+            "modelAndSolveMs": 493.662375,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 856.7247500000012,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "06-mixed-120",
+      "scenario": "B",
+      "inputDigest": "e32504d96299ed6ee64041c8126612ccfc073804dfc13eb6ec5679a038082f0a",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 378,
+        "elapsedMs": 292
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 62
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "486f678f45c4791ed893876af48e5eae0b621460334e0ba28548e55890596f88",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 549.4010000000001,
+            "modelAndSolveMs": 732.3545419999999,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 1148.4087920000002,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "06-mixed-120",
+      "scenario": "C",
+      "inputDigest": "e32504d96299ed6ee64041c8126612ccfc073804dfc13eb6ec5679a038082f0a",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 308,
+        "elapsedMs": 323
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 61
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "3c758d25cca33542b0a1ba3024e57a9a7e9a8b0ce9e1a98c8eb06765c4b3a709",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 2062.099,
+            "modelAndSolveMs": 2364.197834,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 2888.710583,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "07-long-spans",
+      "scenario": "A",
+      "inputDigest": "8e8578bc7da8c63803691f544d8081aa7947699fc99db9f74404b0c3bff3eb56",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 43
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 13
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "b9cac8165b0a4b8fa649f1dd6e091e1e186ae71ae8304f0f5dd75c8cde3300ea",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 73.702,
+            "modelAndSolveMs": 121.67991699999997,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 478.6268749999981,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "07-long-spans",
+      "scenario": "B",
+      "inputDigest": "8e8578bc7da8c63803691f544d8081aa7947699fc99db9f74404b0c3bff3eb56",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 133,
+        "elapsedMs": 42
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 13
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "6899e94429e22201f131561f151d17df18b63b88cf42f60104f9769837ef57ed",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 76.73,
+            "modelAndSolveMs": 129.37354200000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 465.99025000000256,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "07-long-spans",
+      "scenario": "C",
+      "inputDigest": "8e8578bc7da8c63803691f544d8081aa7947699fc99db9f74404b0c3bff3eb56",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 133,
+        "elapsedMs": 42
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 13
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "d8d1d7c39e79b9a5ca82b5d61e122012167e897fc8157cfb7f4e31e271b28547",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 124.184,
+            "modelAndSolveMs": 178.812709,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 514.3870840000018,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "08-workfront-limits",
+      "scenario": "A",
+      "inputDigest": "c8d44c65d8fcb54f3d15875c00e057de4da7c72b53c6bc654c7358e759bc3926",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 32
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 8
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "b70851513dc093d9b9610fe4f8b5c4dbea2c04993a6f3fa23dd3196c8bdbd094",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 59.08,
+            "modelAndSolveMs": 96.897208,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 430.1872079999994,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "08-workfront-limits",
+      "scenario": "B",
+      "inputDigest": "c8d44c65d8fcb54f3d15875c00e057de4da7c72b53c6bc654c7358e759bc3926",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 32
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 9
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "f8d50fafe0dba6037d7390a54ad7b7791f58312eb365f12b75360d35b3e1896b",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 43.531,
+            "modelAndSolveMs": 113.67137500000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 476.59212500000285,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "08-workfront-limits",
+      "scenario": "C",
+      "inputDigest": "c8d44c65d8fcb54f3d15875c00e057de4da7c72b53c6bc654c7358e759bc3926",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 32
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 9
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "cb8eeef97c2f0ea5e6136a79a730b03e11a669a5104060bb43248dca9931825d",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 158.424,
+            "modelAndSolveMs": 202.20129199999997,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 528.7722499999982,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "A",
+      "inputDigest": "533d67bac7ee075e5e16453d1dfd9db6db789dcfe6d1bb36ed2b0ebb1a4b233b",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 3640,
+        "elapsedMs": 4
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 3640,
+        "elapsedMs": 26
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 3640,
+        "bound": 3640,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "26dbf8d8d61eb8bd662b282fb5edd303a53711c67f3c1bf7d70d28d191d1a521",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 3640,
+            "bound": 3640,
+            "solveMs": 9.296000000000001,
+            "modelAndSolveMs": 19.877750000000027,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 349.91300000000047,
+            "locallyFeasible": true,
+            "checkedScore": 3640,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 3640,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "B",
+      "inputDigest": "533d67bac7ee075e5e16453d1dfd9db6db789dcfe6d1bb36ed2b0ebb1a4b233b",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 40,
+        "elapsedMs": 3
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 40,
+        "elapsedMs": 23
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 40,
+        "bound": 40,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "1091a3118fd3e6d54fe915efbd79cad329af35fef494b67ba998f04a973965f0",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 40,
+            "bound": 40,
+            "solveMs": 5.268,
+            "modelAndSolveMs": 16.468916999999973,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 345.4679160000014,
+            "locallyFeasible": true,
+            "checkedScore": 40,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 40,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "C",
+      "inputDigest": "533d67bac7ee075e5e16453d1dfd9db6db789dcfe6d1bb36ed2b0ebb1a4b233b",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 3640,
+        "elapsedMs": 4
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 1840,
+        "elapsedMs": 34
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 1840,
+        "bound": 1840,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "8428b5674ce54f48ba4e97c06043a94c9064009409c3270661f7442a53df48d1",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 1840,
+            "bound": 1840,
+            "solveMs": 19.204,
+            "modelAndSolveMs": 31.128250000000023,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 360.1975420000017,
+            "locallyFeasible": true,
+            "checkedScore": 1840,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 1840,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "10-horizon-boundary",
+      "scenario": "A",
+      "inputDigest": "71b926e334f798f6e192b1f9fae9f6bcf5e50918f723d94805e5b33e56ff3d3a",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 19
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 13
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "3a413e3efb8cbd08136185e836eeb2fcbf7952304e1b518a33b98e060343f03e",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 10.039000000000001,
+            "modelAndSolveMs": 39.62950000000004,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 365.4370000000017,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "10-horizon-boundary",
+      "scenario": "B",
+      "inputDigest": "71b926e334f798f6e192b1f9fae9f6bcf5e50918f723d94805e5b33e56ff3d3a",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 28
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 17
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "e18c7811d26c78b81fceccf5a8f87d477e3e52c6ceee18d696f99a14bf3dd98b",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 13.045000000000002,
+            "modelAndSolveMs": 46.22495900000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 372.1777920000022,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "10-horizon-boundary",
+      "scenario": "C",
+      "inputDigest": "71b926e334f798f6e192b1f9fae9f6bcf5e50918f723d94805e5b33e56ff3d3a",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 30
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 15
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "1edafad6a26ab625623f7eb1a708e32c1f44e8d00cc3a97b6c3f261f95b3d05c",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 18.191000000000003,
+            "modelAndSolveMs": 53.446667000000005,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 380.442959,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "11-priority-contention",
+      "scenario": "A",
+      "inputDigest": "c623ca7edef56ec7301d976329eef039b248ae2b8c3e571b5f381ec361d4773c",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 1768.2,
+        "elapsedMs": 29
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 1768.2,
+        "elapsedMs": 104
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 1768.2,
+        "bound": 1768.2,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "ab2183a43785c8a11eaab4c672bf0555ed9e1b784f17b767e1574d5a71fdb1de",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 1768.2,
+            "bound": 1768.2,
+            "solveMs": 1244.173,
+            "modelAndSolveMs": 1254.620458,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 1600.2754590000004,
+            "locallyFeasible": true,
+            "checkedScore": 1768.2,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 1768.2,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "11-priority-contention",
+      "scenario": "B",
+      "inputDigest": "c623ca7edef56ec7301d976329eef039b248ae2b8c3e571b5f381ec361d4773c",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 483,
+        "elapsedMs": 13
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 483,
+        "elapsedMs": 102
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 279,
+        "bound": 279,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "4fab45e5eb93cf8d18c2c15b7d1e3b228ea44142941bfcfc88101b10f0295cf2",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 279,
+            "bound": 279,
+            "solveMs": 58.194,
+            "modelAndSolveMs": 69.09787499999997,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 420.8240420000002,
+            "locallyFeasible": true,
+            "checkedScore": 279,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 279,
+        "source": "native",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "11-priority-contention",
+      "scenario": "C",
+      "inputDigest": "c623ca7edef56ec7301d976329eef039b248ae2b8c3e571b5f381ec361d4773c",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 340.4,
+        "elapsedMs": 21
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 340.4,
+        "elapsedMs": 180
+      },
+      "native": {
+        "status": "FEASIBLE",
+        "score": 300.7,
+        "bound": 206.5,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "0937f3a9558a64e9a9dc80c9f024597fa5aa1f685f1680a498ab9be18f14b398",
+            "scenario": "C",
+            "scope": "full",
+            "status": "FEASIBLE",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 300.7,
+            "bound": 206.5,
+            "solveMs": 5005.256,
+            "modelAndSolveMs": 5018.681375000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 5366.028375000002,
+            "locallyFeasible": true,
+            "checkedScore": 300.7,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 300.7,
+        "source": "native",
+        "provenOptimalForLocalFullModel": false
+      }
+    },
+    {
+      "dataset": "12-mixed-240",
+      "scenario": "A",
+      "inputDigest": "67956ac090bc8912768fa92b3912ae529d5bd3a2582885faa30a18ba787c260c",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 812
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 143
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "8f2227f09c08786aa9b184c5baa7cfb04eb8884889b9266da315cad88b7f5998",
+            "scenario": "A",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 674.629,
+            "modelAndSolveMs": 945.058875,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 1312.7252079999998,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "12-mixed-240",
+      "scenario": "B",
+      "inputDigest": "67956ac090bc8912768fa92b3912ae529d5bd3a2582885faa30a18ba787c260c",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 826,
+        "elapsedMs": 716
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 147
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "aae6724210ec3f034c88fa5f2fc5bf2458cf01fa8be0c633167abb6397f514a4",
+            "scenario": "B",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 1152.256,
+            "modelAndSolveMs": 1424.1562079999999,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 1776.7047089999978,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    },
+    {
+      "dataset": "12-mixed-240",
+      "scenario": "C",
+      "inputDigest": "67956ac090bc8912768fa92b3912ae529d5bd3a2582885faa30a18ba787c260c",
+      "legacy": {
+        "status": "FEASIBLE",
+        "score": 665,
+        "elapsedMs": 710
+      },
+      "hybrid": {
+        "status": "FEASIBLE",
+        "score": 0,
+        "elapsedMs": 163
+      },
+      "native": {
+        "status": "OPTIMAL",
+        "score": 0,
+        "bound": 0,
+        "locallyFeasible": true,
+        "attempts": [
+          {
+            "schema": "ps1-cpsat-v1",
+            "digest": "486e64a861abc8d1865c6d7d5e76357a123fdc909b9dc3978dd9e6930647a4cf",
+            "scenario": "C",
+            "scope": "full",
+            "status": "OPTIMAL",
+            "ortoolsVersion": "9.15.6755",
+            "objective": 0,
+            "bound": 0,
+            "solveMs": 4995.952,
+            "modelAndSolveMs": 5350.783417000001,
+            "seconds": 5,
+            "workers": 8,
+            "totalElapsedMs": 5747.151749999997,
+            "locallyFeasible": true,
+            "checkedScore": 0,
+            "formulaVersion": "ps1-objective-v2"
+          }
+        ]
+      },
+      "selected": {
+        "status": "LOCALLY_FEASIBLE",
+        "score": 0,
+        "source": "hybrid",
+        "provenOptimalForLocalFullModel": true
+      }
+    }
+  ]
+}

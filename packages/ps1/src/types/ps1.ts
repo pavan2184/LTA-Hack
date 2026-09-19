@@ -206,6 +206,21 @@ export interface SolveDiagnostics {
   elapsedMs: number;
   warnings: string[];
   rejectedPins: { activityId: string; week: number; eclo?: 0 | 1; reason: string }[];
+  /** Native proof scope is the encoded local model, not the reference validator. */
+  solver?: {
+    engine: "OR-Tools CP-SAT";
+    version?: string;
+    status: "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "UNKNOWN";
+    scope: "full-local-model";
+    workers: number;
+    searchSeconds: number;
+    bestBound: number | null;
+    absoluteGap: number | null;
+    /** (returned score - lower bound) / max(1, abs(returned score)). */
+    relativeGap: number | null;
+    nativeSolveMs: number | null;
+    incumbentSource: "cp-sat" | "heuristic" | "none";
+  };
 }
 
 export interface SolveOutcome {
