@@ -1,5 +1,15 @@
 # Decisions
 
+## 2026-09-19 — Mirror GitHub main to GitLab automatically
+
+The owner requested publishing to GitLab and clarified that every GitHub main
+update should be mirrored. Keep GitHub as the source of truth and use a push-
+triggered GitHub Actions job, independent of local Git configuration. Mirror
+only main with fast-forward pushes; preserve and report divergence rather than
+overwriting GitLab work. Use a dedicated project deploy key stored as an Actions
+secret, strict pinned SSH host verification and read-only GitHub permissions.
+See [setup, security boundaries and recovery](GITLAB_MIRROR.md).
+
 ## 2026-09-19 — Evaluate stronger formulations and targeted native repair separately
 
 Status: **Experimental, offline only.** Compare the deployed model with redundant

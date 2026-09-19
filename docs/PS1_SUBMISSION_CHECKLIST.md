@@ -12,7 +12,7 @@ unchecked actions have happened. PS1 requirements come from
 | Released commit | **TODO:** exact commit tested on the hosted app |
 | Judge entry point | https://railplan-nine.vercel.app/ps1 — verify this deployment |
 | GitHub source | https://github.com/pavan2184/LTA-Hack |
-| GitLab source | **TODO:** team-owned GitLab URL, or recorded organiser acceptance of GitHub |
+| GitLab source | https://gitlab.com/Ducksss/lta-hack — source synchronized; private, judge access still to verify |
 | Three-minute YouTube video | **TODO:** actual published video URL |
 | Portal submission | **TODO:** named team member and confirmation receipt |
 | Physical sign-in | **TODO:** named team member and completion time |
