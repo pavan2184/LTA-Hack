@@ -20,7 +20,7 @@ Then `PROJECT_BRIEF.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `API_CONTRACT.md`,
 - `RAIL_SCHEDULING_RESEARCH.md`: research, not operational validation.
 - `NEBULAX_PRODUCT_RESEARCH.md`: challenge index, rail/port comparisons, current-product gaps and proposed demo/pilot priorities.
 - `PRODUCT_ADOPTION_REVIEW.md`: 2026-09-15 adoption review of the built product; journey friction, prioritised proposals and an adoption test. Proposals, not accepted scope.
-- `superpowers/plans/2026-09-07-ordered-issues.md`: historical issue plan and acceptance criteria; current status determines remaining work.
+- [archive/README.md](archive/README.md): historical issue plans, specifications and superseded submission-copy provenance; current status determines remaining work.
 
 The inputs are fabricated; schedules, conflicts, metrics, alternatives and
 assistant engine answers are computed. The heuristic is independently validated

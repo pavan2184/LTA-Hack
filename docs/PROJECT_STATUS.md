@@ -91,16 +91,19 @@ access, unseen-instance performance and actual screen-reader speech remain unver
   are not operational safety approval. See [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
   and [DECISIONS.md](DECISIONS.md) for the boundaries and accepted decisions.
 
-## Context maintenance — 2026-09-19
+## Repository context and artifact cleanup — 2026-09-19
 
-Archived the complete previous status log, replaced the root handoff with an
-orientation index, refreshed teammate setup/release guidance and corrected stale
-roadmap/submission pointers. Historical evidence remains available; old server
-URLs and account observations are not current environment guarantees.
+Current status and handoff are concise; complete previous status snapshots remain
+in the history file. Removed the unused project starter guide/bootstrap, obsolete
+`.env` validation script and mismatched FastAPI Cursor rule. Historical plans
+moved unchanged into [docs/archive](archive/README.md). The submission index now
+points to the current versioned pack, demo and write-up; superseded campaign copy
+is recoverable from Git history. Design evidence, current submission media,
+complete synthetic fixtures, application code and runtime configuration remain.
 
-Verification: archive preservation, changed-document local paths/anchors,
-documented npm scripts, tracked public scores, deployment configuration and
-`git diff --check`. Application tests/build were not rerun for documentation-only
-changes. No server was started and no existing local server was verified here.
-For setup use [TEAM_HANDOFF.md](TEAM_HANDOFF.md); keep future status updates concise
+Verification: archived-plan content preservation, removed-path reference checks,
+active-document local paths/anchors, npm commands, current asset checksums and
+`git diff --check`. Application tests/build were not rerun for this documentation
+and unused-tooling cleanup. No server was started or verified. Use
+[TEAM_HANDOFF.md](TEAM_HANDOFF.md) for setup; keep future status updates concise
 and put detailed chronological evidence in the history file.
