@@ -6,7 +6,9 @@
     "packages/*"
   ],
   "scripts": {
+    "predev": "node scripts/algorithm-lab/export-web.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/algorithm-lab/export-web.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

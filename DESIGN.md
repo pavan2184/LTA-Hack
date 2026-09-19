@@ -44,6 +44,12 @@ components:
 
 ### Algorithm Lab companion — 2026-09-19
 
+The public homepage now introduces the same three steps and links to
+`/algorithm-lab`; a compact workstation link opens the explanation in a new tab
+so the current plan stays in place. The hosted page is exported from the same
+native UI source at build time. Homepage links use the existing planner-button
+and workspace-card treatment; no new visual token system is introduced.
+
 `demos/algorithm-lab` is a separate educational site, served by Python, with a
 six-work-order CP-SAT model. It retains the white, teal and IBM Plex identity,
 but uses an editorial headline and larger 16px explanatory type for visitors

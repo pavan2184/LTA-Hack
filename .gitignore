@@ -28,6 +28,9 @@ tsconfig.tsbuildinfo
 # Local browser-check screenshots
 output/
 
+# Generated from the standalone teaching UI by predev/prebuild.
+public/algorithm-lab/
+
 # Submission artwork and bundles stay local (pre-commit caps files at 2 MB)
 assets/submission/*.png
 assets/*.zip

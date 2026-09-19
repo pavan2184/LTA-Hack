@@ -87,7 +87,7 @@ function showError(message) {
 }
 
 async function request(path, payload, signal) {
-  const response = await fetch(path, {
+  const response = await fetch(document.body.dataset.apiEndpoint || path, {
     method: payload ? "POST" : "GET",
     headers: payload ? { "Content-Type": "application/json" } : {},
     body: payload ? JSON.stringify(payload) : undefined,
