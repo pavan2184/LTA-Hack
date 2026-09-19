@@ -692,6 +692,7 @@ export function Ps1Workbench({
         <a href="/ps1" className="ps1-brand" aria-label="RailPlan start"><TrainFront size={22} strokeWidth={1.6} aria-hidden /><span>RailPlan</span></a>
         <h1>Track access planning</h1>
         <span className="ps1-title-context">{runs ? `${source === "public" ? "Public" : "Uploaded"} instance / Policy ${active}` : "NebulaX · PS1"}</span>
+        <a className="ps1-algorithm-link" href="/algorithm-lab" target="_blank" rel="noopener" aria-label="CP-SAT explained (opens in a new tab)">CP-SAT explained</a>
         <span className="ps1-local-label"><LockKeyhole size={12} aria-hidden /> Local workspace</span>
       </header>
       {/* Proxied by the visible "Upload instance files" and "Load another"

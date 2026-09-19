@@ -3,12 +3,8 @@ import Link from "next/link";
 /**
  * What an anonymous visitor sees at the bare domain.
  *
- * The PS1 scheduler is deliberately public — no account, no database, solved in
- * the browser — but it was reachable only by typing `/ps1`, behind a workspace
- * that redirects everyone else to a password box. Someone handed the domain and
- * nothing else would have found a sign-in form and stopped. This page exists so
- * the open thing is the first thing, and the workspace is the door you take if
- * you have a key.
+ * Public tools and their explanation must be discoverable from the bare domain.
+ * The authenticated workspace remains a separate, clearly labelled destination.
  */
 export function PublicLanding() {
   return (
@@ -17,10 +13,40 @@ export function PublicLanding() {
         <p className="workspace-eyebrow">RailPlan · Non-operational prototype</p>
         <h1>Planning maintenance around the trains</h1>
         <p>
-          Two tools over the same problem: deciding which work gets the track, and proving the
-          answer is one someone could actually run.
+          See how scheduling decisions are made, explore the trade-offs, and plan
+          the work around limited track access.
         </p>
       </header>
+
+      <section className="workspace-card" aria-labelledby="landing-algorithm-title">
+        <p className="mb-1 text-xs font-semibold text-accent">Algorithm Lab · Open, no account</p>
+        <h2 id="landing-algorithm-title" className="mb-3 text-xl font-semibold">How CP-SAT works</h2>
+        <p className="mb-5 text-sm leading-relaxed text-ink-500">
+          Constraint programming turns work into choices and rules. SAT search rules out
+          impossible combinations and helps find the best valid schedule.
+        </p>
+        <ol className="mb-6 grid gap-5 sm:grid-cols-3">
+          <li>
+            <span className="font-mono text-sm text-accent">01</span>
+            <h3 className="my-1 font-semibold">Model the work</h3>
+            <p className="text-sm leading-relaxed text-ink-500">Define when each job can run, the rules it must respect and the cost of delay.</p>
+          </li>
+          <li>
+            <span className="font-mono text-sm text-accent">02</span>
+            <h3 className="my-1 font-semibold">Search within the rules</h3>
+            <p className="text-sm leading-relaxed text-ink-500">Eliminate impossible choices, explore alternatives and learn from conflicts.</p>
+          </li>
+          <li>
+            <span className="font-mono text-sm text-accent">03</span>
+            <h3 className="my-1 font-semibold">Prove and explain</h3>
+            <p className="text-sm leading-relaxed text-ink-500">Compare the best schedule with a proven bound, then check the result independently.</p>
+          </li>
+        </ol>
+        <a className="planner-button primary" href="/algorithm-lab">
+          Explore the interactive CP-SAT lab
+        </a>
+        <p className="mt-2 text-xs text-ink-500">Real OR-Tools solves. Six example jobs. Change the rules and see why work moves.</p>
+      </section>
 
       <section className="workspace-card">
         <p className="mb-1 text-xs font-semibold text-accent">NebulaX PS1 · Open, no account</p>
@@ -34,8 +60,7 @@ export function PublicLanding() {
           Open the PS1 scheduler
         </Link>
         <p id="landing-note-ps1" className="mt-2 text-xs text-ink-500">
-          No sign-in and no server: the instance is read and solved in your browser, and nothing
-          you load is uploaded anywhere.
+          No sign-in required. The scheduler checks complete plans before display and export.
         </p>
       </section>
 

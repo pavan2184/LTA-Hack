@@ -1,5 +1,14 @@
 # Decisions
 
+## 2026-09-19 — Publish the companion on the existing Vercel project
+
+Add `/algorithm-lab` and its bounded real Python CP-SAT endpoint to the
+currently deployed `e4ae8c6` browser-scheduler baseline. This isolates publication
+from current main’s separate native full-instance runtime requirements. The
+shared teaching UI is exported during build, with homepage and title-bar links.
+Deployment and actual public behavior must be verified independently of merge.
+
+
 ## 2026-09-19 — Reuse checked candidates before buying scenario flexibility
 
 Status: **Accepted.** The user approved improving solver quality, judge-path

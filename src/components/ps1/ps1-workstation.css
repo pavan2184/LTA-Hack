@@ -10,6 +10,8 @@
 .ps1-title-context { margin-left: auto; color: #d5edf2; font-size: 11px; }
 .ps1-local-label { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #e5f4f6; }
 .ps1-titlebar a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.ps1-algorithm-link { display: inline-flex; align-items: center; min-height: 32px; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; cursor: pointer; }
+.ps1-algorithm-link:hover { color: #fff2bf; }
 .ps1-command-bar { display: flex; align-items: stretch; flex-wrap: wrap; border-bottom: 1px solid var(--color-rule-strong); padding: 4px 12px 0; min-height: 82px; background: var(--color-surface); }
 .ps1-ribbon-group { position: relative; display: flex; align-items: flex-start; gap: 4px; padding: 3px 18px 20px; border-right: 1px solid var(--color-rule); }
 .ps1-ribbon-group:first-child { padding-left: 4px; }

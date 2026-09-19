@@ -1,5 +1,15 @@
 # Project Status
 
+## Isolated Algorithm Lab publication candidate — 2026-09-19
+
+This release preserves the deployed browser scheduler from `e4ae8c6` and adds
+the shared Algorithm Lab, homepage explanation, PS1 link and bounded Python
+Vercel Function. It is a publication branch, not the complete current-main
+native-service release. Local adapter tests, landing tests and typecheck passed.
+Public deployment and browser verification are the next gate; no live success
+is claimed by this source commit.
+
+
 ## README and Devpost assets prepared for repository handoff — 2026-09-19
 
 The redesign is already on `main` through PR #46. The documentation follow-up

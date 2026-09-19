@@ -26,7 +26,11 @@ it("offers the open scheduler to a visitor with no account", async () => {
     "href",
     "/login",
   );
-  expect(screen.getByText(/No sign-in and no server/)).toBeInTheDocument();
+  expect(screen.getByText(/No sign-in required/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /Explore the interactive CP-SAT lab/ })).toHaveAttribute(
+    "href", "/algorithm-lab",
+  );
+  expect(screen.getByRole("heading", { name: "How CP-SAT works" })).toBeInTheDocument();
   // No password field: the landing offers the door, it is not the door.
   expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
 });

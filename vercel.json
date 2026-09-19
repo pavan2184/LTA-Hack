@@ -2,7 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm ci",
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
+  "functions": {
+    "api/algorithm-lab.py": {
+      "maxDuration": 15,
+      "excludeFiles": "{assets/**,config/**,data/**,deploy/**,docs/**,node_modules/**,output/**,packages/**,public/**,scripts/**,src/**,supabase/**,.*/**,**/.env*,**/test_*.py,**/__pycache__/**,demos/algorithm-lab/static/**}"
+    }
+  },
   "git": {
     "deploymentEnabled": false
   }
