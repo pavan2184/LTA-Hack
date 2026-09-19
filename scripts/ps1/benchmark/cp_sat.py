@@ -6,6 +6,9 @@ Possession packing is exact locally: PM alone, at most one PC and four members.
 """
 import datetime as dt
 import json
+import math
+import os
+import platform
 import sys
 import time
 
@@ -13,10 +16,57 @@ import ortools
 from ortools.sat.python import cp_model
 
 
+def search_config(payload):
+    """Reject ambiguous or unsafe controls before constructing a model."""
+    seconds = payload.get("seconds", 5)
+    try:
+        valid_seconds = not isinstance(seconds, bool) and isinstance(seconds, (int, float)) and math.isfinite(seconds) and seconds > 0
+    except OverflowError:
+        valid_seconds = False
+    if not valid_seconds:
+        raise ValueError("seconds must be a finite positive number")
+    workers = payload.get("workers", 1)
+    if isinstance(workers, bool) or not isinstance(workers, int) or not 1 <= workers <= 256:
+        raise ValueError("workers must be an integer between 1 and 256")
+    seed = payload.get("seed", 1)
+    if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed <= 2**31 - 1:
+        raise ValueError("seed must be an integer between 0 and 2147483647")
+    profile = payload.get("profile", "default")
+    if profile not in ("default", "no_lp", "lns"):
+        raise ValueError("profile must be default, no_lp, or lns")
+    return {"seconds": seconds, "workers": workers, "seed": seed, "profile": profile,
+            "hinted": "incumbent" in payload}
+
+
+class ImprovementTrace(cp_model.CpSolverSolutionCallback):
+    """Native solve-clock observations; model construction is not included."""
+
+    def __init__(self):
+        super().__init__()
+        self.points = []
+
+    def on_solution_callback(self):
+        objective = self.objective_value / 10
+        if not self.points or objective < self.points[-1]["objective"]:
+            self.points.append({"timeMs": self.wall_time * 1000,
+                                "objective": objective,
+                                "bound": self.best_objective_bound / 10})
+
+
+def process_peak_rss_mib():
+    """Process-lifetime high-water mark, including imports and earlier solves."""
+    if sys.platform not in ("darwin", "linux"):
+        return None
+    import resource
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / (1024 * 1024 if sys.platform == "darwin" else 1024)
+
+
 def solve(payload):
     if payload.get("schema") != "ps1-cpsat-v1":
         raise ValueError("Unsupported PS1 payload schema")
     started = time.perf_counter()
+    config = search_config(payload)
     instance, scenario = payload["instance"], payload["scenario"]
     if scenario not in ("A", "B", "C"):
         raise ValueError("Unknown scenario")
@@ -125,10 +175,18 @@ def solve(payload):
         objective.extend(50 * var for var in e.values())
     model.minimize(sum(objective))
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = payload.get("seconds", 5)
-    solver.parameters.num_search_workers = 1
-    solver.parameters.random_seed = payload.get("seed", 1)
-    status = solver.solve(model)
+    solver.parameters.max_time_in_seconds = config["seconds"]
+    solver.parameters.num_search_workers = config["workers"]
+    solver.parameters.random_seed = config["seed"]
+    if config["profile"] == "no_lp":
+        solver.parameters.linearization_level = 0
+    elif config["profile"] == "lns":
+        solver.parameters.use_lns_only = True
+    trace = ImprovementTrace()
+    model_stats = {"variables": len(model.proto.variables), "constraints": len(model.proto.constraints)}
+    built = time.perf_counter()
+    status = solver.solve(model, trace)
+    solved = time.perf_counter()
     found = status in (cp_model.FEASIBLE, cp_model.OPTIMAL)
     access = []
     if found:
@@ -150,11 +208,26 @@ def solve(payload):
                         kinds[a["activityType"]] = count + 1
     return {"schema": "ps1-cpsat-v1", "digest": payload["digest"], "scenario": scenario,
             "scope": "repair" if len(movable) < len(activities) else "full",
+            "boundScope": "conditional_on_frozen_activities" if len(movable) < len(activities) else "encoded_full_model",
             "status": solver.status_name(status), "ortoolsVersion": ortools.__version__,
+            "config": config,
             "objective": solver.objective_value / 10 if found else None,
             "bound": solver.best_objective_bound / 10,
+            "buildMs": (built - started) * 1000,
             "solveMs": solver.wall_time * 1000,
-            "modelAndSolveMs": (time.perf_counter() - started) * 1000, "access": access}
+            "solveCallMs": (solved - built) * 1000,
+            "modelAndSolveMs": (solved - started) * 1000,
+            "postprocessMs": (time.perf_counter() - solved) * 1000,
+            "firstSolutionMs": trace.points[0]["timeMs"] if trace.points else None,
+            "solutionTrace": trace.points,
+            "traceClock": "native_solve_wall_time_excluding_model_build",
+            "modelStats": model_stats,
+            "searchStats": {"branches": solver.num_branches, "conflicts": solver.num_conflicts,
+                            "deterministicTime": solver.response_proto.deterministic_time},
+            "host": {"system": platform.system(), "architecture": platform.machine(),
+                     "logicalCpuCount": os.cpu_count(), "pythonVersion": platform.python_version()},
+            "peakRssMiB": process_peak_rss_mib(), "peakRssScope": "process_lifetime",
+            "access": access}
 
 
 if __name__ == "__main__":

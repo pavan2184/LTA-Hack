@@ -1,5 +1,23 @@
 # Architecture
 
+## Native PS1 target — 2026-09-19
+
+By explicit owner direction, native cloud computation replaces browser-only
+execution as the target. A 32-vCPU / 64-GiB server runs a bounded native search,
+with a 60-second default per scenario. Keep the TypeScript hybrid as a quick
+validated incumbent and fallback; pass the canonical instance into native
+optimisation, decode its output to the official CSVs and independently recheck
+feasibility and objective before selecting it. Keep the actual best submission,
+not just its score, when a native candidate is worse or absent.
+
+The benchmark compares CP-SAT's full portfolio, cold versus hinted search,
+LNS-only search, an independent SCIP MIP formulation and extended TypeScript
+repair. Benchmark workers and seeds are explicit. The service must budget
+workers across concurrent jobs rather than let each request consume all CPUs.
+Solver time excludes input preparation, model construction and result checking;
+record end-to-end latency separately. The current web-worker wiring is historical
+implementation until the native service/UI integration is completed and tested.
+
 ## PS1 hybrid optimisation — 2026-09-19
 
 The browser worker reuses validated earlier-scenario incumbents, then combines

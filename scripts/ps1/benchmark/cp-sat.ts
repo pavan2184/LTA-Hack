@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { capacityAt, type Disruption } from "@railplan/ps1/engine/disruption";
 import { buildNetwork, closureFor, expandSpan } from "@railplan/ps1/engine/network";
-import { resultsFor } from "@railplan/ps1/engine/schedule";
+import { resultsFor, type Pin } from "@railplan/ps1/engine/schedule";
 import { validate } from "@railplan/ps1/engine/validate";
 import { writeSubmission } from "@railplan/ps1/io/write";
 import { parseSubmission } from "@railplan/ps1/io/submission";
@@ -41,15 +41,53 @@ export function decode(instance: Ps1Instance, scenario: Scenario, access: Access
   return { scenario, access, occupancy, results: resultsFor(instance, access, scenario) };
 }
 
-export function runCpSat(python: string, instance: Ps1Instance, incumbent: Submission,
-  seconds: number, movableActivityIds?: string[], disruptions: Disruption[] = []) {
+export type NativeOptions = {
+  workers?: number;
+  seed?: number;
+  profile?: "default" | "no_lp" | "lns";
+  incumbent?: Submission;
+  movableActivityIds?: string[];
+  disruptions?: Disruption[];
+  pins?: Pin[];
+};
+
+export type NativeResult = {
+  schema: string; digest: string; scenario: Scenario; scope: "full" | "repair";
+  status: string; objective: number | null; bound: number | null; access: AccessRow[];
+  solveMs: number; buildMs: number; modelAndSolveMs: number;
+  firstSolutionMs?: number | null;
+  solutionTrace?: { timeMs: number; objective: number; bound: number }[];
+  [key: string]: unknown;
+};
+
+export function nativePayload(instance: Ps1Instance, scenario: Scenario, seconds: number,
+  options: NativeOptions = {}) {
+  const { incumbent, movableActivityIds, disruptions = [], pins = [], workers = 1, seed = 1,
+    profile = "default" } = options;
+  if (!Number.isFinite(seconds) || seconds <= 0 || !Number.isInteger(workers) || workers < 1 || workers > 256 ||
+    !Number.isInteger(seed) || seed < 0 || seed > 2_147_483_647 || !["default", "no_lp", "lns"].includes(profile)) {
+    throw new Error("Invalid native seconds/workers/seed/profile");
+  }
+  if (incumbent && incumbent.scenario !== scenario) throw new Error("Incumbent scenario mismatch");
+  if (movableActivityIds && !incumbent) throw new Error("Repair requires an incumbent");
+  for (const pin of pins) {
+    if (!instance.activities.some((a) => a.activityId === pin.activityId) || !Number.isInteger(pin.week) ||
+      pin.week < 1 || pin.week > instance.parameters.horizonWeeks || (pin.eclo !== undefined && pin.eclo !== 0 && pin.eclo !== 1)) {
+      throw new Error("Invalid native pin");
+    }
+  }
+  const satisfiesPins = (s: Submission) => pins.every((pin) => s.access.some((r) =>
+    r.activityId === pin.activityId && r.week === pin.week && r.eclo === (pin.eclo ?? 0)));
   const network = buildNetwork(instance);
+  if (incumbent && (!validate(instance, incumbent, network, disruptions).feasible || !satisfiesPins(incumbent))) {
+    throw new Error("Native incumbent must pass local validation");
+  }
   const contracts = new Map(instance.contracts.map((c) => [c.contractNumber, c]));
   const digest = createHash("sha256").update(JSON.stringify({ instance, disruptions })).digest("hex");
   const spans = Object.fromEntries(instance.activities.map((a) => [a.activityId,
     expandSpan(network, a.startLocationId, a.endLocationId)]));
-  const payload = { schema: "ps1-cpsat-v1", digest, instance, scenario: incumbent.scenario,
-    seconds, seed: 1, incumbent, movableActivityIds, spans,
+  return { schema: "ps1-cpsat-v1", digest, instance, scenario,
+    seconds, workers, seed, profile, incumbent, movableActivityIds, pins, spans,
     affectedLines: Object.fromEntries(instance.activities.map((a) => [a.activityId,
       [...new Set(closureFor(network, spans[a.activityId], contracts.get(a.contractNumber)!.natureOfActivity)
         .map((id) => network.supply.get(id)!.lineCode))]])),
@@ -59,27 +97,49 @@ export function runCpSat(python: string, instance: Ps1Instance, incumbent: Submi
       Array.from({ length: instance.parameters.horizonWeeks }, (_, w) => disruptions.some((d) =>
         d.locationId === l.locationId && w + 1 >= d.fromWeek && (d.toWeek === undefined || w + 1 <= d.toWeek)))])),
   };
+}
+
+/** Process/model/search/decode timing is separate from the solver's search cap. */
+export function runNativeSolver(python: string, engine: "cpsat" | "scip", instance: Ps1Instance,
+  scenario: Scenario, seconds: number, options: NativeOptions = {}) {
   const started = performance.now();
-  const child = spawnSync(python, [resolve("scripts/ps1/benchmark/cp_sat.py")], {
+  const payload = nativePayload(instance, scenario, seconds, options);
+  const payloadReady = performance.now();
+  const child = spawnSync(python, [resolve(`scripts/ps1/benchmark/${engine === "cpsat" ? "cp_sat" : "scip"}.py`)], {
     input: JSON.stringify(payload), encoding: "utf8", maxBuffer: 32 * 1024 * 1024,
     timeout: seconds * 1000 + 60_000,
   });
   if (child.error || child.status !== 0) throw new Error(child.error?.message ?? child.stderr);
-  const result = JSON.parse(child.stdout) as { schema: string; digest: string; scenario: Scenario;
-    status: string; objective: number | null; bound: number; access: AccessRow[] };
-  if (result.digest !== digest || result.schema !== payload.schema || result.scenario !== incumbent.scenario) {
-    throw new Error("CP-SAT provenance mismatch");
+  const processFinished = performance.now();
+  const result = JSON.parse(child.stdout) as NativeResult;
+  if (result.digest !== payload.digest || result.schema !== payload.schema || result.scenario !== scenario) {
+    throw new Error("Native solver provenance mismatch");
+  }
+  if (!["FEASIBLE", "OPTIMAL", "UNKNOWN", "INFEASIBLE"].includes(result.status)) {
+    throw new Error(`Native solver failed: ${result.status}`);
   }
   let submission: Submission | undefined;
   if (result.status === "FEASIBLE" || result.status === "OPTIMAL") {
-    const csv = writeSubmission(decode(instance, incumbent.scenario, result.access));
+    const csv = writeSubmission(decode(instance, scenario, result.access));
     submission = parseSubmission({ access: csv["SCHEDULE_ACCESS.csv"], occupancy: csv["SCHEDULE_OCCUPANCY.csv"], results: csv["RESULTS.csv"] });
-    const report = validate(instance, submission, network, disruptions);
-    if (!report.feasible || Math.abs(report.objectiveScore! - result.objective!) > 1e-6) {
-      throw new Error(`CP-SAT/local-checker mismatch: ${JSON.stringify({ result, report })}`);
+    const report = validate(instance, submission, undefined, options.disruptions ?? []);
+    const pinned = (options.pins ?? []).every((pin) => submission!.access.some((r) =>
+      r.activityId === pin.activityId && r.week === pin.week && r.eclo === (pin.eclo ?? 0)));
+    if (!report.feasible || !pinned || result.objective === null || !Number.isFinite(result.objective) ||
+      Math.abs(report.objectiveScore! - result.objective) > 1e-6) {
+      throw new Error(`Native/local-checker mismatch: ${JSON.stringify({ result, report })}`);
     }
   }
-  return { ...result, elapsedMs: performance.now() - started, submission };
+  return { ...result, engine, payloadMs: payloadReady - started,
+    processMs: processFinished - payloadReady, validationMs: performance.now() - processFinished,
+    elapsedMs: performance.now() - started, submission };
+}
+
+export function runCpSat(python: string, instance: Ps1Instance, incumbent: Submission,
+  seconds: number, movableActivityIds?: string[], disruptions: Disruption[] = [],
+  options: Pick<NativeOptions, "workers" | "seed" | "profile"> = {}) {
+  return runNativeSolver(python, "cpsat", instance, incumbent.scenario, seconds,
+    { ...options, incumbent, movableActivityIds, disruptions });
 }
 
 // Run against a benchmark witness; no production dependency or server required.

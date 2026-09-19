@@ -1,5 +1,14 @@
 # Project Brief
 
+## Native PS1 direction — 2026-09-19
+
+The owner confirmed that PS1 will use native cloud computation, superseding the
+browser-only execution decision below. Target hardware is 32 vCPUs / 64 GiB RAM;
+the default solver-search allowance is 60 seconds per scenario. The hosted UI
+still accepts uploaded eight-file instances and exposes validated A/B/C results.
+The cloud engineer owns deployment. Native algorithm benchmarking and an
+engineer handoff do not themselves replace the currently wired browser worker.
+
 ## Public challenge workspace update — 2026-09-18
 
 The unauthenticated `/ps1` path is the submission-facing product: judges can load

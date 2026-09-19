@@ -1,9 +1,14 @@
 # PS1 optimisation handoff
 
-This branch adds a browser-local hybrid optimiser and an offline native CP-SAT
-benchmark. It does not deploy a service or provision Google Cloud resources.
-The engineer with the Google Cloud instance can reproduce native benchmarks
-there without making the hosted app depend on that instance.
+The owner has selected **native cloud computation on 32 vCPUs / 64 GiB RAM with
+a 60-second default solver-search budget per scenario**. This supersedes the
+browser-only restriction in earlier revisions. This branch supplies native
+solver comparisons and a CLI integration entry point; it does not provision
+resources or claim that `/ps1` is already connected to a deployed native API.
+
+Read [native research and measurements](PS1_NATIVE_SOLVER_RESEARCH.md) before
+choosing the final worker count. The cloud engineer owns deployment and target
+hardware measurements. Local Apple M3 Pro results are algorithm screening only.
 
 ## What changed
 
@@ -33,31 +38,66 @@ or credentials are needed for these local benchmark commands.
 
 ```sh
 npm ci
-npm run ps1:benchmark
-node --import tsx scripts/ps1/benchmark/holdout.ts output/ps1-holdout 24
-
 python3 -m venv .venv-cpsat
 .venv-cpsat/bin/python -m pip install -r scripts/benchmark/requirements.txt
 .venv-cpsat/bin/python scripts/ps1/benchmark/test_cp_sat.py
-node --import tsx scripts/ps1/benchmark/compare-cpsat.ts .venv-cpsat/bin/python output/ps1-benchmark 5
+.venv-cpsat/bin/python scripts/ps1/benchmark/test_scip.py
 
-# One case, full model or repair of the last-finishing 20 activities:
-npm run ps1:benchmark:cpsat -- .venv-cpsat/bin/python output/ps1-benchmark/public-B-hybrid-1.json 30 full
-npm run ps1:benchmark:cpsat -- .venv-cpsat/bin/python output/ps1-benchmark/public-B-hybrid-1.json 5 repair
+# Native scheduling; fresh output directory, 60s search per scenario, 16workers.
+npm run ps1:solve:native -- --python .venv-cpsat/bin/python --input packages/ps1/data/public --output output/native-public --seconds 60 --workers 16
+
+# Complete 39-case native coverage and target-host worker scaling.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-coverage --variants cpsat-warm
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-workers --datasets public,05-capacity-pressure,11-priority-contention,12-mixed-240 --scenarios C --variants cpsat-warm --workers 8,16,32 --seeds 1,2,3
+
+# Independent SCIP and CP-SAT cold/LNS-only challengers.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-challengers --datasets public,05-capacity-pressure,11-priority-contention,12-mixed-240 --scenarios C --variants cpsat-cold,cpsat-lns,scip-warm,hybrid-extended
+
+# Include cases unresolved by heuristic construction.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-holdout --datasets public --holdouts 24 --scenarios B --variants cpsat-warm
 ```
 
 Use a distinct output directory for each trial: the comparison writes result
 summaries and witnesses. These are Git-ignored under `output/`. Record machine,
 CPU count, solver version, seed, search limit and total process time. Native
-CP-SAT currently uses one worker and seed 1; its seconds argument limits solver
-search, not Python startup or model construction. The TypeScript runner accepts
-an optional cooperative wall-time budget and repeated seeds; see its README.
+CP-SAT now accepts workers, seed and profile. The cloud CLI defaults to 16workers,
+seed1 and 60seconds; the historical single-witness benchmark remains backwards
+compatible with its one-worker default. Search seconds exclude Python startup,
+model construction and CSV validation. Use `--workers 8` on the local development
+machine. See the benchmark README for resume and timing semantics.
 
-At one second of native search on the development machine, full CP-SAT improved
+In the earlier one-second native screening, full CP-SAT improved
 capacity-pressure B **293→230**, capacity-pressure C **1118.8→1112.7** and
 priority-contention B **483→279**. Four larger full-model runs returned UNKNOWN.
 Always retain the validated heuristic incumbent when CP-SAT times out, fails or
 returns a worse candidate. Compare against that incumbent, not an empty schedule.
+
+## Native service integration
+
+The native CLI constructs a quick TypeScript fallback, attempts native CP-SAT,
+independently validates the returned CSVs and exports the better actual schedule.
+It attempts native search even if heuristic construction fails. Score0 returns
+immediately because every penalty is nonnegative. Its report distinguishes a
+native failure/UNKNOWN from an unresolved or validated final result.
+
+The engineer should wrap this orchestration in a bounded job worker, not run the
+synchronous process bridge directly in a shared Next.js HTTP handler. Accept the
+same validated eight-file instance, enforce upload bounds, carry pins/disruptions
+and request identity, and preserve cancellation/stale-result handling in `/ps1`.
+Keep validated interim results available and recheck every final candidate before
+export. The current UI still invokes its browser worker until this integration
+lands; no native endpoint or streaming progress channel is claimed here.
+
+Start with one active solve at 16workers while measuring 8/16/32. For an A/B/C
+request, three serial 60second searches can exceed three minutes including
+overhead. Options to test are the active scenario first, or three concurrent
+eight-worker scenario jobs (24workers total) after a quick shared heuristic seed.
+Do not launch three 32worker jobs on one 32-vCPU VM. Admission control belongs
+around the whole request queue, including retries and cancelled jobs.
+
+Run the cloud worker sweep on an otherwise idle VM and choose by validated score,
+time to target score, gap, end-to-end latency and peak memory. Stop the VM when it
+is no longer needed; a completed solver process does not stop compute billing.
 
 ## Build and verification handoff
 
@@ -88,13 +128,11 @@ release surface is being verified. This PR changes no database or auth flow.
 
 ## Boundaries to preserve
 
-The authoritative [PS1 specification](PS1_OFFICIAL_SPEC.md) requires the hidden
-eight-file upload to keep solving entirely in the browser. Native Python is an
-offline comparator here, not an API connected to `/ps1`. A cloud benchmark is not
-authorisation to send uploaded hidden instances to a server or replace this path.
-A browser WASM integration would need its own measured startup, memory,
-cancellation, cross-origin-header and browser-compatibility checks. No WASM
-runtime dependency was added; IBM CP Optimizer and Hexaly remain untested options.
+The hosted hidden eight-file upload and official CSV contract remain required.
+Native server execution is now explicitly authorised by the owner; do not carry
+forward the earlier browser-only restriction. Preserve hard constraints and
+review/export semantics during migration. No WASM runtime is needed. IBM CP
+Optimizer, Hexaly and Gurobi remain unmeasured options, not benchmark winners.
 
 The local checker is not the organiser's reference validator. Cross-possession
 physical-night alignment remains undecidable from the published fields. Native

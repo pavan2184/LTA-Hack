@@ -1,5 +1,16 @@
 # Data Model
 
+## Native PS1 benchmark boundary — 2026-09-19
+
+The owner selected cloud execution. Canonical `Ps1Instance` and official
+`Submission` entities are unchanged. Native payloads carry scenario, instance
+digest, seconds, workers, seed, search profile and optional incumbent/frozen
+activities. Results distinguish the native candidate from the selected validated
+submission, and full-model bounds from bounds conditional on frozen activities.
+Native metrics record build/search/process/checking times and process peak RSS.
+The existing client model described below remains wired to its browser worker
+until service integration; it is no longer the required deployment architecture.
+
 ## Browser-only PS1 planning model — 2026-09-18
 
 `SolveOutcome` has `FEASIBLE`, `INFEASIBLE` and `INVALID_INSTANCE` states plus an

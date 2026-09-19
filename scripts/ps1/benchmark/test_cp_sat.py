@@ -21,6 +21,53 @@ def payload(types, scenario="A", horizon=1, capacity=1, work=1):
 
 
 class ModelTests(unittest.TestCase):
+    def test_invalid_search_controls_are_rejected(self):
+        invalid = {"seconds": [0, -1, float("inf"), float("nan"), 10**1000, "60", None, True],
+                   "workers": [0, -1, 257, 1.5, "8", None, True],
+                   "seed": [-1, 2**31, 1.5, "1", None, True],
+                   "profile": ["", "unknown", None, []]}
+        for field, values in invalid.items():
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    p = payload(["C"])
+                    p[field] = value
+                    with self.assertRaisesRegex(ValueError, field):
+                        solve(p)
+
+    def test_parallel_profiles_preserve_nonzero_objective_and_report_trace(self):
+        for profile in ["default", "no_lp", "lns"]:
+            with self.subTest(profile=profile):
+                p = payload(["PM", "C"], "B")
+                p.update({"workers": 2, "seed": 17, "profile": profile})
+                result = solve(p)
+                self.assertEqual(result["status"], "OPTIMAL")
+                self.assertEqual(result["objective"], 7)
+                self.assertEqual(result["bound"], 7)
+                self.assertEqual(result["config"], {"seconds": 2, "workers": 2, "seed": 17,
+                                                     "profile": profile, "hinted": False})
+                self.assertEqual(result["boundScope"], "encoded_full_model")
+                points = result["solutionTrace"]
+                self.assertGreater(len(points), 0)
+                self.assertEqual(result["firstSolutionMs"], points[0]["timeMs"])
+                self.assertEqual(points[-1]["objective"], 7)
+                self.assertLessEqual(points[0]["timeMs"], result["solveMs"])
+                self.assertEqual(result["traceClock"], "native_solve_wall_time_excluding_model_build")
+                self.assertGreaterEqual(result["buildMs"], 0)
+                self.assertAlmostEqual(result["buildMs"] + result["solveCallMs"],
+                                       result["modelAndSolveMs"])
+                self.assertGreater(result["modelStats"]["variables"], 0)
+                self.assertEqual(result["peakRssScope"], "process_lifetime")
+
+    def test_unsatisfiable_model_has_no_solution_trace(self):
+        result = solve(payload(["PM", "PM"]))
+        self.assertEqual(result["status"], "INFEASIBLE")
+        self.assertIsNone(result["objective"])
+        self.assertIsNone(result["firstSolutionMs"])
+        self.assertEqual(result["solutionTrace"], [])
+        self.assertEqual(result["config"]["workers"], 1)
+        self.assertEqual(result["config"]["seed"], 1)
+        self.assertEqual(result["config"]["profile"], "default")
+
     def test_four_way_sharing(self):
         for kinds in [["PC", "C", "C", "C"], ["C"] * 4]:
             result = solve(payload(kinds))
@@ -72,6 +119,8 @@ class ModelTests(unittest.TestCase):
         p["movableActivityIds"] = []
         result = solve(p)
         self.assertEqual(result["scope"], "repair")
+        self.assertEqual(result["boundScope"], "conditional_on_frozen_activities")
+        self.assertTrue(result["config"]["hinted"])
         self.assertEqual(result["objective"], 910)
         self.assertEqual([r["week"] for r in result["access"]], [2])
 

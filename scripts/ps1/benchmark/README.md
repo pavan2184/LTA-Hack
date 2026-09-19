@@ -1,7 +1,46 @@
 # PS1 optimisation benchmark
 
-The application default is a browser-local hybrid. Native CP-SAT is an offline
-comparison tool, not a server dependency and not the organiser's reference solver.
+The owner has selected **native cloud execution**, 32 vCPUs / 64 GiB RAM and a
+60-second default search cap. This supersedes the historical browser deployment
+decision below. The application is still wired to its worker until service
+integration; benchmarks and the native CLI are runnable now. See
+[native research](../../../docs/PS1_NATIVE_SOLVER_RESEARCH.md) and
+[engineer handoff](../../../docs/PS1_ENGINEER_HANDOFF.md). No solver here is the
+organiser's reference validator.
+
+## Native cloud comparison
+
+```sh
+# Sequential comparison, 60s search PER scenario/run, default16workers.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-coverage --variants cpsat-warm
+# Focus on the difficult C cases and repeat on the actual 32-vCPU machine.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-workers --datasets public,05-capacity-pressure,11-priority-contention,12-mixed-240 --scenarios C --variants cpsat-warm --workers 8,16,32 --seeds 1,2,3
+# Distinct engines and search approaches; cold means no incumbent hints.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-challengers --datasets public,05-capacity-pressure,11-priority-contention,12-mixed-240 --scenarios C --variants cpsat-cold,cpsat-lns,scip-warm,hybrid-extended
+# Include construction failures; this repeats the prior holdout generator.
+npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-holdout --datasets public --holdouts 24 --scenarios B --variants cpsat-warm
+```
+
+Use a fresh output directory, or `--resume` with unchanged arguments, code, inputs
+and CPU configuration. Fewer CPUs require an explicit smaller `--workers` value;
+do not pretend a local oversubscribed run measures a 32-vCPU server. Worker sweep
+worst-case search time is 36 minutes for 4cases × 3worker settings × 3seeds.
+Cases proven optimal usually finish much sooner.
+
+Native raw objective/status and fallback-selected scores are distinct. The cold
+variant has no hints but can still retain the external heuristic schedule in its
+selected result. `firstSolutionMs`/`solutionTrace` are model-candidate timestamps,
+not CSV-validated response times. `estimatedPipelineMs` sums prerequisite
+heuristic scenarios, baseline construction and the native bridge; `elapsedMs`
+includes native payload preparation, process startup, build, search and CSV
+validation. It is not a strict response deadline. SCIP lacks a candidate callback
+in this interface, and reports null/empty trace fields. Peak RSS is per child
+process lifetime. Bounds are explicitly scoped to full or frozen-repair models.
+
+The optional `cpsat-base-lin0` variant only changes the base linearization level;
+named parallel LP subsolvers can override it. It is not an LP-free portfolio.
+
+## Historical browser and one-second measurements
 
 ## Reproduce
 
@@ -126,9 +165,9 @@ included separately in total elapsed time. An initial comparison process timed
 out; the complete rerun recorded no process errors. The harness records future
 process/model errors as failures rather than dropping their rows.
 
-## Deployment decision and limitations
+## Historical deployment decision and limitations (superseded)
 
-Keep the improved TypeScript hybrid in the browser and native CP-SAT as an offline
+The earlier decision was to keep the TypeScript hybrid in the browser and native CP-SAT as an offline
 benchmark/repair tool. No runtime dependency, hosted service, environment variable
 or header change was added. `or-tools-wasm` 0.9.1 was inspected in the npm registry:
 its whole package unpacks to 332,661,165 bytes. That is **not** a measured browser

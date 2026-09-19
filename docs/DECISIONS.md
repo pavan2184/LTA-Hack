@@ -1,5 +1,22 @@
 # Decisions
 
+## 2026-09-19 — Native cloud PS1, 60-second search
+
+Status: **Accepted owner direction.** Target 32 vCPUs / 64 GiB RAM and native
+server computation with 60 seconds of search per scenario. This supersedes the
+browser-only deployment restrictions in earlier PS1 decisions. The cloud engineer
+deploys; uploaded instances, full-workload/hard-rule validation and the exact
+nine-file export remain required.
+
+Select an algorithm from measured native comparisons rather than browser package
+size. Compare CP-SAT cold/hinted full portfolio and LNS-only search, SCIP MIP and
+extended TypeScript repair. Retain the validated heuristic schedule outside the
+native solver because a hint is not an accepted incumbent. Local Mac screening
+cannot establish the best worker count or speed on the target cloud server;
+repeat the 8/16/32-worker, multi-seed sweep on that host before a performance claim.
+Commercial CP Optimizer and Hexaly require separate ports/licenses and must not
+be described as measured contenders until actually run.
+
 ## 2026-09-19 — PS1 browser hybrid, native CP-SAT benchmark
 
 Status: **Accepted.** Use cross-scenario incumbents, nominal-capacity starts,

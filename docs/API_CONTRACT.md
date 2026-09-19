@@ -1,5 +1,28 @@
 # API Contract
 
+## Native PS1 handoff interfaces — 2026-09-19
+
+Cloud execution is the owner's accepted target. `runNativeSolver(python, engine,
+instance, scenario, seconds, options)` is a synchronous **Node-only** process
+bridge, not a public HTTP endpoint. Engines are `cpsat` and benchmark-only `scip`.
+Options carry explicit workers, seed, CP-SAT profile, optional validated
+incumbent, disruptions, hard pins and optional frozen-repair activity IDs. Pins
+are checked before hinting and independently checked against returned rows.
+Unsupported statuses, objective mismatches or invalid CSV round-trips are errors.
+UNKNOWN returns no native submission; the caller retains its validated fallback.
+
+`ps1:benchmark:cloud` defaults to 60 seconds, 16 workers and seed 1, with explicit
+dataset/scenario/variant/worker/seed selection and optional seeded perturbations.
+It saves raw native outcomes and actual selected witnesses separately. It does
+not drop failed heuristic cases. Its resume mode requires unchanged configuration,
+source/input digests and host CPU configuration.
+
+`ps1:solve:native` is the cloud engineer's local CLI entry point; the handoff
+documents its options and official CSV output. No new environment variables,
+HTTP API, database migration or deployed UI integration are implied. A service
+must execute bounded child jobs outside the HTTP event loop, preserve cancellation
+and stale-operation identity, and apply upload limits and aggregate CPU limits.
+
 ## PS1 search options — 2026-09-19
 
 `ScheduleOptions` now accepts `initialCandidates` (always revalidated for the
