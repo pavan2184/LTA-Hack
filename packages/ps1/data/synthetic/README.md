@@ -1,5 +1,11 @@
 # Synthetic PS1 datasets
 
+The score table below records the original dataset-authoring baseline. The
+2026-09-19 hybrid optimiser improves 12 of these 36 scenario scores, including
+09 C from 3640 to 1840. See [current benchmark results](../../../../scripts/ps1/benchmark/README.md)
+for the full before/after comparison and reproduction commands. Input files are
+unchanged; the earlier quality-gap notes describe the legacy solver.
+
 Twelve complete input instances for RailPlan's `/ps1` upload flow. These are
 fabricated test workloads, not organiser data or predictions of hidden tests.
 The official public instance remains in `../public/` and is still the input for

@@ -1,0 +1,80 @@
+"""Small, independently calculated conformance cases for the PS1 model."""
+import unittest
+from cp_sat import solve
+
+
+def payload(types, scenario="A", horizon=1, capacity=1, work=1):
+    return {"schema": "ps1-cpsat-v1", "digest": "test", "scenario": scenario, "seconds": 2,
+            "instance": {"parameters": {"horizonWeeks": horizon, "horizonStart": "2027-01-04"},
+                         "lines": [{"lineCode": "ALP"}, {"lineCode": "BET"}],
+                         "contracts": [{"contractNumber": str(i), "numberOfWorkfronts": 1,
+                                        "numberOfMaximumAccessPerWeek": 3, "accessType": kind,
+                                        "contractPriority": 1, "plannedCompletionDate": "2027-01-10"}
+                                       for i, kind in enumerate(types)],
+                         "activities": [{"activityId": str(i), "contractNumber": str(i), "activityType": "work",
+                                         "plannedStartDate": "2027-01-04", "predecessorActivityId": None,
+                                         "totalAccesses": work, "activityPriority": 1} for i in range(len(types))],
+                         "locationSupply": [{"locationId": "L"}]},
+            "spans": {str(i): ["L"] for i in range(len(types))},
+            "affectedLines": {str(i): ["ALP"] for i in range(len(types))},
+            "capacity": {"L": [capacity] * horizon}, "disrupted": {"L": [False] * horizon}}
+
+
+class ModelTests(unittest.TestCase):
+    def test_four_way_sharing(self):
+        for kinds in [["PC", "C", "C", "C"], ["C"] * 4]:
+            result = solve(payload(kinds))
+            self.assertEqual(result["status"], "OPTIMAL")
+            self.assertEqual(result["objective"], 0)
+
+    def test_pm_alone_and_single_pc(self):
+        for kinds in [["PM", "C"], ["PC", "PC"], ["C"] * 5]:
+            self.assertEqual(solve(payload(kinds))["status"], "INFEASIBLE")
+            for scenario in ["B", "C"]:
+                self.assertEqual(solve(payload(kinds, scenario))["objective"], 7)
+
+    def test_physical_disruption_cannot_be_bought_back(self):
+        p = payload(["PM"], "B", capacity=0)
+        p["disrupted"]["L"] = [True]
+        self.assertEqual(solve(p)["status"], "INFEASIBLE")
+
+    def test_deadline_is_a_date_not_just_a_week(self):
+        p = payload(["PM"], "B")
+        p["instance"]["contracts"][0]["plannedCompletionDate"] = "2027-01-06"
+        self.assertEqual(solve(p)["status"], "INFEASIBLE")
+
+    def test_strict_precedence(self):
+        p = payload(["C", "C"], horizon=2)
+        p["instance"]["activities"][1]["predecessorActivityId"] = "0"
+        result = solve(p)
+        self.assertEqual(result["objective"], 910)
+        self.assertGreater(min(r["week"] for r in result["access"] if r["activityId"] == "1"),
+                           max(r["week"] for r in result["access"] if r["activityId"] == "0"))
+
+    def test_only_contract_terminal_activities_are_charged(self):
+        p = payload(["C", "C"], horizon=2)
+        p["instance"]["activities"][0]["totalAccesses"] = 2
+        p["instance"]["activities"][1]["contractNumber"] = "0"
+        p["instance"]["activities"][1]["activityPriority"] = 3
+        self.assertEqual(solve(p)["objective"], 910)
+
+    def test_live_window_couples_both_lines(self):
+        p = payload(["C", "C"], "C", horizon=4, work=2)
+        p["affectedLines"]["0"] = ["ALP", "BET"]
+        p["affectedLines"]["1"] = ["BET"]
+        p["pins"] = [{"activityId": "0", "week": 1, "eclo": 1},
+                     {"activityId": "1", "week": 4, "eclo": 1}]
+        self.assertEqual(solve(p)["status"], "INFEASIBLE")
+
+    def test_repair_freezes_unselected_work(self):
+        p = payload(["C"], horizon=2)
+        p["incumbent"] = {"access": [{"activityId": "0", "week": 2, "eclo": 0}]}
+        p["movableActivityIds"] = []
+        result = solve(p)
+        self.assertEqual(result["scope"], "repair")
+        self.assertEqual(result["objective"], 910)
+        self.assertEqual([r["week"] for r in result["access"]], [2])
+
+
+if __name__ == "__main__":
+    unittest.main()

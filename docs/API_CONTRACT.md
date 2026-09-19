@@ -1,11 +1,23 @@
 # API Contract
 
+## PS1 search options — 2026-09-19
+
+`ScheduleOptions` now accepts `initialCandidates` (always revalidated for the
+target scenario, pins and disruptions), `searchMode: "hybrid" | "legacy"`,
+`optimizationBudget.seed` and optional cooperative `maxTimeMs`. The default
+neighbour budget is 256 shared by shift, window and adaptive repair trials,
+with an explicit maximum of 2,500. The 24 initial construction starts and extra
+nominal-capacity starts are counted separately from that neighbour budget.
+Construction options include `nominalCapacity`, per-line `ecloWindows` start
+weeks and `activityOrder`. The worker protocol and official CSV schemas are
+unchanged. `INFEASIBLE` means search exhaustion, not a mathematical proof.
+
 ## Public PS1 client interfaces — 2026-09-18
 
 No HTTP route or environment variable was added. `solveInstance(instance,
 options)` returns a `SolveOutcome`; options carry scenario, hard pins, capacity
 disruptions and a bounded deterministic optimisation budget. The default runs 24
-construction starts and at most 2,500 reconstruction neighbours inside
+construction starts and by default 256 reconstruction neighbours inside
 `horizon_weeks`. An infeasible result may include a diagnostic partial submission,
 but the UI cannot export it.
 

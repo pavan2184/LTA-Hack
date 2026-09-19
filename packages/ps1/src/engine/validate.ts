@@ -17,7 +17,7 @@ import {
   type ValidationReport,
 } from "../types/ps1";
 import { buildNetwork, closureFor, expandSpan, type Network } from "./network";
-import { capacityAt, type Disruption } from "./disruption";
+import { appliesTo, capacityAt, type Disruption } from "./disruption";
 
 /** One PM alone, or one PC plus three co-workers, or four co-workers. */
 export const MAX_ACTIVITIES_PER_POSSESSION = 4;
@@ -309,8 +309,11 @@ export function validate(
     if (possessions.size >= supply) hotspots.push(`${locationId}@wk${weekRaw}`);
 
     // Scenario A hard-fails any excess; C allows one per location-week; B scores it.
-    const allowance =
-      scenario === "A" ? 0 : scenario === "C" ? SCENARIO_C_CAPACITY_ALLOWANCE : Infinity;
+    // A physical disruption caps usable nights even in flexible scenarios,
+    // matching construction. A reused candidate must not buy back closed track.
+    const disrupted = disruptions.some((d) => appliesTo(d, locationId, Number(weekRaw)));
+    const allowance = disrupted || scenario === "A" ? 0 :
+      scenario === "C" ? SCENARIO_C_CAPACITY_ALLOWANCE : Infinity;
     if (excess > allowance) {
       fail(
         "capacity",

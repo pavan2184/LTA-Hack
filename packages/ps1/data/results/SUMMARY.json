@@ -10,29 +10,29 @@
       "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 0,
       "nightsScheduled": 192,
-      "solveMs": 10.64
+      "solveMs": 1386.13
     },
     {
       "scenario": "B",
       "feasible": true,
       "hardViolations": 0,
-      "objectiveScore": 44,
+      "objectiveScore": 30,
       "overrunDaysTotal": 0,
-      "excessAccessNightsTotal": 2,
+      "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 6,
       "nightsScheduled": 189,
-      "solveMs": 1.88
+      "solveMs": 1536.55
     },
     {
       "scenario": "C",
       "feasible": true,
       "hardViolations": 0,
-      "objectiveScore": 39.2,
+      "objectiveScore": 25.2,
       "overrunDaysTotal": 21,
-      "excessAccessNightsTotal": 2,
+      "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 0,
       "nightsScheduled": 192,
-      "solveMs": 1.16
+      "solveMs": 1225.24
     }
   ]
 }

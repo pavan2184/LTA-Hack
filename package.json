@@ -22,7 +22,9 @@
     "geo:verify": "node --import tsx scripts/geography/verify.ts",
     "benchmark:cpsat": "node --import tsx scripts/benchmark/cp-sat.ts .venv-cpsat/bin/python",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "ps1:solve": "node --import tsx scripts/ps1/solve.ts"
+    "ps1:solve": "node --import tsx scripts/ps1/solve.ts",
+    "ps1:benchmark": "node --import tsx scripts/ps1/benchmark/run.ts",
+    "ps1:benchmark:cpsat": "node --import tsx scripts/ps1/benchmark/cp-sat.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

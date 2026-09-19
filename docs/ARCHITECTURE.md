@@ -1,5 +1,16 @@
 # Architecture
 
+## PS1 hybrid optimisation — 2026-09-19
+
+The browser worker reuses validated earlier-scenario incumbents, then combines
+nominal-capacity construction, ranked legal ECLO windows and seeded adaptive
+destroy/repair. Unaffected accesses and operator pins remain fixed during repair;
+sharing groups and night assignments are rebuilt and every candidate is checked.
+A worse exploratory candidate never replaces the best validated result. The
+default shared neighbour budget is 256. Native PS1 CP-SAT full/repair models live
+under `scripts/ps1/benchmark/` and do not enter the browser bundle or any HTTP API.
+See that directory's README for benchmark results and limitations.
+
 ## PS1 exception-first operations workspace — 2026-09-18
 
 The browser client retains all three `ScenarioRun` outcomes, including

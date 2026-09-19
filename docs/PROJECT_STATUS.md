@@ -1,5 +1,71 @@
 # Project Status
 
+## PS1 hybrid optimisation and native CP-SAT benchmark — 2026-09-19
+
+Implemented browser-local cross-scenario candidate reuse, nominal-capacity
+construction, explicit per-line ECLO-window trials and adaptive destroy/repair
+of late chains, shared locations, contracts and random subsets. Every accepted
+candidate preserves full workload, exact user pins and local validation. The
+best validated incumbent survives worse exploratory moves. The worker passes
+previous scenario results as warm candidates; the no-worker path also benefits
+from nominal-capacity starts. Search exhaustion now explicitly disclaims proof
+of infeasibility while retaining the existing API status.
+
+A regression exposed and fixed the local checker's disruption elasticity:
+physical capacity cuts now remain hard limits in B/C, matching construction,
+so imported candidates cannot buy back a closed location. Official inputs,
+output schema, database and HTTP API are unchanged. Regenerated public output
+scores are **A 25.2 / B 30 / C 25.2** (formerly 25.2 / 44 / 39.2).
+
+Paired default runs across the public and 12 synthetic datasets: **39/39 locally
+feasible**, 14 improved scores, 25 ties, no regressions. Fixture 09 C falls from
+3640 to 1840 with four legal ECLO nights. Twenty-four untuned workload/priority
+perturbations add 72 scenarios: 32 improve, 32 tie, eight remain unresolved by
+both heuristics. No regression or lost feasibility was observed. These are
+synthetic perturbations, not unseen operator data or universal guarantees.
+
+Added a separate weekly native CP-SAT model and full/20-activity repair harness.
+At one second of native search per run: **51 comparisons**, 37 OPTIMAL, 10
+FEASIBLE, four UNKNOWN. All 47 solutions matched local scores after exact CSV
+round-trip. CP-SAT improved capacity-pressure B 293→230, capacity-pressure C
+1118.8→1112.7 and priority-contention B 483→279. Full-model proofs establish
+public B=30 and fixture 09 C=1840 only within the encoded local model. Repair
+bounds are conditional on fixed work. Native startup/model time is separate
+from the search limit; timed-out/unknown solvers must retain the heuristic.
+Commands, input digests, measured results and interpretation are recorded in
+`scripts/ps1/benchmark/README.md` and `results.json`.
+
+Verification: **196 PS1/package/UI tests passed**, eight native Python model
+checks passed, full suite **944 passed / 79 database-dependent skipped** across
+118 files. A final stale-upload candidate guard added one more regression; all
+31 targeted scheduling/search tests passed afterward. Lint passed. Typecheck
+passed before the production build generated additional route/page checks.
+Default production build was blocked first by Google Fonts network restrictions,
+then by Turbopack's helper-port EPERM. The network-enabled webpack fallback
+compiled successfully but generated type checks fail in four untouched files:
+`src/app/api/requests/route.ts` accepts an optional Request; `src/app/page.tsx`,
+`src/app/plans/page.tsx` and `src/app/sandbox/page.tsx` accept optional first props.
+Their first-argument types include undefined, which the generated build types
+reject. These existing route/page signatures were not changed as part of the
+solver task; production build remains blocked, and subsequent standalone
+typecheck also sees the generated errors. Browser plugin was unavailable; bundled Playwright
+verified Chromium at 1440×1000 and 390×844: page identity, nonblank rendering,
+public worker solve, hidden eight-file upload, legal-window C=1840, and official
+nine-file ZIP download. Final browser run had no console or runtime errors.
+One early screenshot before hydration caused a caret-style hydration warning;
+waiting for the interactive page before screenshots eliminated it. Screenshots
+and browser logs remain in /private/tmp. The local server on 127.0.0.1:3001 was
+stopped; the pre-existing process on port 3000 was left untouched.
+
+Limits: the local checker is not the organiser's reference validator and cannot
+establish cross-possession physical-night alignment. Browser CP-SAT/WASM was
+not integrated: npm metadata was inspected, but browser transfer/startup/memory
+and cross-origin headers still require verification. No Python service, runtime
+dependency, environment variable or deployment change was added. IBM CP
+Optimizer and Hexaly were not installed. Engineer handoff instructions are in
+[PS1_ENGINEER_HANDOFF.md](PS1_ENGINEER_HANDOFF.md); repository publishing state
+is recorded in the handoff PR. No deployment or main-branch merge performed.
+
 ## Six more synthetic PS1 datasets — 2026-09-19
 
 Added datasets 07–12: long spans with reversed endpoints, matched workfront

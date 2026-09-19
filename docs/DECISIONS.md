@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-19 — PS1 browser hybrid, native CP-SAT benchmark
+
+Status: **Accepted.** Use cross-scenario incumbents, nominal-capacity starts,
+explicit legal per-line ECLO-window candidates and adaptive large-neighbourhood
+repair in the existing browser worker. Retain the original search as a paired
+benchmark mode. Preserve full workload, exact pins, disruptions and local
+validation for every accepted candidate. Capacity cuts are physical limits: the
+checker now matches construction by forbidding B/C elasticity at a disrupted
+location-week, including when evaluating a reused candidate.
+
+The weekly CP-SAT model is an offline full/repair comparator. It improved three
+congested cases at one second of native search but returned UNKNOWN for four
+larger cases; browser deployment is not yet justified by those results. Do not
+add a Python service or a large untested WASM dependency to the hidden-upload
+path. CP-SAT proof claims apply only to its encoded local model; repair bounds
+are conditional on frozen work. The earlier minute-resolution core benchmark
+does not decide PS1 solver quality. Detailed measured results and reproduction
+commands are in `scripts/ps1/benchmark/README.md`.
+
 ## 2026-09-18 — PS1 is an exception-first linked workspace
 
 Status: **Accepted.** Replace the solved page's stacked report sections and

@@ -177,6 +177,12 @@
     "nightsScheduled": 192,
     "ecloNights": 0
   },
+  "conformance": {
+    "mode": "local",
+    "undecidableRules": [
+      "cross_possession_night_alignment"
+    ]
+  },
   "objectiveScore": 25.2,
   "formulaVersion": "ps1-objective-v1"
 }

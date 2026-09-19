@@ -64,8 +64,8 @@ Verified against this worktree on 2026-09-19; see
 [PROJECT_STATUS.md](PROJECT_STATUS.md) for the evidence behind each claim.
 
 1. **Public test results** — `packages/ps1/data/results/{A,B,C}/` holds the three
-   CSVs per scenario for the published instance. Recorded scores A 25.2 / B 44 /
-   C 39.2, all three locally conformant.
+   CSVs per scenario for the published instance. Recorded scores A 25.2 / B 30 /
+   C 25.2, all three locally conformant.
 2. **Hosted live web app** — `/ps1` is unauthenticated, accepts the eight CSVs by
    drag-drop or file picker, matches them on the published filenames, solves all
    three scenarios in a browser worker and exports the nine-file ZIP. Hidden

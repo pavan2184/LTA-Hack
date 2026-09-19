@@ -1,5 +1,21 @@
 # Testing Plan
 
+## PS1 hybrid and native benchmark verification — 2026-09-19
+
+`search.test.ts` covers scenario reuse and target scoring, rejection of stale
+candidates under disruptions/pins, legal C ECLO windows including Live line
+coupling, seeded deterministic repair and public B improvement. Updated public
+ceilings are A 25.2 / B 30 / C 25.2. The 12 synthetic dataset tests retain full
+workload, dependencies and exact CSV round-trip checks. Offline Python tests
+cover legal sharing, PM/PC exclusion, physical cuts, partial-week deadlines,
+strict dependencies, terminal-activity penalties and frozen repairs. CP-SAT
+solutions must match the independently decoded/round-tripped local score.
+
+Run `npm run ps1:benchmark`, then use `scripts/ps1/benchmark/README.md` for the
+seeded perturbation holdout and native full/repair comparison commands. Keep
+unknown/failed runs in results, separate zero-score cases, and distinguish
+solver search time from startup/model/validation time.
+
 ## PS1 hardened conformance and operations workspace — 2026-09-18
 
 Regression coverage now mutates the published reference to prove rejection of
