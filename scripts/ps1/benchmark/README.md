@@ -52,6 +52,13 @@ named parallel LP subsolvers can override it. It is not an LP-free portfolio.
 
 ## Stress experiments with one total deadline
 
+[Measured results](../../../docs/PS1_NATIVE_SEARCH_EXPERIMENTS.md) and
+[raw evidence](stress-results.json) record 33 final-protocol runs: all locally
+valid, no errors, and no paired final-score improvements. Tightening consistently
+shortens one proof and improves the best hard-case bound to 261; production
+remains unchanged. Calibration and an excluded merge-interference batch are
+retained separately, not pooled into that comparison.
+
 `stress.ts` compares three opt-in CP-SAT pipelines under a **60-second total
 wall-time target per scenario/run**. Warm-start construction, native startup,
 model building, search, repair selection and CSV validation all consume that

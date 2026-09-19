@@ -4,6 +4,8 @@ These experiments answer whether the current native pipeline can deliver lower
 PS1 penalties within a practical response deadline. They do not change the
 production solver, scoring or official outputs. The local checker is not the
 organiser's reference validator; all proofs apply to the encoded local model.
+Full cohort metadata, stage traces and retained failures are in
+[stress-results.json](../scripts/ps1/benchmark/stress-results.json).
 
 ## Methods and reproducibility
 
@@ -37,10 +39,27 @@ the accumulated full-model bound. Every error stays in the results.
 
 Measured solver-source SHA-256 for the final 60-second cohorts:
 `e69b57b7493f2f2a670389278e7cd4fa127b52f0c0ebf4a387a5f482fd28f2a0`.
-The source hash covers the harness, native models, bridge and checker. The initial
-HEAD reported by the harness is the base of an uncommitted worktree, so the hash,
-not that HEAD alone, identifies these new experiments. Input hashes, host,
+The source hash covers the harness, native models, bridge and checker and was
+verified unchanged in commit `3179fe0`. The first cohorts report the base of an
+uncommitted worktree as HEAD, so the hash, not that HEAD alone, identifies them.
+Input hashes, host,
 configuration, stage scopes and traces are retained in the result artifact.
+
+### Why the extra constraints are valid
+
+Let `T` be an activity's integer workload, `n` its selected access count and `e`
+its ECLO count. Full delivery requires `2n + e >= 2T`, with `e <= n`. Hence B
+needs at least `ceil(2T/3)` accesses; A needs `T`. In C, one access per activity
+per week and the two-week line window imply `e <= 2`, so
+`n >= max(ceil(2T/3), T-1)`. Distinct selected weeks then imply
+`last - first >= minimum_accesses - 1`.
+
+At a location-week with allowed possession count `L`, let `p`, `q` and `c` be
+the PM, PC and C activity counts. Each PM occupies its own possession; a shared
+possession has at most one PC and four members. Therefore `p + q <= L` and
+`4p + q + c <= 4L`. The original exact division/max equations still determine
+the possession count and excess penalty. These inequalities remove no legal
+schedule and change no score; they expose implied limits directly to search.
 
 ## Stress inputs and split
 
@@ -90,8 +109,32 @@ first usable schedule. The incumbent traces distinguish those questions.
 For priority contention, every method returned **300.7** after approximately
 58.4 seconds. Full search's bound was **255.6**, tightening's **248.9**, and
 targeted repair's **242.2**. The optimum remains unknown. The older, separate
-cold-search cohort reached a stronger bound of 258.3; these new results do not
-erase it or show that its bound is attainable.
+cold-search cohort reached a stronger bound of 258.3 than this seed-1 run.
+The repeated-seed cohort below subsequently improved the best bound to 261;
+neither bound is a promised attainable score.
+
+## Repeated difficult controls: seeds 1, 2 and 3
+
+The clean repeat adds seeds 2 and 3 for both difficult cases, with the exact same
+source hash and 60-second total budget. All methods return 1090.8 on capacity
+pressure and 300.7 on priority contention for every seed.
+
+| Method | Capacity-pressure proofs | Capacity-pressure elapsed seconds, seeds 1 / 2 / 3 | Priority-contention bounds, seeds 1 / 2 / 3 |
+| --- | ---: | --- | --- |
+| Full CP-SAT | 1/3 | 58.45 / 58.63 / 56.79 | 255.6 / 253.3 / 257.7 |
+| Tight formulation | 3/3 | **1.32 / 1.28 / 1.39** | 248.9 / 250.5 / **261.0** |
+| Targeted repair | 0/3 | 58.37 / 58.37 / 58.57 | 242.2 / 247.5 / 248.3 |
+
+No method proves priority contention optimal. Tightening improves the best
+recorded full-model bound from the earlier 258.3 to 261.0, leaving the optimum
+somewhere in **[261.0, 300.7]**. Its weaker bounds in the other two seeds show
+that the improvement is not uniform. This is a small local sample, not a
+statistical generalisation or target-cloud result.
+
+Across the two final-protocol cohorts there are **33 valid pipelines, 19 full-model
+proofs, zero recorded errors and zero deadline overruns**. Maximum measured
+pipeline time is 58.69 seconds. Full, tight and targeted produce 6/11, 8/11 and
+5/11 proofs respectively; every matched final score ties.
 
 ## Short-budget development calibration
 
@@ -108,6 +151,14 @@ and mixed-120 (57737.6 versus 53741.7). It established no new best objective.
 Tightening proved capacity pressure quickly, while the full pipeline's timeout
 retained its worse heuristic score. The calibrated run is distinct from
 the final protocol and cannot be presented as a clean win rate for that protocol.
+
+A separate first attempt at the repeated-seed batch overlapped a Git merge.
+Temporary conflict markers caused Python syntax errors in six pipelines. That
+entire 12-row batch, including its successful rows, is excluded from comparison
+and retained with an explicit reason in the raw evidence. The benchmark source
+hash was verified after resolution, tests reran, and the whole batch was restarted
+in a fresh output directory. This was orchestration interference, not an
+algorithmic result.
 
 ## Deployment decision
 

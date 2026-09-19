@@ -13,8 +13,12 @@ comparisons. Complete A/C witnesses certify local feasibility but are withheld
 from search. Time the entire pipeline under one deadline, including the warm
 start and repeated Python startup; retain short-run calibration failures as
 evidence. This protocol is distinct from the earlier native-search-only budget.
-Production remains on the accepted full native portfolio until results justify
-a change. Target-machine worker scaling remains the cloud engineer's check.
+The final protocol yielded 33 valid runs, no errors and no paired final-score
+improvements. Tightening proves capacity pressure in 1.28–1.39 seconds across
+three seeds and raises the strongest priority-contention bound to 261, but
+is not uniformly better. Keep the accepted full native portfolio in production;
+retain both alternatives as offline experiments. Target-machine worker scaling
+remains the cloud engineer's check. [Evidence](PS1_NATIVE_SEARCH_EXPERIMENTS.md).
 
 
 ## 2026-09-19 — A separate, bounded CP-SAT teaching lab

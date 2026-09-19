@@ -1,10 +1,10 @@
 # Project Status
 
 Last updated: 2026-09-19. Application version: `0.4.0`.
-Source baseline: reconciliation of native benchmark commit `d1e0a8f` with the
-engineer's `2957345`, which brings PR #47 onto `6780ac4` with PR #49 submission
-assets, PR #48 solver readiness and the PR #46 workstation redesign.
-The combined merge passed the fresh local application gates recorded below.
+Source baseline: `3179fe0` integrates the native search experiments with current
+main, including the merged native PS1 service, workstation and Algorithm Lab.
+The original native engine comparison remains the separately identified
+`d1e0a8f` snapshot; the new stress comparison uses source hash `e69b57b7…`.
 This is the current snapshot. Dated implementation and verification logs live in
 [PROJECT_STATUS_HISTORY.md](PROJECT_STATUS_HISTORY.md); do not treat their old
 next steps, test counts or local server URLs as current instructions.
@@ -16,7 +16,6 @@ next steps, test counts or local server URLs as current instructions.
   deadline. Eight fixed 60–120-activity stress inputs have checked A/C feasibility
   certificates withheld from search, with separate development/holdout seeds.
   The service still uses its existing formulation and 60-second search default.
-
 
 - **Public PS1 judge path:** `/ps1` accepts the published or uploaded eight-file
   instance without login or database access and sends one policy at a time to a
@@ -62,13 +61,13 @@ next steps, test counts or local server URLs as current instructions.
 
 ## Latest recorded verification
 
-README benchmark coverage now includes the four-case warm/cold/LNS-only CP-SAT
+An earlier README-only update added the four-case warm/cold/LNS-only CP-SAT
 comparison alongside SCIP and both TypeScript hybrid modes, with explicit
 scores, bounds, proof counts and selection rationale. Figures were checked
 against the tracked benchmark JSON; historical scoring-v1 and unmeasured
 candidates remain separate. Documentation links and whitespace were checked.
 No new solver runs, application tests or cloud measurements were performed for
-this documentation update.
+that earlier documentation update. The new stress runs are recorded separately.
 
 The Algorithm Lab row records this companion feature. The combined-merge rows
 and subsequent evidence retain their earlier scope.
@@ -78,6 +77,7 @@ and warm starts; do not relabel the stored comparison as a rerun of the new tree
 
 | Scope | Evidence | Limit |
 | --- | --- | --- |
+| Native search experiments, `3179fe0` solver source | 33 final-protocol runs valid, 19 full-model proofs, no errors/overruns; every paired final score ties. Tightening proves capacity pressure in 1.28–1.39s across three seeds and raises the best priority-contention bound to 261.0; 1,111 TS tests passed, 79 database-dependent tests skipped, 45 Python tests, lint, typecheck and webpack build passed. Fresh native public A/B/C remain 25.2/30/25.2, all OPTIMAL, exactly nine CSVs | Local M3 Pro/eight workers; production defaults unchanged. Calibration failures and a wholly excluded source-interference batch are retained. No target-cloud, database, browser or hosted-release checks rerun |
 | Algorithm Lab, 2026-09-19 | 21 backend tests; all 54 settings checked against independent exact dynamic programming; 14 browser scenarios; lint, typecheck, Gunicorn config, ShellCheck and strict UI audit passed | Local Python service; no public Cloud Run revision verified; see [verification](ALGORITHM_LAB_VERIFICATION.md) |
 | Final combined merge, 2026-09-19 | 1,079 tests passed across 113 files, 79 database-dependent tests skipped; lint, typecheck and webpack production build passed; real native API-function/CLI public smokes retained A 25.2 / B 30 / C 25.2, all OPTIMAL, default 60s and exactly nine CLI CSVs | Database/browser/hosted-release/cloud-scaling checks not rerun; non-failing React act/Vite warnings remain |
 | Post-merge heuristic check, 2026-09-19 | All 39 hybrid baselines and 39 extended-hybrid outcomes locally valid; capacity-pressure C improves 1118.8 → 1105.5 in both, other 38 scores unchanged | Fresh heuristic-only comparison; native models/checker unchanged, original native timing cohorts not rerun |

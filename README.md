@@ -297,10 +297,15 @@ seed-1 run; ordinary full search found the same score but had not proved it when
 returning at 58.45 seconds. Priority-contention C remained **300.7**, unproven,
 with no score improvement. Keep the existing production default; tightening is
 an opt-in challenger and custom repair has no demonstrated quality gain here.
+Repeating the two difficult controls with seeds 2 and 3 brings the final protocol
+to **33 valid runs with no errors**. Tightening proves capacity pressure in
+**1.28–1.39 seconds in all three seeds**, and improves the best recorded priority-
+contention lower bound to **261.0**, while its schedule remains **300.7**.
 These are local M3 Pro/eight-worker measurements, not cloud timings or reference-
 validator certification. The larger holdouts all solved quickly, so they provide
 coverage rather than evidence of superiority on difficult hidden cases.
-See [full experiment details and reproduction](docs/PS1_NATIVE_SEARCH_EXPERIMENTS.md).
+See [full experiment details and reproduction](docs/PS1_NATIVE_SEARCH_EXPERIMENTS.md)
+and [raw evidence](scripts/ps1/benchmark/stress-results.json).
 
 **Earlier CP-SAT/SCIP comparison (different timing protocol):**
 

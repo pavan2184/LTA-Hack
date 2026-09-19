@@ -60,6 +60,14 @@ describe("native payload boundary", () => {
     );
   });
 
+  it("keeps tightening opt-in and rejects applying its label to SCIP", () => {
+    expect(nativePayload(instance, "B", 60)).not.toHaveProperty("formulation");
+    expect(nativePayload(instance, "B", 60, { formulation: "tight" })).toHaveProperty("formulation", "tight");
+    expect(() => runNativeSolver("mock-python", "scip", instance, "B", 60, { formulation: "tight" }))
+      .toThrow(/requires CP-SAT/);
+    expect(spawnSync).not.toHaveBeenCalled();
+  });
+
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid seconds %s before spawning", (seconds) => {
     expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", seconds)).toThrow(/Invalid native/);
     expect(spawnSync).not.toHaveBeenCalled();
