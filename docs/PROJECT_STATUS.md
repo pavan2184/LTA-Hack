@@ -1,5 +1,27 @@
 # Project Status
 
+## Solver PR reconciliation and engineer handoff — 2026-09-19
+
+Prepared `codex/ps1-hybrid-optimisation` against main at `b6e661e`, retaining
+the workstation redesign from PR #46. Documentation conflicts were resolved by
+keeping both independent records. Added `PS1_ENGINEER_HANDOFF.md` with portable
+Google Cloud benchmark commands, measured results, model limits and the four
+untouched page/route signatures blocking generated build type checks.
+
+Combined testing found a disruption knock-on: automatically retained successor
+accesses could prevent a delayed predecessor from being rescheduled legally.
+Disruption repair now releases transitive successors from those automatic
+retention pins, while freezing work outside the dependency impact. A regression
+checks strict predecessor order, physical cuts and more than 90% unchanged work.
+The UI policy-retention test now allows ten seconds for its two real three-
+scenario solves and rendering; solver performance is measured separately by
+the benchmark. Post-reconciliation verification: **213 tests passed across 20
+PS1 engine/dataset/UI files**, lint and `git diff --check` passed. Standalone
+typecheck still reports the same four generated entry-point errors described
+below. Browser and full-application checks were not repeated after reconciliation;
+the earlier evidence is retained with its scope.
+No deployment or merge into main has been performed.
+
 ## PS1 hybrid optimisation and native CP-SAT benchmark — 2026-09-19
 
 Implemented browser-local cross-scenario candidate reuse, nominal-capacity
@@ -65,6 +87,76 @@ dependency, environment variable or deployment change was added. IBM CP
 Optimizer and Hexaly were not installed. Engineer handoff instructions are in
 [PS1_ENGINEER_HANDOFF.md](PS1_ENGINEER_HANDOFF.md); repository publishing state
 is recorded in the handoff PR. No deployment or main-branch merge performed.
+
+## PS1 policy copy removed to recover schedule space — 2026-09-19
+
+Removed the redundant policy-description strip for A/B/C and its unused copy
+and CSS. Reallocated its 28px to the desktop schedule viewport. At 1440×1000,
+the schedule now measures 538px high (previously 510px), with the footer still
+visible at 979px. Pending-change review and export-blocking status remain in
+their existing review/status surfaces. Scoped ESLint and typecheck passed;
+browser inspection confirmed the strip is absent. No engine behavior changed.
+Preview: http://127.0.0.1:3000/ps1.
+
+PR preparation: rebased onto current main while preserving both independent
+status updates. The combined PS1 engine/dataset/UI suite passed **205 tests in
+19 files** on the rebased branch; typecheck and lint also passed. The redesign
+and follow-up spacing adjustment are one commit.
+
+## PS1 schedule-first workstation redesign — 2026-09-19
+
+Implemented the approved Siemens-inspired direction in the existing public
+`/ps1` app. The solved workspace now opens on an expandable contract/activity
+schedule with actual weekly access blocks, planned-start hatching, completion
+targets, search, scale controls and a functional horizon overview. All 54
+activities in the public instance remain represented with their scheduled
+workload; presentation filters do not alter solver delivery or exports.
+
+Compact teal chrome, a grouped command ribbon and compact A/B/C policy controls
+replace the report-style page framing. Full policy metrics remain available in
+the comparison view. Location occupancy is a linked secondary view; attention
+and selected-work details open on demand. Narrow screens retain triage,
+inspection, review and proof. Low-glare presentation covers the new schedule.
+
+Upload replacement now starts a new draft and cancels stale file reads and
+worker results. Applied capacity cuts survive re-runs, pin changes and subsequent
+maintenance proposals; an older preview is invalidated when its applied basis
+changes. Inspector IDs are unique across mounted responsive instances. The
+engine rules, output schema, browser-local execution and review-before-Apply
+boundary remain intact.
+
+Verification recorded during implementation:
+
+- `npm test` — **900 passed, 79 database tests skipped** because no database was
+  configured. A subsequently added inspector unique-ID regression also passed
+  in its focused run; the full-suite count above predates that added test.
+  A 28-test UI rerun passed, then six affected regressions passed after the final
+  maintenance fix, including two new successive-cut cases and actual ZIP
+  path/header/scenario checks.
+- `npm run typecheck` and `npm run lint` — passed.
+- Production build passed cleanly after correcting a CSS selector warning.
+  Final verification is recorded in [design-qa.md](../design-qa.md).
+- Browser checks at **1280, 1440, 1920, 390 and 768 CSS pixels** found no
+  document-level horizontal overflow. Screenshots are in
+  [design-evidence](design-evidence/).
+- Public-instance and eight-file upload journeys reproduced **A 25.2 / B 44 /
+  C 39.2**. Malformed CSV headers were rejected with visible recovery guidance.
+- Linked inspection, proposal review, Apply and Undo were exercised. Official
+  export remained disabled while a proposal awaited review.
+- The exact three-CSV-per-scenario, nine-file ZIP format is covered by tests.
+  The in-app browser's download event timed out, so a real downloaded ZIP was
+  **not inspected** in this browser run.
+- The scoped premium static audit returned **zero findings**. DESIGN.md lint
+  returned zero errors and 12 documented token-reference warnings. Full-repo
+  baseline findings outside this route remain separate inherited audit work;
+  see [UX-CONTRACT.md](../UX-CONTRACT.md#static-audit-scope-and-inherited-findings--2026-09-19).
+
+The active local preview is [http://127.0.0.1:3000/ps1](http://127.0.0.1:3000/ps1).
+Paired source/rendered visual comparison passed after fixing canvas height,
+low-glare surfaces and responsive spacing. This entry does not claim deployment
+or native screen-reader verification. Final visual evidence and remaining
+limitations are recorded in [design-qa.md](../design-qa.md). The durable
+workflow decision is recorded in [DECISIONS.md](DECISIONS.md).
 
 ## Six more synthetic PS1 datasets — 2026-09-19
 

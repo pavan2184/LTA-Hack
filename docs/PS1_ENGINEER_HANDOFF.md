@@ -12,6 +12,8 @@ there without making the hosted app depend on that instance.
 - `src/workers/ps1.worker.ts`: pass earlier scenario results as candidates;
   revalidate under the target scenario, pins and disruptions before accepting.
 - `validate.ts`: physical capacity cuts cannot be bought back using B/C elasticity.
+- `disruption.ts`: release automatically retained downstream accesses when a cut
+  delays their predecessor, then reconstruct and validate the dependency chain.
 - `scripts/ps1/benchmark/`: paired legacy/hybrid runs, seeded perturbations and
   native CP-SAT full/repair comparisons, with CSV round-trip score agreement.
 - `packages/ps1/data/results/`: refreshed public results, A **25.2**, B **30**,
@@ -65,7 +67,10 @@ stale-upload candidate guard passed all 31 targeted scheduling/search tests.
 Lint passed. Browser Chromium checks covered public solving, hidden eight-file
 upload, legal ECLO windows and exact nine-file ZIP export at desktop/mobile sizes.
 These browser observations predate reconciliation with the newer main-branch UI;
-see the PR for post-reconciliation checks.
+post-reconciliation verification passed **213 PS1 engine/dataset/UI tests in
+20 files**, lint and diff whitespace checks. Typecheck still reports the four
+generated errors below. Browser and full-application checks were not repeated
+after reconciliation.
 
 Production build is not green. The development environment blocked Turbopack's
 helper port; `npm run build -- --webpack` compiled, then generated type checks

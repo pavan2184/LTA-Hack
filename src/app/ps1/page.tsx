@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { PS1_FILES } from "@railplan/ps1/io/load";
 import { SUBMISSION_FILES } from "@railplan/ps1/io/submission";
 import { Ps1Workbench } from "@/components/ps1/Ps1Workbench";
+import "@/components/ps1/ps1-workstation.css";
 
 export const metadata: Metadata = {
   title: "PS1 track access scheduler",
@@ -37,33 +38,8 @@ export default function Ps1Page() {
   );
 
   return (
-    <main className="workspace-page">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="workspace-eyebrow">NebulaX PS1</p>
-          <h1>Railway track access scheduler</h1>
-          <p className="max-w-3xl">
-            Decides which contracted activities get the track, in which weeks, across Line Alpha
-            and Line Beta — then checks every rule that can be decided from the official CSVs and
-            reports the scenario score. A linked queue, timeline, network inspector and reviewed
-            change log keep the answer operationally explainable without sending the instance off
-            the device.
-          </p>
-        </div>
-        <span className="workspace-prototype whitespace-nowrap">
-          No account · runs in your browser
-        </span>
-      </header>
-
+    <main className="ps1-application">
       <Ps1Workbench publicInstance={publicInstance} referenceSubmission={referenceSubmission} />
-
-      <footer className="mt-8 border-t border-rule pt-4 text-[12px] text-ink-700">
-        <p>
-          Scoring follows the brief: penalties only, lower is better. Overrun is banded by
-          contract priority (100x / 10x / 1x) with the activity priority nudging within its band;
-          an excess access-night costs 7 and an ECLO night 5.
-        </p>
-      </footer>
     </main>
   );
 }
