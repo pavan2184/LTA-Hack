@@ -442,7 +442,6 @@ Project: [pavan2184/LTA-Hack](https://github.com/pavan2184/LTA-Hack).
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Acknowledgments
-
 - [Nebula X PS1](https://github.com/aochinwen/NebulaX-Hackathon-ProblemStatement/tree/main/PS1) for the challenge specification and published instance.
 - [Best-README-Template](https://github.com/othneildrew/Best-README-Template) for this README's structure.
 - [Siemens Opcenter Scheduling SMT](https://blogs.sw.siemens.com/opcenter/new-opcenter-scheduling-smt-2410/) for the industrial scheduling reference; no affiliation is implied.
