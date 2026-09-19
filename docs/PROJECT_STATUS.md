@@ -59,6 +59,12 @@ next steps, test counts or local server URLs as current instructions.
 
 ## Latest recorded verification
 
+The README now explains the CP-SAT choice with equations for full workload,
+precedence/ECLO windows, local possession packing, scoring-v2 objectives and the
+full-model bound gap. The notation was checked against the native model and
+local scorer; the example and selection claims were checked against stored
+benchmark evidence. This documentation change adds no new solver or cloud run.
+
 The [benchmark assurance record](PS1_BENCHMARK_ASSURANCE.md) now maps solver
 selection claims to their artifacts and documents experiment controls, scoring
 corrections, contrary findings and unresolved validation/deployment limits.

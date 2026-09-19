@@ -36,6 +36,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#why-we-chose-cp-sat">Why We Chose CP-SAT</a></li>
     <li><a href="#ps1-native-solver-benchmark-and-selection">PS1 Native Solver Benchmark and Selection</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
@@ -277,6 +278,134 @@ public scores: **A 25.2 / B 30 / C 25.2**. The
 [PS1 write-up](assets/submission/PS1_WRITEUP.md) cover release evidence and
 remaining publication steps. The script is not a recorded or uploaded video;
 a merge does not establish a fresh hosted deployment.
+
+### Why we chose CP-SAT
+
+**PS1 combines discrete weekly decisions, strict logical rules and competing
+penalties. We chose the full OR-Tools CP-SAT portfolio because it expresses that
+model directly, improves a checked starting schedule, and reports bounds on how
+much improvement might remain.** Our experiments support this choice: CP-SAT
+tied SCIP on all 39 main-case scores and recovered the best observed score on
+the hardest repeated case in all three runs. SCIP remains a credible challenger.
+
+#### 1. Model the actual decisions
+
+For activity $i$ and week $w$, let $x_{iw}=1$ mean an access is scheduled, and
+$e_{iw}=1$ mean that access uses early closure / late opening (ECLO). A standard
+access delivers one workload unit; ECLO delivers 1.5. If $a_i$ is the required
+workload, the native model enforces:
+
+$$
+x_{iw},e_{iw}\in\{0,1\},\qquad e_{iw}\le x_{iw},\qquad
+\sum_w(2x_{iw}+e_{iw})\ge 2a_i\quad\forall i.
+$$
+
+Multiplying by two represents the half-unit yield exactly with integers.
+**Every activity must receive its full workload; omitting work cannot improve a
+valid score.** CP-SAT's integer model suits these decisions without rounding
+fractional access assignments. [OR-Tools integer modelling](https://developers.google.com/optimization/cp/cp_solver).
+
+Let $s_i$ and $f_i$ be the first and last scheduled weeks. A predecessor $i$
+must finish strictly before its successor $j$ starts. In Scenario C, each affected
+line $\ell$ has a chosen ECLO window starting at $u_\ell$:
+
+$$
+s_j\ge f_i+1\quad\forall(i\rightarrow j),\qquad
+e_{iw}=1\ \Longrightarrow\ u_\ell\le w\le u_\ell+1.
+$$
+
+The ECLO implication applies to **every line affected by that activity**,
+including cross-line Live closures. CP-SAT supports these conditional constraints
+directly. Releases, operator pins, contract budgets and workfront limits are
+also hard constraints; this is a summary of the encoded model, not its full specification.
+
+#### 2. Represent sharing and capacity explicitly
+
+At a location $\ell$ in week $w$, let $m_{\ell w}$, $p_{\ell w}$ and
+$c_{\ell w}$ count scheduled PM, PC and C activities whose expanded occupancy
+spans reach that location. Under the encoded local sharing rules, the minimum
+number of possessions is:
+
+$$
+n_{\ell w}=m_{\ell w}+
+\max\left(p_{\ell w},\left\lceil\frac{p_{\ell w}+c_{\ell w}}{4}\right\rceil\right).
+$$
+
+PM requires exclusive possession; each shared possession admits at most one PC
+and four activities total. With effective supply $b_{\ell w}$, excess usage is
+$q_{\ell w}=\max(0,n_{\ell w}-b_{\ell w})$. Scenario A requires zero excess;
+C permits at most one extra possession per location-week; B permits penalised
+excess. A disrupted location-week permits no excess above its reduced supply.
+The native implementation uses integer maximum and division constraints for
+this packing calculation. These are local possession counts, not a certificate
+of physical-night alignment between different possessions.
+
+#### 3. Minimise the specified penalty, not an invented quality score
+
+Let $d_i$ be activity $i$'s contract planned-completion date, expressed as a day
+offset from the horizon start. Its lateness is
+$L_i=\max(0,7f_i-1-d_i)$. Let $\alpha_i\in\{100,10,1\}$ be the contract-priority
+weight and $\nu_i\in\{0.3,0.2,0\}$ the activity-priority nudge, in priority order
+1/2/3. Define total weighted lateness $D$, excess possessions $Q$ and ECLO
+accesses $E$:
+
+$$
+\begin{aligned}
+D&=\sum_i\alpha_i(1+\nu_i)L_i,&
+Q&=\sum_{\ell,w}q_{\ell w},& E&=\sum_{i,w}e_{iw},\\
+J_A(z)&=D,& J_B(z)&=7Q+5E,& J_C(z)&=D+7Q+5E.
+\end{aligned}
+$$
+
+Here $z$ denotes all schedule decisions, and $\mathcal F_A$, $\mathcal F_B$ and
+$\mathcal F_C$ contain only schedules satisfying their scenario's hard rules.
+For scenario $s$, we solve $\min_{z\in\mathcal F_s}J_s(z)$.
+A forbids ECLO and excess capacity; B forbids late completion. The weighted
+lateness sum charges **each late activity**, including one that finishes before
+its contract's last activity. The solver minimises $10J$ using integer
+coefficients and divides by ten for reporting; positive scaling preserves the
+minimiser. See the [implemented model](scripts/ps1/benchmark/cp_sat.py) and
+[independent local scoring path](packages/ps1/src/engine/validate.ts).
+
+#### 4. Report solution quality and proof separately
+
+For a feasible incumbent with score $U$ and a valid full-model lower bound $B$,
+the unknown optimum $J^*$ satisfies:
+
+$$
+B\le J^*\le U,\qquad
+\operatorname{gap}=\frac{U-B}{\max(1,|U|)},\qquad
+B=U\ \Longrightarrow\ \text{optimal for the encoded model}.
+$$
+
+For example, the recorded warm CP-SAT priority-contention C run found
+$U=300.7$ with $B=252.4$: a **16.1% remaining bound gap**, not a claim that
+252.4 is achievable. Pure heuristic search supplies a feasible upper bound but
+does not, by itself, produce a matching optimality certificate. A timed solve
+can therefore return a useful schedule without falsely labelling it optimal.
+The 60-second setting caps native search; startup, model construction and
+validation add to response time. Every returned schedule is checked after a
+CSV round-trip. [OR-Tools solver statuses](https://developers.google.com/optimization/cp/cp_solver#cp-sat-return-values).
+
+#### 5. Choose the full portfolio using measured evidence
+
+CP-SAT's parallel portfolio combines complementary search methods, relaxations
+and large neighbourhood search (LNS). We retain that combination with a checked
+TypeScript warm start. [OR-Tools portfolio guidance](https://github.com/google/or-tools/blob/v9.15/ortools/sat/docs/troubleshooting.md#improving-performance-with-multiple-workers).
+
+| Selection question | What our experiments showed |
+| --- | --- |
+| Why not stop at the hybrid? | CP-SAT improved four of 39 baseline scores; extended hybrid search improved none in that snapshot. |
+| Why not LNS-only? | It tied full CP-SAT on four shared cases but left both hard-case lower bounds at zero; full CP-SAT already includes LNS. |
+| Why CP-SAT rather than SCIP as the default? | Both tied all 39 main scores. On priority-contention C, CP-SAT reached 300.7 in 3/3 seeds; SCIP did so in 1/3. SCIP proved more main-case optima: 38 versus 37. |
+| Why keep a warm start? | It supplies a checked incumbent and fallback. Cold CP-SAT tied all four ablation scores and sometimes proved more, so hints are not claimed to guarantee faster search. |
+
+The choice is **model fit plus measured quality, consistency and proof
+information**. The equations do not establish that CP-SAT must outperform every
+solver. The following tables document the local hardware, source revisions and
+small sample sizes behind the choice. Proofs cover the encoded local model;
+the local checker is not the organiser's reference validator. The
+[assurance record](docs/PS1_BENCHMARK_ASSURANCE.md) documents those boundaries.
 
 ### PS1 native solver benchmark and selection
 
