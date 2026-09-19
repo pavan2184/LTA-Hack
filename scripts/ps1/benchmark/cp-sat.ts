@@ -13,6 +13,7 @@ export type NativeOptions = {
   workers?: number;
   seed?: number;
   profile?: "default" | "no_lp" | "lns";
+  formulation?: "baseline" | "tight";
   incumbent?: Submission;
   movableActivityIds?: string[];
   disruptions?: Disruption[];
@@ -38,6 +39,10 @@ export function nativePayload(instance: Ps1Instance, scenario: Scenario, seconds
     !Number.isInteger(seed) || seed < 0 || seed > 2_147_483_647 || !["default", "no_lp", "lns"].includes(profile)) {
     throw new Error("Invalid native seconds/workers/seed/profile");
   }
+  if (options.formulation !== undefined && !["baseline", "tight"].includes(options.formulation)) {
+    throw new Error("Invalid native formulation");
+  }
+  // Tightening is implemented by the CP-SAT model, never silently by SCIP.
   if (incumbent && incumbent.scenario !== scenario) throw new Error("Incumbent scenario mismatch");
   const payload = cpSatPayload(instance, { ...options, scenario, seconds, workers, seed, profile });
   if (incumbent && (!validate(instance, incumbent, undefined, disruptions).feasible || !hasPins(incumbent, pins))) {
@@ -48,13 +53,19 @@ export function nativePayload(instance: Ps1Instance, scenario: Scenario, seconds
 
 /** Process/model/search/decode timing is separate from the solver's search cap. */
 export function runNativeSolver(python: string, engine: "cpsat" | "scip", instance: Ps1Instance,
-  scenario: Scenario, seconds: number, options: NativeOptions = {}) {
+  scenario: Scenario, seconds: number, options: NativeOptions = {}, wallLimitMs?: number) {
   const started = performance.now();
+  if (engine === "scip" && options.formulation === "tight") throw new Error("Tight formulation requires CP-SAT");
+  if (wallLimitMs !== undefined && (!Number.isFinite(wallLimitMs) || wallLimitMs <= 0)) {
+    throw new Error("Invalid native wall limit");
+  }
   const payload = nativePayload(instance, scenario, seconds, options);
   const payloadReady = performance.now();
+  const remainingMs = wallLimitMs === undefined ? seconds * 1000 + 60_000 : wallLimitMs - (payloadReady - started);
+  if (remainingMs <= 0) throw new Error("Native wall limit exhausted preparing payload");
   const child = spawnSync(python, [resolve(`scripts/ps1/benchmark/${engine === "cpsat" ? "cp_sat" : "scip"}.py`)], {
     input: JSON.stringify(payload), encoding: "utf8", maxBuffer: 32 * 1024 * 1024,
-    timeout: seconds * 1000 + 60_000,
+    timeout: Math.max(1, Math.floor(remainingMs)), killSignal: "SIGKILL",
   });
   if (child.error || child.status !== 0) throw new Error(child.error?.message ?? child.stderr);
   const processFinished = performance.now();

@@ -26,6 +26,7 @@
     "ps1:solve": "node --import tsx scripts/ps1/solve.ts",
     "ps1:solve:native": "node --import tsx scripts/ps1/solve-native.ts",
     "ps1:benchmark:cloud": "node --import tsx scripts/ps1/benchmark/cloud.ts",
+    "ps1:benchmark:stress": "node --import tsx scripts/ps1/benchmark/stress.ts",
     "ps1:benchmark": "node --import tsx scripts/ps1/benchmark/run.ts",
     "ps1:benchmark:regression": "node --import tsx scripts/ps1/benchmark.ts",
     "ps1:benchmark:cpsat": "node --import tsx scripts/ps1/benchmark/cp-sat.ts"

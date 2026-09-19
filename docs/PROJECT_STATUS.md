@@ -11,6 +11,12 @@ next steps, test counts or local server URLs as current instructions.
 
 ## Implemented
 
+- **Native search experiments:** `ps1:benchmark:stress` compares full CP-SAT,
+  redundant valid inequalities and targeted native repair under one end-to-end
+  deadline. Eight fixed 60–120-activity stress inputs have checked A/C feasibility
+  certificates withheld from search, with separate development/holdout seeds.
+  The service still uses its existing formulation and 60-second search default.
+
 - **Public PS1 judge path:** `/ps1` accepts the published or uploaded eight-file
   instance without login or database access and sends one policy at a time to a
   bounded same-origin native CP-SAT service. Uploaded data is not persisted. The

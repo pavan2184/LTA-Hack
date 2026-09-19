@@ -1,5 +1,21 @@
 # Decisions
 
+## 2026-09-19 — Evaluate stronger formulations and targeted native repair separately
+
+Status: **Experimental, offline only.** Compare the deployed model with redundant
+valid inequalities and with bounded CP-SAT repairs around late chains and shared
+locations. Keep scoring, full workload, pins and represented hard rules identical.
+Only full-model lower bounds contribute to the global gap; optimal repairs prove
+their frozen subproblem only. Retain the best checked incumbent after failures.
+
+Fix four development and four related synthetic holdout inputs before running
+comparisons. Complete A/C witnesses certify local feasibility but are withheld
+from search. Time the entire pipeline under one deadline, including the warm
+start and repeated Python startup; retain short-run calibration failures as
+evidence. This protocol is distinct from the earlier native-search-only budget.
+Production remains on the accepted full native portfolio until results justify
+a change. Target-machine worker scaling remains the cloud engineer's check.
+
 ## 2026-09-19 — 32-vCPU cloud target and 60-second native comparison
 
 Status: **Accepted owner direction.** Target 32 vCPUs / 64 GiB RAM with 60 seconds of
