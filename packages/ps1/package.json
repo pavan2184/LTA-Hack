@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "NebulaX PS1 railway track access optimisation: instance loading, the nine hard rules, scenario scoring, and the scheduler. No UI, no HTTP, no database.",
+  "description": "NebulaX PS1 railway track access optimisation: instance loading, the ten hard rules, scenario scoring, and the scheduler. No UI, no HTTP, no database.",
   "exports": {
     "./engine/*": "./src/engine/*.ts",
     "./io/*": "./src/io/*.ts",

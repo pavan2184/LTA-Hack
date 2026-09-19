@@ -19,7 +19,7 @@ between the two would have meant bending both.
 | `src/io/submission.ts` | The three submission CSVs back in |
 | `src/io/write.ts` | Submission out, in the published column order |
 | `src/engine/network.ts` | Location ids, span expansion, closures and buffers |
-| `src/engine/validate.ts` | The nine hard rules and the soft scores |
+| `src/engine/validate.ts` | The ten hard rules and the soft scores |
 | `src/engine/schedule.ts` | The scheduler |
 | `data/public/` | The published instance |
 | `data/sample-submission/` | The organisers' reference answer |

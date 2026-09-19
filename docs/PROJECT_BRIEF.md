@@ -29,14 +29,44 @@ compatibility and engineer availability interact, so schedulers spend time resol
 clashes through meetings and coordination. Ageing assets and workforce change make
 this planning task more pressing; they do not supply missing operating rules.
 The original [challenge wording](NEBULAX_PARTICIPANT_CONTEXT.md#challenge-framing-and-ps1-source-excerpt)
-is retained as source evidence.
+is retained as source evidence. The scarcity premise is sourced from that wording.
+It is **not** sourced from LTA's February 2026 reliability release, which states that
+more engineering hours will be set aside and therefore does not support a
+fixed-envelope framing.
+
+## Where this sits against the deployed incumbent
+
+**Rules-based conflict checking on track access requests is already deployed in
+Singapore.** SMRT's Track Access Management System (TAMS), built with PCCW Solutions,
+was fully rolled out on the North-South and East-West Lines on 16 August 2021, with
+built-in safety rules that conflict-check each scheduled track access request against
+safety requirements, plus workflow digitalisation, real-time allocation status and
+dashboard reporting. TAMS 2.0 reached the Circle Line by 2025.
+
+A pitch whose headline is "detects conflicts" therefore describes deployed capability,
+not a gap. The distinction that survives is narrower and more precise:
+
+| Documented TAMS check                    | What RailPlan adds                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| Each request tested against safety rules | Contention resolved **between** competing requests for the same shared resource |
+| Pass or fail against requirements        | The binding constraint named, with the affected requests and offending interval |
+
+The `NS10–NS12` and `NS11–NS13` example below is exactly that difference: both
+requests may individually satisfy every safety rule and still be mutually exclusive.
+
+Two rules follow, and both are load-bearing. Do not claim that Singapore lacks this
+capability — position relative to TAMS by name and date. Do not repeat the vendor's
+"AI and analytics to optimise track access allocation" claim as established: it
+appears only on Lenovo PCCW Solutions' pages, is absent from SMRT's own release and
+from independent coverage, and no solver type, objective function or benchmark is
+published anywhere. Full sourcing is in [PS1_EVIDENCE_BASE.md](PS1_EVIDENCE_BASE.md).
 
 ## Who we serve and what they need
 
-| User | Job to be done | Useful outcome |
-| --- | --- | --- |
-| Maintenance scheduler / planner | Reconcile requests, inspect conflicts, compare feasible choices and decide the night plan | Know what fits, why other work moved or cannot fit, and which version was published |
-| Contractor / maintenance requester | Describe the work and resource needs, respond to review and receive the agreed slot | Clear submission status and the organisation's exact published schedule |
+| User                               | Job to be done                                                                            | Useful outcome                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Maintenance scheduler / planner    | Reconcile requests, inspect conflicts, compare feasible choices and decide the night plan | Know what fits, why other work moved or cannot fit, and which version was published |
+| Contractor / maintenance requester | Describe the work and resource needs, respond to review and receive the agreed slot       | Clear submission status and the organisation's exact published schedule             |
 
 The planner is the primary decision-maker. Resource owners and operator engineers
 are sources for validating constraints and availability; additional app roles or
@@ -72,13 +102,13 @@ distinguishes local work, repository state, deployment and verification evidence
 
 ## What success means
 
-| Criterion | Evidence needed |
-| --- | --- |
-| Correct constraint handling | Independent validation, known-conflict fixtures, preserved pins and explicit mandatory-work blockers |
-| A planner can explain the decision | Inspectable rules, affected jobs, changed times, deferrals and metric formulas |
-| A traceable handover | Exact approved revisions survive save, reload, publication and scoped contractor/export readback |
-| Less coordination effort | Observe planners reconciling the same facts with and without the tool; measure active time and unresolved conflicts |
-| A credible demonstration | A reproducible request-to-publication journey, an impossible case and a 2–3 minute pitch with claims matched to evidence |
+| Criterion                          | Evidence needed                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Correct constraint handling        | Independent validation, known-conflict fixtures, preserved pins and explicit mandatory-work blockers                     |
+| A planner can explain the decision | Inspectable rules, affected jobs, changed times, deferrals and metric formulas                                           |
+| A traceable handover               | Exact approved revisions survive save, reload, publication and scoped contractor/export readback                         |
+| Less coordination effort           | Observe planners reconciling the same facts with and without the tool; measure active time and unresolved conflicts      |
+| A credible demonstration           | A reproducible request-to-publication journey, an impossible case and a 2–3 minute pitch with claims matched to evidence |
 
 Automated verification supports the implemented model. Reduced planning time,
 operator acceptance and operational validity remain unproven. The time-saving tile

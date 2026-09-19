@@ -397,7 +397,7 @@ export function scheduleInstance(
  * hard failure, so buying 1.5 nights of yield is the only way to compress a
  * contract into its window.
  *
- * Deliberately unused in C. Rule 9 confines every `eclo=1` access affecting a
+ * Deliberately unused in C. Rule 10 confines every `eclo=1` access affecting a
  * line to one continuous span of at most two calendar weeks, chosen per line,
  * and an activity gets at most one access per week — so C can buy at most two
  * ECLO nights per activity, and only for activities that happen to fall in the

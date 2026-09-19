@@ -11,7 +11,12 @@ import {
   parseResults,
   SUBMISSION_FILES,
 } from "@railplan/ps1/io/submission";
-import type { Ps1Instance, Scenario, Submission, ValidationReport } from "@railplan/ps1/types/ps1";
+import type {
+  Ps1Instance,
+  Scenario,
+  Submission,
+  ValidationReport,
+} from "@railplan/ps1/types/ps1";
 
 import { ActionNote } from "@/components/ps1/ActionNote";
 import { Button } from "@/components/ui/button";
@@ -60,7 +65,9 @@ export function SubmissionCheck({
       const missing = SUBMISSION_FILES.filter((name) => !files[name]);
       if (missing.length) {
         setChecked(null);
-        setError(`Missing ${missing.join(", ")} — a submission is all three files.`);
+        setError(
+          `Missing ${missing.join(", ")} — a submission is all three files.`,
+        );
         return;
       }
       try {
@@ -82,7 +89,8 @@ export function SubmissionCheck({
           label,
           scenario,
           report: validate(instance, submission, network),
-          activities: new Set(submission.access.map((row) => row.activityId)).size,
+          activities: new Set(submission.access.map((row) => row.activityId))
+            .size,
           accesses: submission.access.length,
         });
         setError(null);
@@ -103,12 +111,16 @@ export function SubmissionCheck({
         // Matching on the tail accepts this tool's own `A_RESULTS.csv` naming
         // as readily as a bare `RESULTS.csv`, so a downloaded answer can be fed
         // straight back in.
-        const name = SUBMISSION_FILES.find((candidate) => file.name.endsWith(candidate));
+        const name = SUBMISSION_FILES.find((candidate) =>
+          file.name.endsWith(candidate),
+        );
         if (name) files[name] = await file.text();
         else skipped.push(file.name);
       }
       check(
-        list.length === 1 ? list[0].name : `${Object.keys(files).length} uploaded files`,
+        list.length === 1
+          ? list[0].name
+          : `${Object.keys(files).length} uploaded files`,
         files,
       );
       if (skipped.length) {
@@ -125,7 +137,9 @@ export function SubmissionCheck({
     () => (checked ? summariseByCategory(checked.report.hardViolations) : []),
     [checked],
   );
-  const mine = checked ? ours.find((entry) => entry.scenario === checked.scenario) : undefined;
+  const mine = checked
+    ? ours.find((entry) => entry.scenario === checked.scenario)
+    : undefined;
 
   return (
     <section
@@ -144,9 +158,10 @@ export function SubmissionCheck({
     >
       <h2>Check an external submission</h2>
       <p className="mt-1 text-[12px] text-ink-700">
-        Runs the local conformance validator over a submission this tool did not produce, against
-        the instance loaded above. It checks every rule decidable from the CSVs; global physical
-        night alignment across separate possessions is not represented by the format.
+        Runs the local conformance validator over a submission this tool did not
+        produce, against the instance loaded above. It checks every rule
+        decidable from the CSVs; global physical night alignment across separate
+        possessions is not represented by the format.
       </p>
 
       <div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-3">
@@ -159,8 +174,9 @@ export function SubmissionCheck({
             Check the published reference
           </Button>
           <ActionNote id="ps1-note-check-reference">
-            The organisers&apos; own sample answer, which the brief states is feasible. A
-            validator that rejects it would be stricter than the one the judges run.
+            The organisers&apos; own sample answer, which the brief states is
+            feasible. A validator that rejects it would be stricter than the one
+            the judges run.
           </ActionNote>
         </div>
         <div className="flex flex-col items-start gap-1">
@@ -176,6 +192,8 @@ export function SubmissionCheck({
             multiple
             accept=".csv"
             className="sr-only"
+            tabIndex={-1}
+            aria-label="Choose the submission CSV files to check"
             onChange={(event) => {
               void onFiles(Array.from(event.target.files ?? []));
               // Let the same file be chosen twice; without this a re-pick of an
@@ -184,8 +202,8 @@ export function SubmissionCheck({
             }}
           />
           <ActionNote id="ps1-note-check-upload">
-            Any three submission CSVs, including ones downloaded from this page. The scenario is
-            read from RESULTS.csv, not from the tab above.
+            Any three submission CSVs, including ones downloaded from this page.
+            The scenario is read from RESULTS.csv, not from the tab above.
           </ActionNote>
         </div>
       </div>
@@ -204,7 +222,9 @@ export function SubmissionCheck({
             </p>
             <p
               className={`text-[12px] font-semibold ${
-                checked.report.feasible ? "text-signal-green" : "text-signal-red"
+                checked.report.feasible
+                  ? "text-signal-green"
+                  : "text-signal-red"
               }`}
             >
               {checked.report.feasible
@@ -214,13 +234,22 @@ export function SubmissionCheck({
           </div>
 
           <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-3 lg:grid-cols-6">
-            <Cell label="Objective" value={checked.report.objectiveScore ?? "n/a"} />
-            <Cell label="Overrun days" value={checked.report.softScores.overrunDaysTotal} />
+            <Cell
+              label="Objective"
+              value={checked.report.objectiveScore ?? "n/a"}
+            />
+            <Cell
+              label="Overrun days"
+              value={checked.report.softScores.overrunDaysTotal}
+            />
             <Cell
               label="Excess nights"
               value={checked.report.softScores.excessAccessNightsTotal}
             />
-            <Cell label="ECLO nights" value={checked.report.softScores.ecloNightsTotal} />
+            <Cell
+              label="ECLO nights"
+              value={checked.report.softScores.ecloNightsTotal}
+            />
             <Cell label="Activities" value={checked.activities} />
             <Cell label="Access-nights" value={checked.accesses} />
           </dl>
@@ -228,9 +257,13 @@ export function SubmissionCheck({
           {mine?.objective != null && checked.report.objectiveScore != null && (
             <p className="mt-3 border-t border-rule pt-2 text-[12px] text-ink-900">
               Our scenario {checked.scenario} answer scores{" "}
-              <span className="font-semibold tabular-nums">{mine.objective}</span> against this
-              submission&apos;s{" "}
-              <span className="font-semibold tabular-nums">{checked.report.objectiveScore}</span>
+              <span className="font-semibold tabular-nums">
+                {mine.objective}
+              </span>{" "}
+              against this submission&apos;s{" "}
+              <span className="font-semibold tabular-nums">
+                {checked.report.objectiveScore}
+              </span>
               {mine.objective < checked.report.objectiveScore
                 ? " — lower is better, so ours costs less under the same rules."
                 : mine.objective > checked.report.objectiveScore
@@ -249,7 +282,9 @@ export function SubmissionCheck({
                   <p className="text-[12px] font-semibold text-signal-red">
                     {entry.category.label} — {entry.count}
                   </p>
-                  <p className="mt-1 text-[11px] text-ink-700">{entry.category.description}</p>
+                  <p className="mt-1 text-[11px] text-ink-700">
+                    {entry.category.description}
+                  </p>
                 </li>
               ))}
             </ul>
