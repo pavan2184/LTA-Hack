@@ -479,13 +479,15 @@ The [Devpost asset pack](assets/submission/devpost-2026-09-19/README.md) include
 cover and social artwork, four product gallery images, captions, submission copy
 and editable sources.
 
-The [Algorithm Lab](demos/algorithm-lab/README.md) adds a real Python OR-Tools
+The public [Algorithm Lab](https://railplan-theta.vercel.app/algorithm-lab) adds a real Python OR-Tools
 CP-SAT teaching demo and a three-step explanation: model the work, search within
 the rules, then prove and explain the result. Its separate
 [Devpost pack](assets/submission/algorithm-lab-2026-09-19/README.md) includes five
-visuals and a narrated walkthrough script. Cloud Run deployment is prepared;
-no public lab URL has been verified. This six-job educational model is separate
-from the full-instance native PS1 optimiser.
+visuals and a narrated walkthrough script. The lab runs on Vercel with a Python
+solver function; Cloud Run remains an optional, unverified deployment target.
+This six-job educational model is separate from the full-instance native PS1
+optimiser. See [setup](demos/algorithm-lab/README.md) and the
+[verified public release](docs/ALGORITHM_LAB_VERCEL_RELEASE.md).
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 

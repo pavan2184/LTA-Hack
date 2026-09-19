@@ -5,8 +5,23 @@ constraint programming with real Google OR-Tools CP-SAT solves over six fictiona
 jobs. The web page and its bounded Python API can run together on Google Cloud
 Run. No project credentials belong in the application.
 
-**Deployment status:** prepared for Cloud Run; no public Google Cloud URL has
-been verified. Building this lab does not update the main RailPlan deployment.
+**Deployment targets:** standalone Cloud Run or a bounded Python function beside
+the existing Next.js site on Vercel. No public Google Cloud URL has been verified.
+See the current [project status](../../docs/PROJECT_STATUS.md) for verified URLs.
+
+## Same-domain Vercel integration
+
+The public homepage and PS1 titlebar link to `/algorithm-lab`. `predev` and
+`prebuild` export the shared UI into ignored `public/algorithm-lab/` assets;
+Next rewrites the clean route to its HTML. `api/algorithm-lab.py` exposes the
+same real model through GET (description) and POST (solve). The single Python
+function has pinned Flask/OR-Tools dependencies and a 15-second platform limit;
+the model's two-second search limit remains unchanged.
+
+Use `vercel dev` for the combined Next/Python surface or the standalone command
+below for just the teaching lab. `next dev` alone does not run Vercel Python
+functions. The full-instance PS1 native service has a separate deployment
+contract; exposing this small educational function does not provision it.
 
 ## What this demo demonstrates
 

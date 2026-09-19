@@ -42,7 +42,10 @@ next steps, test counts or local server URLs as current instructions.
   `npm run ps1:benchmark:cloud` compares native engines and search profiles;
   `npm run ps1:benchmark:regression` checks public/synthetic quality and determinism.
 
-- **Algorithm Lab companion:** a standalone Python OR-Tools CP-SAT educational
+- **Algorithm Lab companion:** publicly available at
+  <https://railplan-theta.vercel.app/algorithm-lab>, linked from the homepage
+  and scheduler. A Python Vercel Function runs the same bounded OR-Tools model.
+  The educational
   service covers six fictional jobs, nine accesses and eight weeks. Its page
   explains modelling, constraint propagation/search and proof/checking in three
   interactive steps. Capacity, one closed week and predecessor controls drive
@@ -51,7 +54,8 @@ next steps, test counts or local server URLs as current instructions.
   five gallery/cover images, actual local captures, copy and a narration script.
   This does not replace or change the full-instance native PS1 service. The
   companion is rebased onto PR #47, with current solver descriptions and a
-  dedicated Python CI job.
+  dedicated Python CI job. The published Vercel scheduler retains the earlier
+  browser runtime; publication does not certify a full native PS1 deployment.
 
 ## Latest recorded verification
 
@@ -77,6 +81,7 @@ and warm starts; do not relabel the stored comparison as a rerun of the new tree
 
 | Scope | Evidence | Limit |
 | --- | --- | --- |
+| Algorithm Lab Vercel publication, 2026-09-19 | 31 Python tests; 1,079 application tests passed (79 DB skips); lint/typecheck; Vercel production build; 14 public browser scenarios with no JS errors; live objective 5 → 19, nine accesses retained | Published release `ff05848` preserves browser PS1 baseline `e4ae8c6`; separate from current-main native PS1 runtime. See [release record](ALGORITHM_LAB_VERCEL_RELEASE.md) |
 | Algorithm Lab, 2026-09-19 | 21 backend tests; all 54 settings checked against independent exact dynamic programming; 14 browser scenarios; lint, typecheck, Gunicorn config, ShellCheck and strict UI audit passed | Local Python service; no public Cloud Run revision verified; see [verification](ALGORITHM_LAB_VERIFICATION.md) |
 | Final combined merge, 2026-09-19 | 1,079 tests passed across 113 files, 79 database-dependent tests skipped; lint, typecheck and webpack production build passed; real native API-function/CLI public smokes retained A 25.2 / B 30 / C 25.2, all OPTIMAL, default 60s and exactly nine CLI CSVs | Database/browser/hosted-release/cloud-scaling checks not rerun; non-failing React act/Vite warnings remain |
 | Post-merge heuristic check, 2026-09-19 | All 39 hybrid baselines and 39 extended-hybrid outcomes locally valid; capacity-pressure C improves 1118.8 → 1105.5 in both, other 38 scores unchanged | Fresh heuristic-only comparison; native models/checker unchanged, original native timing cohorts not rerun |
@@ -98,15 +103,23 @@ the [solver benchmark](PS1_BENCHMARK.md),
 
 ## Deployment and submission gates
 
-Algorithm Lab is running locally at <http://127.0.0.1:8088>. Its isolated Cloud
-Run deployment script is prepared, but no `gcloud` account/project is configured
-here. The user must identify the intended Google Cloud project and authenticated
-deployment context before publication. Asset captions currently say local
-preview; do not claim a Google Cloud-hosted lab until the public URL is verified.
+Algorithm Lab is public on Vercel at
+<https://railplan-theta.vercel.app/algorithm-lab>. Deployment
+`dpl_59NhKKk9Nt8AftwbcBQHd7tHUJqM` publishes release source `ff05848`, based on
+`e4ae8c6` plus the isolated companion/navigation changes. The public homepage
+explains the three steps and `/ps1` links to the lab in a new tab. The browser
+scheduler still solves the published instance (A 25.2 / B 44 / C 25.2); this is
+separate from current-main native scores. See the [release evidence](ALGORITHM_LAB_VERCEL_RELEASE.md).
+
+The original Cloud Run deployment remains prepared but unverified. Existing asset
+captions accurately describe their local capture provenance; new public captures
+are in ignored `output/algorithm-lab-vercel`. Do not claim Google Cloud hosting
+for this Vercel lab. The standalone local service remains at <http://127.0.0.1:8088>.
 
 Use [PS1_SUBMISSION_CHECKLIST.md](PS1_SUBMISSION_CHECKLIST.md) as the actionable
-release/submission checklist. The canonical judge URL is
-https://railplan-nine.vercel.app/ps1. `vercel.json` disables Git deployments;
+release/submission checklist. The existing nine-domain judge URL is
+https://railplan-nine.vercel.app/ps1; the separately verified Vercel publication
+for this task is https://railplan-theta.vercel.app/ps1. `vercel.json` disables Git deployments;
 a merge or push does not establish deployment freshness.
 
 The last recorded hosted check on 2026-09-19 saw the earlier interface and C 39.2.

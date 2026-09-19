@@ -3,8 +3,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [playwrightModule, baseUrl = "http://127.0.0.1:8088", output = "output/algorithm-lab"] = process.argv.slice(2);
-if (!playwrightModule) throw new Error("Usage: node verify-and-capture.mjs /path/to/playwright/index.mjs [base-url] [output-dir]");
+const [playwrightModule, baseUrl = "http://127.0.0.1:8088", output = "output/algorithm-lab", apiEndpoint = "/api/solve"] = process.argv.slice(2);
+if (!playwrightModule) throw new Error("Usage: node verify-and-capture.mjs /path/to/playwright/index.mjs [base-url] [output-dir] [api-endpoint]");
+const solveUrl = new URL(apiEndpoint, baseUrl).href;
 const { chromium } = await import(pathToFileURL(path.resolve(playwrightModule)).href);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
@@ -32,7 +33,7 @@ try {
   assert.equal(await cost(), "5");
   assert.equal(await page.locator(".access").count(), 9);
   await screenshot("01-default.png");
-  const baseline = await page.request.post(`${baseUrl}/api/solve`, { data: { capacity: 2, closedWeek: null, enforcePredecessors: true } });
+  const baseline = await page.request.post(solveUrl, { data: { capacity: 2, closedWeek: null, enforcePredecessors: true } });
   await writeFile(path.join(output, "baseline-result.json"), JSON.stringify(await baseline.json(), null, 2));
 
   await page.getByLabel("Unavailable week", { exact: true }).selectOption("2");
@@ -44,7 +45,7 @@ try {
   assert.equal(await page.locator(".access").count(), 9);
   assert.match(await page.locator("#comparison").innerText(), /4 of 6.*5 → 19/);
   await screenshot("02-closed-week.png");
-  const closure = await page.request.post(`${baseUrl}/api/solve`, { data: { capacity: 2, closedWeek: 2, enforcePredecessors: true } });
+  const closure = await page.request.post(solveUrl, { data: { capacity: 2, closedWeek: 2, enforcePredecessors: true } });
   await writeFile(path.join(output, "closed-week-result.json"), JSON.stringify(await closure.json(), null, 2));
 
   await page.getByRole("button", { name: /2 Search within the rules/ }).click();
@@ -83,7 +84,7 @@ try {
   assert.match(await page.locator("#schedule-basis").innerText(), /predecessors off/);
 
   await page.getByLabel("Enforce predecessors", { exact: true }).check();
-  await page.route("**/api/solve", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { message: "Temporary test outage. Try again." } }) }), { times: 1 });
+  await page.route(solveUrl, (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { message: "Temporary test outage. Try again." } }) }), { times: 1 });
   await run();
   assert.equal(await page.getByRole("alert").isVisible(), true);
   assert.match(await page.getByRole("status").innerText(), /previous result/);
@@ -92,7 +93,7 @@ try {
   assert.equal(await cost(), "5");
   assert.equal(await page.getByRole("alert").isVisible(), false);
 
-  await page.route("**/api/solve", async (route) => {
+  await page.route(solveUrl, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     await route.continue();
   }, { times: 1 });
