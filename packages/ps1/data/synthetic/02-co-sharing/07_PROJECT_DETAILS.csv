@@ -1,0 +1,9 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+02-C001,Synthetic shared-access host 1,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,PC,3
+02-C002,Synthetic shared-access host 2,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,PC,3
+02-C003,Synthetic shared-access co-worker 3,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,C,3
+02-C004,Synthetic shared-access co-worker 4,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,C,3
+02-C005,Synthetic shared-access co-worker 5,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,C,3
+02-C006,Synthetic shared-access co-worker 6,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,C,3
+02-C007,Synthetic shared-access co-worker 7,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,C,3
+02-C008,Synthetic shared-access co-worker 8,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-01-31,1,C,3

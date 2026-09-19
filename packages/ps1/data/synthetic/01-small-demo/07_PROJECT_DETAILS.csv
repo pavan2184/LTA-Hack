@@ -1,0 +1,5 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+01-C001,Synthetic platform inspection,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-02-28,1,PC,3
+01-C002,Synthetic cable installation,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-02-28,1,C,3
+01-C003,Synthetic ballast renewal,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-03-14,1,PM,3
+01-C004,Synthetic traction renewal,2026-09-01,Renewal,Live,1,2027-08-01,2027-03-14,1,PM,2

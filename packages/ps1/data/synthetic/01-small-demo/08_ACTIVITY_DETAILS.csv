@@ -1,0 +1,7 @@
+activity_id,contract_number,activity_type,start_location_id,end_location_id,total_accesses,planned_start_date,predecessor_activity_id,activity_priority
+01-A001,01-C001,Construction,SEC:ALP:S02_S03:EB,SEC:ALP:S02_S03:EB,2,2027-01-04,,2
+01-A002,01-C002,Construction,SEC:ALP:S02_S03:EB,SEC:ALP:S02_S03:EB,2,2027-01-04,,2
+01-A003,01-C001,Construction,SEC:BET:S12_S13:WB,SEC:BET:S12_S13:WB,1,2027-01-11,,2
+01-A004,01-C002,Construction,SEC:BET:S12_S13:WB,SEC:BET:S12_S13:WB,2,2027-01-04,01-A001,2
+01-A005,01-C003,Renewal,SEC:ALP:S06_S07:WB,SEC:ALP:S06_S07:WB,3,2027-01-04,,2
+01-A006,01-C004,Renewal,SEC:BET:S17_S18:EB,SEC:BET:S17_S18:EB,2,2027-01-11,,2

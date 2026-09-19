@@ -1,0 +1,97 @@
+{
+  "kind": "synthetic-ps1-test-inputs",
+  "version": 1,
+  "horizonStart": "2027-01-04",
+  "horizonWeeks": 30,
+  "source": "../public",
+  "sourceSha256": {
+    "01_LINES.csv": "b6e60b0e7726e4266efd059bf5061b3b3a2c9825ae7dd85a6431f41b81b383e7",
+    "02_STATIONS.csv": "4a27d6508defd03e8c833133b523390ac8850a1c1717f309033e40f364720e24",
+    "03_SECTORS.csv": "643fdb2bd317126b42572fafcce8f8108008e8e9c7b71c08dfd31cec11c3ee34",
+    "04_LOCATION_SUPPLY.csv": "9d8a92d6ffd340f40dae28302ed6f88958f8661e2b046bb6b4e0b79c385be1e6",
+    "05_BUFFER_LOCATION.csv": "4b9fe7fd6a1f9128bd6e83405496dc64a8028f997bb1fcd28355582a6d554de0",
+    "06_PARAMETERS.csv": "9400b7b082069c56b8cae85d56994cf06fe08ae54fcd116ff6edc890034cc8e6",
+    "07_PROJECT_DETAILS.csv": "393f0dcc7e7b9a54f0eff12eb0dd0122dbd74f4b4b8b73b7676f9f232fb8a4c7",
+    "08_ACTIVITY_DETAILS.csv": "6a1ef90cd3bed93a8970ef49454e9c02e0c1df93ce8e0f0f4b071563cfb43e30"
+  },
+  "datasets": [
+    {
+      "id": "01-small-demo",
+      "description": "Small mixed-access demo with both lines, both bounds and one dependency.",
+      "contracts": 4,
+      "activities": 6,
+      "totalAccesses": 12,
+      "dependencyLinks": 1,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "02-co-sharing",
+      "description": "Two PC hosts and six C contractors compete for one possession slot per location-week.",
+      "contracts": 8,
+      "activities": 16,
+      "totalAccesses": 32,
+      "dependencyLinks": 0,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "03-live-interchange",
+      "description": "Live interchange closures, opposite-bound mirroring, consist buffers and non-live independent line access.",
+      "contracts": 6,
+      "activities": 12,
+      "totalAccesses": 24,
+      "dependencyLinks": 2,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "04-dependency-chains",
+      "description": "Three five-stage cross-contract dependency chains, deliberately stored out of dependency order.",
+      "contracts": 5,
+      "activities": 15,
+      "totalAccesses": 30,
+      "dependencyLinks": 12,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "05-capacity-pressure",
+      "description": "Exclusive possessions exceed nominal supply; a separate six-access activity needs ECLO to meet its four-week deadline in B.",
+      "contracts": 9,
+      "activities": 9,
+      "totalAccesses": 22,
+      "dependencyLinks": 0,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    },
+    {
+      "id": "06-mixed-120",
+      "description": "Larger deterministic mixed workload with 24 contracts, 120 activities, 24 dependency links and staggered starts.",
+      "contracts": 24,
+      "activities": 120,
+      "totalAccesses": 300,
+      "dependencyLinks": 24,
+      "expectedScenarios": {
+        "A": "FEASIBLE",
+        "B": "FEASIBLE",
+        "C": "FEASIBLE"
+      }
+    }
+  ]
+}

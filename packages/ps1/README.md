@@ -83,6 +83,12 @@ npx vitest run packages/ps1/
 
 The web surface is at `/ps1` — public, no account, solves in the browser.
 
+Six additional [synthetic input datasets](data/synthetic/README.md) cover demos,
+co-sharing, Live interchange closures, dependencies, capacity pressure and a
+120-activity workload. Each folder contains the eight CSVs accepted by `/ps1`.
+Run `npx vitest run packages/ps1/src/io/datasets.test.ts` to verify all A/B/C
+outcomes. The official public instance and public-result files stay separate.
+
 ## Results on the public instance
 
 | Scenario | Feasible | Overrun days | Excess nights | ECLO nights | Objective |

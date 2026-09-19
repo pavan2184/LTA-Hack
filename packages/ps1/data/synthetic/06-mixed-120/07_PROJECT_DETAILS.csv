@@ -1,0 +1,25 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+06-C001,Synthetic network programme 001,2026-09-01,Renewal,Live,1,2027-08-01,2027-07-04,2,PC,2
+06-C002,Synthetic network programme 002,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,1,C,3
+06-C003,Synthetic network programme 003,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,1,C,3
+06-C004,Synthetic network programme 004,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,1,PM,3
+06-C005,Synthetic network programme 005,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,2,PC,3
+06-C006,Synthetic network programme 006,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,1,C,3
+06-C007,Synthetic network programme 007,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,1,C,3
+06-C008,Synthetic network programme 008,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,1,PM,3
+06-C009,Synthetic network programme 009,2026-09-01,Renewal,Live,3,2027-08-01,2027-07-04,2,PC,2
+06-C010,Synthetic network programme 010,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,1,C,3
+06-C011,Synthetic network programme 011,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,1,C,3
+06-C012,Synthetic network programme 012,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,1,PM,3
+06-C013,Synthetic network programme 013,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,2,PC,3
+06-C014,Synthetic network programme 014,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,1,C,3
+06-C015,Synthetic network programme 015,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,1,C,3
+06-C016,Synthetic network programme 016,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,1,PM,3
+06-C017,Synthetic network programme 017,2026-09-01,Renewal,Live,2,2027-08-01,2027-07-04,2,PC,2
+06-C018,Synthetic network programme 018,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,1,C,3
+06-C019,Synthetic network programme 019,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,1,C,3
+06-C020,Synthetic network programme 020,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,1,PM,3
+06-C021,Synthetic network programme 021,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,2,PC,3
+06-C022,Synthetic network programme 022,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-07-04,1,C,3
+06-C023,Synthetic network programme 023,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-07-04,1,C,3
+06-C024,Synthetic network programme 024,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-07-04,1,PM,3
