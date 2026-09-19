@@ -20,11 +20,12 @@ unchecked actions have happened. PS1 requirements come from
 Local release evidence: public scores **A 25.2 / B 44 / C 25.2**; all 12
 synthetic upload/solve/download flows checked, including all 108 CSVs after actual
 browser download. This does not complete the hosted-release checks below.
-The production site still serves the older interface and public C 39.2.
-Deployment access is outstanding: the current CLI account (`ducksss`) lists only
-its own team, while the existing project belongs to `pavanmadhup-1254s-projects`.
-The browser dashboard also requires login. Use the existing team's account or
-have its owner deploy the tested branch; do not create an unrelated replacement.
+The last recorded hosted check on 2026-09-19 saw the older interface and public
+C 39.2. At that check the CLI account (`ducksss`) listed only its own team, while
+the existing project belonged to `pavanmadhup-1254s-projects`; the browser dashboard
+required login. Deployment/account access was not rechecked during context cleanup.
+Use the existing team's account or have its owner deploy the tested branch; do not
+create an unrelated replacement.
 
 - [ ] Deploy the intended commit and record its deployment URL/commit above.
   `vercel.json` sets `git.deploymentEnabled` to `false`; merging does not trigger
@@ -93,9 +94,10 @@ fixtures; its historical scores must not replace fresh measurements.
 - [ ] Record the tested hosted build, review the exported video, publish to
   YouTube, and check playback from a signed-out browser. Record its URL above.
   Confirm the chosen visibility allows judge access.
-- [ ] Provide complete source/setup instructions. At preparation time this
-  checkout has only the GitHub `origin` remote; `gh` is installed and `glab` is
-  not. This does not establish whether a GitLab project exists elsewhere.
+- [ ] Provide complete source/setup instructions. This checkout has GitHub
+  `origin` and GitLab remote `git@gitlab.com-personal:Ducksss/lta-hack.git`
+  (observed 2026-09-19). Verify mirror contents, commit and judge access; a
+  configured remote alone does not satisfy source handover.
 - [ ] Resolve the official GitLab requirement versus the pack's GitHub wording.
   Supply the team's GitLab destination if a mirror is required. Mirror the
   release source and verify judge access; do not publish secrets or private data.
