@@ -1,12 +1,30 @@
 # Project Brief
 
+## Cloud resource decision — 2026-09-19
+
+The owner selected 32 vCPUs / 64 GiB RAM and a 60-second default search limit. The
+cloud engineer deploys the native server path; research and local benchmarks
+select the initial algorithm, and a target-host 8/16/32-worker sweep determines
+the final parallel setting. Hardware and browser package size do not substitute
+for validated score measurements on the actual scheduling model.
+
+## Native PS1 execution — 2026-09-19
+
+The owner has authorized server-side compute. The PS1 upload UI now sends the
+validated instance to the same-origin native CP-SAT endpoint; browser-only solving
+is no longer a delivery requirement. The official PS1 README permits a service
+behind a thin UI. Keep the hidden eight-file upload, complete workload, local
+conformance disclosure and exact nine-file export. Google Compute Engine is the
+initial deployment target; see [native deployment](PS1_NATIVE_DEPLOYMENT.md).
+
 ## Public challenge workspace update — 2026-09-19
 
 The unauthenticated `/ps1` path is the submission-facing product: judges can load
-the published or hidden eight-file instance, optimise all three scenarios locally,
+the published or hidden eight-file instance, optimise all three scenarios through
+the same-origin native service,
 inspect the contract/activity work schedule and linked occupancy/network views,
 review changes and download the exact nine-file result without creating an account. RailPlan's durable authenticated
-workflow remains separate. Browser-local conformance is explicit about the one
+workflow remains separate. Local conformance is explicit about the one
 physical-night relationship the official files cannot encode.
 
 Last updated: 2026-09-19 · RailPlan v0.4.0

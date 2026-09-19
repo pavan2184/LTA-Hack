@@ -24,9 +24,12 @@ wins. Specifically, never change code in a way that breaks these:
   mixes, weekly allocation and workfront caps.
 - Output is exactly three CSVs per scenario with the published columns, one
   scenario per `RESULTS.csv`, nine files across A/B/C.
-- `/ps1` must keep accepting an uploaded hidden eight-file instance and solving
-  it entirely in the browser. That path is deliverable 2 — treat it as the
-  highest-risk surface in the repo.
+- `/ps1` must keep accepting an uploaded hidden eight-file instance. The owner
+  explicitly superseded browser-only execution on 2026-09-19: target a native
+  cloud solver on 32 vCPUs / 64 GiB RAM with a 60-second default search limit.
+  Preserve the upload, review and export workflow when integrating the service;
+  the cloud engineer owns deployment. Do not claim an integration is deployed
+  merely because native CLI benchmarks pass.
 - Our local checker is not the reference validator. Do not label it as one.
 
 ## Working Rules

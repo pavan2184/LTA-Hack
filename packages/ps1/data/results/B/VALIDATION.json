@@ -6,8 +6,8 @@
     "scenario": "B",
     "overrunDaysTotal": 0,
     "contractsOverrunning": 0,
-    "earlinessDaysTotal": 189,
-    "excessAccessNightsTotal": 2,
+    "earlinessDaysTotal": 175,
+    "excessAccessNightsTotal": 0,
     "ecloNightsTotal": 6,
     "priorityOverrun": {
       "1": 0,
@@ -181,6 +181,6 @@
       "cross_possession_night_alignment"
     ]
   },
-  "objectiveScore": 44,
-  "formulaVersion": "ps1-objective-v1"
+  "objectiveScore": 30,
+  "formulaVersion": "ps1-objective-v2"
 }

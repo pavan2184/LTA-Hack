@@ -3,7 +3,7 @@
 <div align="center">
   <h1>RailPlan</h1>
   <p><strong>Railway access planning, explained.</strong></p>
-  <p>A browser-based railway maintenance scheduling prototype for Nebula X PS1.</p>
+  <p>A railway maintenance scheduling prototype with a native solver for Nebula X PS1.</p>
   <p>
     <a href="docs/README.md"><strong>Explore the documentation »</strong></a>
     <br /><br />
@@ -36,6 +36,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#ps1-native-solver-benchmark-and-selection">PS1 Native Solver Benchmark and Selection</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -53,7 +54,7 @@ dependencies and completion targets interact: moving one activity can affect the
 rest of the plan. RailPlan brings those decisions into one schedule workspace.
 
 The public **`/ps1`** application accepts the challenge's eight CSV files, builds
-three planning scenarios in the browser, and connects the weekly schedule to
+three planning scenarios through a native CP-SAT service, and connects the weekly schedule to
 placement explanations and reviewed changes. The published example contains
 **54 activities, 14 contracts and a 30-week horizon**.
 
@@ -67,8 +68,9 @@ placement explanations and reviewed changes. The published example contains
 
 The dense desktop workspace includes a horizon navigator, linked location
 occupancy, an attention queue and a low-glare mode. Narrow screens support triage,
-inspection, review and export. Uploaded instance data and planning results stay
-on the device; the PS1 workflow needs no account.
+inspection, review and export. Uploaded instances are sent to the same-origin
+native service; the browser checks returned schedules before display and export.
+The PS1 workflow needs no account.
 
 **Prototype boundary:** the published PS1 instance is challenge data, not a live
 railway. Our local checker is not the organiser's reference validator or an
@@ -81,7 +83,7 @@ fabricated demonstration data.
 | --- | --- |
 | Application | Next.js 16, React 19, TypeScript 6 |
 | Interface | Tailwind CSS 4, Radix UI, Zustand |
-| PS1 planning | Pure TypeScript `@railplan/ps1`, deterministic heuristic search, browser Web Workers |
+| PS1 planning | Native Python OR-Tools CP-SAT, TypeScript `@railplan/ps1` warm start and independent local checker |
 | Verification | Vitest, Testing Library, typechecking and browser checks |
 | Separate authenticated workspace | `@railplan/core`, Supabase Auth and PostgreSQL with row-level security |
 | Optional authenticated integrations | Anthropic SDK for language/extraction; Telegram Bot API for delivery |
@@ -93,10 +95,12 @@ fabricated demonstration data.
 ### Prerequisites
 
 - Node.js **22.13+ on the 22.x line**, or **24.x**, with npm.
+- Python **3.11+** with `venv`, plus the pinned OR-Tools requirements.
 - A modern browser.
 
-The public PS1 scheduler requires **no database, API keys or environment variables**.
-The app runs directly in Node.js; Docker is not required.
+The public PS1 scheduler requires **no database, API keys or application environment
+variables**. Node.js runs the web app and starts native Python solver processes;
+Docker is not required.
 
 ### Installation
 
@@ -104,12 +108,19 @@ The app runs directly in Node.js; Docker is not required.
 git clone https://github.com/pavan2184/LTA-Hack.git
 cd LTA-Hack
 npm ci
+python3 -m venv .venv-cpsat
+source .venv-cpsat/bin/activate
+pip install -r scripts/ps1/requirements.txt
 npm run dev
 ```
 
 Open [http://localhost:3000/ps1](http://localhost:3000/ps1) and select
 **Load the public instance and run**. To use your own instance, upload all eight
-files listed under [Usage](#usage).
+files listed under [Usage](#usage). Keep the virtual environment active when
+running development or solver commands. For the production Node/Python service,
+use the [native deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md): the target is
+**32 vCPUs / 64 GiB RAM**, with a **60-second search budget per scenario** and a
+provisional 16-worker default. The cloud engineer owns deployment.
 
 <details>
   <summary>Optional: set up the authenticated contractor/planner workspace</summary>
@@ -152,6 +163,7 @@ reset or reseed it. Keep `.env.local` and credentials out of Git. Then use
 
 ```bash
 npx vitest run packages/ps1/
+python scripts/ps1/benchmark/test_cp_sat.py
 npm test
 npm run typecheck
 npm run lint
@@ -171,11 +183,20 @@ remaining gaps. A passing unit suite alone is not the full release gate.
 
 ## Usage
 
+The PS1 scheduler at `/ps1` is public and requires no account. It sends uploaded
+instances to a native CP-SAT service, with local validation before display/export.
+The [existing hosted demo](https://railplan-nine.vercel.app/ps1) is not assumed to
+contain this change; deploy the Node/Python runtime using the
+[native runbook](docs/PS1_NATIVE_DEPLOYMENT.md). The separate durable
+[RailPlan workspace](https://railplan-nine.vercel.app/login) requires provisioned access.
+See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
+GitHub and local work.
+
 ### Plan an instance
 
 1. Open the [public scheduler](https://railplan-nine.vercel.app/ps1) or your local `/ps1`.
 2. Load the public example, or upload the eight CSVs below together.
-3. Let the browser solve A, B and C. A fresh instance opens Policy C's work schedule.
+3. Let the same-origin native service solve A, B and C. A fresh instance opens Policy C's work schedule.
 4. Expand a contract and select an activity to inspect why it was placed there.
 5. Use **Test urgent maintenance** to preview a capacity reduction. Review its impact, then **Apply reviewed change** or **Keep current schedule**. Applied changes support Undo.
 6. Open **Proof and export** to inspect local conformance and download the official results ZIP. Resolve a pending review before exporting.
@@ -210,9 +231,10 @@ better score. Each policy has its own objective, so raw A/B/C scores are **not a
 ranking between policies**. The [official PS1 specification](docs/PS1_OFFICIAL_SPEC.md)
 is authoritative for all constraints, penalties and deliverables.
 
-The browser uses deterministic multi-start construction and bounded reconstruction
-in [`@railplan/ps1`](packages/ps1/README.md). It checks candidates against the
-encoded constraints; it does not establish global optimality. The timeline shows
+The native service uses OR-Tools CP-SAT with a deterministic TypeScript warm start
+from [`@railplan/ps1`](packages/ps1/README.md). Every returned candidate is checked
+against the encoded constraints; a local proof does not establish reference-validator
+parity. The timeline shows
 weekly allocations: `access_night` is an accounting index, not a clock time.
 The official schema cannot establish physical-night alignment between separate
 possessions; the local checker exposes that limitation.
@@ -239,23 +261,109 @@ This command reads the vendored public fixture, runs the optimiser and validates
 all three outcomes before replacing the A/B/C CSVs. It also writes diagnostic
 `VALIDATION.json` files and `SUMMARY.json`, and creates
 `output/PS1-public-results.zip`. The ZIP contains only the nine official CSVs.
-The CLI and browser both reuse earlier feasible scenario candidates after
-checking them against the target policy.
+The CLI writes results only after all three native outcomes pass local checking.
 
 Run the repeatable benchmark across the public instance and twelve synthetic
 inputs to check full workload, local conformance and exact CSV round-trips:
 
 ```bash
-npm run ps1:benchmark
+npm run ps1:benchmark:regression
 ```
 
 The [measured solver comparison](docs/PS1_BENCHMARK.md) records the latest local
-public scores: **A 25.2 / B 44 / C 25.2**. The
+public scores: **A 25.2 / B 30 / C 25.2**. The
 [submission checklist](docs/PS1_SUBMISSION_CHECKLIST.md),
 [three-minute demo script](assets/submission/DEMO_SCRIPT.md) and
 [PS1 write-up](assets/submission/PS1_WRITEUP.md) cover release evidence and
 remaining publication steps. The script is not a recorded or uploaded video;
 a merge does not establish a fresh hosted deployment.
+
+### PS1 native solver benchmark and selection
+
+**Measured snapshot:** [d1e0a8f](https://github.com/pavan2184/LTA-Hack/tree/d1e0a8f),
+with solver-source SHA-256 `a10cbe7bb8bbd252c27726aa8b222d67b20abcec785829496c61970d1ca1768e`.
+The tables describe that snapshot. Later merged changes improve the TypeScript
+ECLO constructor; these algorithm comparisons and timings have not been rerun
+on those changes. “Baseline” below means the measured snapshot's baseline.
+
+A separate [post-merge quality check](scripts/ps1/benchmark/post-merge-hybrid-results.json)
+passed all 39 baseline and 39 extended-hybrid outcomes. Capacity-pressure C's
+hybrid score improved from 1118.8 to **1105.5**; the other 38 scores were unchanged.
+The native models and checker did not change in that merge. The tables retain
+the original paired experiment rather than mixing its timings with the newer
+heuristic run.
+
+The `/ps1` scheduler uses a validated TypeScript warm start followed by
+native OR-Tools CP-SAT. **All PS1 scores are penalties: lower is better.** We
+compared that pipeline with an independently formulated SCIP MIP and an extended
+TypeScript hybrid search on the public instance plus 12 synthetic datasets,
+covering **39 dataset/scenario combinations** under scoring `ps1-objective-v2`.
+
+| Algorithm | Cases tested | Locally valid schedules | Improved over the TypeScript baseline | Full-model optimality proofs |
+| --- | ---: | ---: | ---: | ---: |
+| Warm-started CP-SAT | 39 | 39/39 | 4 | 37/39 |
+| Warm-started SCIP MIP | 39 | 39/39 | 4 | 38/39 |
+| Extended TypeScript hybrid | 39 | 39/39 | 0 | No solver proof |
+
+| Algorithm | Median measured stage time | 95th-percentile stage time |
+| --- | ---: | ---: |
+| Warm-started CP-SAT | 0.489 s | 60.417 s |
+| Warm-started SCIP MIP | 0.283 s | 7.585 s |
+| Extended TypeScript hybrid | 0.017 s | 6.123 s |
+
+Native stage times include process startup, model building, search and CSV
+validation, but exclude the initial heuristic warm start. The hybrid row measures
+its search/check stage. These are not complete API response times; 27 zero-score
+cases strongly influence the medians. SCIP's quicker capacity-pressure proof
+also lowers its 95th-percentile time.
+
+**CP-SAT and SCIP achieved identical scores in all 39 seed-1 cases.** Both improved the
+same four cases; the extended hybrid retained its baseline scores:
+
+| Dataset / scenario | TypeScript baseline and extended hybrid | CP-SAT | SCIP |
+| --- | ---: | ---: | ---: |
+| Capacity pressure / B | 293 | 230 | 230 |
+| Capacity pressure / C | 1118.8 | 1090.8 | 1090.8 |
+| Priority contention / B | 483 | 279 | 279 |
+| Priority contention / C | 340.4 | 300.7 | 300.7 |
+
+We then repeated the two difficult C cases with seeds 2 and 3 under the same
+eight-worker, 60-second settings. Together with the original seed-1 runs:
+
+| Dataset / scenario | CP-SAT scores, seeds 1 / 2 / 3 | SCIP scores, seeds 1 / 2 / 3 | CP-SAT optimality proofs | SCIP optimality proofs |
+| --- | --- | --- | ---: | ---: |
+| Capacity pressure / C | 1090.8 / 1090.8 / 1090.8 | 1090.8 / 1090.8 / 1090.8 | 1/3 | 3/3 |
+| Priority contention / C | 300.7 / 300.7 / 300.7 | 300.7 / 308.4 / 304.2 | 0/3 | 0/3 |
+
+**Why CP-SAT is the default:** it consistently found the best observed
+priority-contention C score across these three seeds, while SCIP's score varied.
+Its Boolean/integer model fits PS1's weekly choices, its parallel search already
+includes neighbourhood improvement, and the integrated service retains a checked
+incumbent when search runs out of time. This is a practical choice supported by a
+**small sample, not a claim of universal superiority**. SCIP remains a strong
+challenger: it proved capacity-pressure C optimal in all three runs. In the
+seed-1 run, CP-SAT found that score after approximately 0.74 seconds but did not
+prove it by its limit; SCIP completed the proof in approximately 7.25 seconds.
+Neither solver proved the priority-contention C score optimal.
+
+These measurements used **Apple M3 Pro, 11 available CPUs, 18 GiB RAM, eight
+requested native workers and a 60-second search cap per scenario**. The main
+39-case comparison uses seed 1; only the two cases above were repeated with
+seeds 2 and 3. These are not measurements from the planned
+**32-vCPU / 64-GiB cloud server**. Native
+startup, model construction, heuristic preparation and validation are additional;
+the TypeScript comparison also has a 2,500-neighbour ceiling. Twenty-seven cases
+already had zero baseline scores, so they cannot show score improvement. The
+cloud service's provisional 16-worker default still needs an 8/16/32-worker test
+on the deployment host, including repeated seeds and harder holdout instances.
+
+Every native candidate passed the local checker after an official-CSV round-trip.
+That checker is **not the organiser's reference validator**; proofs cover only
+the encoded local model. See the [research and selection report](docs/PS1_NATIVE_SOLVER_RESEARCH.md),
+[recorded benchmark results](scripts/ps1/benchmark/cloud-results.json) and
+[cloud deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md) for evidence, limits and
+reproduction details.
+
 
 ### Other workspaces and documentation
 
@@ -276,7 +384,7 @@ and editable sources.
 
 ## Roadmap
 
-- [x] Public, browser-local eight-file upload and A/B/C scheduling.
+- [x] Public eight-file upload and native A/B/C scheduling.
 - [x] Weekly contract/activity schedule, occupancy view and contextual explanations.
 - [x] Reviewed maintenance replanning, Apply/Discard/Undo and official CSV export.
 - [x] Synthetic datasets for dependencies, capacity pressure and larger workloads.

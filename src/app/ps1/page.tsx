@@ -10,7 +10,7 @@ import "@/components/ps1/ps1-workstation.css";
 export const metadata: Metadata = {
   title: "PS1 track access scheduler",
   description:
-    "Upload a NebulaX PS1 instance, optimise all three scenarios locally, review changes, validate the official CSVs, and download the submission archive.",
+    "Upload a NebulaX PS1 instance, optimise all three scenarios with native CP-SAT, review changes, validate the official CSVs, and download the submission archive.",
 };
 
 /**
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
  * The brief asks for a URL where a judging panel can upload a hidden instance
  * and run the scheduler. An account gate would make that impossible, so this
  * route sits outside the planner workspace entirely: no session, no database,
- * no planning facts. The instance is read and solved in the browser.
+ * no planning facts. The browser parses the instance; the server runs native CP-SAT.
  */
 export default function Ps1Page() {
   const publicInstance = Object.fromEntries(

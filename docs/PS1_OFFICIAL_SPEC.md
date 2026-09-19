@@ -64,13 +64,13 @@ Verified against this worktree on 2026-09-19; see
 [PROJECT_STATUS.md](PROJECT_STATUS.md) for the evidence behind each claim.
 
 1. **Public test results** — `packages/ps1/data/results/{A,B,C}/` holds the three
-   CSVs per scenario for the published instance. Recorded scores A 25.2 / B 44 /
-   C 25.2 after the 2026-09-19 candidate-reuse improvement, all three locally conformant.
+   CSVs per scenario for the published instance. Recorded scores A 25.2 / B 30 /
+   C 25.2, all three locally conformant.
 2. **Hosted live web app** — `/ps1` is unauthenticated, accepts the eight CSVs by
-   drag-drop or file picker, matches them on the published filenames, solves all
-   three scenarios in a browser worker and exports the nine-file ZIP. Hidden
-   instance data never leaves the device. Deployment freshness is a separate
-   check, not assumed here.
+   drag-drop or file picker, matches them on the published filenames, sends each scenario to a native CP-SAT service and exports the nine-file ZIP.
+   Uploaded instance data is processed server-side without persistence. The owner
+   approved this execution change on 2026-09-19; the official scope permits a
+   service behind a thin UI. Deployment freshness is a separate check.
 3. **3-minute YouTube video** — not produced. The asset pack in
    `assets/submission/` has artwork and copy only. No video URL exists.
 4. **Repository URL** — GitHub only. No GitLab mirror exists.

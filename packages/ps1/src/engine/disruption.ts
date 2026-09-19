@@ -167,11 +167,11 @@ export interface ReplanOutcome {
 }
 
 /**
- * Re-plan around a disruption, holding everything it did not touch.
+ * Re-plan around a disruption, holding work outside its dependency impact.
  *
  * The mechanism is the pin: every access that survives the disruption is handed
- * back to the scheduler as a hard constraint, so it cannot drift, and only the
- * displaced accesses are re-placed. That is what keeps churn honest rather than
+ * back to the scheduler as a hard constraint, except downstream activities that
+ * may need to move after a delayed predecessor. That keeps churn honest rather than
  * merely low — the untouched work is not "probably" in the same place, it is
  * pinned there.
  */
@@ -205,9 +205,23 @@ export function replanForDisruption(
   const displacedKeys = new Set(
     impact.displaced.map((entry) => `${entry.activityId}|${entry.week}`),
   );
+  const affected = new Set(impact.displacedActivityIds);
+  const downstream = new Set<string>();
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const activity of instance.activities) {
+      if (activity.predecessorActivityId && affected.has(activity.predecessorActivityId) &&
+        !downstream.has(activity.activityId)) {
+        downstream.add(activity.activityId);
+        affected.add(activity.activityId);
+        grew = true;
+      }
+    }
+  }
 
   const pins: Pin[] = submission.access
-    .filter((row) => !displacedKeys.has(`${row.activityId}|${row.week}`))
+    .filter((row) => !displacedKeys.has(`${row.activityId}|${row.week}`) && !downstream.has(row.activityId))
     .map((row) => ({ activityId: row.activityId, week: row.week, eclo: row.eclo }));
 
   const outcome = solveInstance(

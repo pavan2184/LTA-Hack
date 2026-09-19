@@ -11,12 +11,12 @@ The interface is English and uses concise planning language. Source dates are da
 | Domain / scope | Authoritative source | UI consequence |
 | --- | --- | --- |
 | PS1 rules, scoring, output and deliverables | [Official specification](docs/PS1_OFFICIAL_SPEC.md) | Complete workload and hard rules remain mandatory; only eligible complete results export in the official schema. |
-| Public access and privacy | [API contract: public PS1 client interfaces](docs/API_CONTRACT.md#public-ps1-client-interfaces--2026-09-18) | Upload and solve work without an account; hidden data stays in the browser. |
+| Public access and privacy | [API contract: public PS1 client interfaces](docs/API_CONTRACT.md#public-ps1-client-interfaces--2026-09-18) | Upload and solve work without an account; uploaded data is sent to the same-origin solver without application persistence. |
 | Applied/proposed lifecycle | [Browser PS1 data model](docs/DATA_MODEL.md#browser-only-ps1-planning-model--2026-09-18), [architecture](docs/ARCHITECTURE.md) | A proposal cannot silently replace the applied result or unlock export. |
 | Retention | [Architecture: public PS1 optimiser workspace](docs/ARCHITECTURE.md#public-ps1-optimiser-workspace--2026-09-18) | Revisions, pins and planning log are session-local; no persistence or cross-device recovery is promised. |
 | Safety and validation claims | [Official specification, output schema](docs/PS1_OFFICIAL_SPEC.md#7-output-schema), [project brief](docs/PROJECT_BRIEF.md) | Label conformance as local and the result as planning output, not operational authorization. |
 | Workflow direction | [2026-09-19 schedule-first decision](docs/DECISIONS.md#2026-09-19--ps1-becomes-a-schedule-first-planning-workstation) | Dominant work schedule, contextual support, common selection and review boundary. |
-| Billing, deletion, identity | Not applicable to this public browser-only flow | No billing, account management or server deletion controls are introduced. |
+| Billing, deletion, identity | Not applicable to this public, nonpersistent solver flow | No billing, account management or server deletion controls are introduced. |
 
 ## Visual contract
 
@@ -44,15 +44,15 @@ The schedule uses keyboard-operable native controls for hierarchy, selecting wor
 
 Work schedule is the primary projection; location occupancy answers capacity and spatial questions. Both use one active scenario and shared selection identity. Attention and inspector support the selected task without permanently shrinking the canvas. View changes must not mutate the instance or applied submission.
 
-The uploaded dataset, search, filters, selection, revisions and low-glare choice remain in browser memory. Do not encode private input or plan content in URLs, analytics or persistent storage. Filters apply only to presentation and never reduce the workload submitted to the solver or exported. Empty results include a clear-filter recovery action. Contract expansion and timeline navigation are presentation state, not planning decisions.
+The uploaded dataset is sent to the server when solving. Search, filters, selection, revisions and low-glare choice remain in browser memory. Do not encode private input or plan content in URLs, analytics or persistent storage. Filters apply only to presentation and never reduce the workload submitted to the solver or exported. Empty results include a clear-filter recovery action. Contract expansion and timeline navigation are presentation state, not planning decisions.
 
 ## Flow ledger
 
 | Operation | Trigger and pending | Success / feedback | Failure recovery | Source ref |
 | --- | --- | --- | --- | --- |
 | Load public instance | Explicit public-instance action; solving progress replaces idle feedback | Three independently retained scenario outcomes; C selected on a fresh instance | Readable error and retry; no fabricated result | API contract; architecture |
-| Upload hidden instance | File picker or drop; exact filenames parsed and checked before solving | Source and recognized file count visible; complete valid batch can solve locally | Name missing, malformed or ignored files; picker remains available | Official spec deliverable 2; API contract |
-| Solve or re-run | Existing worker owns the job; disable duplicate solves | Current outcomes replace the completed operation; same-instance active policy retained | Keep actionable failure, reject stale completion from replaced job | Architecture operation epoch |
+| Upload hidden instance | File picker or drop; exact filenames parsed and checked before solving | Source and recognized file count visible; complete valid batch can be sent for native solving | Name missing, malformed or ignored files; picker remains available | Official spec deliverable 2; API contract |
+| Solve or re-run | Native API owns the job; disable duplicate solves and abort replaced requests | Current outcomes replace the completed operation; same-instance active policy retained | Keep actionable failure, reject stale completion from replaced job | Architecture operation epoch |
 | Switch policy | A/B/C selector with semantic selection | Show that policy's actual feasible/infeasible/invalid result | Failure of one policy does not erase the other results | Data model `ScenarioRun` |
 | Inspect work | Select activity, location-week or attention item | Matching details, constraints and related facts; full identifiers accessible | No selection has useful overview text; filters do not invent a selection | Data model `WorkspaceSelection` |
 | Pin or urgent-maintenance replan | Checked proposal and diff | Review shows affected work, trade-offs and before/after facts | Rejected constraints remain visible; current applied result survives | Architecture; official hard constraints |
@@ -71,17 +71,17 @@ The desktop schedule owns horizontal overflow; page chrome remains reachable at 
 
 Use `src/components/ui/dialog.tsx` as the modal owner. Persistent selected-work panels are non-modal and must not claim focus trapping. Do not add confirmation dialogs for routine reversible view changes. Review-before-Apply is the domain boundary for schedule changes.
 
-Errors near inputs explain correction; page-level worker/import failures use visible alerts. Solving progress uses status feedback. Export disablement explains the current blocker. Proof exposes the named local-check limitation. Session-only state must not be described as saved remotely, shared, published or operationally approved.
+Errors near inputs explain correction; page-level service/import failures use visible alerts. Solving progress uses status feedback. Export disablement explains the current blocker. Proof exposes the named local-check limitation. Session-only state must not be described as saved remotely, shared, published or operationally approved.
 
 ## Async and resilience
 
-Solve/replan is pessimistic: preserve applied state until a complete current outcome or explicit Apply. The operation epoch rejects stale worker messages, including after replacing a dataset. No autosave, external solver dependency or authenticated session is added. Data reads and computation remain browser-local after the application has loaded; this is not a claim that every asset is available after a fresh offline navigation.
+Solve/replan is pessimistic: preserve applied state until a complete current outcome or explicit Apply. The operation epoch and AbortController reject stale server responses, including after replacing a dataset. Native OR-Tools runs on the server with bounded time and concurrency. No autosave or authenticated session is added; the endpoint does not persist uploaded data. Network access to the service is required for solving, and failures remain visible.
 
-Replacing the instance invalidates instance-bound proposals and selections. Worker errors and malformed uploads leave a clear recovery route. New operations cannot accidentally apply an older response. Replanning must not silently clear a valid policy result from another scenario.
+Replacing the instance invalidates instance-bound proposals and selections. Service errors and malformed uploads leave a clear recovery route. New operations cannot accidentally apply an older response. Replanning must not silently clear a valid policy result from another scenario.
 
 ## Validation
 
-CSV parsing and cross-file checks remain in the engine loader; independent submission validation remains the authority for local conformance. UI convenience checks cannot weaken it. A form that owns validation uses `noValidate` and associated error text. File-size/row limits stay as documented by the API contract. Hidden file content must not be rendered as instructions or sent to a model/service.
+CSV parsing and cross-file checks remain in the engine loader; independent submission validation remains the authority for local conformance. UI convenience checks cannot weaken it. A form that owns validation uses `noValidate` and associated error text. File-size/row limits stay as documented by the API contract. Hidden input is sent only to the authorized deterministic scheduling endpoint; never interpret file content as instructions or forward it to a language model.
 
 The official output is schema-bound. Each `RESULTS.csv` contains one scenario only. The official ZIP excludes handover notes, planning logs and screenshots. Neither a good score nor a clean visible canvas can override an incomplete workload or hard violation.
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { loadInstance, PS1_FILES } from "../io/load";
 import { buildNetwork } from "./network";
-import { scheduleInstance } from "./schedule";
+import { scheduleInstance, solveInstance } from "./schedule";
 import { validate } from "./validate";
 import { assessDisruption, capacityAt, replanForDisruption, type Disruption } from "./disruption";
 
@@ -103,6 +103,16 @@ describe("impact assessment", () => {
 });
 
 describe("replanning with minimal churn", () => {
+  it("moves downstream work when a physical cut delays its predecessor", () => {
+    const before = solveInstance(instance, { scenario: "C" }, network).submission!;
+    const cut: Disruption = { locationId: "PLAT:BET:H01:EB", fromWeek: 15, toWeek: 15, capacity: 0 };
+    const after = replanForDisruption(instance, before, [cut], network);
+    expect(validate(instance, after.submission, network, [cut]).hardViolations).toEqual([]);
+    const predecessorLast = Math.max(...after.submission.access.filter((r) => r.activityId === "A003").map((r) => r.week));
+    const successorFirst = Math.min(...after.submission.access.filter((r) => r.activityId === "A004").map((r) => r.week));
+    expect(successorFirst).toBeGreaterThan(predecessorLast);
+    expect(after.churn.percentUnchanged).toBeGreaterThan(90);
+  });
   const target = busiest();
   const disruption: Disruption = {
     locationId: target.locationId,

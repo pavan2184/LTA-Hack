@@ -10,18 +10,44 @@
       "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 0,
       "nightsScheduled": 192,
-      "solveMs": 310.86
+      "solveMs": 1586.02,
+      "solver": {
+        "engine": "OR-Tools CP-SAT",
+        "version": "9.15.6755",
+        "status": "OPTIMAL",
+        "scope": "full-local-model",
+        "workers": 8,
+        "searchSeconds": 20,
+        "bestBound": 25.2,
+        "absoluteGap": 0,
+        "relativeGap": 0,
+        "nativeSolveMs": 123.718,
+        "incumbentSource": "cp-sat"
+      }
     },
     {
       "scenario": "B",
       "feasible": true,
       "hardViolations": 0,
-      "objectiveScore": 44,
+      "objectiveScore": 30,
       "overrunDaysTotal": 0,
-      "excessAccessNightsTotal": 2,
+      "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 6,
       "nightsScheduled": 189,
-      "solveMs": 289.17
+      "solveMs": 1309.91,
+      "solver": {
+        "engine": "OR-Tools CP-SAT",
+        "version": "9.15.6755",
+        "status": "OPTIMAL",
+        "scope": "full-local-model",
+        "workers": 8,
+        "searchSeconds": 20,
+        "bestBound": 30,
+        "absoluteGap": 0,
+        "relativeGap": 0,
+        "nativeSolveMs": 131.97500000000002,
+        "incumbentSource": "cp-sat"
+      }
     },
     {
       "scenario": "C",
@@ -32,7 +58,20 @@
       "excessAccessNightsTotal": 0,
       "ecloNightsTotal": 0,
       "nightsScheduled": 192,
-      "solveMs": 286.55
+      "solveMs": 1614.55,
+      "solver": {
+        "engine": "OR-Tools CP-SAT",
+        "version": "9.15.6755",
+        "status": "OPTIMAL",
+        "scope": "full-local-model",
+        "workers": 8,
+        "searchSeconds": 20,
+        "bestBound": 25.2,
+        "absoluteGap": 0,
+        "relativeGap": 0,
+        "nativeSolveMs": 338.93800000000005,
+        "incumbentSource": "cp-sat"
+      }
     }
   ]
 }

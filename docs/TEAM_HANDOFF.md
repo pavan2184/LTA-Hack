@@ -8,8 +8,9 @@ and shared-demo setup below must be rechecked when used on another machine.
 
 ## Public PS1 operations workspace
 
-`/ps1` is public and independent of Supabase, login and server APIs. From a clean
-checkout, `npm ci && npm run dev`, then open `http://localhost:3000/ps1`. Use
+`/ps1` is public and independent of Supabase and login, but it requires the
+same-origin native solver API. From a clean checkout, install the pinned Python
+requirements, run `npm ci && npm run ps1:start`, then open `http://localhost:3000/ps1`. Use
 “Load the public instance and run”; a fresh result opens Scenario C. The primary
 demo opens on the contract/activity **Work schedule**. Inspect an activity,
 then use **Location occupancy** and **Bottlenecks** to propose urgent maintenance,
@@ -19,8 +20,9 @@ worker diagnostics, external submission checking and the exact ZIP manifest.
 
 Important boundaries:
 
-- Hidden files, schedules, revisions, low-glare preference and history stay in
-  the browser session. Refresh clears them.
+- Uploaded files are sent to the same-origin solver without persistence. Schedules,
+  revisions, low-glare preference and history stay in the browser session; refresh
+  clears them.
 - A failed scenario stays visible beside the other policy outcomes.
 - The work schedule is the primary planning surface; location occupancy is a
   linked secondary view. Mobile supports triage, inspection, reviewed apply/undo
@@ -29,11 +31,11 @@ Important boundaries:
   the official output has no global night identity.
 - `PS1_PLANNING_LOG.json` and the copyable handover are never included in the
   official A/B/C ZIP.
-- No PS1 backend, HTTP route, environment variable, database or auth setup is
-  required. Do not add one to “support” this workspace.
+- The PS1 path needs Node, Python and pinned OR-Tools, but no database, auth or
+  cloud credential at request time. Follow [PS1_NATIVE_DEPLOYMENT.md](PS1_NATIVE_DEPLOYMENT.md).
 
 Before release run `npm test`, `npm run typecheck`, `npm run lint` and
-`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 44/C 25.2,
+`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 30/C 25.2,
 hotspot review/apply/undo and ZIP download at the target responsive widths.
 The latest application gate recorded for PR #48 on 2026-09-19 passed 962 tests
 with 79 database tests skipped, plus typecheck/lint/build. Browser checks covered
@@ -48,16 +50,14 @@ For the current release, use the [submission checklist](PS1_SUBMISSION_CHECKLIST
 [PS1 write-up](../assets/submission/PS1_WRITEUP.md).
 `npm run ps1:solve` regenerates public outputs and the exact nine-CSV archive at
 `output/PS1-public-results.zip`. The archive excludes local validation JSONs.
-`npm run ps1:benchmark` checks all public/synthetic outcomes and can compare an
-earlier JSON baseline; see its `--help` for options.
+`npm run ps1:benchmark:regression` checks all public/synthetic heuristic outcomes
+and can compare an earlier JSON baseline; see its `--help` for options.
+`npm run ps1:benchmark` runs the hybrid/native comparison suite.
 
-Git deployments are intentionally disabled. Publish the tested commit manually
-through the existing `railplan` project in `pavanmadhup-1254s-projects`, using an
-account with access to that team. Do not create a replacement project in another
-account. The recorded 2026-09-19 check found the local CLI signed into `ducksss`
-with access only to `ducksss-projects`, and a browser dashboard requiring login.
-Recheck account access and the deployed commit before release; this documentation
-cleanup did not verify either.
+Git deployments are intentionally disabled. The native runtime is targeted at
+Google Compute Engine rather than the stale Vercel build. A temporary
+`n2-highcpu-32` benchmark VM was terminated after its run; provision a durable
+instance with the native runbook, then recheck the deployed commit before release.
 
 ## Run the application without Docker
 

@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   assessDisruption,
   capacityAt,
-  replanForDisruption,
   type Disruption,
   type ReplanOutcome,
 } from "@railplan/ps1/engine/disruption";
 import { buildTimeline } from "@railplan/ps1/engine/timeline";
 import { validate } from "@railplan/ps1/engine/validate";
 import type { Network } from "@railplan/ps1/engine/network";
-import type { Ps1Instance, Submission } from "@railplan/ps1/types/ps1";
+import type { Pin } from "@railplan/ps1/engine/schedule";
+import type { Ps1Instance, SolveDiagnostics, Submission } from "@railplan/ps1/types/ps1";
+import { requestPs1Solve } from "@/lib/ps1/client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ import { ActionNote } from "@/components/ps1/ActionNote";
 import { locationDetail } from "@/components/ps1/location";
 
 const NO_DISRUPTIONS: Disruption[] = [];
+const NO_PINS: Pin[] = [];
 
 /**
  * Urgent maintenance takes nights away; this works out what that costs and
@@ -39,6 +41,7 @@ export function DisruptionPanel({
   submission,
   network,
   existingDisruptions = NO_DISRUPTIONS,
+  pins = NO_PINS,
   onApply,
   target,
   open,
@@ -49,7 +52,8 @@ export function DisruptionPanel({
   submission: Submission;
   network: Network;
   existingDisruptions?: Disruption[];
-  onApply: (outcome: ReplanOutcome, disruptions: Disruption[]) => void;
+  pins?: Pin[];
+  onApply: (outcome: ReplanOutcome, disruptions: Disruption[], diagnostics: SolveDiagnostics) => void;
   /** A location-week chosen in the timeline, which seeds this panel. */
   target?: { locationId: string; week: number } | null;
   open: boolean;
@@ -105,16 +109,25 @@ export function DisruptionPanel({
   );
   const [proposal, setProposal] = useState<{
     result: ReplanOutcome;
+    diagnostics: SolveDiagnostics;
     basis: Submission;
     disruptions: Disruption[];
+    pins: Pin[];
   } | null>(null);
   // Closing the dialog does not unmount it. A preview is only adoptable against
   // the exact applied schedule and cumulative cuts it was computed from.
-  const outcome = proposal?.basis === submission && proposal.disruptions === disruptions
+  const outcome = proposal?.basis === submission && proposal.disruptions === disruptions && proposal.pins === pins
     ? proposal.result
     : null;
-  const setOutcome = (result: ReplanOutcome | null) =>
-    setProposal(result ? { result, basis: submission, disruptions } : null);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const invalidate = () => {
+    controllerRef.current?.abort();
+    setProposal(null);
+    setError(null);
+  };
+  useEffect(() => () => controllerRef.current?.abort(), [instance, submission, disruptions, pins, open]);
 
   const impact = useMemo(
     () => assessDisruption(instance, submission, disruptions, network),
@@ -128,6 +141,72 @@ export function DisruptionPanel({
   );
 
   const nominal = network.supply.get(locationId)?.supplyCapacity ?? 0;
+  const validCut = Number.isInteger(fromWeek) && Number.isInteger(toWeek) &&
+    fromWeek >= 1 && toWeek >= fromWeek && toWeek <= timeline.weeks.length &&
+    Number.isInteger(capacity) && capacity >= 0 && capacity <= nominal;
+
+  const replan = async () => {
+    if (running || !validCut) return;
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setRunning(true);
+    setError(null);
+    setProposal(null);
+    try {
+      const displaced = new Set(impact.displaced.map((row) => `${row.activityId}|${row.week}`));
+      const successors = new Map<string, string[]>();
+      for (const activity of instance.activities) {
+        if (!activity.predecessorActivityId) continue;
+        const next = successors.get(activity.predecessorActivityId) ?? [];
+        next.push(activity.activityId);
+        successors.set(activity.predecessorActivityId, next);
+      }
+      const downstream = new Set<string>();
+      const queue = [...impact.displacedActivityIds];
+      for (let index = 0; index < queue.length; index += 1) {
+        for (const activityId of successors.get(queue[index]) ?? []) {
+          if (downstream.has(activityId)) continue;
+          downstream.add(activityId);
+          queue.push(activityId);
+        }
+      }
+      const held = new Map(submission.access
+        .filter((row) => !displaced.has(`${row.activityId}|${row.week}`) && !downstream.has(row.activityId))
+        .map((row) => [`${row.activityId}|${row.week}`, { activityId: row.activityId, week: row.week, eclo: row.eclo }]));
+      // Explicit planner pins remain hard even when the cut touches their access.
+      for (const pin of pins) held.set(`${pin.activityId}|${pin.week}`, { ...pin, eclo: pin.eclo ?? 0 });
+      const solved = await requestPs1Solve({
+        instance, scenario: submission.scenario, pins: [...held.values()], disruptions,
+      }, controller.signal);
+      controller.signal.throwIfAborted();
+      if (solved.status !== "FEASIBLE" || !solved.submission) {
+        throw new Error(solved.diagnostics.warnings[0] ?? "No feasible replan was found while holding the unaffected work and your pins. Adjust the cut and try again.");
+      }
+      const before = new Set(submission.access.map((row) => `${row.activityId}|${row.week}|${row.eclo}`));
+      const moved = solved.submission.access.filter((row) => !before.has(`${row.activityId}|${row.week}|${row.eclo}`));
+      const unchanged = solved.submission.access.length - moved.length;
+      setProposal({
+        basis: submission, disruptions, pins, diagnostics: solved.diagnostics,
+        result: {
+          submission: { ...solved.submission, rejectedPins: solved.diagnostics.rejectedPins },
+          impact,
+          churn: {
+            unchangedAccesses: unchanged, movedAccesses: moved.length,
+            movedActivityIds: [...new Set(moved.map((row) => row.activityId))].sort(),
+            percentUnchanged: Math.round(1000 * unchanged / Math.max(1, solved.submission.access.length)) / 10,
+          },
+        },
+      });
+    } catch (cause) {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "The replan could not complete. Please try again.");
+    } finally {
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+        setRunning(false);
+      }
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -135,7 +214,7 @@ export function DisruptionPanel({
       <DialogTitle>Urgent maintenance</DialogTitle>
       <DialogDescription>
         Cut a location&apos;s nightly quota mid-horizon, see what it displaces, and re-plan around
-        it while holding everything it did not touch.
+        it while holding work outside the affected dependency chains.
       </DialogDescription>
       {existingDisruptions.length > 0 && (
         <p className="mt-2 text-[12px] text-ink-700">
@@ -151,7 +230,7 @@ export function DisruptionPanel({
             value={locationId}
             onChange={(event) => {
               setLocationId(event.target.value);
-              setOutcome(null);
+              invalidate();
             }}
           >
             {options.map((row) => (
@@ -174,7 +253,7 @@ export function DisruptionPanel({
               const week = Number(event.target.value);
               setFromWeek(week);
               if (week > toWeek) setToWeek(week);
-              setOutcome(null);
+              invalidate();
             }}
           />
         </label>
@@ -188,7 +267,7 @@ export function DisruptionPanel({
             value={toWeek}
             onChange={(event) => {
               setToWeek(Number(event.target.value));
-              setOutcome(null);
+              invalidate();
             }}
           />
         </label>
@@ -202,7 +281,7 @@ export function DisruptionPanel({
             value={capacity}
             onChange={(event) => {
               setCapacity(Number(event.target.value));
-              setOutcome(null);
+              invalidate();
             }}
           />
         </label>
@@ -233,23 +312,22 @@ export function DisruptionPanel({
         <div className="flex flex-col items-start gap-1">
           <Button
             variant="primary"
-            disabled={impact.displaced.length === 0}
+            disabled={running || !validCut || impact.displaced.length === 0}
+            aria-busy={running}
             aria-describedby="ps1-note-replan"
-            onClick={() =>
-              setOutcome(replanForDisruption(instance, submission, disruptions, network))
-            }
+            onClick={() => void replan()}
           >
             Re-plan around it
           </Button>
           <ActionNote id="ps1-note-replan">
             {impact.displaced.length === 0
               ? "Nothing to re-plan — choose a location-week where the cut actually displaces work."
-              : "Works out a schedule under the reduced quota, pinning every access the cut did not touch so it is held in place rather than merely likely to stay. Nothing is replaced until you adopt it."}
+              : "Replans on the server under the reduced quota. Displaced work and its successors can move; other accesses and your explicit pins are held. Review the result before applying it."}
           </ActionNote>
         </div>
         {outcome && (
           <div className="flex flex-col items-start gap-1">
-            <Button disabled={!replannedReport?.feasible} aria-describedby="ps1-note-adopt" onClick={() => onApply(outcome, disruptions)}>
+            <Button disabled={running || !replannedReport?.feasible} aria-describedby="ps1-note-adopt" onClick={() => proposal && onApply(outcome, disruptions, proposal.diagnostics)}>
               Adopt this schedule
             </Button>
             <ActionNote id="ps1-note-adopt">
@@ -260,6 +338,10 @@ export function DisruptionPanel({
           </div>
         )}
       </div>
+
+      {running && <p className="mt-3 text-[12px] text-ink-700" role="status">Replanning on the server while preserving unaffected work and your pins…</p>}
+      {!validCut && <p className="mt-3 text-[12px] text-signal-red" role="alert">Choose whole weeks within the horizon and a capacity between 0 and {nominal}.</p>}
+      {error && <p className="mt-3 text-[12px] text-signal-red" role="alert">{error}</p>}
 
       {outcome && (
         <div className="mt-3 rounded-md border border-rule bg-sunk p-3">

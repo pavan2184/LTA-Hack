@@ -13,6 +13,7 @@ import {
   type Submission,
 } from "../types/ps1";
 import { buildNetwork, closureFor, expandSpan, type Network } from "./network";
+import { searchRepairs, windowCandidates } from "./search";
 import {
   isoDate,
   weekEnd,
@@ -23,20 +24,9 @@ import {
 import { capacityAt, type Disruption } from "./disruption";
 
 /**
- * A greedy, priority-ordered scheduler for PS1.
- *
- * The brief's own cost ordering drives the design. Cheapest to costliest per
- * unit: a Priority-3 overrun-day (1x), an excess access-night (3x), an ECLO
- * night (4.3x), a Priority-2 overrun-day (10x), a Priority-1 overrun-day
- * (100x). So the scheduler places the most expensive work first, while the
- * network is empty and early weeks are still free, and lets cheap work absorb
- * whatever congestion is left. Every lever it reaches for is the cheapest one
- * still available in the scenario it is solving.
- *
- * It is greedy rather than exact on purpose. The mandatory gate is that all
- * 100% of activities are scheduled; an exact method that times out and returns
- * nothing scores zero, while a greedy pass that always returns a complete
- * schedule scores whatever its quality earns.
+ * Priority-ordered construction, followed by a validated portfolio and adaptive
+ * reconstruction search. Construction may be incomplete; only `solveInstance`
+ * gates complete candidates and compares their actual scenario penalties.
  */
 
 /**
@@ -62,11 +52,20 @@ export interface ScheduleOptions {
   disruptions?: Disruption[];
   /** Deterministic construction variant used by the multi-start optimiser. */
   constructionSeed?: number;
-  /** Same-instance schedules to recheck under this policy, pins and disruptions. */
+  /** Validated again under this scenario, its disruptions, and its hard pins. */
   initialCandidates?: readonly Submission[];
+  /** Retained for reproducible comparisons with the original optimiser. */
+  searchMode?: "legacy" | "hybrid";
+  /** Construction choices, never relaxations of the validator's hard rules. */
+  nominalCapacity?: boolean;
+  ecloWindows?: Record<string, number>;
+  activityOrder?: string[];
   optimizationBudget?: {
     starts?: number;
     maxNeighbourEvaluations?: number;
+    seed?: number;
+    /** Optional wall-time cutoff; iteration budgets alone remain deterministic. */
+    maxTimeMs?: number;
   };
 }
 
@@ -106,9 +105,13 @@ function contractWeight(contract: Contract): number {
  * priority, then the longest jobs, then the earliest planned start. Long jobs go
  * early because they need the most distinct weeks and are hardest to fit later.
  */
-function scheduleOrder(instance: Ps1Instance, seed = 0): Activity[] {
+function scheduleOrder(instance: Ps1Instance, seed = 0, preferred: string[] = []): Activity[] {
   const contractByNumber = new Map(instance.contracts.map((c) => [c.contractNumber, c]));
+  const priority = new Map(preferred.map((id, index) => [id, index]));
   const rank = (a: Activity, b: Activity): number => {
+    const preferredRank = (priority.get(a.activityId) ?? preferred.length) -
+      (priority.get(b.activityId) ?? preferred.length);
+    if (preferredRank) return preferredRank;
     const ca = contractByNumber.get(a.contractNumber)!;
     const cb = contractByNumber.get(b.contractNumber)!;
     const deadline = ca.plannedCompletionDate.localeCompare(cb.plannedCompletionDate);
@@ -161,6 +164,7 @@ export function scheduleInstance(
   const { scenario } = options;
   const lastWeek = instance.parameters.horizonWeeks;
   const contractByNumber = new Map(instance.contracts.map((c) => [c.contractNumber, c]));
+  const activityById = new Map(instance.activities.map((a) => [a.activityId, a]));
 
   const slots = new Map<string, Slot>();
   const loads = new Map<string, WeekLoad>();
@@ -195,6 +199,7 @@ export function scheduleInstance(
    */
   const capacityFor = (locationId: string, week: number): number => {
     const supply = capacityAt(network, disruptions, locationId, week);
+    if (options.nominalCapacity) return supply;
     // B pays for extra nights rather than slipping dates; C gets one per
     // location-week. A has no elasticity at all.
     const elastic = scenario === "B" ? Number.POSITIVE_INFINITY : scenario === "C" ? supply + 1 : supply;
@@ -228,7 +233,7 @@ export function scheduleInstance(
           const types = members.map(
             (id) =>
               contractByNumber.get(
-                instance.activities.find((a) => a.activityId === id)!.contractNumber,
+                activityById.get(id)!.contractNumber,
               )!.accessType,
           );
           if (types.includes("PM")) continue;
@@ -365,9 +370,10 @@ export function scheduleInstance(
     }
   }
 
-  for (const activity of scheduleOrder(instance, options.constructionSeed ?? 0)) {
+  for (const activity of scheduleOrder(instance, options.constructionSeed ?? 0, options.activityOrder)) {
     const contract = contractByNumber.get(activity.contractNumber)!;
     const span = spanFor(activity);
+    const affectedLines = affectedLinesFor(activity, contract, span);
     let earliest = Math.max(1, weekOf(instance.parameters.horizonStart, activity.plannedStartDate));
 
     // A dependency must finish before its successor starts.
@@ -402,8 +408,13 @@ export function scheduleInstance(
         scenario !== "A" &&
         remaining > STANDARD_YIELD &&
         remaining > weeksLeft &&
-        ecloAllowed(scenario, contract, options.constructionSeed ?? 0) &&
-        (scenario !== "C" || fitsEcloWindow(affectedLinesFor(activity, contract, span), week));
+        (scenario !== "C" || fitsEcloWindow(affectedLines, week)) &&
+        (options.ecloWindows
+          ? scenario === "B" || (scenario === "C" && affectedLines.every((line) => {
+            const start = options.ecloWindows![line];
+            return start !== undefined && week >= start && week <= start + 1;
+          }))
+          : ecloAllowed(scenario, contract, options.constructionSeed ?? 0));
 
       if (!commit(activity, contract, span, week, useEclo)) continue;
       taken.add(week);
@@ -427,10 +438,9 @@ export function scheduleInstance(
  * hard failure, so buying 1.5 nights of yield is the only way to compress a
  * contract into its window.
  *
- * C alternates between no ECLO and cost-sensitive ECLO constructions. Each
- * construction tracks a separate two-week window per affected line, including
- * opposite-bound and interchange closures for Live work. Different priority
- * orderings explore different windows; final validation remains authoritative.
+ * Legacy C starts alternate no ECLO and opportunistic ECLO; invalid windows
+ * are rejected by validation. The hybrid additionally searches explicit legal
+ * per-line windows, including both affected lines for cross-line Live work.
  */
 function ecloAllowed(scenario: Scenario, contract: Contract, seed: number): boolean {
   if (scenario === "B") return true;
@@ -469,22 +479,31 @@ export function solveInstance(
   const starts = Math.max(1, Math.min(24, options.optimizationBudget?.starts ?? 24));
   const neighbourBudget = Math.max(
     0,
-    Math.min(2_500, options.optimizationBudget?.maxNeighbourEvaluations ?? 2_500),
+    Math.min(2_500, options.optimizationBudget?.maxNeighbourEvaluations ?? 256),
   );
+  const expired = () => options.optimizationBudget?.maxTimeMs !== undefined &&
+    Date.now() - started >= options.optimizationBudget.maxTimeMs;
+  const hybrid = options.searchMode !== "legacy";
   let candidatesEvaluated = 0;
+  const activityIds = new Set(instance.activities.map((activity) => activity.activityId));
   let best:
     | { submission: Submission & { rejectedPins: RejectedPin[] }; report: ReturnType<typeof validate> }
     | undefined;
 
   const consider = (submission: Submission & { rejectedPins: RejectedPin[] }) => {
     candidatesEvaluated += 1;
+    // A stale candidate from another upload must not crash result projection.
+    if (submission.access.some((row) => !activityIds.has(row.activityId))) return;
+    if (submission.scenario !== options.scenario) submission = {
+      ...submission, scenario: options.scenario,
+      results: resultsFor(instance, submission.access, options.scenario),
+    };
     const report = validate(instance, submission, activeNetwork, options.disruptions ?? []);
-    if (!report.feasible || submission.rejectedPins.length > 0) return;
-    // A valid schedule is not necessarily a valid answer to this solve: keep
-    // every original operator pin, including its requested ECLO yield.
-    if ((options.pins ?? []).some((pin) => !submission.access.some((row) =>
-      row.activityId === pin.activityId && row.week === pin.week &&
-      (pin.eclo === undefined || row.eclo === pin.eclo)))) return;
+    const pinsSatisfied = (options.pins ?? []).every((pin) => submission.access.some((row) =>
+      row.activityId === pin.activityId &&
+      row.week === pin.week &&
+      (pin.eclo === undefined || row.eclo === pin.eclo)));
+    if (!report.feasible || submission.rejectedPins.length > 0 || !pinsSatisfied) return;
     const score = report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const bestScore = best?.report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const stable = JSON.stringify(submission.access);
@@ -492,48 +511,35 @@ export function solveInstance(
     if (!best || score < bestScore || (score === bestScore && stable < bestStable)) {
       best = { submission, report };
     }
+    return score;
   };
 
-  const considerForPolicy = (candidate: Submission, rejectedPins: RejectedPin[] = []) => {
-    consider({
-      ...candidate,
-      scenario: options.scenario,
-      results: candidate.results.map((row) => ({ ...row, scenario: options.scenario })),
-      rejectedPins,
-    });
-  };
-
-  for (const candidate of options.initialCandidates ?? []) considerForPolicy(candidate);
-
+  for (const candidate of options.initialCandidates ?? []) {
+    consider({ ...candidate, rejectedPins: [] });
+  }
+  let startsTried = 0;
   for (let seed = 0; seed < starts; seed += 1) {
+    if (seed > 0 && expired()) break;
     consider(scheduleInstance(instance, { ...options, constructionSeed: seed }, activeNetwork));
-    // Elastic supply can make a greedy constructor buy capacity unnecessarily.
-    // Nominal-supply candidates give B/C the chance to wait within their dates
-    // instead. Never assume an A plan is legal in B: recheck all target rules.
-    if (options.scenario !== "A") {
-      const nominal = scheduleInstance(instance, {
-        ...options, scenario: "A", constructionSeed: seed,
-      }, activeNetwork);
-      considerForPolicy(nominal, nominal.rejectedPins);
-    }
+    startsTried += 1;
   }
 
   // Shift selected accesses one week either side and reconstruct around that
   // hard choice. Reconstruction naturally exercises swaps, re-packing, ECLO
   // and excess-possession alternatives without mutating a candidate in place.
-  if (best && best.report.objectiveScore !== 0 && neighbourBudget > 0) {
+  let neighbours = 0;
+  if (best && neighbourBudget > 0 && !expired() && (!hybrid || best.report.objectiveScore !== 0)) {
     const baseline = best.submission;
     const rows = [...baseline.access]
       .sort((a, b) => b.week - a.week || a.activityId.localeCompare(b.activityId))
       .slice(0, Math.min(48, baseline.access.length));
-    let neighbours = 0;
     for (const row of rows) {
       for (const delta of [-1, 1]) {
-        if (neighbours >= neighbourBudget) break;
+        if (neighbours >= neighbourBudget || expired()) break;
         const week = row.week + delta;
         if (week < 1 || week > instance.parameters.horizonWeeks) continue;
         const originalPins = options.pins ?? [];
-        if (originalPins.some((pin) => pin.activityId === row.activityId)) {
+        if (originalPins.some((pin) => pin.activityId === row.activityId && pin.week !== row.week)) {
           continue;
         }
         consider(
@@ -557,6 +563,36 @@ export function solveInstance(
     }
   }
 
+  if (hybrid && !expired()) {
+    // A's nominal/no-ECLO construction is a useful candidate for B and C too.
+    // Revalidate in the target scenario: B's deadline or a target disruption
+    // can invalidate a perfectly good A schedule.
+    if (options.scenario !== "A" && best?.report.objectiveScore !== 0) {
+      for (let seed = 0; seed < starts && !expired(); seed += 1) {
+        consider(scheduleInstance(instance, { ...options, scenario: "A",
+          constructionSeed: seed, nominalCapacity: true }, activeNetwork));
+      }
+    }
+    if (options.scenario === "C" && neighbours < neighbourBudget &&
+      best?.report.objectiveScore !== 0) {
+      const windowBudget = Math.min(64, Math.ceil((neighbourBudget - neighbours) / 2));
+      for (const windows of windowCandidates(instance, activeNetwork, options.pins ?? []).slice(0, windowBudget)) {
+        if (expired()) break;
+        consider(scheduleInstance(instance, { ...options, ecloWindows: windows,
+          constructionSeed: neighbours % starts, nominalCapacity: neighbours % 2 === 0 }, activeNetwork));
+        neighbours += 1;
+      }
+    }
+    if (best && best.report.objectiveScore !== 0 && !expired()) {
+      searchRepairs(instance, activeNetwork, options, best.submission,
+        neighbourBudget - neighbours, expired, (repairOptions) => {
+          const submission = scheduleInstance(instance, repairOptions, activeNetwork);
+          const score = consider(submission);
+          return score === undefined ? undefined : { submission, score };
+        });
+    }
+  }
+
   const rejectedPins = best?.submission.rejectedPins ?? [];
   if (!best) {
     const diagnostic = scheduleInstance(instance, { ...options, constructionSeed: 0 }, activeNetwork);
@@ -566,11 +602,11 @@ export function solveInstance(
       submission: diagnostic,
       validation,
       diagnostics: {
-        startsTried: starts,
+        startsTried,
         candidatesEvaluated,
         elapsedMs: Date.now() - started,
         warnings: [
-          "No complete, locally conforming schedule was found inside the declared horizon.",
+          "Search found no complete, locally conforming schedule within its budget; this is not a proof of infeasibility.",
         ],
         rejectedPins: diagnostic.rejectedPins,
       },
@@ -582,7 +618,7 @@ export function solveInstance(
     submission: best.submission,
     validation: best.report,
     diagnostics: {
-      startsTried: starts,
+      startsTried,
       candidatesEvaluated,
       elapsedMs: Date.now() - started,
       warnings: [],

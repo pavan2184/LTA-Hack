@@ -1,5 +1,112 @@
 # Project status history
 
+## Final shared-branch reconciliation — 2026-09-19
+
+The engineer subsequently amended its merge to `e3638a4`, increasing the
+full-workstation mocked solve test timeout from five to ten seconds after CI
+took 5.2 seconds without an assertion failure. That test-only change and its
+handoff notes were retained; application/native solver code was unchanged.
+The affected workbench suite passed 21/21 tests after that final reconciliation.
+
+Merged benchmark snapshot `d1e0a8f` with the engineer's `2957345`, preserving the
+showcase/submission README, assets, current/history split and heuristic ECLO fixes.
+The README retains versioned native comparison tables plus a separate current
+hybrid check: 78 validated outcomes, capacity-pressure C 1118.8 → 1105.5, other
+38 scores unchanged. Native formulations and scoring checker are unchanged.
+
+Fresh final checks: 1,079 tests passed across 113 files; 79 database-dependent
+skipped. Lint, TypeScript, whitespace and webpack production build passed. Real
+native API-function and CLI public smokes returned 25.2/30/25.2, all OPTIMAL, using
+the default 60-second budget and eight local workers. The CLI exported exactly
+nine official CSVs plus its separate run report. The native models' 40 Python
+tests passed before this merge and their source is unchanged. Native timing
+cohorts were not repeated for the new heuristic; benchmark provenance stays pinned
+to `d1e0a8f`. No new browser/accessibility, hosted DB, GCP scaling or durable
+deployment check was performed; no local server was started.
+
+## 60-second native comparison and README benchmark — 2026-09-19
+
+Archived from the native benchmark snapshot committed as `d1e0a8f`. Its four
+measured cohorts use source SHA-256
+`a10cbe7bb8bbd252c27726aa8b222d67b20abcec785829496c61970d1ca1768e`
+and scoring `ps1-objective-v2`. The measurements were taken from the reconciled
+working tree before that commit; the recorded pre-merge HEAD alone does not
+identify the measured source. The later engineer update `2957345` changes the
+TypeScript ECLO constructor while retaining the native CP-SAT/SCIP formulations
+and checker. These measurements and test counts remain evidence for their
+recorded snapshot, not fresh verification of that later merge. The separate
+one-off GCE experiment in the current status is an earlier engineer record and
+is not part of these local benchmark cohorts.
+
+The owner selected 32 vCPUs / 64 GiB RAM, removed the browser-only restriction,
+and requested a researched algorithm comparison plus benchmark tables in the
+root README. The integrated native API now defaults to 60 search seconds and up
+to 16 available workers, preserving its 75-second child guard, cancellation,
+bounded admission, validated incumbents and 90/100-second client/proxy limits.
+The engineer's concurrent native-service and per-activity scoring-v2 work was
+reconciled before measurements; initial v1 screening was excluded.
+
+Added a real independent SCIP MIP, cold and LNS-only CP-SAT experiments, native
+telemetry, a reproducible sequential cloud harness and a validated native CSV
+CLI. The wrapper reuses the service's canonical payload/digest/check boundary.
+Unknown repair IDs cannot create a false full-model proof. Worker/seed/runtime
+controls remain internal; no new public API budget override was introduced.
+
+The completed local evidence contains 230 rows across four cohorts, including
+119 native runs: 100 OPTIMAL, 11 FEASIBLE, eight INFEASIBLE and zero errors.
+All 111 returned native schedules passed local CSV/score validation. The main
+39-case matrix ties CP-SAT and SCIP on every final score; they improve four
+hybrid cases, with 37 and 38 full-model optima respectively. Extended TypeScript
+repair improves none. CP-SAT reaches priority-contention C 300.7 in all three
+seeded repeats; SCIP returns 300.7/308.4/304.2. SCIP proves capacity-pressure C
+in all three runs, versus one for CP-SAT. Cold/LNS variants add no score gains
+on the four selected C cases. Twenty-four B perturbations yield 16 optimal
+solutions (ten improvements/six ties) and eight full-model infeasibility proofs.
+
+The root README includes comparison, timing, score and repeated-seed tables and
+the rationale for CP-SAT as the practical default with SCIP retained as a strong
+challenger. `docs/PS1_NATIVE_SOLVER_RESEARCH.md` links primary research and explains
+limits; `scripts/ps1/benchmark/cloud-results.json` retains configurations, source/
+input digests, status, bounds and telemetry. All timing runs were sequential on
+an M3 Pro, 18 GiB RAM, eight native workers and scoring v2. They are not target-VM
+measurements. The 16-worker default is provisional pending the documented
+8/16/32-worker sweep. No universal solver winner or reference-validator parity
+is claimed; the hardest C optimum is still unknown.
+
+Verification recorded before commit `d1e0a8f` (not rerun for the later `2957345` reconciliation):
+
+- `npm test -- --reporter=dot`: **1071 passed, 79 database-dependent skipped**;
+  112 test files passed, 13 skipped. Existing React act/Vite configuration
+  warnings were non-failing. Hosted database verification was not run.
+- Python discovery: **40 tests passed** across CP-SAT and SCIP formulations and
+  controls. Lint, standalone TypeScript, `git diff --check`, startup-script syntax
+  and `npm run build -- --webpack` passed; the build used permitted font downloads.
+- Real production `solveNative` function smoke with installed OR-Tools, eight
+  local workers and the default 60-second cap: A 25.2 / B 30 / C 25.2, all OPTIMAL,
+  no warnings, independently CSV-checked. This was not a deployed HTTP timing run.
+- Real `ps1:solve:native` public smoke: same scores/full-model bounds, exactly
+  three CSVs per A/B/C directory, nine total, and a separate auxiliary run report.
+- No new browser/accessibility sweep, Linux systemd/nginx/TLS test, cloud worker
+  scaling or GCP deployment was performed. The earlier native browser checks
+  below retain their own scope. No local server was started for this work.
+
+## PR #47 native-solver integration — 2026-09-19
+
+PR #47 was reconciled with the solver-readiness and submission work already on
+`main`. The native CP-SAT API remains the primary public execution path. The
+checked TypeScript warm start retains validated candidate reuse and now tracks
+Scenario C ECLO windows across every affected line, including Live interchange
+closures. The public result generator waits for all three validated native
+outcomes before replacing tracked files and creates the exact nine-CSV ZIP.
+
+Fresh evidence: 1,021 tests passed with 79 database-dependent skips; the focused
+PS1/API/UI set passed 101 tests; Python CP-SAT passed 12 tests; typecheck, lint and
+production build passed. The deterministic regression benchmark passed 39/39
+outcomes in one run, including public A 25.2 / B 30 / C 25.2 and capacity-pressure
+C 1105.5. The build needed a 4 GiB Node heap after the default 2 GiB limit was
+exhausted. Database, controlled HTTP E2E, browser upload/download and hosted
+deployment checks were not rerun.
+
 Archived snapshots, not current instructions. Read [current status](PROJECT_STATUS.md)
 for implementation state, verification and remaining work. Old next steps,
 branches, accounts, server URLs, deployment claims and test counts apply only to

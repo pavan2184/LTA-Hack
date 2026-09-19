@@ -72,14 +72,14 @@ it("does not offer planner-wide workspaces to contractors", () => {
 });
 it("offers the full workflow with planner actions on Home", async () => {
   landing.mockResolvedValue({ state: "workspace", actor: { role: "planner" } });
-  render(await Home());
+  render(await Home({}));
   expect(screen.getByRole("heading", { name: "How RailPlan works" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Open night overview" })).toHaveAttribute("href", "/plans");
   expect(screen.getByRole("link", { name: "Prepare a private draft" })).toHaveAttribute("href", "/requests/drafts");
 });
 it("keeps contractor Home actions scoped while explaining the planner stages", async () => {
   landing.mockResolvedValue({ state: "workspace", actor: { role: "contractor" } });
-  render(await Home());
+  render(await Home({}));
   expect(screen.getByRole("heading", { name: "How RailPlan works" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Open your requests" })).toHaveAttribute("href", "/contractor");
   expect(screen.getByRole("link", { name: "Prepare a private draft" })).toHaveAttribute("href", "/contractor/drafts");
@@ -94,7 +94,7 @@ it("retains the selected engineering night through Home without forwarding arbit
 });
 it("keeps unassigned identities at an explicit access-pending page", async () => {
   landing.mockResolvedValue({ state: "unassigned" });
-  render(await Home());
+  render(await Home({}));
   expect(
     screen.getByRole("heading", { name: "Workspace access pending" }),
   ).toBeInTheDocument();
@@ -104,9 +104,9 @@ it("keeps unassigned identities at an explicit access-pending page", async () =>
 });
 it("enforces planner access for the sandbox and labels its unsaved demo inputs", async () => {
   actor.mockResolvedValue({ role: "contractor" });
-  await expect(Sandbox()).rejects.toThrow("redirect:/");
+  await expect(Sandbox({})).rejects.toThrow("redirect:/");
   actor.mockResolvedValue({ role: "planner" });
-  render(await Sandbox());
+  render(await Sandbox({}));
   expect(
     screen.getByText(/Sandbox changes are exploratory/),
   ).toBeInTheDocument();

@@ -1,5 +1,57 @@
 # Testing Plan
 
+## Native algorithm comparison and cloud controls — 2026-09-19
+
+Run both Python suites (`scripts/ps1/benchmark/test_cp_sat.py` and `test_scip.py`),
+the native bridge/selection tests under `scripts/ps1`, and the existing native
+service/API/client suites. They cover per-activity v2 scoring, independent MIP
+constraints, bounded seconds/workers/seeds, profile and repair scope, digest
+agreement, rejected incumbents, validation, proof consistency and best-result
+retention. The HTTP defaults are now 60 search seconds and up to 16 workers,
+with a separate 75-second process guard. Worker/runtime controls are internal.
+
+Use the commands in `scripts/ps1/benchmark/README.md` to reproduce the full matrix,
+cold/LNS variants, perturbed holdouts and the 8/16/32-worker sweep. Do not overlap
+timing runs with other solver jobs or builds. Keep native status separate from
+fallback feasibility, retain construction failures, and exclude superseded v1
+scores. The CLI exports only CSV-round-tripped complete submissions into a fresh
+directory; auxiliary proof/report JSON stays outside scenario CSV directories.
+Final local verification and skipped cloud checks are in PROJECT_STATUS.md.
+
+## Native PS1 service and scorer v2 — 2026-09-19
+
+Run `npx vitest run src/test/ps1-solve-api.test.ts src/lib/ps1/server-solver.test.ts`
+plus the PS1 engine/UI suites and Python `test_cp_sat.py`. API tests exercise
+cross-origin rejection, streamed body/model limits, cyclic inputs, pins/cuts,
+concurrent admission and missing runtime. Native boundary tests cover CSV/score
+agreement, provenance, unknown/no-incumbent, pins, process timeout/cancellation
+and valid-incumbent retention. UI tests use the HTTP contract and preserve
+review/apply/undo, cuts, uploads and export behavior.
+
+Independent arithmetic regressions distinguish per-activity lateness from the
+superseded terminal-only scoring bug. All new evidence uses ps1-objective-v2;
+legacy results.json is historical and cannot support A/C quality or proof claims.
+The native matrix records every full-model outcome and bound, including failures.
+Browser QA must exercise real native requests, hidden upload, progress, native
+status/proof, cancellation, and the nine-file ZIP. Local proof is not reference
+validator certification. Verification results are in PROJECT_STATUS.md.
+
+## PS1 hybrid and native benchmark verification — 2026-09-19
+
+`search.test.ts` covers scenario reuse and target scoring, rejection of stale
+candidates under disruptions/pins, legal C ECLO windows including Live line
+coupling, seeded deterministic repair and public B improvement. Updated public
+ceilings are A 25.2 / B 30 / C 25.2. The 12 synthetic dataset tests retain full
+workload, dependencies and exact CSV round-trip checks. Offline Python tests
+cover legal sharing, PM/PC exclusion, physical cuts, partial-week deadlines,
+strict dependencies, terminal-activity penalties and frozen repairs. CP-SAT
+solutions must match the independently decoded/round-tripped local score.
+
+Run `npm run ps1:benchmark`, then use `scripts/ps1/benchmark/README.md` for the
+seeded perturbation holdout and native full/repair comparison commands. Keep
+unknown/failed runs in results, separate zero-score cases, and distinguish
+solver search time from startup/model/validation time.
+
 ## PS1 candidate reuse and submission readiness — 2026-09-19
 
 `optimization.test.ts` covers zero-cost feasible alternatives for mixed inputs,
@@ -8,8 +60,8 @@ changed capacity cuts, exact operator pins through reconstruction, separated C
 ECLO demand, independent line windows and Live interchange coupling. Exported
 outputs are reparsed and checked under their own scenario.
 
-Run `npm run ps1:benchmark -- --output /tmp/ps1-baseline.json --runs 3` before
-solver changes, then `npm run ps1:benchmark -- --compare /tmp/ps1-baseline.json
+Run `npm run ps1:benchmark:regression -- --output /tmp/ps1-baseline.json --runs 3` before
+solver changes, then `npm run ps1:benchmark:regression -- --compare /tmp/ps1-baseline.json
 --output /tmp/ps1-after.json --runs 3`. All 39 dataset/scenario outcomes must
 deliver full workload, pass local checks, preserve CSV headers/identities and be
 deterministic. Comparisons fail on score/feasibility regression or changed inputs;
@@ -29,7 +81,7 @@ ECLO-window breaches. Loader cases cover exact headers, RFC-style quoting,
 duplicate IDs, invalid references and predecessor cycles.
 
 Every public-scenario optimiser outcome must validate after serialization and
-remain deterministic. Score ceilings are A 25.2, B 44 and C 25.2. UI verification
+remain deterministic. Score ceilings are A 25.2, B 30 and C 25.2. UI verification
 covers mixed feasible/infeasible/invalid cards, Scenario C defaulting and retained
 policy selection, the linked queue/timeline/inspector, one-focus grid navigation,
 complete keyboard tabs, reviewed disruption changes, apply/undo, deterministic

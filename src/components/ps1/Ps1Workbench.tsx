@@ -16,7 +16,7 @@ import {
 } from "@railplan/ps1/io/load";
 import { writeSubmission } from "@railplan/ps1/io/write";
 import { zipArchive } from "@railplan/ps1/io/zip";
-import { solveInstance, type Pin } from "@railplan/ps1/engine/schedule";
+import type { Pin } from "@railplan/ps1/engine/schedule";
 import type {
   Disruption,
   ReplanOutcome,
@@ -29,10 +29,10 @@ import type {
   Ps1Instance,
   PlanDiff,
   Scenario,
-  SolveOutcome,
+  SolveDiagnostics,
 } from "@railplan/ps1/types/ps1";
 
-import { TrainFront, FolderOpen, RefreshCw, Moon, Sun, ShieldCheck, Undo2, Wrench, FileSpreadsheet, LockKeyhole, ChevronDown } from "lucide-react";
+import { TrainFront, FolderOpen, RefreshCw, Moon, Sun, ShieldCheck, Undo2, Wrench, FileSpreadsheet, Server, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ActionNote } from "@/components/ps1/ActionNote";
@@ -50,11 +50,11 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Ps1WorkerRequest, Ps1WorkerResponse } from "@/workers/ps1.worker";
+import { requestPs1Solve } from "@/lib/ps1/client";
 
 const SCENARIOS: Scenario[] = ["A", "B", "C"];
 
-/** Hand the browser a file. Nothing leaves the machine; the blob is local. */
+/** Download a locally prepared export. */
 function save(name: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -89,10 +89,9 @@ const MAX_TOTAL_ROWS = 50_000;
  * The judging surface: upload an instance, solve all three scenarios, read the
  * result, download the files.
  *
- * Everything runs in the browser. The hidden instance a judge uploads never
- * leaves their machine, there is no account to create and no server to be down
- * during judging — which matters more here than it would for an internal tool,
- * because the brief asks for a URL a panel can open cold and use immediately.
+ * CSVs are parsed locally and sent to the scheduling service when solving.
+ * The public path needs no account, and every returned schedule is checked
+ * locally before it can enter the planning workspace or an official export.
  */
 export function Ps1Workbench({
   publicInstance,
@@ -126,9 +125,7 @@ export function Ps1Workbench({
   const [proofOpen, setProofOpen] = useState(false);
   const [lowGlare, setLowGlare] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const workerRef = useRef<Worker | null>(null);
-  const cancelWorkerRef = useRef<(() => void) | null>(null);
-  const runIdRef = useRef(0);
+  const solveControllerRef = useRef<AbortController | null>(null);
   const operationEpochRef = useRef(0);
   // A draft upload can arrive in several batches. Solving or loading the public
   // instance closes that draft, so later uploads cannot inherit its old files.
@@ -136,7 +133,7 @@ export function Ps1Workbench({
 
   useEffect(() => () => {
     operationEpochRef.current += 1;
-    cancelWorkerRef.current?.();
+    solveControllerRef.current?.abort();
   }, []);
 
   const missing = useMemo(
@@ -176,7 +173,7 @@ export function Ps1Workbench({
   const acceptFiles = useCallback(async (list: File[]) => {
     if (!list.length) return;
     const epoch = ++operationEpochRef.current;
-    cancelWorkerRef.current?.();
+    solveControllerRef.current?.abort();
     const base = uploadFilesRef.current ?? {};
     uploadFilesRef.current = base;
     setFiles(base);
@@ -245,79 +242,23 @@ export function Ps1Workbench({
       withDisruptions: Partial<Record<Scenario, Disruption[]>> = {},
     ): Promise<ScenarioRun[]> => {
       const network = buildNetwork(target);
-      const id = ++runIdRef.current;
-      const toRuns = (outcomes: SolveOutcome[]): ScenarioRun[] =>
-        outcomes.map((outcome, index) => ({
-          scenario: SCENARIOS[index],
-          outcome,
-          network,
-          disruptions: withDisruptions[SCENARIOS[index]] ?? [],
-        }));
-
-      if (typeof Worker === "undefined") {
-        const outcomes: SolveOutcome[] = [];
+      solveControllerRef.current?.abort();
+      const controller = new AbortController();
+      solveControllerRef.current = controller;
+      const next: ScenarioRun[] = [];
+      try {
         for (const scenario of SCENARIOS) {
-          outcomes.push(solveInstance(target, {
-            scenario,
-            pins: withPins,
-            disruptions: withDisruptions[scenario] ?? [],
-            initialCandidates: outcomes.flatMap((outcome) =>
-              outcome.status === "FEASIBLE" && outcome.submission ? [outcome.submission] : []),
-          }, network));
+          controller.signal.throwIfAborted();
+          setRunProgress(`Solving Scenario ${scenario} on the server · ${next.length}/3 complete…`);
+          const disruptions = withDisruptions[scenario] ?? [];
+          const outcome = await requestPs1Solve({ instance: target, scenario, pins: withPins, disruptions }, controller.signal);
+          controller.signal.throwIfAborted();
+          next.push({ scenario, outcome, network, disruptions });
         }
-        return toRuns(outcomes);
+        return next;
+      } finally {
+        if (solveControllerRef.current === controller) solveControllerRef.current = null;
       }
-
-      cancelWorkerRef.current?.();
-      const worker = new Worker(
-        new URL("../../workers/ps1.worker.ts", import.meta.url),
-        {
-          type: "module",
-        },
-      );
-      workerRef.current = worker;
-      return await new Promise<ScenarioRun[]>((resolve, reject) => {
-        const release = () => {
-          worker.terminate();
-          if (workerRef.current === worker) {
-            workerRef.current = null;
-            cancelWorkerRef.current = null;
-          }
-        };
-        cancelWorkerRef.current = () => {
-          release();
-          reject(new Error("The operation was replaced by a newer instance or solve."));
-        };
-        worker.onmessage = (event: MessageEvent<Ps1WorkerResponse>) => {
-          const message = event.data;
-          if (message.id !== id || workerRef.current !== worker) return;
-          if (message.type === "progress") {
-            setRunProgress(
-              `Scenario ${message.scenario} complete · ${message.completed}/${message.total}`,
-            );
-            return;
-          }
-          release();
-          if (message.type === "error") reject(new Error(message.message));
-          else resolve(toRuns(message.outcomes));
-        };
-        worker.onerror = (event) => {
-          if (workerRef.current !== worker) return;
-          release();
-          reject(
-            new Error(
-              event.message || "The browser optimisation worker failed.",
-            ),
-          );
-        };
-        worker.postMessage({
-          id,
-          instance: target,
-          scenarios: SCENARIOS,
-          pins: withPins,
-          disruptions: withDisruptions,
-        } satisfies Ps1WorkerRequest);
-      });
     },
     [],
   );
@@ -329,7 +270,8 @@ export function Ps1Workbench({
       const epoch = ++operationEpochRef.current;
       uploadFilesRef.current = null;
       setRunning(true);
-      setRunProgress("Starting deterministic multi-start search…");
+      setRunError(null);
+      setRunProgress("Connecting to the scheduling service…");
       try {
         const next = await solveScenarios(target, withPins, Object.fromEntries(
           (override ? [] : runs ?? []).map((entry) => [entry.scenario, entry.disruptions]),
@@ -489,7 +431,7 @@ export function Ps1Workbench({
    * rather than the undisrupted one it replaced.
    */
   const adoptReplan = useCallback(
-    (outcome: ReplanOutcome, disruptions: Disruption[]) => {
+    (outcome: ReplanOutcome, disruptions: Disruption[], diagnostics: SolveDiagnostics) => {
       if (!instance || !runs) return;
       const activeRun = runs.find((entry) => entry.scenario === active);
       if (!activeRun) return;
@@ -505,6 +447,10 @@ export function Ps1Workbench({
         );
         return;
       }
+      operationEpochRef.current += 1;
+      solveControllerRef.current?.abort();
+      setRunning(false);
+      setRunProgress("");
       const nextRuns = runs.map((entry) =>
         entry.scenario === active
           ? {
@@ -514,10 +460,7 @@ export function Ps1Workbench({
                 status: "FEASIBLE" as const,
                 submission: outcome.submission,
                 validation,
-                diagnostics: {
-                  ...entry.outcome.diagnostics,
-                  rejectedPins: outcome.submission.rejectedPins,
-                },
+                diagnostics,
               },
               disruptions,
             }
@@ -545,6 +488,10 @@ export function Ps1Workbench({
 
   const applyPending = useCallback(() => {
     if (!pending || !runs) return;
+    operationEpochRef.current += 1;
+    solveControllerRef.current?.abort();
+    setRunning(false);
+    setRunProgress("");
     setHistory((current) => [
       ...current,
       { runs, pins, scenario: pending.scenario },
@@ -573,6 +520,10 @@ export function Ps1Workbench({
       (entry) => entry.scenario === previous.scenario,
     );
     if (!isReadyScenario(before) || !isReadyScenario(after)) return;
+    operationEpochRef.current += 1;
+    solveControllerRef.current?.abort();
+    setRunning(false);
+    setRunProgress("");
     const diff = comparePlans(
       before.outcome.submission,
       before.outcome.validation,
@@ -692,7 +643,7 @@ export function Ps1Workbench({
         <a href="/ps1" className="ps1-brand" aria-label="RailPlan start"><TrainFront size={22} strokeWidth={1.6} aria-hidden /><span>RailPlan</span></a>
         <h1>Track access planning</h1>
         <span className="ps1-title-context">{runs ? `${source === "public" ? "Public" : "Uploaded"} instance / Policy ${active}` : "NebulaX · PS1"}</span>
-        <span className="ps1-local-label"><LockKeyhole size={12} aria-hidden /> Local workspace</span>
+        <span className="ps1-local-label"><Server size={12} aria-hidden /> Server optimisation</span>
       </header>
       {/* Proxied by the visible "Upload instance files" and "Load another"
           buttons, so it stays out of the tab order: focus landing on a 1x1
@@ -728,13 +679,14 @@ export function Ps1Workbench({
           <div className="ps1-preflight-heading"><FileSpreadsheet size={30} strokeWidth={1.3} aria-hidden /><p className="workspace-eyebrow">Start a planning session</p></div>
           <h2>Bring your work onto the plan.</h2>
           <p className="mt-1 max-w-3xl text-[12px] text-ink-700">
-            Drop the eight official CSVs here. Parsing, solving and validation
-            stay on this device.
+            Drop the eight official CSVs here. Files are parsed on this device;
+            running the scheduler sends the instance to our server for optimisation.
           </p>
           <div className="mt-4 flex flex-wrap items-start gap-x-5 gap-y-3">
             <div className="flex flex-col items-start gap-1">
               <Button
                 variant="primary"
+                disabled={running && runProgress !== "Reading instance files…"}
                 aria-describedby="ps1-note-public"
                 onClick={loadPublic}
               >
@@ -768,7 +720,7 @@ export function Ps1Workbench({
           <div className="ps1-import-manifest" aria-label="Required instance files">
             <div><strong>Instance files</strong><span>{PS1_FILES.length - missing.length} / 8 ready</span></div>
             <ul>{PS1_FILES.map((name, index) => <li key={name} data-ready={!missing.includes(name)}><span>{String(index + 1).padStart(2, "0")}</span><code>{name.replace(/^\d+_/, "")}</code><span>{missing.includes(name) ? "Required" : "Loaded"}</span></li>)}</ul>
-            <p>No account required. Files and planning results stay in this browser.</p>
+            <p>No account required. Review returned schedules here and download your results.</p>
           </div>
           {ignored.length > 0 && (
             <p className="mt-3 rounded-md border border-signal-amber bg-signal-amber-soft p-3 text-[12px] text-ink-900">
@@ -891,6 +843,7 @@ export function Ps1Workbench({
                   onOpenChange={setDisruptionOpen}
                   lowGlare={lowGlare}
                   existingDisruptions={currentReady.disruptions}
+                  pins={pins}
                 />
               </>
             ) : current ? (
@@ -924,8 +877,8 @@ export function Ps1Workbench({
           <DialogContent className={`ps1-dialog ${lowGlare ? "ps1-low-glare" : ""} max-h-[90vh] w-[min(960px,calc(100vw-24px))] overflow-y-auto`}>
             <DialogTitle>Proof, handover and export</DialogTitle>
             <DialogDescription>
-              Validation evidence and official submission artifacts remain local
-              to this browser.
+              Server optimisation results, independently checked in this browser,
+              with official submission downloads.
             </DialogDescription>
             <section className="mt-3 rounded-sm border border-rule bg-sunk p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -1002,13 +955,25 @@ export function Ps1Workbench({
                     />
                     <Stat
                       label="Elapsed"
-                      value={`${currentReady.outcome.diagnostics.elapsedMs} ms`}
+                      value={`${Math.round(currentReady.outcome.diagnostics.elapsedMs)} ms`}
                     />
                     <Stat
                       label="Warnings"
                       value={currentReady.outcome.diagnostics.warnings.length}
                     />
                   </dl>
+                  {currentReady.outcome.diagnostics.solver && (
+                    <div className="mt-3 rounded-sm border border-rule bg-surface p-2 text-[11px] text-ink-700">
+                      <p>{currentReady.outcome.diagnostics.solver.engine} · native search {currentReady.outcome.diagnostics.solver.status}</p>
+                      <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+                        <Stat label="Lower bound" value={currentReady.outcome.diagnostics.solver.bestBound ?? "Unavailable"} />
+                        <Stat label="Gap to bound" value={currentReady.outcome.diagnostics.solver.relativeGap === null ? "Unavailable" : `${(currentReady.outcome.diagnostics.solver.relativeGap * 100).toFixed(1)}%`} />
+                        <Stat label="Workers" value={currentReady.outcome.diagnostics.solver.workers} />
+                        <Stat label="Result source" value={currentReady.outcome.diagnostics.solver.incumbentSource} />
+                      </dl>
+                      <p className="mt-2">Bounds apply to this solve&apos;s enforced pins, retained accesses and capacity cuts within the local model. They do not prove an unrestricted replan optimum or certify cross-possession physical-night alignment.</p>
+                    </div>
+                  )}
                   <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-sm border border-rule bg-surface p-2 text-[10px] text-ink-700">
                     {buildHandoverSummary({
                       scenario: currentReady.scenario,

@@ -18,7 +18,7 @@ afterEach(() => vi.clearAllMocks());
 it("offers the open scheduler to a visitor with no account", async () => {
   access.mockResolvedValue({ state: "anonymous" });
   const Home = (await import("@/app/page")).default;
-  render(await Home());
+  render(await Home({}));
 
   const scheduler = screen.getByRole("link", { name: /Open the PS1 scheduler/ });
   expect(scheduler).toHaveAttribute("href", "/ps1");
@@ -34,7 +34,7 @@ it("offers the open scheduler to a visitor with no account", async () => {
 it("still points a signed-in account with no role at the open scheduler", async () => {
   access.mockResolvedValue({ state: "unassigned" });
   const Home = (await import("@/app/page")).default;
-  render(await Home());
+  render(await Home({}));
 
   expect(screen.getByText("Workspace access pending")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /PS1 track access scheduler/ })).toHaveAttribute(
@@ -46,7 +46,7 @@ it("still points a signed-in account with no role at the open scheduler", async 
 it("gives a planner the workspace rather than the public entry", async () => {
   access.mockResolvedValue({ state: "workspace", actor: { role: "planner" } });
   const Home = (await import("@/app/page")).default;
-  render(await Home());
+  render(await Home({}));
 
   expect(screen.getByRole("heading", { name: "How RailPlan works" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: /Open the PS1 scheduler/ })).not.toBeInTheDocument();

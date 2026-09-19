@@ -16,7 +16,7 @@ We designed RailPlan around the schedule itself. The work stays in view; explana
 
 ## What it does
 
-RailPlan accepts the eight CSV files defined by the PS1 challenge and runs three policy scenarios in a browser worker. The public example contains 54 activities across 14 contracts and a 30-week planning horizon.
+RailPlan accepts the eight CSV files defined by the PS1 challenge and runs three policy scenarios through a same-origin native CP-SAT service. The public example contains 54 activities across 14 contracts and a 30-week planning horizon.
 
 The workspace connects four tasks:
 

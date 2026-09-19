@@ -1,8 +1,41 @@
 # Architecture
 
-## PS1 validated candidate reuse — 2026-09-19
+## Native PS1 solver service — 2026-09-19
 
-The worker, no-worker fallback and public-results CLI pass feasible earlier
+Supersedes the browser-only execution choice below. `/ps1` sends one scenario at
+a time to `POST /api/ps1/solve`. Next's Node process validates bounded JSON and
+instance references, then `src/lib/ps1/server-solver.ts` creates a checked heuristic
+incumbent and asynchronously spawns native Python OR-Tools. CP-SAT runs the full
+weekly model with a default of 16 CPU workers (capped by available CPUs) and a
+60-second search budget on the target 32-vCPU / 64-GiB VM, including
+when the heuristic finds no schedule. The child has a separate wall timeout and
+is killed on cancellation. Only one solve is admitted per Node process.
+
+`cp-sat-model.ts` owns payload provenance and independent CSV round-trip checks,
+shared with offline benchmarks. Native and heuristic candidates must satisfy the
+local checker and exact operator pins. An incumbent survives UNKNOWN/timeouts;
+missing Python/OR-Tools is a visible service error. Proof metadata separates the
+full-model status, lower bound, gap and selected candidate. Browser checks repeat
+conformance before rendering, and request cancellation/epochs prevent stale runs.
+The application holds uploads in request/process memory without a database or
+payload logging. The nginx deployment template can temporarily buffer bodies on
+disk; see the deployment runbook.
+
+The scorer is now `ps1-objective-v2`: each late activity pays for its own finish
+against its contract's planned date. Contract-level RESULTS are unchanged.
+Native OPTIMAL still covers the encoded local model, whose CSV format cannot
+establish cross-possession physical-night alignment. No reference-validator
+parity is asserted. [Deployment and limits](PS1_NATIVE_DEPLOYMENT.md).
+
+`scripts/ps1/benchmark/cloud.ts` compares the same shared payload/CSV boundary
+using full CP-SAT cold/hinted search, CP-SAT LNS-only, an independent SCIP MIP
+formulation and extended TypeScript repair. It records raw native candidates
+separately from the actual best validated schedule, including failures. Worker
+scaling is measured on the target host, not inferred from local Mac results.
+
+## PS1 hybrid optimisation and validated candidate reuse — 2026-09-19
+
+The checked TypeScript heuristic and public-results tooling pass feasible earlier
 scenario outputs as initial candidates for later policies. `solveInstance`
 relabels RESULTS without mutating the source schedule, then checks the full
 target policy, current disruptions and original operator pins. Standalone B/C
@@ -16,12 +49,19 @@ interchange. Different deterministic construction orders explore different
 windows, while no-ECLO candidates remain available. This is a bounded heuristic,
 not an exhaustive window search or an optimality claim.
 
-`npm run ps1:benchmark` measures public and synthetic inputs with full-workload,
+The heuristic combines ranked legal ECLO windows with seeded adaptive
+destroy/repair. Unaffected accesses and operator pins remain fixed during repair;
+sharing groups and night assignments are rebuilt and every candidate is checked.
+A worse exploratory candidate never replaces the best validated result. The
+default shared neighbour budget is 256.
+
+`npm run ps1:benchmark:regression` measures public and synthetic inputs with full-workload,
 local-checker, exact CSV round-trip and deterministic-output checks. Comparisons
 reject changed input digests and quality regressions. `npm run ps1:solve` uses
-the same optimiser and produces the nine-CSV public submission ZIP separately
-from local validation reports. No remote solver, dependency or input schema is
-added; uploaded data stays in the browser.
+the native optimiser and produces the nine-CSV public submission ZIP separately
+from local validation reports. The native CP-SAT full/repair models and comparative
+benchmarks live under `scripts/ps1/benchmark/`; see that directory's README for
+measured results and limitations.
 
 ## PS1 schedule-first planning workstation — 2026-09-19
 

@@ -1,7 +1,16 @@
 # PS1 solver benchmark
 
-This benchmark exercises the same `solveInstance()` entry point used by the
-browser worker, with its normal optimisation budget and each scenario solved
+## Merged integration check — 2026-09-19
+
+After reconciling PR #47 with the candidate-reuse work on `main`, a one-run
+`npm run ps1:benchmark:regression -- --runs 1` check passed all 39 public and
+synthetic A/B/C outcomes with complete workloads, local conformance and exact CSV
+round-trips. Public scores were A 25.2 / B 30 / C 25.2; capacity-pressure C was
+1105.5. This is fresh local-checker evidence, not reference-validator parity or
+an optimality claim.
+
+This regression benchmark exercises the checked TypeScript `solveInstance()`
+entry point used for native warm starts, with its normal optimisation budget and each scenario solved
 independently. It covers the official
 public input plus every dataset listed in the synthetic manifest: **13 inputs,
 553 activities, 1,225 requested access units, 39 A/B/C outcomes**.
@@ -18,7 +27,7 @@ success.
 From the repository root, after installing dependencies:
 
 ```sh
-node --import tsx scripts/ps1/benchmark.ts --runs 3 \
+npm run ps1:benchmark:regression -- --runs 3 \
   --output output/ps1-benchmark/baseline.json \
   --markdown output/ps1-benchmark/baseline.md
 ```
@@ -26,7 +35,7 @@ node --import tsx scripts/ps1/benchmark.ts --runs 3 \
 Capture that baseline **before changing the engine**. After the change:
 
 ```sh
-node --import tsx scripts/ps1/benchmark.ts --runs 3 \
+npm run ps1:benchmark:regression -- --runs 3 \
   --compare output/ps1-benchmark/baseline.json \
   --output output/ps1-benchmark/current.json \
   --markdown output/ps1-benchmark/comparison.md
@@ -121,8 +130,8 @@ not be presented as a speedup claim.
 | Mixed 240 B | 704.01 | 288.12 |
 | Mixed 240 C | 696.78 | 284.82 |
 
-The browser worker and public-results CLI additionally pass earlier feasible
-scenario submissions as candidates. This benchmark intentionally does not:
+The TypeScript path can additionally pass earlier feasible scenario submissions
+as candidates. This benchmark intentionally does not:
 standalone calls make the before/after comparison use the same options and test
 the engine's own construction improvements. Browser upload, review and actual
 download verification remain separate release checks.

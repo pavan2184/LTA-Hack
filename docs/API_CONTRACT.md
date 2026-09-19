@@ -1,22 +1,67 @@
 # API Contract
 
-## Public PS1 client interfaces — 2026-09-18
+## Cloud search budget and benchmark controls — 2026-09-19
 
-No HTTP route or environment variable was added. `solveInstance(instance,
-options)` returns a `SolveOutcome`; options carry scenario, hard pins, capacity
-disruptions, optional `initialCandidates` and a bounded deterministic optimisation
-budget. Initial candidates are relabelled and fully revalidated for the target
-scenario, current cuts and exact pins; their source policy's feasibility is never
-assumed to transfer. The default runs 24 construction seeds (one target-policy
-candidate, plus one nominal-supply candidate for B/C, per seed) and bounded
-reconstruction inside `horizon_weeks`. Reconstruction evaluates at most two moves
-for each of 48 access rows, further limited by `maxNeighbourEvaluations` (default
-2,500); zero-score candidates skip reconstruction. An infeasible result may include
-a diagnostic partial submission, but the UI cannot export it.
+The target is 32 vCPUs / 64 GiB RAM, default 60 seconds of native search per scenario
+and default 16 workers capped by host availability. Public clients cannot override
+these controls. The native process has a separate 75-second wall guard; warm-start,
+input and validation work add to end-to-end latency. Internal benchmark worker
+settings support the 8/16/32-worker comparison without exposing unbounded HTTP work.
 
-The worker message contains only the parsed instance and local solve options. It
-emits per-scenario progress followed by three outcomes, or a sanitized error. CSV
-uploads are limited to 5 MB per file and approximately 50,000 total records.
+`ps1:benchmark:cloud` accepts explicit seconds, workers, seeds, datasets, scenarios
+and algorithm variants. It shares canonical native payloads and CSV validation
+with the service, saves selected schedules and raw candidates separately and
+includes failed heuristic cases. `ps1:solve:native` is an additional nominal-instance
+CLI for reproducible native selection/export, not a second HTTP implementation.
+
+## POST /api/ps1/solve — 2026-09-19
+
+Public, same-origin JSON. Body: `{instance: Ps1Instance, scenario: "A"|"B"|"C",
+pins?: Pin[], disruptions?: Disruption[]}`. Returns `{outcome: SolveOutcome}` with
+`Cache-Control: no-store`. Authentication is not required for judging. Each
+scenario is requested separately so the UI can show progress. Solver parameters,
+Python paths and claimed validation reports are not accepted from clients.
+
+Admission limits: 4 MiB streamed body with a 10-second read deadline, 2,000 activities/contracts, 260 weeks,
+60,000 activity-weeks, 120,000 location-weeks and 200,000 span-weeks. Oversized
+instances fail explicitly; work is never truncated. One active request per Node
+process; overlap receives 429 and Retry-After:5. Other errors use
+`{error:{code,message}}`: 400 invalid JSON/instance, 403 cross-origin, 413 body
+limit, 415 content type, 499 cancellation, 502 native failure, 503 missing native
+runtime. Internal output and uploaded data are not serialized in errors.
+
+A successful HTTP response can contain an unresolved/infeasible outcome.
+`diagnostics.solver.status` distinguishes native OPTIMAL/FEASIBLE/INFEASIBLE/UNKNOWN;
+legacy outer INFEASIBLE alone is not proof. The full local-model bound and gaps
+are separate from feasibility. Native errors never silently change execution to
+the browser. [Deployment](PS1_NATIVE_DEPLOYMENT.md).
+
+## PS1 search options — 2026-09-19
+
+`ScheduleOptions` now accepts `initialCandidates` (always revalidated for the
+target scenario, pins and disruptions), `searchMode: "hybrid" | "legacy"`,
+`optimizationBudget.seed` and optional cooperative `maxTimeMs`. The default
+neighbour budget is 256 shared by shift, window and adaptive repair trials,
+with an explicit maximum of 2,500. The 24 initial construction starts and extra
+nominal-capacity starts are counted separately from that neighbour budget.
+Construction options include `nominalCapacity`, per-line `ecloWindows` start
+weeks and `activityOrder`. The worker protocol and official CSV schemas are
+unchanged. `INFEASIBLE` means search exhaustion, not a mathematical proof.
+
+## Public PS1 client interfaces — 2026-09-19
+
+`solveInstance(instance, options)` remains the checked TypeScript heuristic and
+returns a `SolveOutcome`. Options carry scenario, hard pins, capacity disruptions,
+optional `initialCandidates` and a bounded deterministic optimisation budget.
+Initial candidates are relabelled and fully revalidated for the target scenario,
+current cuts and exact pins; their source policy's feasibility is never assumed to
+transfer. The default runs 24 construction starts and at most 256 shared shift,
+window and adaptive-repair neighbours inside `horizon_weeks`. An infeasible result
+may include a diagnostic partial submission, but the UI cannot export it.
+
+The public UI sends the parsed instance and bounded solve options to the
+same-origin `POST /api/ps1/solve` route described above. CSV uploads are limited to
+5 MB per file and approximately 50,000 total records.
 Official CSV headers, column order and the A/B/C nine-file ZIP contract are
 unchanged. `PS1_PLANNING_LOG.json` is a separate optional artifact.
 

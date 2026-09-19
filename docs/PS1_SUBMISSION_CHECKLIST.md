@@ -17,7 +17,7 @@ unchecked actions have happened. PS1 requirements come from
 | Portal submission | **TODO:** named team member and confirmation receipt |
 | Physical sign-in | **TODO:** named team member and completion time |
 
-Local release evidence: public scores **A 25.2 / B 44 / C 25.2**; all 12
+Local release evidence: public scores **A 25.2 / B 30 / C 25.2**; all 12
 synthetic upload/solve/download flows checked, including all 108 CSVs after actual
 browser download. This does not complete the hosted-release checks below.
 The last recorded hosted check on 2026-09-19 saw the older interface and public
@@ -31,7 +31,7 @@ create an unrelated replacement.
   `vercel.json` sets `git.deploymentEnabled` to `false`; merging does not trigger
   the configured Git deployment. Do not infer freshness from a successful merge.
 - [ ] Open the judge URL on a second laptop or private browser without an account.
-  Confirm upload, worker assets and the redesigned work schedule load successfully.
+  Confirm upload, native solver responses and the redesigned work schedule load successfully.
 - [ ] Freeze the tested release for recording and submission. If code changes,
   repeat the affected checks and update the release identity.
 

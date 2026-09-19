@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import { loadInstance, PS1_FILES } from "../io/load";
 import { parseSubmission } from "../io/submission";
+import type { Ps1Instance, Scenario, Submission } from "../types/ps1";
+import { buildNetwork, expandSpan } from "./network";
 import { validate, weekEnd, weekOf, isoDate } from "./validate";
 
 const instance = loadInstance(
@@ -84,7 +86,81 @@ describe("the published reference submission", () => {
 
   it("publishes an objective score only when feasible", () => {
     expect(report.objectiveScore).toBeGreaterThanOrEqual(0);
-    expect(report.formulaVersion).toBe("ps1-objective-v1");
+    expect(report.formulaVersion).toBe("ps1-objective-v2");
+  });
+});
+
+describe("per-activity lateness penalties", () => {
+  function scoredWeeks(weeks: [number, number], scenario: Scenario, plannedDate = "2027-01-10") {
+    const contract = {
+      ...instance.contracts[0],
+      contractNumber: "score-contract",
+      contractPriority: 3 as const,
+      plannedCompletionDate: plannedDate,
+      natureOfActivity: "Non-live (Others)" as const,
+      accessType: "C" as const,
+      numberOfWorkfronts: 1,
+      numberOfMaximumAccessPerWeek: 3,
+    };
+    const input: Ps1Instance = {
+      ...instance,
+      contracts: [contract],
+      activities: ([1, 3] as const).map((priority, index) => ({
+        ...instance.activities[0],
+        activityId: `score-${index}`,
+        contractNumber: contract.contractNumber,
+        totalAccesses: 1,
+        plannedStartDate: "2027-01-04",
+        predecessorActivityId: null,
+        activityPriority: priority,
+      })),
+    };
+    const network = buildNetwork(input);
+    // Fixed calendar dates make this oracle independent of the scoring helper.
+    const completion = ["2027-01-10", "2027-01-17", "2027-01-24"][Math.max(...weeks) - 1];
+    const submission: Submission = {
+      scenario,
+      access: input.activities.map((activity, index) => ({
+        activityId: activity.activityId, accessSeq: 1, week: weeks[index],
+        eclo: 0, accessNight: index + 1,
+      })),
+      occupancy: input.activities.flatMap((activity, index) =>
+        expandSpan(network, activity.startLocationId, activity.endLocationId).map((locationId) => ({
+          activityId: activity.activityId, week: weeks[index], locationId, coShareGroup: "shared",
+        }))),
+      results: [{
+        scenario, contractNumber: contract.contractNumber, simulatedCompletionDate: completion,
+        overrunDays: Math.max(0, (Date.parse(completion) - Date.parse(plannedDate)) / 86_400_000),
+      }],
+    };
+    const report = validate(input, submission);
+    expect(report.hardViolations).toEqual([]);
+    return report;
+  }
+
+  it.each(["A", "C"] as const)("charges both late activities in %s, even when they finish in different weeks", (scenario) => {
+    const report = scoredWeeks([2, 3], scenario);
+    // H is 7 days late at 1.3/day; L is 14 days late at 1/day.
+    expect(report.softScores.priorityWeightedScore).toBe(23.1);
+    expect(report.objectiveScore).toBe(23.1);
+    // Contract-level completion reporting stays one 14-day overrun.
+    expect(report.softScores.overrunDaysTotal).toBe(14);
+    expect(report.softScores.contractsOverrunning).toBe(1);
+    expect(report.softScores.priorityOverrun).toEqual({ "1": 0, "2": 0, "3": 14 });
+  });
+
+  it("cannot lower the penalty by delaying another activity in the same contract", () => {
+    expect(scoredWeeks([2, 2], "A").objectiveScore).toBe(16.1);
+    expect(scoredWeeks([2, 3], "A").objectiveScore).toBe(23.1);
+  });
+
+  it("does not charge an on-time activity for another activity's delay", () => {
+    expect(scoredWeeks([1, 3], "A").objectiveScore).toBe(14);
+  });
+
+  it("uses each activity's exact day difference for a midweek planned date", () => {
+    // Jan 17 - Jan 13 = 4 days; Jan 24 - Jan 13 = 11 days.
+    expect(scoredWeeks([2, 3], "A", "2027-01-13").objectiveScore).toBe(16.2);
   });
 });
 

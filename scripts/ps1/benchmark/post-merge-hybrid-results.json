@@ -1,0 +1,826 @@
+{
+  "complete": true,
+  "generatedAt": "2026-09-19T06:23:09.421Z",
+  "config": {
+    "seconds": 60,
+    "workers": [
+      8
+    ],
+    "seeds": [
+      1
+    ],
+    "variants": [
+      "hybrid-extended"
+    ],
+    "scenarios": [
+      "A",
+      "B",
+      "C"
+    ],
+    "datasets": "all",
+    "holdouts": 0,
+    "formulaVersion": "ps1-objective-v2"
+  },
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M3 Pro",
+    "availableCpus": 11,
+    "memoryGiB": 18,
+    "node": "v22.22.0",
+    "revision": "d1e0a8fc360cb79796351d225173c62e5fec5d0a",
+    "sourceSha256": "3ee112da9d59a8ab82fd5ad8e5f5f65b70b38a16b868c76f8faaa83110a469b8",
+    "pythonRuntime": {
+      "executable": "/private/tmp/lta-ps1-cpsat/bin/python",
+      "python": "3.9.6",
+      "ortools": "9.15.6755"
+    }
+  },
+  "conformance": "local checker; not reference validator; cross_possession_night_alignment undecidable",
+  "schema": "ps1-post-merge-hybrid-quality-v1",
+  "comparisonSnapshot": "d1e0a8fc360cb79796351d225173c62e5fec5d0a",
+  "integratedRemoteRevision": "2957345",
+  "scope": "Quality-only reconciliation after ECLO-construction changes; native engines and checker unchanged, native timing cohort not repeated. All results passed exact CSV round-trip checking.",
+  "results": [
+    {
+      "key": "public/A/1/baseline",
+      "dataset": "public",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+      "selectedScore": 25.2,
+      "previousSnapshotScore": 25.2,
+      "locallyFeasible": true
+    },
+    {
+      "key": "public/A/1/hybrid-extended/1",
+      "dataset": "public",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+      "selectedScore": 25.2,
+      "previousSnapshotScore": 25.2,
+      "locallyFeasible": true
+    },
+    {
+      "key": "public/B/1/baseline",
+      "dataset": "public",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+      "selectedScore": 30,
+      "previousSnapshotScore": 30,
+      "locallyFeasible": true
+    },
+    {
+      "key": "public/B/1/hybrid-extended/1",
+      "dataset": "public",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+      "selectedScore": 30,
+      "previousSnapshotScore": 30,
+      "locallyFeasible": true
+    },
+    {
+      "key": "public/C/1/baseline",
+      "dataset": "public",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+      "selectedScore": 25.2,
+      "previousSnapshotScore": 25.2,
+      "locallyFeasible": true
+    },
+    {
+      "key": "public/C/1/hybrid-extended/1",
+      "dataset": "public",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+      "selectedScore": 25.2,
+      "previousSnapshotScore": 25.2,
+      "locallyFeasible": true
+    },
+    {
+      "key": "01-small-demo/A/1/baseline",
+      "dataset": "01-small-demo",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "9c1eaf69df73535d976ca548109171c3c420876afd5296bee61cc52ffe9b08e8",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "01-small-demo/A/1/hybrid-extended/1",
+      "dataset": "01-small-demo",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "9c1eaf69df73535d976ca548109171c3c420876afd5296bee61cc52ffe9b08e8",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "01-small-demo/B/1/baseline",
+      "dataset": "01-small-demo",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "9c1eaf69df73535d976ca548109171c3c420876afd5296bee61cc52ffe9b08e8",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "01-small-demo/B/1/hybrid-extended/1",
+      "dataset": "01-small-demo",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "9c1eaf69df73535d976ca548109171c3c420876afd5296bee61cc52ffe9b08e8",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "01-small-demo/C/1/baseline",
+      "dataset": "01-small-demo",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "9c1eaf69df73535d976ca548109171c3c420876afd5296bee61cc52ffe9b08e8",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "01-small-demo/C/1/hybrid-extended/1",
+      "dataset": "01-small-demo",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "9c1eaf69df73535d976ca548109171c3c420876afd5296bee61cc52ffe9b08e8",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "02-co-sharing/A/1/baseline",
+      "dataset": "02-co-sharing",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "d3ead81500156b35f3a664d39ca88a672d28bea35bdb900598080cb261218d96",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "02-co-sharing/A/1/hybrid-extended/1",
+      "dataset": "02-co-sharing",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "d3ead81500156b35f3a664d39ca88a672d28bea35bdb900598080cb261218d96",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "02-co-sharing/B/1/baseline",
+      "dataset": "02-co-sharing",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "d3ead81500156b35f3a664d39ca88a672d28bea35bdb900598080cb261218d96",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "02-co-sharing/B/1/hybrid-extended/1",
+      "dataset": "02-co-sharing",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "d3ead81500156b35f3a664d39ca88a672d28bea35bdb900598080cb261218d96",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "02-co-sharing/C/1/baseline",
+      "dataset": "02-co-sharing",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "d3ead81500156b35f3a664d39ca88a672d28bea35bdb900598080cb261218d96",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "02-co-sharing/C/1/hybrid-extended/1",
+      "dataset": "02-co-sharing",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "d3ead81500156b35f3a664d39ca88a672d28bea35bdb900598080cb261218d96",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "03-live-interchange/A/1/baseline",
+      "dataset": "03-live-interchange",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "5a8e93ec4ba85ee3f6591482ef3a211531481566ba53d61d708bd237a6ea5f10",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "03-live-interchange/A/1/hybrid-extended/1",
+      "dataset": "03-live-interchange",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "5a8e93ec4ba85ee3f6591482ef3a211531481566ba53d61d708bd237a6ea5f10",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "03-live-interchange/B/1/baseline",
+      "dataset": "03-live-interchange",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "5a8e93ec4ba85ee3f6591482ef3a211531481566ba53d61d708bd237a6ea5f10",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "03-live-interchange/B/1/hybrid-extended/1",
+      "dataset": "03-live-interchange",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "5a8e93ec4ba85ee3f6591482ef3a211531481566ba53d61d708bd237a6ea5f10",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "03-live-interchange/C/1/baseline",
+      "dataset": "03-live-interchange",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "5a8e93ec4ba85ee3f6591482ef3a211531481566ba53d61d708bd237a6ea5f10",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "03-live-interchange/C/1/hybrid-extended/1",
+      "dataset": "03-live-interchange",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "5a8e93ec4ba85ee3f6591482ef3a211531481566ba53d61d708bd237a6ea5f10",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "04-dependency-chains/A/1/baseline",
+      "dataset": "04-dependency-chains",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "1c678c110320fea3d7bd1786f506f7ae45b92b8f8757ff89bca11dfcd8beb83f",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "04-dependency-chains/A/1/hybrid-extended/1",
+      "dataset": "04-dependency-chains",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "1c678c110320fea3d7bd1786f506f7ae45b92b8f8757ff89bca11dfcd8beb83f",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "04-dependency-chains/B/1/baseline",
+      "dataset": "04-dependency-chains",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "1c678c110320fea3d7bd1786f506f7ae45b92b8f8757ff89bca11dfcd8beb83f",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "04-dependency-chains/B/1/hybrid-extended/1",
+      "dataset": "04-dependency-chains",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "1c678c110320fea3d7bd1786f506f7ae45b92b8f8757ff89bca11dfcd8beb83f",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "04-dependency-chains/C/1/baseline",
+      "dataset": "04-dependency-chains",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "1c678c110320fea3d7bd1786f506f7ae45b92b8f8757ff89bca11dfcd8beb83f",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "04-dependency-chains/C/1/hybrid-extended/1",
+      "dataset": "04-dependency-chains",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "1c678c110320fea3d7bd1786f506f7ae45b92b8f8757ff89bca11dfcd8beb83f",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "05-capacity-pressure/A/1/baseline",
+      "dataset": "05-capacity-pressure",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "a6a2688302fe909bc3f7f0fc030980edbb3d14eac2ed8796bd854ee8c1fda8bd",
+      "selectedScore": 2184,
+      "previousSnapshotScore": 2184,
+      "locallyFeasible": true
+    },
+    {
+      "key": "05-capacity-pressure/A/1/hybrid-extended/1",
+      "dataset": "05-capacity-pressure",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "a6a2688302fe909bc3f7f0fc030980edbb3d14eac2ed8796bd854ee8c1fda8bd",
+      "selectedScore": 2184,
+      "previousSnapshotScore": 2184,
+      "locallyFeasible": true
+    },
+    {
+      "key": "05-capacity-pressure/B/1/baseline",
+      "dataset": "05-capacity-pressure",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "a6a2688302fe909bc3f7f0fc030980edbb3d14eac2ed8796bd854ee8c1fda8bd",
+      "selectedScore": 293,
+      "previousSnapshotScore": 293,
+      "locallyFeasible": true
+    },
+    {
+      "key": "05-capacity-pressure/B/1/hybrid-extended/1",
+      "dataset": "05-capacity-pressure",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "a6a2688302fe909bc3f7f0fc030980edbb3d14eac2ed8796bd854ee8c1fda8bd",
+      "selectedScore": 293,
+      "previousSnapshotScore": 293,
+      "locallyFeasible": true
+    },
+    {
+      "key": "05-capacity-pressure/C/1/baseline",
+      "dataset": "05-capacity-pressure",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "a6a2688302fe909bc3f7f0fc030980edbb3d14eac2ed8796bd854ee8c1fda8bd",
+      "selectedScore": 1105.5,
+      "previousSnapshotScore": 1118.8,
+      "locallyFeasible": true
+    },
+    {
+      "key": "05-capacity-pressure/C/1/hybrid-extended/1",
+      "dataset": "05-capacity-pressure",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "a6a2688302fe909bc3f7f0fc030980edbb3d14eac2ed8796bd854ee8c1fda8bd",
+      "selectedScore": 1105.5,
+      "previousSnapshotScore": 1118.8,
+      "locallyFeasible": true
+    },
+    {
+      "key": "06-mixed-120/A/1/baseline",
+      "dataset": "06-mixed-120",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "3f8e2f836ba070a61bb64bc992edf0d7f4a2a4d8da394805a10aeb47b37f2cf4",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "06-mixed-120/A/1/hybrid-extended/1",
+      "dataset": "06-mixed-120",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "3f8e2f836ba070a61bb64bc992edf0d7f4a2a4d8da394805a10aeb47b37f2cf4",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "06-mixed-120/B/1/baseline",
+      "dataset": "06-mixed-120",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "3f8e2f836ba070a61bb64bc992edf0d7f4a2a4d8da394805a10aeb47b37f2cf4",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "06-mixed-120/B/1/hybrid-extended/1",
+      "dataset": "06-mixed-120",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "3f8e2f836ba070a61bb64bc992edf0d7f4a2a4d8da394805a10aeb47b37f2cf4",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "06-mixed-120/C/1/baseline",
+      "dataset": "06-mixed-120",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "3f8e2f836ba070a61bb64bc992edf0d7f4a2a4d8da394805a10aeb47b37f2cf4",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "06-mixed-120/C/1/hybrid-extended/1",
+      "dataset": "06-mixed-120",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "3f8e2f836ba070a61bb64bc992edf0d7f4a2a4d8da394805a10aeb47b37f2cf4",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "07-long-spans/A/1/baseline",
+      "dataset": "07-long-spans",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "742915b83f435a00933c7519626e8a9877d165f1a8b1bb79dcf98aeec9672006",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "07-long-spans/A/1/hybrid-extended/1",
+      "dataset": "07-long-spans",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "742915b83f435a00933c7519626e8a9877d165f1a8b1bb79dcf98aeec9672006",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "07-long-spans/B/1/baseline",
+      "dataset": "07-long-spans",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "742915b83f435a00933c7519626e8a9877d165f1a8b1bb79dcf98aeec9672006",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "07-long-spans/B/1/hybrid-extended/1",
+      "dataset": "07-long-spans",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "742915b83f435a00933c7519626e8a9877d165f1a8b1bb79dcf98aeec9672006",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "07-long-spans/C/1/baseline",
+      "dataset": "07-long-spans",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "742915b83f435a00933c7519626e8a9877d165f1a8b1bb79dcf98aeec9672006",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "07-long-spans/C/1/hybrid-extended/1",
+      "dataset": "07-long-spans",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "742915b83f435a00933c7519626e8a9877d165f1a8b1bb79dcf98aeec9672006",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "08-workfront-limits/A/1/baseline",
+      "dataset": "08-workfront-limits",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "a1687bbda31d2f7182caf4194bc9719a0c7b8f93d7c8cf1f27fdf08e205ab135",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "08-workfront-limits/A/1/hybrid-extended/1",
+      "dataset": "08-workfront-limits",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "a1687bbda31d2f7182caf4194bc9719a0c7b8f93d7c8cf1f27fdf08e205ab135",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "08-workfront-limits/B/1/baseline",
+      "dataset": "08-workfront-limits",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "a1687bbda31d2f7182caf4194bc9719a0c7b8f93d7c8cf1f27fdf08e205ab135",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "08-workfront-limits/B/1/hybrid-extended/1",
+      "dataset": "08-workfront-limits",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "a1687bbda31d2f7182caf4194bc9719a0c7b8f93d7c8cf1f27fdf08e205ab135",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "08-workfront-limits/C/1/baseline",
+      "dataset": "08-workfront-limits",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "a1687bbda31d2f7182caf4194bc9719a0c7b8f93d7c8cf1f27fdf08e205ab135",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "08-workfront-limits/C/1/hybrid-extended/1",
+      "dataset": "08-workfront-limits",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "a1687bbda31d2f7182caf4194bc9719a0c7b8f93d7c8cf1f27fdf08e205ab135",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "09-separated-eclo-windows/A/1/baseline",
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "d5aeab941aad80a76d867d6f4888820df4bc52173d5740976db9bcfcffa06e9b",
+      "selectedScore": 3640,
+      "previousSnapshotScore": 3640,
+      "locallyFeasible": true
+    },
+    {
+      "key": "09-separated-eclo-windows/A/1/hybrid-extended/1",
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "d5aeab941aad80a76d867d6f4888820df4bc52173d5740976db9bcfcffa06e9b",
+      "selectedScore": 3640,
+      "previousSnapshotScore": 3640,
+      "locallyFeasible": true
+    },
+    {
+      "key": "09-separated-eclo-windows/B/1/baseline",
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "d5aeab941aad80a76d867d6f4888820df4bc52173d5740976db9bcfcffa06e9b",
+      "selectedScore": 40,
+      "previousSnapshotScore": 40,
+      "locallyFeasible": true
+    },
+    {
+      "key": "09-separated-eclo-windows/B/1/hybrid-extended/1",
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "d5aeab941aad80a76d867d6f4888820df4bc52173d5740976db9bcfcffa06e9b",
+      "selectedScore": 40,
+      "previousSnapshotScore": 40,
+      "locallyFeasible": true
+    },
+    {
+      "key": "09-separated-eclo-windows/C/1/baseline",
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "d5aeab941aad80a76d867d6f4888820df4bc52173d5740976db9bcfcffa06e9b",
+      "selectedScore": 1840,
+      "previousSnapshotScore": 1840,
+      "locallyFeasible": true
+    },
+    {
+      "key": "09-separated-eclo-windows/C/1/hybrid-extended/1",
+      "dataset": "09-separated-eclo-windows",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "d5aeab941aad80a76d867d6f4888820df4bc52173d5740976db9bcfcffa06e9b",
+      "selectedScore": 1840,
+      "previousSnapshotScore": 1840,
+      "locallyFeasible": true
+    },
+    {
+      "key": "10-horizon-boundary/A/1/baseline",
+      "dataset": "10-horizon-boundary",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "c88e767413a98acb5147e3419d9267da1abe6282362c91f44e6cd810c73876c6",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "10-horizon-boundary/A/1/hybrid-extended/1",
+      "dataset": "10-horizon-boundary",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "c88e767413a98acb5147e3419d9267da1abe6282362c91f44e6cd810c73876c6",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "10-horizon-boundary/B/1/baseline",
+      "dataset": "10-horizon-boundary",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "c88e767413a98acb5147e3419d9267da1abe6282362c91f44e6cd810c73876c6",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "10-horizon-boundary/B/1/hybrid-extended/1",
+      "dataset": "10-horizon-boundary",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "c88e767413a98acb5147e3419d9267da1abe6282362c91f44e6cd810c73876c6",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "10-horizon-boundary/C/1/baseline",
+      "dataset": "10-horizon-boundary",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "c88e767413a98acb5147e3419d9267da1abe6282362c91f44e6cd810c73876c6",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "10-horizon-boundary/C/1/hybrid-extended/1",
+      "dataset": "10-horizon-boundary",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "c88e767413a98acb5147e3419d9267da1abe6282362c91f44e6cd810c73876c6",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "11-priority-contention/A/1/baseline",
+      "dataset": "11-priority-contention",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "8b53a7626fa9d622e6477fee8e92ab306e6c01d9ff55ecd14d1b8428c9ed059a",
+      "selectedScore": 1768.2,
+      "previousSnapshotScore": 1768.2,
+      "locallyFeasible": true
+    },
+    {
+      "key": "11-priority-contention/A/1/hybrid-extended/1",
+      "dataset": "11-priority-contention",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "8b53a7626fa9d622e6477fee8e92ab306e6c01d9ff55ecd14d1b8428c9ed059a",
+      "selectedScore": 1768.2,
+      "previousSnapshotScore": 1768.2,
+      "locallyFeasible": true
+    },
+    {
+      "key": "11-priority-contention/B/1/baseline",
+      "dataset": "11-priority-contention",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "8b53a7626fa9d622e6477fee8e92ab306e6c01d9ff55ecd14d1b8428c9ed059a",
+      "selectedScore": 483,
+      "previousSnapshotScore": 483,
+      "locallyFeasible": true
+    },
+    {
+      "key": "11-priority-contention/B/1/hybrid-extended/1",
+      "dataset": "11-priority-contention",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "8b53a7626fa9d622e6477fee8e92ab306e6c01d9ff55ecd14d1b8428c9ed059a",
+      "selectedScore": 483,
+      "previousSnapshotScore": 483,
+      "locallyFeasible": true
+    },
+    {
+      "key": "11-priority-contention/C/1/baseline",
+      "dataset": "11-priority-contention",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "8b53a7626fa9d622e6477fee8e92ab306e6c01d9ff55ecd14d1b8428c9ed059a",
+      "selectedScore": 340.4,
+      "previousSnapshotScore": 340.4,
+      "locallyFeasible": true
+    },
+    {
+      "key": "11-priority-contention/C/1/hybrid-extended/1",
+      "dataset": "11-priority-contention",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "8b53a7626fa9d622e6477fee8e92ab306e6c01d9ff55ecd14d1b8428c9ed059a",
+      "selectedScore": 340.4,
+      "previousSnapshotScore": 340.4,
+      "locallyFeasible": true
+    },
+    {
+      "key": "12-mixed-240/A/1/baseline",
+      "dataset": "12-mixed-240",
+      "scenario": "A",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "c99ed4aee8cf83e75f878a55bbc4794cfe4e246f5b4f779c469b18098dc9a2c0",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "12-mixed-240/A/1/hybrid-extended/1",
+      "dataset": "12-mixed-240",
+      "scenario": "A",
+      "variant": "hybrid-extended",
+      "instanceDigest": "c99ed4aee8cf83e75f878a55bbc4794cfe4e246f5b4f779c469b18098dc9a2c0",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "12-mixed-240/B/1/baseline",
+      "dataset": "12-mixed-240",
+      "scenario": "B",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "c99ed4aee8cf83e75f878a55bbc4794cfe4e246f5b4f779c469b18098dc9a2c0",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "12-mixed-240/B/1/hybrid-extended/1",
+      "dataset": "12-mixed-240",
+      "scenario": "B",
+      "variant": "hybrid-extended",
+      "instanceDigest": "c99ed4aee8cf83e75f878a55bbc4794cfe4e246f5b4f779c469b18098dc9a2c0",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "12-mixed-240/C/1/baseline",
+      "dataset": "12-mixed-240",
+      "scenario": "C",
+      "variant": "hybrid-baseline",
+      "instanceDigest": "c99ed4aee8cf83e75f878a55bbc4794cfe4e246f5b4f779c469b18098dc9a2c0",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    },
+    {
+      "key": "12-mixed-240/C/1/hybrid-extended/1",
+      "dataset": "12-mixed-240",
+      "scenario": "C",
+      "variant": "hybrid-extended",
+      "instanceDigest": "c99ed4aee8cf83e75f878a55bbc4794cfe4e246f5b4f779c469b18098dc9a2c0",
+      "selectedScore": 0,
+      "previousSnapshotScore": 0,
+      "locallyFeasible": true
+    }
+  ]
+}

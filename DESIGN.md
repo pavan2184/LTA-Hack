@@ -108,7 +108,7 @@ Use the shared 2–4px radius vocabulary and precise rectangular schedule cells.
 
 ### Foundational visual states
 
-Every control needs a visible focus state and honest disabled/busy treatment. Selected views use both semantic state (`aria-pressed` or `aria-selected`) and a visible distinction. Busy solve feedback reports real worker progress without invented percentage precision. Error messages identify the failed input or action and provide a recovery step. Empty and filtered-empty views offer a useful next action.
+Every control needs a visible focus state and honest disabled/busy treatment. Selected views use both semantic state (`aria-pressed` or `aria-selected`) and a visible distinction. Busy solve feedback reports real completed-scenario progress from the native service without invented percentage precision. Error messages identify the failed input or action and provide a recovery step. Empty and filtered-empty views offer a useful next action.
 
 ### Buttons and actions
 

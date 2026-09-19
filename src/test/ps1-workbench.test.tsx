@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import * as scheduling from "@railplan/ps1/engine/schedule";
+import { mockPs1Service } from "@/test/fixtures/ps1-service";
+import type { Ps1SolveRequest } from "@/lib/ps1/client";
 import { PS1_FILES } from "@railplan/ps1/io/load";
 import { SUBMISSION_FILES } from "@railplan/ps1/io/submission";
 import { Ps1Workbench } from "@/components/ps1/Ps1Workbench";
-import type { Ps1WorkerRequest, Ps1WorkerResponse } from "@/workers/ps1.worker";
 
 const publicInstance = Object.fromEntries(
   PS1_FILES.map((name) => [name, readFileSync(resolve("packages/ps1/data/public", name), "utf8")]),
@@ -65,17 +65,21 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
+beforeEach(() => {
+  vi.stubGlobal("fetch", mockPs1Service());
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe("workspace state and policy comparison", () => {
-  it("starts with a private preflight and one-click public run", () => {
+  it("explains server processing before the one-click public run", () => {
     renderWorkbench();
     expect(screen.getByRole("heading", { name: "Bring your work onto the plan." })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Load the public instance and run/ })).toBeEnabled();
-    expect(screen.getByText(/stay on this device/)).toBeInTheDocument();
+    expect(screen.getByText(/sends the instance to our server/)).toBeInTheDocument();
   });
 
   it("opens policy C after a fresh solve and shows all policy outcomes", async () => {
@@ -87,7 +91,7 @@ describe("workspace state and policy comparison", () => {
     expect(screen.getByRole("tab", { name: /Policy C/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: /Policy A/ })).toHaveTextContent("25.2");
     expect(screen.queryByText(/best scenario/i)).not.toBeInTheDocument();
-  });
+  }, 10_000); // Three mocked service responses plus the full workstation render on slower CI runners.
 
   it("supports arrow-key navigation across policy cards", async () => {
     const user = userEvent.setup();
@@ -106,7 +110,7 @@ describe("workspace state and policy comparison", () => {
     await user.click(screen.getByRole("tab", { name: /Policy A/ }));
     await user.click(screen.getByRole("button", { name: "Re-run" }));
     expect(await screen.findByRole("tab", { name: /Policy A/ })).toHaveAttribute("aria-selected", "true");
-  });
+  }, 10_000); // Two real three-scenario solves plus rendering; not a solver timing benchmark.
 });
 
 describe("instance loading", () => {
@@ -156,32 +160,54 @@ describe("instance loading", () => {
     expect(screen.queryByText("Missing 02_STATIONS.csv")).not.toBeInTheDocument();
   });
 
-  it("cancels the previous worker and ignores queued responses when a new upload begins", async () => {
+  it("aborts the previous request and ignores a late response when a new upload begins", async () => {
     const user = userEvent.setup();
-    class DeferredWorker {
-      static instances: DeferredWorker[] = [];
-      onmessage: ((event: MessageEvent<Ps1WorkerResponse>) => void) | null = null;
-      onerror: ((event: ErrorEvent) => void) | null = null;
-      request!: Ps1WorkerRequest;
-      terminate = vi.fn();
-      constructor() { DeferredWorker.instances.push(this); }
-      postMessage(request: Ps1WorkerRequest) { this.request = request; }
-    }
-    vi.stubGlobal("Worker", DeferredWorker);
+    let complete!: (response: Response) => void;
+    let signal!: AbortSignal;
+    const service = vi.fn((_url: RequestInfo | URL, options?: RequestInit) => {
+      signal = options!.signal!;
+      return new Promise<Response>((resolveResponse) => { complete = resolveResponse; });
+    });
+    vi.stubGlobal("fetch", service);
     const { container } = renderWorkbench();
     await user.click(screen.getByRole("button", { name: /Load the public instance and run/ }));
-    const previous = DeferredWorker.instances[0];
     await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, [
       new File([publicInstance[PS1_FILES[0]]], PS1_FILES[0], { type: "text/csv" }),
     ]);
-    expect(previous.terminate).toHaveBeenCalled();
-    await act(async () => {
-      previous.onmessage?.({ data: { id: previous.request.id, type: "progress", scenario: "A", completed: 1, total: 3 } } as MessageEvent<Ps1WorkerResponse>);
-      previous.onmessage?.({ data: { id: previous.request.id, type: "complete", outcomes: [] } } as unknown as MessageEvent<Ps1WorkerResponse>);
-    });
+    expect(signal.aborted).toBe(true);
+    await act(async () => complete(Response.json({ outcome: {} })));
+    expect(service).toHaveBeenCalledOnce();
     expect(screen.getByText("Missing 02_STATIONS.csv")).toBeInTheDocument();
-    expect(screen.queryByText(/Scenario A complete/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Solving Scenario/)).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /Policy C/ })).not.toBeInTheDocument();
+  });
+
+  it("aborts server computation when the workbench unmounts", async () => {
+    let signal!: AbortSignal;
+    vi.stubGlobal("fetch", vi.fn((_url: RequestInfo | URL, options?: RequestInit) => {
+      signal = options!.signal!;
+      return new Promise<Response>((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+      });
+    }));
+    const user = userEvent.setup();
+    const { unmount } = renderWorkbench();
+    await user.click(screen.getByRole("button", { name: /Load the public instance and run/ }));
+    unmount();
+    expect(signal.aborted).toBe(true);
+  });
+
+  it("shows service errors, retains the instance and allows an explicit retry", async () => {
+    const service = mockPs1Service();
+    service.mockResolvedValueOnce(Response.json({ error: { code: "BUSY", message: "The scheduling service is busy. Please try again." } }, { status: 503 }));
+    vi.stubGlobal("fetch", service);
+    const user = userEvent.setup();
+    renderWorkbench();
+    await user.click(screen.getByRole("button", { name: /Load the public instance and run/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("scheduling service is busy");
+    expect(screen.queryByRole("tab", { name: /Policy C/ })).not.toBeInTheDocument();
+    await solve(user);
+    expect(service.mock.calls.map((call) => (JSON.parse(String(call[1]?.body)) as Ps1SolveRequest).scenario)).toEqual(["A", "A", "B", "C"]);
   });
 });
 
@@ -305,7 +331,7 @@ describe("proof, conformance and export", () => {
 });
 
 describe("reviewed urgent maintenance", () => {
-  it("previews a validated replan, applies it, and can undo it", async () => {
+  it("previews a validated replan, applies it, and aborts a superseded rerun on Undo", async () => {
     const user = userEvent.setup();
     renderWorkbench();
     await solve(user);
@@ -322,31 +348,22 @@ describe("reviewed urgent maintenance", () => {
     expect(screen.queryByText("Review before apply")).not.toBeInTheDocument();
     const undo = screen.getByRole("button", { name: "Undo" });
     expect(undo).toBeEnabled();
+    let signal!: AbortSignal;
+    vi.mocked(fetch).mockImplementationOnce((_url, options) => {
+      signal = options!.signal!;
+      return new Promise<Response>((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+      });
+    });
+    await user.click(screen.getByRole("button", { name: "Re-run" }));
     await user.click(undo);
+    expect(signal.aborted).toBe(true);
     expect(screen.getByText(/rev 3/)).toBeInTheDocument();
+    expect(screen.queryByText(/Solving Scenario/)).not.toBeInTheDocument();
   }, 20_000);
 
-  it.each(["fallback", "worker"] as const)("retains applied cuts through rerun, pin and clear-pins in the %s path", async (path) => {
-    if (path === "worker") {
-      class SolvingWorker {
-        onmessage: ((event: MessageEvent<Ps1WorkerResponse>) => void) | null = null;
-        onerror: ((event: ErrorEvent) => void) | null = null;
-        terminate() {}
-        postMessage(request: Ps1WorkerRequest) {
-          queueMicrotask(() => this.onmessage?.({ data: {
-            id: request.id,
-            type: "complete",
-            outcomes: request.scenarios.map((scenario) => scheduling.solveInstance(request.instance, {
-              scenario,
-              pins: request.pins,
-              disruptions: request.disruptions?.[scenario] ?? [],
-            })),
-          } } as MessageEvent<Ps1WorkerResponse>));
-        }
-      }
-      vi.stubGlobal("Worker", SolvingWorker);
-    } else vi.stubGlobal("Worker", undefined);
-    const solveSpy = vi.spyOn(scheduling, "solveInstance");
+  it("retains applied cuts through server rerun, pin and clear-pins", async () => {
+    const service = vi.mocked(fetch);
     const user = userEvent.setup();
     renderWorkbench();
     await solve(user);
@@ -362,7 +379,7 @@ describe("reviewed urgent maintenance", () => {
     await user.click(screen.getByRole("button", { name: /Apply reviewed change/ }));
 
     const expectCutPreserved = () => {
-      const options = solveSpy.mock.calls.slice(-3).map((call) => call[1]);
+      const options = service.mock.calls.slice(-3).map((call) => JSON.parse(String(call[1]?.body)) as Ps1SolveRequest);
       expect(options.map((entry) => entry?.scenario)).toEqual(["A", "B", "C"]);
       expect(options.find((entry) => entry?.scenario === "C")?.disruptions).toEqual([cut]);
       expect(options.filter((entry) => entry?.scenario !== "C").every((entry) => entry?.disruptions?.length === 0)).toBe(true);

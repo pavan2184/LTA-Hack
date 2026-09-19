@@ -1,5 +1,11 @@
 # Synthetic PS1 datasets
 
+The score table below records the original dataset-authoring baseline. The
+2026-09-19 hybrid optimiser improves 12 of these 36 scenario scores, including
+09 C from 3640 to 1840. See [current benchmark results](../../../../scripts/ps1/benchmark/README.md)
+for the full before/after comparison and reproduction commands. Input files are
+unchanged; the earlier quality-gap notes describe the legacy solver.
+
 Twelve complete input instances for RailPlan's `/ps1` upload flow. These are
 fabricated test workloads, not organiser data or predictions of hidden tests.
 The official public instance remains in `../public/` and is still the input for
@@ -138,7 +144,7 @@ comparison evidence rather than optimality claims or immutable expectations:
 | Co-sharing | 0 | 0 | 0 |
 | Live interchange | 0 | 0 | 0 |
 | Dependency chains | 0 | 0 | 0 |
-| Capacity pressure | 2184 | 293 | 1108.3 |
+| Capacity pressure | 2184 | 293 | 1105.5 |
 | Mixed 120 | 0 | 0 | 0 |
 | Long spans | 0 | 0 | 0 |
 | Workfront limits | 0 | 0 | 0 |
@@ -150,8 +156,8 @@ comparison evidence rather than optimality claims or immutable expectations:
 Earlier B/C results spent extra capacity on several inputs where A finished on
 time. The solver now considers nominal-supply constructions under each target
 policy and validates them before choosing a cheaper result. This removes those
-recorded avoidable costs. The browser worker also offers earlier feasible
-scenario results as candidates; the standalone benchmark does not supply them.
+recorded avoidable costs. The checked TypeScript path can also offer earlier
+feasible scenario results as candidates; the standalone benchmark does not supply them.
 Full workload and hard-rule checks remain gates before scoring.
 
 This is **local conformance**, not the organiser's reference validator. The
