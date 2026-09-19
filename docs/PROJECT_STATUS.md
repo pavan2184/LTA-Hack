@@ -55,6 +55,14 @@ next steps, test counts or local server URLs as current instructions.
 
 ## Latest recorded verification
 
+README benchmark coverage now includes the four-case warm/cold/LNS-only CP-SAT
+comparison alongside SCIP and both TypeScript hybrid modes, with explicit
+scores, bounds, proof counts and selection rationale. Figures were checked
+against the tracked benchmark JSON; historical scoring-v1 and unmeasured
+candidates remain separate. Documentation links and whitespace were checked.
+No new solver runs, application tests or cloud measurements were performed for
+this documentation update.
+
 The Algorithm Lab row records this companion feature. The combined-merge rows
 and subsequent evidence retain their earlier scope.
 The native comparison is the `d1e0a8f` snapshot (source `a10cbe7b…`, scoring v2).
