@@ -1,0 +1,4 @@
+# Runtime dependencies for api/algorithm-lab.py only. The full PS1 native service
+# has its own deployment requirements; this endpoint accepts no uploaded model.
+ortools==9.15.6755
+Flask==3.1.3

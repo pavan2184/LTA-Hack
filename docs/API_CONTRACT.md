@@ -2,6 +2,12 @@
 
 ## Standalone Algorithm Lab API — 2026-09-19
 
+On Vercel, `GET /api/algorithm-lab` maps to the model description and `POST`
+on that exact path maps to solving. The adapter preserves the standalone
+validation and security headers; queries and unsupported methods are rejected.
+It shares no route with the full PS1 endpoint. `/algorithm-lab` serves the
+exported teaching UI and does not require authentication.
+
 These endpoints belong only to the separately deployed `demos/algorithm-lab`
 service, not the Next.js PS1 application. `GET /api/model` returns the fixed six
 jobs, eight-week horizon, defaults, engine/model versions and assumptions.

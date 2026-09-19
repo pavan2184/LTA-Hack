@@ -31,6 +31,21 @@ requires an explicit project, region and existing dedicated service account,
 checks readiness and source inclusion, and publishes only the lab directory.
 The actual deployment remains a separate recorded event.
 
+## Same-domain Algorithm Lab publication — 2026-09-19
+
+The homepage and PS1 title bar link to `/algorithm-lab`. A deterministic build
+export copies the shared teaching UI into Next's public directory and selects
+`/api/algorithm-lab` as its endpoint. The root Python Vercel Function adapts GET
+to the existing model description and POST to the existing solve handler,
+preserving request validation, cache, concurrency and security headers. Python
+3.12 and pinned Flask/OR-Tools are separate from the Next Node runtime. This
+bounded teaching endpoint does not execute uploaded PS1 instances.
+
+The Vercel publication uses the existing browser-scheduler production baseline
+plus the isolated lab and navigation changes. Current main's full-instance
+native PS1 service still requires its own durable runtime deployment. Publication
+and source merge are separate events; see the release record for exact evidence.
+
 ## Native PS1 solver service — 2026-09-19
 
 Supersedes the browser-only execution choice below. `/ps1` sends one scenario at

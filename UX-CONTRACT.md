@@ -2,6 +2,12 @@
 
 ## Algorithm Lab companion boundary — 2026-09-19
 
+The homepage exposes “How CP-SAT works” and a direct `/algorithm-lab` link.
+The PS1 titlebar opens that explanation in a new tab to preserve unsaved planning
+state. The Vercel variant exports the shared UI to public files and uses a single
+same-origin `/api/algorithm-lab` Python endpoint for model GET and solve POST.
+It preserves the standalone model's validation, status and recovery behavior.
+
 The standalone `demos/algorithm-lab` teaching site follows a deliberately small
 variant of these interaction conventions. Its canonical owners are native
 labelled selects/checkboxes in `static/index.html`, selection/request state in

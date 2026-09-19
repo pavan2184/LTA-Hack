@@ -34,6 +34,20 @@ inspection is the primary manual verification; the script provides reproducible
 file-backed captures and failure injection. Test cloud publication separately;
 local checks do not establish a live Google Cloud URL.
 
+## Vercel Algorithm Lab boundary — 2026-09-19
+
+`test_vercel.py` exercises the real WSGI entrypoint, including model/solve routing,
+complete nine-access results, default cost 5 and closed-week-2 cost 19,
+infeasibility, strict fields, body/query/header preservation, unsupported methods,
+concurrency and sanitized errors. Run the complete lab suite (31 tests), Ruff,
+scoped application checks and the actual release build. The browser capture
+script accepts a fourth `/api/algorithm-lab` argument for the hosted endpoint.
+
+Verify the public homepage link, scheduler link, font loading, all three teaching
+steps, actual hosted solves and responsive layout. Validate the unchanged browser
+scheduler on the release URL before promotion. A green merge or local build is
+not proof of a public deployment; retain deployed URL/commit and observed results.
+
 ## Native algorithm comparison and cloud controls — 2026-09-19
 
 Run both Python suites (`scripts/ps1/benchmark/test_cp_sat.py` and `test_scip.py`),

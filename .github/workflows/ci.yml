@@ -21,8 +21,8 @@ jobs:
 
       - name: Check Python source
         run: |
-          ruff check demos/algorithm-lab scripts/algorithm-lab
-          ruff format --check demos/algorithm-lab scripts/algorithm-lab
+          ruff check api demos/algorithm-lab scripts/algorithm-lab
+          ruff format --check api demos/algorithm-lab scripts/algorithm-lab
 
       - name: Test model and API
         run: python -m unittest discover -s demos/algorithm-lab -p 'test_*.py' -v

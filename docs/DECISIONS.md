@@ -20,6 +20,23 @@ is not uniformly better. Keep the accepted full native portfolio in production;
 retain both alternatives as offline experiments. Target-machine worker scaling
 remains the cloud engineer's check. [Evidence](PS1_NATIVE_SEARCH_EXPERIMENTS.md).
 
+## 2026-09-19 — Publish the explanation on the existing Vercel site
+
+The user expected the CP-SAT explanation at `railplan-theta.vercel.app` after
+merging it. A separate local service and a Git merge did not satisfy that
+expectation. Add homepage/workstation navigation and expose `/algorithm-lab` on
+the same domain. Export the existing native UI during predev/prebuild instead
+of maintaining another frontend. A bounded Python Vercel Function reuses the
+existing real CP-SAT model; it does not substitute simulated or prerecorded
+answers. Cloud Run remains an optional deployment target.
+
+The existing Vercel release is based on `e4ae8c6` and runs the browser scheduler.
+Publish this isolated navigation/lab change over that verified baseline rather
+than accidentally deploying the newer full-instance native PS1 service without
+its required cloud runtime. Keep the same change on current main for the native
+deployment. Record both release and source commits and verify the public routes
+before claiming publication. The full native PS1 deployment remains separately
+owned by the cloud engineer.
 
 ## 2026-09-19 — A separate, bounded CP-SAT teaching lab
 
