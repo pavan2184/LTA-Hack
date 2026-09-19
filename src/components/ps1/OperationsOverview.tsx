@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useId, useMemo, useState, type KeyboardEvent } from "react";
 
 import { buildAttentionItems } from "@railplan/ps1/engine/attention";
 import type { Disruption } from "@railplan/ps1/engine/disruption";
@@ -25,11 +25,13 @@ import type {
   ValidationReport,
 } from "@railplan/ps1/types/ps1";
 
+import { CalendarRange, Map as MapIcon, ListFilter, PanelRight, ShieldCheck, X } from "lucide-react";
+import { WorkSchedule } from "@/components/ps1/WorkSchedule";
+
 import { PossessionTimeline } from "@/components/ps1/PossessionTimeline";
 import type { WorkspaceSelection } from "@/components/ps1/workspace-types";
 import { Figure } from "@/components/shared/Figure";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 type QueuePreset = "all" | "action" | "p1" | "bottleneck" | "live" | "changes";
 type InspectorTab = "summary" | "why" | "network" | "changes";
@@ -78,6 +80,13 @@ export function OperationsOverview({
 }) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("attention");
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [view, setView] = useState<"work" | "locations">("work");
+  const [attentionOpen, setAttentionOpen] = useState(false);
+  const selectAndInspect = (next: WorkspaceSelection) => {
+    onSelect(next);
+    setInspectorOpen(true);
+    setMobileTab("selected");
+  };
   const onMobileTabKey = (event: KeyboardEvent<HTMLButtonElement>, current: MobileTab) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
@@ -103,7 +112,7 @@ export function OperationsOverview({
       disruptions={disruptions}
       diff={diff}
       selection={selection}
-      onSelect={onSelect}
+      onSelect={selectAndInspect}
       onPin={onPin}
       onCut={onCut}
     />
@@ -120,39 +129,37 @@ export function OperationsOverview({
       diff={diff}
       selection={selection}
       onSelect={(next) => {
-        onSelect(next);
-        setMobileTab("selected");
+        selectAndInspect(next);
       }}
     />
   );
 
   return (
-    <section className="mt-4" aria-label="Operations workspace">
-      <div className="hidden gap-3 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)_22rem]">
-        <div className="min-w-0 rounded-sm border border-rule bg-surface p-3">{queue}</div>
-        <div className="min-w-0 rounded-sm border border-rule bg-surface p-3">
-          <PossessionTimeline
-            instance={instance}
-            submission={submission}
-            network={network}
-            pins={pins}
-            disruptions={disruptions}
-            selection={selection}
-            onSelect={onSelect}
-          />
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-rule pt-3 xl:hidden">
-            <p className="text-[11px] text-ink-500">
-              Select a cell, then open its operational details.
-            </p>
-            <Button size="sm" onClick={() => setInspectorOpen(true)}>Open selected details</Button>
+    <section className="ps1-operations" aria-label="Operations workspace">
+      <div className="ps1-desktop-workspace">
+        <nav className="ps1-view-rail" aria-label="Planning views">
+          <button type="button" aria-pressed={view === "work"} onClick={() => setView("work")}><CalendarRange aria-hidden /><span>Work schedule</span></button>
+          <button type="button" aria-pressed={view === "locations"} onClick={() => setView("locations")}><MapIcon aria-hidden /><span>Location occupancy</span></button>
+          <span className="ps1-rail-divider" />
+          <button type="button" aria-pressed={attentionOpen} onClick={() => setAttentionOpen(!attentionOpen)}><ListFilter aria-hidden /><span>Attention queue</span></button>
+          <button type="button" aria-pressed={inspectorOpen} onClick={() => setInspectorOpen(!inspectorOpen)}><PanelRight aria-hidden /><span>Selected details</span></button>
+          <button type="button" onClick={onOpenProof}><ShieldCheck aria-hidden /><span>Proof & export</span></button>
+        </nav>
+        <div className="ps1-canvas-area">
+          <div className="ps1-canvas-heading">
+            <div><h2>{view === "work" ? "Work schedule" : "Location occupancy"}</h2><span>{instance.contracts.length} contracts · {instance.activities.length} activities · weekly planning</span></div>
+            <Button size="sm" variant="quiet" onClick={() => setInspectorOpen(!inspectorOpen)}><PanelRight size={15} aria-hidden />{inspectorOpen ? "Hide details" : "Open selected details"}</Button>
+          </div>
+          <div className="ps1-planning-panes">
+            {attentionOpen && <aside className="ps1-attention-pane" aria-label="Attention queue panel"><div className="ps1-pane-tools"><span>Exceptions & priorities</span><Button size="sm" variant="quiet" aria-label="Close attention queue" onClick={() => setAttentionOpen(false)}><X size={15} aria-hidden /></Button></div>{queue}</aside>}
+            <div className="ps1-schedule-pane">
+              {view === "work" ? <WorkSchedule instance={instance} submission={submission} selection={selection} onSelect={selectAndInspect} pins={pins} diff={diff} /> : <div className="ps1-occupancy-pane"><PossessionTimeline instance={instance} submission={submission} network={network} pins={pins} disruptions={disruptions} selection={selection} onSelect={selectAndInspect} /></div>}
+            </div>
+            {inspectorOpen && <aside className="ps1-inspector-pane"><div className="ps1-pane-tools"><span>Selected work</span><Button size="sm" variant="quiet" aria-label="Close selected details" onClick={() => setInspectorOpen(false)}><X size={15} aria-hidden /></Button></div>{inspector}</aside>}
           </div>
         </div>
-        <aside className="hidden min-w-0 self-start rounded-sm border border-rule bg-surface p-3 xl:sticky xl:top-3 xl:block">
-          {inspector}
-        </aside>
       </div>
-
-      <div className="lg:hidden">
+      <div className="ps1-mobile-workspace lg:hidden">
         <div className="flex overflow-x-auto border-b border-rule" role="tablist" aria-label="Mobile workspace views">
           {MOBILE_TABS.map((tab) => (
             <button
@@ -188,14 +195,6 @@ export function OperationsOverview({
           Mobile is optimized for triage and reviewed decisions. Open this plan on a larger screen to edit the full location-week matrix.
         </p>
       </div>
-
-      <Dialog open={inspectorOpen} onOpenChange={setInspectorOpen}>
-        <DialogContent className="w-[min(720px,calc(100vw-32px))] xl:hidden">
-          <DialogTitle>Operations inspector</DialogTitle>
-          <DialogDescription>Details and actions for the selected activity or location-week.</DialogDescription>
-          {inspector}
-        </DialogContent>
-      </Dialog>
 
       {pins.length > 0 && (
         <div className="mt-2 flex items-center justify-between rounded-sm border border-rule bg-sunk px-3 py-2">
@@ -370,6 +369,7 @@ function OperationsInspector({
   onPin: (pin: Pin) => void;
   onCut: (target: { locationId: string; week: number }) => void;
 }) {
+  const inspectorId = useId();
   const [tab, setTab] = useState<InspectorTab>("summary");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [question, setQuestion] = useState("");
@@ -415,7 +415,7 @@ function OperationsInspector({
     const delta = event.key === "ArrowRight" ? 1 : -1;
     const next = INSPECTOR_TABS[(index + delta + INSPECTOR_TABS.length) % INSPECTOR_TABS.length];
     setTab(next);
-    document.getElementById(`ps1-inspector-tab-${next}`)?.focus();
+    document.getElementById(`${inspectorId}-tab-${next}`)?.focus();
   };
 
   return (
@@ -427,7 +427,7 @@ function OperationsInspector({
               type="button"
               onClick={() => setDetailsOpen((open) => !open)}
               aria-expanded={detailsOpen}
-              aria-controls="ps1-inspector-details"
+              aria-controls={`${inspectorId}-details`}
               className="flex w-full items-center gap-1.5 text-left"
             >
               <svg
@@ -446,16 +446,16 @@ function OperationsInspector({
         </div>
         <span className="shrink-0 rounded-full border border-rule px-2 py-0.5 text-[9px] text-ink-700">Local conformance</span>
       </div>
-      <div id="ps1-inspector-details" hidden={!detailsOpen}>
+      <div id={`${inspectorId}-details`} hidden={!detailsOpen}>
         <div className="mt-3 flex overflow-x-auto border-b border-rule" role="tablist" aria-label="Inspector views">
           {INSPECTOR_TABS.map((name) => (
             <button
               key={name}
-              id={`ps1-inspector-tab-${name}`}
+              id={`${inspectorId}-tab-${name}`}
               type="button"
               role="tab"
               aria-selected={tab === name}
-              aria-controls={`ps1-inspector-panel-${name}`}
+              aria-controls={`${inspectorId}-panel-${name}`}
               tabIndex={tab === name ? 0 : -1}
               onKeyDown={(event) => onTabKey(event, name)}
               onClick={() => setTab(name)}
@@ -465,7 +465,7 @@ function OperationsInspector({
             </button>
           ))}
         </div>
-        <div id={`ps1-inspector-panel-${tab}`} role="tabpanel" aria-labelledby={`ps1-inspector-tab-${tab}`} className="min-h-52 pt-3">
+        <div id={`${inspectorId}-panel-${tab}`} role="tabpanel" aria-labelledby={`${inspectorId}-tab-${tab}`} className="min-h-52 pt-3">
           {tab === "summary" ? (
             selectedActivity ? (
               <div>
@@ -557,7 +557,7 @@ function OperationsInspector({
             <button key={prompt} type="button" className="rounded-full border border-rule px-2 py-1 text-[9px] text-ink-700 hover:bg-sunk" onClick={() => ask(prompt)}>{prompt}</button>
           ))}
         </div>
-        <form className="mt-2 flex gap-1.5" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
+        <form noValidate className="mt-2 flex gap-1.5" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
           <input value={question} onChange={(event) => setQuestion(event.target.value)} aria-label="Question about this schedule" className="h-8 min-w-0 flex-1 rounded-sm border border-rule-strong px-2 text-[11px]" placeholder="Ask about this plan…" />
           <Button size="sm" type="submit">Ask</Button>
         </form>

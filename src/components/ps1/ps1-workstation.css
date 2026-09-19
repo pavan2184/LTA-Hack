@@ -1,0 +1,116 @@
+/* PS1 owns this desktop planning shell; shared application routes keep their theme. */
+.ps1-application { min-width: 0; min-height: 100dvh; background: #edf1f3; }
+.ps1-workbench { --ps1-teal: #006b83; --color-accent: #006b83; --color-accent-soft: #e3f1f4; --rail-primary: #006b83; --rail-panel: var(--color-surface); --rail-selected: #e3f1f4; min-height: 100dvh; color: var(--color-ink-900); background: var(--color-paper); font-size: 12px; }
+.ps1-workbench button { border-radius: 2px; }
+.ps1-workbench :is(button,input,select,textarea):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.ps1-workbench * { scrollbar-width: thin; scrollbar-color: #91a7af transparent; }
+.ps1-titlebar { min-height: 44px; display: flex; align-items: center; gap: 20px; padding: 0 18px; color: white; background: #006b83; }
+.ps1-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; letter-spacing: -.7px; }
+.ps1-titlebar h1 { font-size: 13px; font-weight: 400; border-left: 1px solid #ffffff45; padding-left: 20px; }
+.ps1-title-context { margin-left: auto; color: #d5edf2; font-size: 11px; }
+.ps1-local-label { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #e5f4f6; }
+.ps1-titlebar a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.ps1-command-bar { display: flex; align-items: stretch; flex-wrap: wrap; border-bottom: 1px solid var(--color-rule-strong); padding: 4px 12px 0; min-height: 82px; background: var(--color-surface); }
+.ps1-ribbon-group { position: relative; display: flex; align-items: flex-start; gap: 4px; padding: 3px 18px 20px; border-right: 1px solid var(--color-rule); }
+.ps1-ribbon-group:first-child { padding-left: 4px; }
+.ps1-ribbon-group > button { height: 49px; flex-direction: column; justify-content: center; gap: 4px; padding: 2px 9px; color: var(--color-ink-700); font-size: 11px; }
+.ps1-ribbon-group > button > svg { width: 21px; height: 21px; stroke-width: 1.4; color: var(--color-accent); }
+.ps1-ribbon-group > button[aria-pressed=true] { background: var(--color-accent-soft); }
+.ps1-ribbon-caption { position: absolute; bottom: 3px; left: 0; right: 0; text-align: center; font-size: 9px; color: var(--color-ink-500); }
+.ps1-ribbon-summary { margin-left: auto; padding: 12px 8px 8px 18px; display: flex; flex-direction: column; justify-content: center; gap: 6px; text-align: right; font-size: 10px; }
+.ps1-ribbon-summary strong { font-size: 12px; font-weight: 500; }
+.ps1-ribbon-summary strong span { color: var(--color-rule-strong); padding: 0 6px; }
+.ps1-solving-status { width: 100%; padding: 5px 8px; color: var(--color-accent); background: var(--color-accent-soft); }
+.ps1-policy-comparison { background: var(--color-sunk); }
+.ps1-policy-compact { display: flex; align-items: stretch; padding: 8px 16px 8px 83px; gap: 16px; border-bottom: 1px solid var(--color-rule); }
+.ps1-policy-tools { display: flex; flex-direction: column; justify-content: center; gap: 8px; flex: 0 0 104px; color: var(--color-ink-500); font-size: 9px; letter-spacing: .08em; }
+.ps1-policy-tools button { display: flex; align-items: center; gap: 4px; color: var(--color-accent); font-size: 10px; letter-spacing: 0; text-align: left; }
+.ps1-policy-tabs { flex: 1; }
+.ps1-policy-compact .ps1-policy-tabs > button { position: relative; border-radius: 2px; padding: 8px 65px 8px 10px; border-color: var(--color-rule); box-shadow: none; }
+.ps1-policy-compact .ps1-policy-tabs > button[aria-selected=true] { border-color: var(--color-accent); box-shadow: inset 3px 0 0 var(--color-accent); }
+.ps1-policy-compact .ps1-policy-tabs > button > span:first-child { justify-content: flex-start; gap: 16px; align-items: center; }
+.ps1-policy-compact .ps1-policy-tabs > button > span:first-child > span:last-child { font-size: 9px; }
+.ps1-policy-score { position: absolute; right: 12px; top: 7px; font-family: var(--font-mono), monospace; font-size: 18px; font-weight: 500; line-height: 20px; text-align: right; }
+.ps1-policy-score > span { display: block; font-family: var(--font-sans), sans-serif; font-size: 9px; font-weight: 400; line-height: 12px; color: var(--color-ink-500); }
+.ps1-policy-comparison[data-expanded=false] .ps1-policy-metrics { display: none; }
+.ps1-desktop-workspace { display: flex; align-items: stretch; min-width: 0; }
+.ps1-view-rail { flex: 0 0 66px; background: #006b83; color: white; display: flex; flex-direction: column; padding: 8px 0; gap: 4px; }
+.ps1-view-rail button { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 4px; width: 100%; min-height: 61px; font-size: 9px; line-height: 1.25; color: #e7f3f6; border-left: 3px solid transparent; border-radius: 0; }
+.ps1-view-rail button > svg { width: 20px; height: 20px; stroke-width: 1.4; }
+.ps1-view-rail button:hover { background: #ffffff16; }
+.ps1-view-rail button[aria-pressed=true] { background: #005367; border-left-color: #f3c661; color: white; }
+.ps1-view-rail button:focus-visible { outline-color: white; outline-offset: -3px; }
+.ps1-rail-divider { height: 1px; background: #ffffff30; margin: 8px 10px; }
+.ps1-canvas-area { flex: 1; min-width: 0; }
+.ps1-canvas-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 47px; padding: 7px 14px; background: var(--color-surface); border-bottom: 1px solid var(--color-rule); }
+.ps1-canvas-heading > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+.ps1-canvas-heading h2 { font-size: 18px; font-weight: 500; letter-spacing: -.4px; }
+.ps1-canvas-heading span { color: var(--color-ink-500); font-size: 10px; }
+.ps1-planning-panes { display: flex; align-items: stretch; min-width: 0; }
+.ps1-schedule-pane { flex: 1; min-width: 0; background: var(--color-surface); }
+.ps1-attention-pane { flex: 0 0 255px; min-width: 0; border-right: 1px solid var(--color-rule); padding: 10px; background: var(--color-surface); }
+.ps1-inspector-pane { flex: 0 0 305px; min-width: 0; border-left: 1px solid var(--color-rule-strong); padding: 10px 12px; background: var(--color-surface); max-height: 78vh; overflow-y: auto; }
+.ps1-pane-tools { display: flex; align-items: center; justify-content: space-between; min-height: 25px; margin-bottom: 8px; color: var(--color-ink-500); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid var(--color-rule); }
+.ps1-occupancy-pane { padding: 14px; }
+.ps1-statusbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 18px; padding: 6px 14px; min-height: 30px; background: var(--color-sunk); border-top: 1px solid var(--color-rule-strong); color: var(--color-ink-500); font-size: 10px; }
+.ps1-statusbar > span:first-child { display: flex; align-items: center; gap: 6px; }
+.ps1-statusbar button { color: var(--color-accent); }
+.ps1-status-dot { width: 5px; height: 5px; background: var(--color-accent); border-radius: 50%; }
+.ps1-preflight { max-width: 900px; margin: 7vh auto; padding: 30px; border-radius: 3px; }
+.ps1-preflight-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: var(--color-accent); }
+.ps1-preflight > h2 { font-size: 27px; letter-spacing: -.7px; font-weight: 500; }
+.ps1-import-manifest { margin-top: 26px; border-top: 1px solid var(--color-rule-strong); }
+.ps1-import-manifest > div { display: flex; justify-content: space-between; padding: 10px 0; font-size: 11px; }
+.ps1-import-manifest ul { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--color-rule); }
+.ps1-import-manifest li { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-rule); padding: 10px; min-width: 0; }
+.ps1-import-manifest li > span:first-child { color: var(--color-ink-400); font-size: 10px; }
+.ps1-import-manifest code { font-size: 10px; overflow-wrap: anywhere; }
+.ps1-import-manifest li > span:last-child { font-size: 9px; color: var(--color-ink-500); margin-left: auto; }
+.ps1-import-manifest li[data-ready=true] > span:last-child { color: var(--color-signal-green); }
+.ps1-import-manifest > p { font-size: 10px; color: var(--color-ink-500); padding-top: 14px; }
+.ps1-workbench.ps1-low-glare { --ps1-teal: #83cddd; --color-accent: #83cddd; --color-accent-soft: #173c46; --rail-selected: #173c46; --rail-primary: #006b83; --rail-panel: var(--color-surface); margin: 0; padding: 0; border-radius: 0; }
+.ps1-workbench.ps1-low-glare .ps1-titlebar, .ps1-workbench.ps1-low-glare .ps1-view-rail { background: #064451; }
+@media (min-width: 1024px) and (max-width: 1399px) {
+ .ps1-inspector-pane { flex-basis: 275px; }
+ .ps1-attention-pane { flex-basis: 220px; }
+ .ps1-policy-compact .ps1-policy-tabs > button > span:first-child { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+@media (max-width: 1023px) {
+ .ps1-desktop-workspace { display: none; }
+ .ps1-title-context { display: none; }
+ .ps1-local-label { margin-left: auto; }
+ .ps1-policy-compact { padding-left: 12px; }
+ .ps1-policy-tools { flex-basis: 85px; }
+ .ps1-mobile-workspace { padding: 12px; }
+ .ps1-ribbon-summary { display: none; }
+}
+@media (max-width: 639px) {
+ .ps1-titlebar { padding: 10px 12px; gap: 12px; flex-wrap: wrap; }
+ .ps1-brand { font-size: 18px; }
+ .ps1-titlebar h1 { padding-left: 12px; font-size: 11px; }
+ .ps1-local-label { display: none; }
+ .ps1-command-bar { padding: 3px 4px; }
+ .ps1-ribbon-group, .ps1-ribbon-group:first-child { padding: 0 3px 15px; gap: 0; }
+ .ps1-ribbon-group > button { padding: 3px 6px; font-size: 10px; min-height: 44px; height: auto; }
+ .ps1-ribbon-group > button > svg { width: 17px; height: 17px; }
+ .ps1-ribbon-group:nth-child(3) { border-right: 0; }
+ .ps1-ribbon-group:nth-child(2) > button:first-child { max-width: 94px; text-align: center; }
+ .ps1-policy-compact { flex-direction: column; gap: 5px; padding: 8px; }
+ .ps1-policy-tools { flex: auto; flex-direction: row; justify-content: space-between; }
+ .ps1-policy-tabs { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; }
+ .ps1-policy-compact .ps1-policy-tabs > button { padding: 7px 7px 35px; }
+ .ps1-policy-compact .ps1-policy-tabs > button > span:first-child { flex-direction: column; align-items: flex-start; gap: 4px; }
+ .ps1-policy-compact .ps1-policy-tabs > button > span:first-child > span:first-child > span:last-child { font-size: 10px; }
+ .ps1-policy-score { top: auto; bottom: 5px; right: 8px; font-size: 15px; }
+ .ps1-policy-score > span { display: inline; margin-left: 3px; }
+ .ps1-policy-comparison[data-expanded=true] .ps1-policy-tabs { grid-template-columns: 1fr; }
+ .ps1-statusbar { font-size: 9px; }
+ .ps1-preflight { margin: 16px 10px; padding: 18px; }
+ .ps1-preflight > h2 { font-size: 24px; }
+ .ps1-import-manifest ul { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 1024px) { .ps1-workbench .ps1-work-scroll { height: clamp(300px, calc(100dvh - 462px), 708px); } }
+
+.ps1-dialog { --color-accent: #006b83; --color-accent-soft: #e3f1f4; --rail-primary: #006b83; color: var(--color-ink-900); border-radius: 3px; }
+.ps1-dialog.ps1-low-glare { --color-accent: #83cddd; --color-accent-soft: #173c46; --rail-primary: #006b83; margin: 0; padding: 20px; background: var(--color-surface); }

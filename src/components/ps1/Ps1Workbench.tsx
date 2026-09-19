@@ -32,6 +32,8 @@ import type {
   SolveOutcome,
 } from "@railplan/ps1/types/ps1";
 
+import { TrainFront, FolderOpen, RefreshCw, Moon, Sun, ShieldCheck, Undo2, Wrench, FileSpreadsheet, LockKeyhole, ChevronDown } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { ActionNote } from "@/components/ps1/ActionNote";
 import { DisruptionPanel } from "@/components/ps1/DisruptionPanel";
@@ -62,11 +64,7 @@ function save(name: string, blob: Blob): void {
   URL.revokeObjectURL(url);
 }
 
-const SCENARIO_BLURB: Record<Scenario, string> = {
-  A: "Supply is rigid and ECLO is forbidden. The only lever is which contract's overrun to absorb.",
-  B: "Dates are rigid. Overrun is a hard failure, so the cost is extra access-nights and ECLO.",
-  C: "Neither is absolute. Scored on priority-weighted overrun and excess nights together.",
-};
+
 
 interface PendingChange {
   label: string;
@@ -129,10 +127,17 @@ export function Ps1Workbench({
   const [lowGlare, setLowGlare] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const workerRef = useRef<Worker | null>(null);
+  const cancelWorkerRef = useRef<(() => void) | null>(null);
   const runIdRef = useRef(0);
   const operationEpochRef = useRef(0);
+  // A draft upload can arrive in several batches. Solving or loading the public
+  // instance closes that draft, so later uploads cannot inherit its old files.
+  const uploadFilesRef = useRef<Record<string, string> | null>(null);
 
-  useEffect(() => () => workerRef.current?.terminate(), []);
+  useEffect(() => () => {
+    operationEpochRef.current += 1;
+    cancelWorkerRef.current?.();
+  }, []);
 
   const missing = useMemo(
     () => PS1_FILES.filter((name) => !(name in files)),
@@ -170,28 +175,11 @@ export function Ps1Workbench({
    */
   const acceptFiles = useCallback(async (list: File[]) => {
     if (!list.length) return;
-    const next: Record<string, string> = {};
-    const skipped: string[] = [];
-    let totalRows = 0;
-    for (const file of list) {
-      // Accept the published names regardless of the folder a judge drags from.
-      const name = PS1_FILES.find((candidate) => file.name.endsWith(candidate));
-      if (name) {
-        if (file.size > MAX_FILE_BYTES) {
-          setRunError(`${file.name} exceeds the 5 MB browser-safety limit.`);
-          return;
-        }
-        const text = await file.text();
-        totalRows += Math.max(0, text.split(/\r\n|\n|\r/).length - 1);
-        next[name] = text;
-      } else skipped.push(file.name);
-    }
-    if (totalRows > MAX_TOTAL_ROWS) {
-      setRunError(
-        `The selected files contain about ${totalRows} rows; the limit is ${MAX_TOTAL_ROWS}.`,
-      );
-      return;
-    }
+    const epoch = ++operationEpochRef.current;
+    cancelWorkerRef.current?.();
+    const base = uploadFilesRef.current ?? {};
+    uploadFilesRef.current = base;
+    setFiles(base);
     setRuns(null);
     setSource("upload");
     // Pins name activity ids from the instance they were set against, so they
@@ -202,8 +190,46 @@ export function Ps1Workbench({
     setSessionLog([]);
     setLastDiff(null);
     setSelection(null);
-    setIgnored(skipped);
-    setFiles((current) => ({ ...current, ...next }));
+    setIgnored([]);
+    setRunError(null);
+    setRunning(true);
+    setRunProgress("Reading instance files…");
+    try {
+      const next: Record<string, string> = { ...base };
+      const skipped: string[] = [];
+      for (const file of list) {
+        const name = PS1_FILES.find((candidate) => file.name.endsWith(candidate));
+        if (name) {
+          if (file.size > MAX_FILE_BYTES) {
+            throw new Error(`${file.name} exceeds the 5 MB browser-safety limit.`);
+          }
+          const text = await file.text();
+          if (epoch !== operationEpochRef.current) return;
+          next[name] = text;
+        } else skipped.push(file.name);
+      }
+      const totalRows = Object.values(next).reduce(
+        (total, text) => total + Math.max(0, text.split(/\r\n|\n|\r/).length - 1),
+        0,
+      );
+      if (totalRows > MAX_TOTAL_ROWS) {
+        throw new Error(
+          `The selected files contain about ${totalRows} rows; the limit is ${MAX_TOTAL_ROWS}.`,
+        );
+      }
+      if (epoch !== operationEpochRef.current) return;
+      uploadFilesRef.current = next;
+      setIgnored(skipped);
+      setFiles(next);
+    } catch (cause) {
+      if (epoch !== operationEpochRef.current) return;
+      setRunError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      if (epoch === operationEpochRef.current) {
+        setRunning(false);
+        setRunProgress("");
+      }
+    }
   }, []);
 
   /**
@@ -213,7 +239,11 @@ export function Ps1Workbench({
    * in rather than read off state that has not caught up yet.
    */
   const solveScenarios = useCallback(
-    async (target: Ps1Instance, withPins: Pin[]): Promise<ScenarioRun[]> => {
+    async (
+      target: Ps1Instance,
+      withPins: Pin[],
+      withDisruptions: Partial<Record<Scenario, Disruption[]>> = {},
+    ): Promise<ScenarioRun[]> => {
       const network = buildNetwork(target);
       const id = ++runIdRef.current;
       const toRuns = (outcomes: SolveOutcome[]): ScenarioRun[] =>
@@ -221,18 +251,22 @@ export function Ps1Workbench({
           scenario: SCENARIOS[index],
           outcome,
           network,
-          disruptions: [],
+          disruptions: withDisruptions[SCENARIOS[index]] ?? [],
         }));
 
       if (typeof Worker === "undefined") {
         return toRuns(
           SCENARIOS.map((scenario) =>
-            solveInstance(target, { scenario, pins: withPins }, network),
+            solveInstance(target, {
+              scenario,
+              pins: withPins,
+              disruptions: withDisruptions[scenario] ?? [],
+            }, network),
           ),
         );
       }
 
-      workerRef.current?.terminate();
+      cancelWorkerRef.current?.();
       const worker = new Worker(
         new URL("../../workers/ps1.worker.ts", import.meta.url),
         {
@@ -241,23 +275,33 @@ export function Ps1Workbench({
       );
       workerRef.current = worker;
       return await new Promise<ScenarioRun[]>((resolve, reject) => {
+        const release = () => {
+          worker.terminate();
+          if (workerRef.current === worker) {
+            workerRef.current = null;
+            cancelWorkerRef.current = null;
+          }
+        };
+        cancelWorkerRef.current = () => {
+          release();
+          reject(new Error("The operation was replaced by a newer instance or solve."));
+        };
         worker.onmessage = (event: MessageEvent<Ps1WorkerResponse>) => {
           const message = event.data;
-          if (message.id !== id) return;
+          if (message.id !== id || workerRef.current !== worker) return;
           if (message.type === "progress") {
             setRunProgress(
               `Scenario ${message.scenario} complete · ${message.completed}/${message.total}`,
             );
             return;
           }
-          worker.terminate();
-          if (workerRef.current === worker) workerRef.current = null;
+          release();
           if (message.type === "error") reject(new Error(message.message));
           else resolve(toRuns(message.outcomes));
         };
         worker.onerror = (event) => {
-          worker.terminate();
-          if (workerRef.current === worker) workerRef.current = null;
+          if (workerRef.current !== worker) return;
+          release();
           reject(
             new Error(
               event.message || "The browser optimisation worker failed.",
@@ -269,6 +313,7 @@ export function Ps1Workbench({
           instance: target,
           scenarios: SCENARIOS,
           pins: withPins,
+          disruptions: withDisruptions,
         } satisfies Ps1WorkerRequest);
       });
     },
@@ -280,10 +325,13 @@ export function Ps1Workbench({
       const target = override ?? instance;
       if (!target) return;
       const epoch = ++operationEpochRef.current;
+      uploadFilesRef.current = null;
       setRunning(true);
       setRunProgress("Starting deterministic multi-start search…");
       try {
-        const next = await solveScenarios(target, withPins);
+        const next = await solveScenarios(target, withPins, Object.fromEntries(
+          (override ? [] : runs ?? []).map((entry) => [entry.scenario, entry.disruptions]),
+        ));
         if (epoch !== operationEpochRef.current) return;
         setRuns(next);
         setPending(null);
@@ -307,7 +355,7 @@ export function Ps1Workbench({
         }
       }
     },
-    [instance, solveScenarios],
+    [instance, runs, solveScenarios],
   );
 
   /**
@@ -318,6 +366,7 @@ export function Ps1Workbench({
    * so there is nothing to decide between them.
    */
   const loadPublic = useCallback(() => {
+    uploadFilesRef.current = null;
     setFiles(publicInstance);
     setSource("public");
     setPins([]);
@@ -350,7 +399,9 @@ export function Ps1Workbench({
       setRunning(true);
       setRunProgress("Preparing a pin change for review…");
       try {
-        const nextSolved = await solveScenarios(instance, nextPins);
+        const nextSolved = await solveScenarios(instance, nextPins, Object.fromEntries(
+          runs.map((entry) => [entry.scenario, entry.disruptions]),
+        ));
         if (epoch !== operationEpochRef.current) return;
         const before = runs.find((entry) => entry.scenario === active);
         const after = nextSolved.find((entry) => entry.scenario === active)!;
@@ -395,7 +446,9 @@ export function Ps1Workbench({
     setRunning(true);
     setRunProgress("Preparing a clear-pins change for review…");
     try {
-      const nextSolved = await solveScenarios(instance, []);
+      const nextSolved = await solveScenarios(instance, [], Object.fromEntries(
+        runs.map((entry) => [entry.scenario, entry.disruptions]),
+      ));
       if (epoch !== operationEpochRef.current) return;
       const before = runs.find((entry) => entry.scenario === active);
       const after = nextSolved.find((entry) => entry.scenario === active)!;
@@ -630,9 +683,15 @@ export function Ps1Workbench({
 
   return (
     <div
-      className={`ps1-workbench flex flex-col gap-4 ${lowGlare ? "ps1-low-glare" : ""}`}
+      className={`ps1-workbench ${lowGlare ? "ps1-low-glare" : ""}`}
       data-tone={lowGlare ? "low-glare" : "light"}
     >
+      <header className="ps1-titlebar">
+        <a href="/ps1" className="ps1-brand" aria-label="RailPlan start"><TrainFront size={22} strokeWidth={1.6} aria-hidden /><span>RailPlan</span></a>
+        <h1>Track access planning</h1>
+        <span className="ps1-title-context">{runs ? `${source === "public" ? "Public" : "Uploaded"} instance / Policy ${active}` : "NebulaX · PS1"}</span>
+        <span className="ps1-local-label"><LockKeyhole size={12} aria-hidden /> Local workspace</span>
+      </header>
       {/* Proxied by the visible "Upload instance files" and "Load another"
           buttons, so it stays out of the tab order: focus landing on a 1x1
           clipped control with no accessible name told a keyboard user nothing. */}
@@ -661,11 +720,11 @@ export function Ps1Workbench({
             setDragging(false);
             void acceptFiles(Array.from(event.dataTransfer.files));
           }}
-          className="ps1-panel transition-colors"
+          className="ps1-panel ps1-preflight transition-colors"
           data-dropping={dragging || undefined}
         >
-          <p className="workspace-eyebrow">Private browser preflight</p>
-          <h2>Load, validate and optimise an instance</h2>
+          <div className="ps1-preflight-heading"><FileSpreadsheet size={30} strokeWidth={1.3} aria-hidden /><p className="workspace-eyebrow">Start a planning session</p></div>
+          <h2>Bring your work onto the plan.</h2>
           <p className="mt-1 max-w-3xl text-[12px] text-ink-700">
             Drop the eight official CSVs here. Parsing, solving and validation
             stay on this device.
@@ -703,6 +762,11 @@ export function Ps1Workbench({
                 — {PS1_FILES.length - missing.length}/{PS1_FILES.length} files
               </span>
             )}
+          </div>
+          <div className="ps1-import-manifest" aria-label="Required instance files">
+            <div><strong>Instance files</strong><span>{PS1_FILES.length - missing.length} / 8 ready</span></div>
+            <ul>{PS1_FILES.map((name, index) => <li key={name} data-ready={!missing.includes(name)}><span>{String(index + 1).padStart(2, "0")}</span><code>{name.replace(/^\d+_/, "")}</code><span>{missing.includes(name) ? "Required" : "Loaded"}</span></li>)}</ul>
+            <p>No account required. Files and planning results stay in this browser.</p>
           </div>
           {ignored.length > 0 && (
             <p className="mt-3 rounded-md border border-signal-amber bg-signal-amber-soft p-3 text-[12px] text-ink-900">
@@ -751,66 +815,27 @@ export function Ps1Workbench({
         </section>
       ) : (
         <>
-          <section className="ps1-command-bar sticky top-0 z-40 rounded-sm border border-rule bg-surface/95 px-3 py-2 backdrop-blur">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <div>
-                <p className="text-[10px] uppercase tracking-[.14em] text-ink-500">
-                  {source === "public"
-                    ? "Public instance"
-                    : "Uploaded instance"}
-                </p>
-                <p className="text-[12px] font-semibold text-ink-900">
-                  {instance?.activities.length ?? 0} activities ·{" "}
-                  {instance?.parameters.horizonWeeks ?? 0} weeks
-                </p>
-              </div>
-              <span className="h-7 w-px bg-rule" aria-hidden />
-              <div>
-                <p className="text-[10px] text-ink-500">Scenario {active}</p>
-                <p
-                  className={`text-[12px] font-semibold ${current?.outcome.status === "FEASIBLE" ? "text-signal-green" : "text-signal-red"}`}
-                >
-                  {current?.outcome.status ?? "—"} · local conformance · rev{" "}
-                  {sessionLog.length + 1}
-                </p>
-              </div>
-              <div className="ml-auto flex flex-wrap gap-1.5">
-                <Button size="sm" onClick={() => inputRef.current?.click()}>
-                  Load another
-                </Button>
-                <Button
-                  size="sm"
-                  title={
-                    pending
-                      ? "Apply or discard the proposed change before re-running."
-                      : undefined
-                  }
-                  disabled={!instance || running || Boolean(pending)}
-                  onClick={() => instance && void run(pins, undefined, false)}
-                >
-                  {running ? "Optimising…" : "Re-run"}
-                </Button>
-                <Button
-                  size="sm"
-                  aria-pressed={lowGlare}
-                  onClick={() => setLowGlare((value) => !value)}
-                >
-                  {lowGlare ? "Light mode" : "Low-glare"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => setProofOpen(true)}
-                >
-                  Proof and export
-                </Button>
-              </div>
+          <section className="ps1-command-bar" aria-label="Planning commands">
+            <div className="ps1-ribbon-group">
+              <Button size="sm" variant="quiet" onClick={() => inputRef.current?.click()}><FolderOpen aria-hidden />Load another</Button>
+              <Button size="sm" variant="quiet" title={pending ? "Apply or discard the proposed change before re-running." : undefined} disabled={!instance || running || Boolean(pending)} onClick={() => instance && void run(pins, undefined, false)}><RefreshCw aria-hidden className={running ? "animate-spin" : undefined} />{running ? "Optimising…" : "Re-run"}</Button>
+              <span className="ps1-ribbon-caption">Instance</span>
             </div>
-            {runProgress && (
-              <p className="mt-1 text-[10px] text-accent" role="status">
-                {runProgress}
-              </p>
-            )}
+            <div className="ps1-ribbon-group">
+              <Button size="sm" variant="quiet" disabled={!currentReady} onClick={() => { setCutTarget(null); setDisruptionOpen(true); }}><Wrench aria-hidden />Test urgent maintenance</Button>
+              <Button size="sm" variant="quiet" disabled={history.length === 0 || Boolean(pending)} onClick={undo}><Undo2 aria-hidden />Undo</Button>
+              <span className="ps1-ribbon-caption">Plan & review</span>
+            </div>
+            <div className="ps1-ribbon-group">
+              <Button size="sm" variant="quiet" onClick={() => setProofOpen(true)}><ShieldCheck aria-hidden />Proof and export</Button>
+              <Button size="sm" variant="quiet" aria-pressed={lowGlare} onClick={() => setLowGlare(value => !value)}>{lowGlare ? <Sun aria-hidden /> : <Moon aria-hidden />}{lowGlare ? "Light mode" : "Low-glare"}</Button>
+              <span className="ps1-ribbon-caption">Workspace</span>
+            </div>
+            <div className="ps1-ribbon-summary">
+              <strong>{instance?.activities.length ?? 0} activities <span>/</span> {instance?.parameters.horizonWeeks ?? 0} weeks</strong>
+              <span className={current?.outcome.status === "FEASIBLE" ? "text-signal-green" : "text-signal-red"}>{current?.outcome.status ?? "—"} · local conformance · rev {sessionLog.length + 1}</span>
+            </div>
+            {runProgress && <p className="ps1-solving-status" role="status">{runProgress}</p>}
           </section>
 
           <ScenarioComparison
@@ -818,42 +843,17 @@ export function Ps1Workbench({
             active={active}
             onSelect={setActive}
             diff={activeDiff}
+            compact
           />
 
           <section
             id={`ps1-scenario-panel-${active}`}
             role="tabpanel"
             aria-labelledby={`ps1-scenario-tab-${active}`}
-            className="ps1-panel"
+            className="ps1-active-plan"
           >
             {currentReady && instance ? (
               <>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="workspace-eyebrow">
-                      Scenario {active} operations
-                    </p>
-                    <h2>{SCENARIO_BLURB[active]}</h2>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <Button
-                      size="sm"
-                      disabled={history.length === 0 || Boolean(pending)}
-                      onClick={undo}
-                    >
-                      Undo
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setCutTarget(null);
-                        setDisruptionOpen(true);
-                      }}
-                    >
-                      Test urgent maintenance
-                    </Button>
-                  </div>
-                </div>
                 <OperationsOverview
                   instance={instance}
                   submission={currentReady.outcome.submission}
@@ -887,6 +887,8 @@ export function Ps1Workbench({
                   target={cutTarget}
                   open={disruptionOpen}
                   onOpenChange={setDisruptionOpen}
+                  lowGlare={lowGlare}
+                  existingDisruptions={currentReady.disruptions}
                 />
               </>
             ) : current ? (
@@ -904,6 +906,8 @@ export function Ps1Workbench({
         </>
       )}
 
+      {runs && <footer className="ps1-statusbar"><span><span className="ps1-status-dot" />{pending ? "Review pending · exports paused" : "Applied plan"} · revision {sessionLog.length + 1}</span><span>Weekly allocations · planning output, not operational approval</span><button type="button" onClick={() => setProofOpen(true)}>Local checking & conformance limits</button></footer>}
+
       {error && (
         <p
           className="rounded-sm border border-signal-red bg-signal-red-soft p-3 text-[12px] text-signal-red"
@@ -915,7 +919,7 @@ export function Ps1Workbench({
 
       {instance && (
         <Dialog open={proofOpen} onOpenChange={setProofOpen}>
-          <DialogContent className="max-h-[90vh] w-[min(960px,calc(100vw-24px))] overflow-y-auto">
+          <DialogContent className={`ps1-dialog ${lowGlare ? "ps1-low-glare" : ""} max-h-[90vh] w-[min(960px,calc(100vw-24px))] overflow-y-auto`}>
             <DialogTitle>Proof, handover and export</DialogTitle>
             <DialogDescription>
               Validation evidence and official submission artifacts remain local
@@ -1157,12 +1161,15 @@ export function ScenarioComparison({
   active,
   onSelect,
   diff,
+  compact = false,
 }: {
   runs: ScenarioRun[];
   active: Scenario;
   onSelect: (scenario: Scenario) => void;
   diff: PlanDiff | null;
+  compact?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (
       !(["ArrowLeft", "ArrowRight", "Home", "End"] as string[]).includes(
@@ -1185,8 +1192,10 @@ export function ScenarioComparison({
   };
 
   return (
+    <div className={`ps1-policy-comparison ${compact ? "ps1-policy-compact" : ""}`} data-expanded={!compact || expanded}>
+      {compact && <div className="ps1-policy-tools"><span>SCENARIOS</span><button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}><ChevronDown size={13} aria-hidden />{expanded ? "Hide comparison" : "Compare metrics"}</button></div>}
     <div
-      className="grid gap-2 sm:grid-cols-3"
+      className="ps1-policy-tabs grid gap-2 sm:grid-cols-3"
       role="tablist"
       aria-label="Scenario policies"
     >
@@ -1228,8 +1237,9 @@ export function ScenarioComparison({
                 {entry.outcome.status}
               </span>
             </span>
+            {compact && report && <span className="ps1-policy-score">{report.objectiveScore ?? "—"}<span>score</span></span>}
             {report ? (
-              <>
+              <span className="ps1-policy-metrics">
                 <span className="mt-2 grid grid-cols-3 gap-x-2 gap-y-1 text-[10px] text-ink-500">
                   <span>
                     Score{" "}
@@ -1275,7 +1285,7 @@ export function ScenarioComparison({
                 <span className="mt-2 block border-t border-rule pt-1 text-[10px] text-ink-500">
                   Dominant cost: {dominantCost(report.softScores)}
                 </span>
-              </>
+              </span>
             ) : (
               <span className="mt-2 block text-[11px] text-signal-red">
                 {entry.outcome.diagnostics.warnings[0] ??
@@ -1285,6 +1295,7 @@ export function ScenarioComparison({
           </button>
         );
       })}
+    </div>
     </div>
   );
 }

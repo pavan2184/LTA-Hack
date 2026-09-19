@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import {
   assessDisruption,
+  capacityAt,
   replanForDisruption,
   type Disruption,
   type ReplanOutcome,
@@ -23,6 +24,8 @@ import {
 import { ActionNote } from "@/components/ps1/ActionNote";
 import { locationDetail } from "@/components/ps1/location";
 
+const NO_DISRUPTIONS: Disruption[] = [];
+
 /**
  * Urgent maintenance takes nights away; this works out what that costs and
  * re-plans around it.
@@ -35,23 +38,27 @@ export function DisruptionPanel({
   instance,
   submission,
   network,
+  existingDisruptions = NO_DISRUPTIONS,
   onApply,
   target,
   open,
   onOpenChange,
+  lowGlare = false,
 }: {
   instance: Ps1Instance;
   submission: Submission;
   network: Network;
+  existingDisruptions?: Disruption[];
   onApply: (outcome: ReplanOutcome, disruptions: Disruption[]) => void;
   /** A location-week chosen in the timeline, which seeds this panel. */
   target?: { locationId: string; week: number } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  lowGlare?: boolean;
 }) {
   const timeline = useMemo(
-    () => buildTimeline(instance, submission, network),
-    [instance, submission, network],
+    () => buildTimeline(instance, submission, network, existingDisruptions),
+    [instance, submission, network, existingDisruptions],
   );
 
   // Default to the busiest location-week, which is where a cut hurts most and
@@ -89,14 +96,25 @@ export function DisruptionPanel({
   // a cut at all on a capacity-1 location — which is most of the tunnel
   // sections — so the panel opened saying it displaced nothing.
   const [capacity, setCapacity] = useState(() =>
-    Math.max(0, (network.supply.get(seed.locationId)?.supplyCapacity ?? 1) - 1),
+    Math.max(0, capacityAt(network, existingDisruptions, seed.locationId, seed.week) - 1),
   );
-  const [outcome, setOutcome] = useState<ReplanOutcome | null>(null);
 
   const disruptions: Disruption[] = useMemo(
-    () => [{ locationId, fromWeek, toWeek, capacity }],
-    [locationId, fromWeek, toWeek, capacity],
+    () => [...existingDisruptions, { locationId, fromWeek, toWeek, capacity }],
+    [existingDisruptions, locationId, fromWeek, toWeek, capacity],
   );
+  const [proposal, setProposal] = useState<{
+    result: ReplanOutcome;
+    basis: Submission;
+    disruptions: Disruption[];
+  } | null>(null);
+  // Closing the dialog does not unmount it. A preview is only adoptable against
+  // the exact applied schedule and cumulative cuts it was computed from.
+  const outcome = proposal?.basis === submission && proposal.disruptions === disruptions
+    ? proposal.result
+    : null;
+  const setOutcome = (result: ReplanOutcome | null) =>
+    setProposal(result ? { result, basis: submission, disruptions } : null);
 
   const impact = useMemo(
     () => assessDisruption(instance, submission, disruptions, network),
@@ -113,12 +131,17 @@ export function DisruptionPanel({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(760px,calc(100vw-32px))]">
+      <DialogContent className={`ps1-dialog ${lowGlare ? "ps1-low-glare" : ""} w-[min(760px,calc(100vw-32px))]`}>
       <DialogTitle>Urgent maintenance</DialogTitle>
       <DialogDescription>
         Cut a location&apos;s nightly quota mid-horizon, see what it displaces, and re-plan around
         it while holding everything it did not touch.
       </DialogDescription>
+      {existingDisruptions.length > 0 && (
+        <p className="mt-2 text-[12px] text-ink-700">
+          {existingDisruptions.length} applied capacity cut{existingDisruptions.length === 1 ? "" : "s"} will be retained.
+        </p>
+      )}
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-[12px] text-ink-700">
@@ -170,7 +193,7 @@ export function DisruptionPanel({
           />
         </label>
         <label className="text-[12px] text-ink-700">
-          Reduced to (from {nominal})
+          Reduced to (nominal {nominal})
           <input
             type="number"
             min={0}
