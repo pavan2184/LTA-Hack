@@ -2,42 +2,42 @@
 
 <div align="center">
   <h1>RailPlan</h1>
-  <p><strong>Turn competing maintenance requests into a plan schedulers can explain.</strong></p>
-  <p>A rail-maintenance planning prototype for Nebula X PS1: AI Maintenance Scheduler.</p>
+  <p><strong>Railway access planning, explained.</strong></p>
+  <p>A railway maintenance scheduling prototype with a native solver for Nebula X PS1.</p>
   <p>
-    <a href="docs/PROJECT_BRIEF.md"><strong>Read the product brief</strong></a>
-    <br />
-    <a href="https://railplan-nine.vercel.app/ps1">Open the public PS1 scheduler</a>
+    <a href="docs/README.md"><strong>Explore the documentation »</strong></a>
+    <br /><br />
+    <a href="https://railplan-nine.vercel.app/ps1">View demo</a>
     &middot;
     <a href="https://github.com/pavan2184/LTA-Hack/issues/new">Report a bug</a>
     &middot;
-    <a href="https://github.com/pavan2184/LTA-Hack/issues/new">Suggest a feature</a>
+    <a href="https://github.com/pavan2184/LTA-Hack/issues/new">Request a feature</a>
   </p>
 </div>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Supabase-181818?logo=supabase&logoColor=3FCF8E" alt="Supabase" />
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&amp;logoColor=white" alt="Next.js" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-20232A?logo=react&amp;logoColor=61DAFB" alt="React" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
+  <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&amp;logoColor=white" alt="Vitest" /></a>
 </p>
 
-> **Prototype boundary:** requests and engineering rules are fabricated. Results
-> are checked against the encoded model, not authoritative LTA operating rules.
-> RailPlan does not grant permission to access track or carry out work.
-
 <details>
-  <summary>Table of contents</summary>
+  <summary>Table of Contents</summary>
   <ol>
-    <li><a href="#about-the-project">About the project</a></li>
-    <li><a href="#built-with">Built with</a></li>
-    <li><a href="#getting-started">Getting started</a></li>
+    <li><a href="#about-the-project">About The Project</a>
+      <ul><li><a href="#built-with">Built With</a></li></ul>
+    </li>
+    <li><a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#verification">Verification</a></li>
+      </ul>
+    </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#how-scheduling-works">How scheduling works</a></li>
-    <li><a href="#ps1-native-solver-benchmark-and-selection">PS1 native solver benchmark and selection</a></li>
-    <li><a href="#verification">Verification</a></li>
+    <li><a href="#ps1-native-solver-benchmark-and-selection">PS1 Native Solver Benchmark and Selection</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#documentation">Documentation</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -45,80 +45,62 @@
   </ol>
 </details>
 
-## About the project
+## About The Project
 
-The PS1 challenge describes maintenance, upgrades and renewals "squeezed into short
-engineering hours when services pause, flooding schedulers with competing track
-requests". A scheduler must reconcile track access, compatible work and available
-engineers; a change that fixes one clash can create another elsewhere. This is the
-coordination problem behind [Nebula X's PS1 challenge](https://nebulax.com.sg/#ps-1).
+[![RailPlan's weekly schedule with expandable contracts, activity access blocks and a horizon navigator](docs/design-evidence/railplan-compact-schedule.png)](docs/design-evidence/railplan-compact-schedule.png)
 
-Rules-based conflict checking on track access is **already deployed in Singapore**.
-SMRT's Track Access Management System has run on the North-South and East-West Lines
-since 2021 and reached the Circle Line by 2025, checking each scheduled track access
-request against safety requirements.
+Railway maintenance activities compete for limited track access. Their locations,
+dependencies and completion targets interact: moving one activity can affect the
+rest of the plan. RailPlan brings those decisions into one schedule workspace.
 
-**RailPlan addresses the next step: resolving contention between competing requests
-for a shared resource, and naming the constraint that bound.** Testing one request
-against safety rules is a different problem from deciding which of two requests gets
-a block they both need. The intended benefit is less time spent reconciling requests
-and a clearer record of what was agreed. That benefit still needs measurement with
-real planners. Claims and their evidence are recorded in
-[PS1_EVIDENCE_BASE.md](docs/PS1_EVIDENCE_BASE.md).
+The public **`/ps1`** application accepts the challenge's eight CSV files, builds
+three planning scenarios through a native CP-SAT service, and connects the weekly schedule to
+placement explanations and reviewed changes. The published example contains
+**54 activities, 14 contracts and a 30-week horizon**.
 
-```mermaid
-flowchart LR
-    A[Contractor request] --> B[Planner review and approval]
-    B --> C[Generate and validate]
-    C --> D[Inspect saved plan]
-    D --> E[Publish version]
-    E --> F[Contractor schedule and exports]
-```
+| Planner task | RailPlan workflow |
+| --- | --- |
+| See the work | Expand contracts into activities; inspect weekly access blocks, planned starts and completion targets. |
+| Understand a placement | Open the shared inspector for dependencies, constraints, locations and deterministic answers. |
+| Compare policies | Inspect A/B/C delay, excess capacity and early closure/late opening (ECLO) metrics. |
+| Test a disruption | Reduce location capacity, inspect the proposed impact, then Apply or keep the current schedule. |
+| Hand over results | Check local conformance and export nine official CSVs across the three scenarios. |
 
-The fabricated baseline contains **22 requests, 12 atomic track blocks and a
-four-hour engineering window**. These are demo inputs, not universal rail rules.
-For example, work spanning `NS10–NS12` and `NS11–NS13` shares block `NS11–NS12`;
-different sector labels do not prevent a collision.
+The dense desktop workspace includes a horizon navigator, linked location
+occupancy, an attention queue and a low-glare mode. Narrow screens support triage,
+inspection, review and export. Uploaded instances are sent to the same-origin
+native service; the browser checks returned schedules before display and export.
+The PS1 workflow needs no account.
 
-| Need                       | What RailPlan provides                                                                           |
-| -------------------------- | ------------------------------------------------------------------------------------------------ |
-| Collect usable requests    | Structured contractor intake and optional private proposals extracted from meeting text          |
-| Keep decisions accountable | Planner review, explicit approval and immutable request revisions                                |
-| Find feasible schedules    | Five objective profiles using the same constraint validator                                      |
-| Understand the result      | Linked Gantt, workforce, request and geographic views, plus inspectable metric formulas          |
-| Share the agreed version   | Immutable saved plans, publication history, contractor-scoped access and JSON/CSV exports        |
-| Explore alternatives       | A separate sandbox for conflict repairs, exact pins, alternative slots and disruption replanning |
-| Explain and notify         | Optional engine-grounded assistant and separately audited Telegram delivery                      |
+**Prototype boundary:** the published PS1 instance is challenge data, not a live
+railway. Our local checker is not the organiser's reference validator or an
+operational approval. The separate authenticated workspace uses its own
+fabricated demonstration data.
 
-The scheduler remains responsible for decisions. Generative AI assists with reviewed
-intake and language; deterministic code checks feasibility. The geographic view
-provides orientation, not an authoritative operational topology.
+### Built With
 
-### Built with
-
-| Layer                    | Technology                                                                  |
-| ------------------------ | --------------------------------------------------------------------------- |
-| Application              | Next.js 16, React 19, TypeScript 6                                          |
-| Interface                | Tailwind CSS 4, Radix UI, Recharts, Zustand                                 |
-| Planning                 | Pure TypeScript `@railplan/core` validator, heuristic solver and analytics  |
-| Identity and persistence | Supabase Auth, PostgreSQL and row-level security                            |
-| Optional integrations    | Anthropic SDK for language/extraction; Telegram Bot API for delivery        |
-| Verification             | Vitest, Testing Library, hosted database and production HTTP journey suites |
+| Layer | Technology |
+| --- | --- |
+| Application | Next.js 16, React 19, TypeScript 6 |
+| Interface | Tailwind CSS 4, Radix UI, Zustand |
+| PS1 planning | Native Python OR-Tools CP-SAT, TypeScript `@railplan/ps1` warm start and independent local checker |
+| Verification | Vitest, Testing Library, typechecking and browser checks |
+| Separate authenticated workspace | `@railplan/core`, Supabase Auth and PostgreSQL with row-level security |
+| Optional authenticated integrations | Anthropic SDK for language/extraction; Telegram Bot API for delivery |
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
-## Getting started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js **22.13+ on the 22.x line**, or **24.x**, with npm. The local verification
-  used Node 22.22.0; these minimums cover the installed test tooling.
-- A dedicated hosted RailPlan development database with Supabase Auth.
-- A confirmed account provisioned with a planner or contractor role.
+- Node.js **22.13+ on the 22.x line**, or **24.x**, with npm.
+- Python **3.11+** with `venv`, plus the pinned OR-Tools requirements.
+- A modern browser.
 
-The app runs directly in Node.js. **No Docker is used.** There is no automatic
-public signup or default online password. Missing identity configuration blocks
-workspace access, including the sandbox.
+The public PS1 scheduler requires **no database, API keys or application environment
+variables**. Node.js runs the web app and starts native Python solver processes;
+Docker is not required.
 
 ### Installation
 
@@ -126,23 +108,44 @@ workspace access, including the sandbox.
 git clone https://github.com/pavan2184/LTA-Hack.git
 cd LTA-Hack
 npm ci
+python3 -m venv .venv-cpsat
+source .venv-cpsat/bin/activate
+pip install -r scripts/ps1/requirements.txt
+npm run dev
+```
+
+Open [http://localhost:3000/ps1](http://localhost:3000/ps1) and select
+**Load the public instance and run**. To use your own instance, upload all eight
+files listed under [Usage](#usage). Keep the virtual environment active when
+running development or solver commands. For the production Node/Python service,
+use the [native deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md): the target is
+**32 vCPUs / 64 GiB RAM**, with a **60-second search budget per scenario** and a
+provisional 16-worker default. The cloud engineer owns deployment.
+
+<details>
+  <summary>Optional: set up the authenticated contractor/planner workspace</summary>
+
+The separate `/contractor`, `/requests`, `/plans` and `/sandbox` routes need a
+dedicated development database, Supabase Auth and a confirmed, provisioned user.
+There is no automatic public signup or default online password.
+
+```bash
 cp .env.example .env.local
 chmod 600 .env.local
 ```
 
-For a fresh clone, uncomment and populate the documented settings in `.env.local`:
+Use only the settings documented in [.env.example](.env.example):
 
-| Variable                               | Purpose                                                      |
-| -------------------------------------- | ------------------------------------------------------------ |
-| `DATABASE_URL`                         | Server-only connection to the dedicated development database |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Auth endpoint for that same project                          |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public client key; never a service-role or secret key        |
-| `ANTHROPIC_API_KEY`                    | Optional language assistant and meeting-text extraction      |
-| `TELEGRAM_BOT_TOKEN`                   | Optional server-only notification delivery                   |
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Server connection to the dedicated development database |
+| `NEXT_PUBLIC_SUPABASE_URL` | Auth endpoint for that same project |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public client key; never a service-role key |
+| `ANTHROPIC_API_KEY` | Optional assistant and meeting-text extraction |
+| `TELEGRAM_BOT_TOKEN` | Optional server-side notification delivery |
 
-Keep `.env.local` and credentials out of Git. Follow the [teammate handoff](docs/TEAM_HANDOFF.md)
-to apply migrations and provision confirmed users. For a **new, dedicated empty
-development database**, an operator bootstraps it with:
+Follow the [teammate handoff](docs/TEAM_HANDOFF.md) for migrations and account
+provisioning. For a **new, dedicated empty development database**:
 
 ```bash
 npm run db:migrate
@@ -150,19 +153,31 @@ npm run db:seed
 npm run db:verify
 ```
 
-For an existing shared RailPlan database, coordinate with its owner; do not reset
-or reseed it. The seed command refuses existing workflow records. Then start the app:
+Coordinate with the owner before changing an existing shared database; do not
+reset or reseed it. Keep `.env.local` and credentials out of Git. Then use
+[/login](http://localhost:3000/login) for the authenticated workspace.
+
+</details>
+
+### Verification
 
 ```bash
-npm run dev
+npx vitest run packages/ps1/
+python scripts/ps1/benchmark/test_cp_sat.py
+npm test
+npm run typecheck
+npm run lint
+npm run build
 ```
 
-Open the public PS1 workspace at [localhost:3000/ps1](http://localhost:3000/ps1),
-or open [localhost:3000](http://localhost:3000) and sign in for the durable RailPlan
-workspace. Without AI credentials,
-manual intake and scheduling work; the sandbox assistant uses deterministic
-answers. Meeting-text extraction requires `ANTHROPIC_API_KEY`. Missing Telegram
-credentials affect delivery, not whether a plan can be saved or published.
+Database tests can skip when a database is unavailable. Authenticated release
+verification additionally requires `npm run test:db` and `npm run test:e2e`
+against the dedicated development environment, run serially after reading the
+[HTTP E2E preflight](scripts/e2e/README.md).
+
+See [Testing](docs/TESTING.md), [design QA](design-qa.md) and
+[Project Status](docs/PROJECT_STATUS.md) for required checks, dated results and
+remaining gaps. A passing unit suite alone is not the full release gate.
 
 <p align="right"><a href="#readme-top">Back to top</a></p>
 
@@ -177,83 +192,108 @@ contain this change; deploy the Node/Python runtime using the
 See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
 GitHub and local work.
 
-After a solve, `/ps1` opens Scenario C in an exception-first operations workspace.
-Use the policy cards to switch A/B/C without comparing their unlike objectives as
-one ranking; use the attention queue and location-by-week grid to drive the shared
-inspector. The intended demo path is: select a capacity hotspot, impose urgent
-maintenance, review the minimum-churn proposal, then apply or undo it. Proof,
-external-submission checking, the exact nine-file ZIP and a separate handover are
-available from the persistent command bar. On mobile, the workspace supports
-triage, inspection, review and export; dense matrix editing remains a larger-screen task.
+### Plan an instance
 
-### Contractor to planner
+1. Open the [public scheduler](https://railplan-nine.vercel.app/ps1) or your local `/ps1`.
+2. Load the public example, or upload the eight CSVs below together.
+3. Let the same-origin native service solve A, B and C. A fresh instance opens Policy C's work schedule.
+4. Expand a contract and select an activity to inspect why it was placed there.
+5. Use **Test urgent maintenance** to preview a capacity reduction. Review its impact, then **Apply reviewed change** or **Keep current schedule**. Applied changes support Undo.
+6. Open **Proof and export** to inspect local conformance and download the official results ZIP. Resolve a pending review before exporting.
 
-1. **Contractor:** open `/contractor`, create a draft, complete the required details
-   and submit it. Meeting-text proposals stay private until explicitly submitted.
-2. **Planner:** open `/requests`, inspect the submission, assign planning fields
-   and approve it, or return/reject it. Only active approved revisions enter planning.
-3. **Planner:** open `/plans`, select the engineering night and objective, then
-   generate a saved version. Inspect placements, deferred work, workforce and formulas.
-4. **Planner:** publish a current, independently validated version. Missing mandatory
-   work or stale source facts prevents publication. Delivery status is reported separately.
-5. **Contractor:** inspect the organisation's published slots. Planners can download
-   JSON/CSV artifacts for the exact saved version.
+```text
+01_LINES.csv
+02_STATIONS.csv
+03_SECTORS.csv
+04_LOCATION_SUPPLY.csv
+05_BUFFER_LOCATION.csv
+06_PARAMETERS.csv
+07_PROJECT_DETAILS.csv
+08_ACTIVITY_DETAILS.csv
+```
 
-### Explore scheduling decisions
+The [public instance](packages/ps1/data/public/) and twelve
+[synthetic examples](packages/ps1/data/synthetic/README.md) are included in this
+repository. Synthetic examples are explicitly test data. The screenshot above
+shows this branch's compact layout; hosted deployment freshness is tracked
+separately in [Project Status](docs/PROJECT_STATUS.md).
 
-Open `/sandbox` as a planner and load the fabricated requests. One dashboard combines
-the queue, timeline, inspector, conflicts, expandable workforce and scenarios.
-Older sandbox subpage URLs redirect to the matching dashboard sections.
+### Understand the policies
 
-Inspect a conflict and its interval, try a validated fix or alternative, generate a
-schedule, pin a commitment, then test a disruption. Changes remain in the exploratory
-sandbox and do not modify approved requests or saved plans. An impossible mandatory
-job stays visible as a blocker.
+| Policy | Main constraint | Trade-off |
+| --- | --- | --- |
+| A — Rigid supply | Fixed supply; ECLO forbidden | Absorb permitted contract overrun. |
+| B — Rigid dates | Planned completion dates must hold | Use permitted excess capacity and ECLO. |
+| C — Balanced trade-offs | At most one excess access-night per location-week; ECLO within one span of at most two weeks per line | Balance priority-weighted overrun, excess access and ECLO. |
 
-<p align="right"><a href="#readme-top">Back to top</a></p>
+Every activity must be scheduled in full. Hard constraints cannot be traded for a
+better score. Each policy has its own objective, so raw A/B/C scores are **not a
+ranking between policies**. The [official PS1 specification](docs/PS1_OFFICIAL_SPEC.md)
+is authoritative for all constraints, penalties and deliverables.
 
-## How scheduling works
+The native service uses OR-Tools CP-SAT with a deterministic TypeScript warm start
+from [`@railplan/ps1`](packages/ps1/README.md). Every returned candidate is checked
+against the encoded constraints; a local proof does not establish reference-validator
+parity. The timeline shows
+weekly allocations: `access_night` is an accounting index, not a clock time.
+The official schema cannot establish physical-night alignment between separate
+possessions; the local checker exposes that limitation.
 
-The [solver](packages/core/src/engine/solve.ts) uses deterministic, dependency-aware
-insertion with bounded repair at 15-minute resolution. It places exact pins first,
-orders remaining work by objective, tries candidate slots and independently validates
-the complete result. The [validator](packages/core/src/engine/validate.ts) is the
-only feasibility authority; the model never approves a schedule.
+### Export and reproduce results
 
-Five profiles change placement preferences: **Balanced**, **Maximum completion**,
-**Minimum risk**, **Minimum changes** and **Emergency reserve**. Minimum changes
-measures movement from requested times; it is not a general published-plan repair objective.
+The official ZIP contains exactly these three CSVs under each of `A/`, `B/` and
+`C/` — **nine files total**:
 
-<details>
-  <summary>The 13 encoded constraint rules</summary>
+```text
+SCHEDULE_ACCESS.csv
+SCHEDULE_OCCUPANCY.csv
+RESULTS.csv
+```
 
-| Rule                 | Constraint                                            |
-| -------------------- | ----------------------------------------------------- |
-| `BLOCK_CAPACITY`     | Atomic track occupancy, including clearance           |
-| `CONFLICT_ZONE`      | Shared isolation or crossover capacity                |
-| `ADJACENT_WORK`      | Hazard separation across neighbouring blocks          |
-| `TEAM_CAPACITY`      | Concurrent crew assignments                           |
-| `WORKFORCE_CAPACITY` | Anonymous role headcounts and defined staffing demand |
-| `EQUIPMENT_CAPACITY` | Serviceable units and turnaround                      |
-| `SKILL_COVERAGE`     | Assigned-team skill requirements                      |
-| `WORK_COMPATIBILITY` | Permitted combinations of simultaneous work           |
-| `DEPENDENCY_ORDER`   | Predecessor completion, clearance and lag             |
-| `TIME_WINDOW`        | Request and engineering-window bounds                 |
-| `HANDBACK`           | Completion and clearance before the deadline          |
-| `TRAVEL_TIME`        | Travel between jobs for single-crew teams             |
-| `SHIFT_AVAILABILITY` | Team shifts and withdrawals                           |
+Pre-computed public outputs are in [packages/ps1/data/results/](packages/ps1/data/results/).
+To regenerate the public fixture outputs with the optimiser:
 
-</details>
+```bash
+npm run ps1:solve
+```
 
-This is a heuristic, not a CP-SAT/MILP solver or proof of global optimality. The
-implementation reports `FEASIBLE` or `INFEASIBLE`; its limited `OPTIMAL` label is
-used only when all requests take their first-choice candidates with no deferrals.
-It does not establish a general optimality bound. Crews are not reassigned, and
-travel checks cover single-crew teams only. See the [architecture](docs/ARCHITECTURE.md).
+This command reads the vendored public fixture, runs the optimiser and validates
+all three outcomes before replacing the A/B/C CSVs. It also writes diagnostic
+`VALIDATION.json` files and `SUMMARY.json`, and creates
+`output/PS1-public-results.zip`. The ZIP contains only the nine official CSVs.
+The CLI writes results only after all three native outcomes pass local checking.
+
+Run the repeatable benchmark across the public instance and twelve synthetic
+inputs to check full workload, local conformance and exact CSV round-trips:
+
+```bash
+npm run ps1:benchmark:regression
+```
+
+The [measured solver comparison](docs/PS1_BENCHMARK.md) records the latest local
+public scores: **A 25.2 / B 30 / C 25.2**. The
+[submission checklist](docs/PS1_SUBMISSION_CHECKLIST.md),
+[three-minute demo script](assets/submission/DEMO_SCRIPT.md) and
+[PS1 write-up](assets/submission/PS1_WRITEUP.md) cover release evidence and
+remaining publication steps. The script is not a recorded or uploaded video;
+a merge does not establish a fresh hosted deployment.
 
 ### PS1 native solver benchmark and selection
 
-The separate `/ps1` scheduler uses a validated TypeScript warm start followed by
+**Measured snapshot:** [d1e0a8f](https://github.com/pavan2184/LTA-Hack/tree/d1e0a8f),
+with solver-source SHA-256 `a10cbe7bb8bbd252c27726aa8b222d67b20abcec785829496c61970d1ca1768e`.
+The tables describe that snapshot. Later merged changes improve the TypeScript
+ECLO constructor; these algorithm comparisons and timings have not been rerun
+on those changes. “Baseline” below means the measured snapshot's baseline.
+
+A separate [post-merge quality check](scripts/ps1/benchmark/post-merge-hybrid-results.json)
+passed all 39 baseline and 39 extended-hybrid outcomes. Capacity-pressure C's
+hybrid score improved from 1118.8 to **1105.5**; the other 38 scores were unchanged.
+The native models and checker did not change in that merge. The tables retain
+the original paired experiment rather than mixing its timings with the newer
+heuristic run.
+
+The `/ps1` scheduler uses a validated TypeScript warm start followed by
 native OR-Tools CP-SAT. **All PS1 scores are penalties: lower is better.** We
 compared that pipeline with an independently formulated SCIP MIP and an extended
 TypeScript hybrid search on the public instance plus 12 synthetic datasets,
@@ -324,91 +364,80 @@ the encoded local model. See the [research and selection report](docs/PS1_NATIVE
 [cloud deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md) for evidence, limits and
 reproduction details.
 
-## Verification
 
-```bash
-npm test
-npm run test:db
-npm run lint
-npm run typecheck
-npm run build
-npm run test:e2e
-```
+### Other workspaces and documentation
 
-Run these serially against the dedicated development database. `test:db` requires
-parity and exercises real authorization and concurrency. The separate
-[HTTP E2E suite](scripts/e2e/README.md) starts a production server on port 3101,
-uses controlled provider responses, and removes its exact fixtures. Read its
-preflight requirements before running it.
+The separate authenticated workflow supports contractor intake, planner approval,
+saved versions and publication. `/sandbox` explores the minute-resolution
+`@railplan/core` model; it is distinct from PS1's weekly model. Start with the
+[project brief](docs/PROJECT_BRIEF.md) and [teammate handoff](docs/TEAM_HANDOFF.md).
 
-Ordinary tests may skip unreachable database checks; a green `npm test` alone is
-not the release gate. [Testing](docs/TESTING.md) defines browser/accessibility and
-release requirements; [current status](docs/PROJECT_STATUS.md) records dated results
-and unresolved checks. Controlled provider responses do not prove live delivery.
+For implementation details, see the [architecture](docs/ARCHITECTURE.md),
+[data model](docs/DATA_MODEL.md), [API contract](docs/API_CONTRACT.md) and
+[full documentation index](docs/README.md).
+
+The [Devpost asset pack](assets/submission/devpost-2026-09-19/README.md) includes
+cover and social artwork, four product gallery images, captions, submission copy
+and editable sources.
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Roadmap
 
-- [x] Deterministic scheduling, conflict detection and validated sandbox alternatives.
-- [x] Contractor intake, private transcript proposals and planner approval.
-- [x] Workforce constraints, saved versions, publication, scoped delivery and exports.
-- [x] Integrated role workspaces and one shared-design sandbox dashboard.
-- [ ] [#17 — Finish release security, accessibility and end-to-end verification](https://github.com/pavan2184/LTA-Hack/issues/17).
-- [ ] [#18 — Consented voice capture and transcription](https://github.com/pavan2184/LTA-Hack/issues/18).
-- [ ] [#19 — Controlled Drive and meeting-source imports](https://github.com/pavan2184/LTA-Hack/issues/19).
-- [ ] [#20 — Benchmark the heuristic against CP-SAT](https://github.com/pavan2184/LTA-Hack/issues/20).
-- [ ] [#21 — Evaluate named crew rostering and reassignment](https://github.com/pavan2184/LTA-Hack/issues/21).
+- [x] Public eight-file upload and native A/B/C scheduling.
+- [x] Weekly contract/activity schedule, occupancy view and contextual explanations.
+- [x] Reviewed maintenance replanning, Apply/Discard/Undo and official CSV export.
+- [x] Synthetic datasets for dependencies, capacity pressure and larger workloads.
+- [x] Repeatable PS1 benchmark and measured solver-quality comparison.
+- [ ] Continue improving heuristic schedule quality on varied workloads.
+- [ ] Complete remaining manual accessibility checks and evaluate with planning practitioners.
+- [ ] Complete and verify the remaining hackathon submission deliverables.
 
-Follow the numbered issue order. #21 is a scope decision, not authorization to
-collect named-worker data. Additional local improvements and remaining evidence
-gaps are recorded in [project status](docs/PROJECT_STATUS.md).
+See [open issues](https://github.com/pavan2184/LTA-Hack/issues),
+[Project Status](docs/PROJECT_STATUS.md) and the
+[PS1 submission checklist](docs/PS1_SUBMISSION_CHECKLIST.md).
+The official PS1 statement and generic participant pack differ on repository and
+video requirements; the checklist records the remaining decisions and publication steps.
 
-## Documentation
-
-- [PS1 official spec](docs/PS1_OFFICIAL_SPEC.md) — **authoritative** rules, scenarios, scoring, output schema, judging rubric and deliverables. Read this first.
-- [Product brief](docs/PROJECT_BRIEF.md) — the problem, users, intended workflow and success criteria.
-- [Participant context](docs/NEBULAX_PARTICIPANT_CONTEXT.md) — event logistics, deadlines and attendance.
-- [Product research](docs/NEBULAX_PRODUCT_RESEARCH.md) — dated comparisons, operator questions and proposals.
-- [Architecture](docs/ARCHITECTURE.md), [data model](docs/DATA_MODEL.md) and [API contract](docs/API_CONTRACT.md).
-- [Project status](docs/PROJECT_STATUS.md), [testing](docs/TESTING.md) and [security review](docs/SECURITY_REVIEW.md).
-- [Full documentation index](docs/README.md).
-
-PS1's own problem statement asks for four deliverables: **pre-computed results**
-for the provided dataset, a **hosted live app** judges can upload a hidden
-eight-CSV instance into, a **3-minute YouTube video**, and a **GitLab repository
-URL**. The participant pack's generic list differs — GitHub, a 2–3 minute video,
-a write-up and a results ZIP — and those conflicts are unresolved; both are
-tabulated in the [PS1 official spec](docs/PS1_OFFICIAL_SPEC.md#1-deliverables--what-we-must-hand-over).
-Everything is due **19 September 2026, 16:00 Singapore time**, with in-person
-submission sign-in from 14:30.
+<p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Contributing
 
-Read [AGENTS.md](AGENTS.md) and the project contracts before changing code. Discuss
-new scope in an issue, work on a focused branch (for example,
-`PinZheng/describe-the-change`), and submit a pull request with the rationale and
-verification results. Use `<area>(<type>): <summary>` for commit and PR titles.
+1. Read [AGENTS.md](AGENTS.md), the [official PS1 specification](docs/PS1_OFFICIAL_SPEC.md) and the project contracts.
+2. Discuss new scope in an issue, then create a focused branch, such as `codex/describe-the-change`.
+3. Reuse existing patterns, preserve the complete-workload and export contracts, and add meaningful tests for changed behavior.
+4. Run the appropriate checks and update the relevant documentation and project status.
+5. Open a pull request describing the problem, resulting behavior and verification.
 
-Reuse existing patterns, preserve the validator boundary, add tests for backend
-changes and update the relevant contracts/status. Keep credentials and private
-participant material out of commits. The project uses a hosted development
-database; coordinate tests that share its planning-source lock.
+Keep credentials and private participant material out of commits. Coordinate
+shared-database tests with the environment owner. Use `<area>(<type>): <summary>`
+for commit and PR titles. View [contributors](https://github.com/pavan2184/LTA-Hack/graphs/contributors).
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## License
 
 This repository currently has no project licence file. The README template's
 licence does not set RailPlan's licence. Third-party code and data retain their
 own terms. The geographic snapshot has an unresolved source-permission conflict;
-see [the security review](docs/SECURITY_REVIEW.md) before redistributing it.
+see the [security review](docs/SECURITY_REVIEW.md) before redistributing it.
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Contact
 
 Use [GitHub Issues](https://github.com/pavan2184/LTA-Hack/issues) for project questions,
-bugs and feature discussions. Project repository: [pavan2184/LTA-Hack](https://github.com/pavan2184/LTA-Hack).
+bugs and feature discussions.
+
+Project: [pavan2184/LTA-Hack](https://github.com/pavan2184/LTA-Hack).
+
+<p align="right"><a href="#readme-top">Back to top</a></p>
 
 ## Acknowledgments
 
-- [Nebula X / LTA Rail Digitalisation and Guild](https://nebulax.com.sg/) for the challenge framing.
-- [Best-README-Template](https://github.com/othneildrew/Best-README-Template) for the README structure.
-- The open-source projects listed above and the primary sources credited in [product research](docs/NEBULAX_PRODUCT_RESEARCH.md).
+- [Nebula X PS1](https://github.com/aochinwen/NebulaX-Hackathon-ProblemStatement/tree/main/PS1) for the challenge specification and published instance.
+- [Best-README-Template](https://github.com/othneildrew/Best-README-Template) for this README's structure.
+- [Siemens Opcenter Scheduling SMT](https://blogs.sw.siemens.com/opcenter/new-opcenter-scheduling-smt-2410/) for the industrial scheduling reference; no affiliation is implied.
+- The open-source projects listed above and sources credited in [product research](docs/NEBULAX_PRODUCT_RESEARCH.md).
 
 <p align="right"><a href="#readme-top">Back to top</a></p>

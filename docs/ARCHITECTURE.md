@@ -33,16 +33,35 @@ formulation and extended TypeScript repair. It records raw native candidates
 separately from the actual best validated schedule, including failures. Worker
 scaling is measured on the target host, not inferred from local Mac results.
 
-## PS1 hybrid optimisation — 2026-09-19
+## PS1 hybrid optimisation and validated candidate reuse — 2026-09-19
 
-The browser worker reuses validated earlier-scenario incumbents, then combines
-nominal-capacity construction, ranked legal ECLO windows and seeded adaptive
+The checked TypeScript heuristic and public-results tooling pass feasible earlier
+scenario outputs as initial candidates for later policies. `solveInstance`
+relabels RESULTS without mutating the source schedule, then checks the full
+target policy, current disruptions and original operator pins. Standalone B/C
+solves also try nominal-supply constructions to avoid purchasing unnecessary
+capacity. Exact pins remain constraints during reconstruction. Zero-score
+solutions skip further reconstruction; they do not bypass checking.
+
+Scenario C construction now tracks a two-week ECLO window separately for each
+affected line. A Live closure contributes to all lines it closes, including the
+interchange. Different deterministic construction orders explore different
+windows, while no-ECLO candidates remain available. This is a bounded heuristic,
+not an exhaustive window search or an optimality claim.
+
+The heuristic combines ranked legal ECLO windows with seeded adaptive
 destroy/repair. Unaffected accesses and operator pins remain fixed during repair;
 sharing groups and night assignments are rebuilt and every candidate is checked.
 A worse exploratory candidate never replaces the best validated result. The
-default shared neighbour budget is 256. Native PS1 CP-SAT full/repair models live
-under `scripts/ps1/benchmark/` and do not enter the browser bundle or any HTTP API.
-See that directory's README for benchmark results and limitations.
+default shared neighbour budget is 256.
+
+`npm run ps1:benchmark:regression` measures public and synthetic inputs with full-workload,
+local-checker, exact CSV round-trip and deterministic-output checks. Comparisons
+reject changed input digests and quality regressions. `npm run ps1:solve` uses
+the native optimiser and produces the nine-CSV public submission ZIP separately
+from local validation reports. The native CP-SAT full/repair models and comparative
+benchmarks live under `scripts/ps1/benchmark/`; see that directory's README for
+measured results and limitations.
 
 ## PS1 schedule-first planning workstation — 2026-09-19
 

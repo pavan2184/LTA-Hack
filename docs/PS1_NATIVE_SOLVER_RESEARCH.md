@@ -10,6 +10,15 @@ All four completed cohorts, configurations and row-level metrics are in
 source SHA identifies the reconciled working tree; its pre-merge HEAD alone does
 not identify the measured source.
 
+**Measured snapshot: `d1e0a8f`.** That committed source matches the recorded hash.
+A later shared-branch merge (`2957345`) improved TypeScript ECLO construction but
+did not change either native model or the checker. A separate
+[post-merge quality check](../scripts/ps1/benchmark/post-merge-hybrid-results.json)
+passed all 39 baseline and 39 extended-hybrid outcomes, improving capacity-pressure
+C from 1118.8 to 1105.5 with the other 38 scores unchanged. The native timing and
+repeated-seed cohorts below remain the original paired snapshot, not measurements
+of that later heuristic revision. Rerun the complete comparison on the cloud host.
+
 ## Recommendation and measured results
 
 Deploy the integrated **native CP-SAT portfolio with a checked heuristic warm

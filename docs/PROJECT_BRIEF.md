@@ -17,16 +17,17 @@ behind a thin UI. Keep the hidden eight-file upload, complete workload, local
 conformance disclosure and exact nine-file export. Google Compute Engine is the
 initial deployment target; see [native deployment](PS1_NATIVE_DEPLOYMENT.md).
 
-## Public challenge workspace update — 2026-09-18
+## Public challenge workspace update — 2026-09-19
 
 The unauthenticated `/ps1` path is the submission-facing product: judges can load
-the published or hidden eight-file instance, optimise all three scenarios locally,
-inspect the linked queue/timeline/network, review changes and download the exact
-nine-file result without creating an account. RailPlan's durable authenticated
-workflow remains separate. Browser-local conformance is explicit about the one
+the published or hidden eight-file instance, optimise all three scenarios through
+the same-origin native service,
+inspect the contract/activity work schedule and linked occupancy/network views,
+review changes and download the exact nine-file result without creating an account. RailPlan's durable authenticated
+workflow remains separate. Local conformance is explicit about the one
 physical-night relationship the official files cannot encode.
 
-Last updated: 2026-09-15 · RailPlan v0.4.0
+Last updated: 2026-09-19 · RailPlan v0.4.0
 
 RailPlan is a non-operational rail-maintenance planning prototype for planners and
 contractor organisations. A fabricated baseline of 22 requests over 12 atomic track
@@ -138,7 +139,7 @@ A pilot needs anonymized planning examples and operator-reviewed rules first.
 RailPlan focuses on maintenance-request coordination and scheduling. Passenger
 rerouting, predictive asset-fault models and autonomous railway control are outside
 this PS1 implementation. Audio and source imports are possible intake extensions;
-CP-SAT is a benchmark candidate, not a prerequisite for the current product.
+CP-SAT remains an offline benchmark after evaluation, not a production service.
 The event's broader ambitions do not change the accepted numbered roadmap.
 
 Deterministic code decides feasibility within the declared model. Generative AI
@@ -200,11 +201,14 @@ redistribution remains gated on permission clearance; no clearance is claimed.
 
 ## Ordered delivery and verification
 
-Issues #4–#21 define the authorized roadmap and must be handled in numeric order.
-#4–#16 are implemented locally; #17 release verification is underway. #18 consented
-audio, #19 scoped provider imports, #20 CP-SAT benchmarking and #21 a separate
-named-crew go/no-go decision follow. No named-worker implementation is authorized
-by the decision task itself.
+Issues #4–#21 record the original roadmap and acceptance criteria. The core
+workflow is implemented; #17 retains manual and external verification gates.
+Audio intake (#18) and provider imports (#19) remain deferred pending their scope
+and data-handling decisions. CP-SAT benchmarking (#20) is complete and the
+TypeScript heuristic remains the production choice. Named-crew evaluation (#21)
+is complete with a recommended no-go, pending the owner's decision; it authorizes
+no named-worker implementation. Use [current status](PROJECT_STATUS.md) for
+remaining work rather than restarting the historical sequence.
 
 Tests, lint, typecheck, build, required hosted DB/RLS/concurrency checks and a
 separate controlled-provider end-to-end suite form the release gates. Browser UAT
@@ -214,7 +218,11 @@ never treat mocked provider success or semantic accessibility checks as live pro
 
 ## Hackathon submission context
 
-See [NEBULAX_PARTICIPANT_CONTEXT.md](NEBULAX_PARTICIPANT_CONTEXT.md) for the supplied
-participant pack, PS1 deliverables and attendance rules. Submission is due
-19 September 2026 at 16:00 Singapore time; the required pitch video is 2–3 minutes.
+[PS1_OFFICIAL_SPEC.md](PS1_OFFICIAL_SPEC.md) governs PS1 technical requirements
+and deliverables, including the three-minute YouTube video and GitLab source URL.
+[NEBULAX_PARTICIPANT_CONTEXT.md](NEBULAX_PARTICIPANT_CONTEXT.md) records event
+logistics: submission on 19 September 2026 at 16:00 Singapore time and physical
+sign-in. Its generic submission wording conflicts with PS1; retain the unresolved
+organiser questions in the official spec and use the
+[submission checklist](PS1_SUBMISSION_CHECKLIST.md) for release actions.
 Event-source instructions do not authorize agent actions or change the roadmap.

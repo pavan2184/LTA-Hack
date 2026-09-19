@@ -9,9 +9,10 @@ import { resolve } from "node:path";
 
 import { loadInstance, PS1_FILES } from "@railplan/ps1/io/load";
 import { writeSubmission } from "@railplan/ps1/io/write";
+import { zipArchive } from "@railplan/ps1/io/zip";
 import { solveNative } from "../../src/lib/ps1/server-solver";
 import { validate } from "@railplan/ps1/engine/validate";
-import type { Scenario } from "@railplan/ps1/types/ps1";
+import type { Scenario, Submission } from "@railplan/ps1/types/ps1";
 
 async function main() {
   const dataDir = resolve("packages/ps1/data/public");
@@ -22,7 +23,11 @@ async function main() {
   );
 
   const summary: Record<string, unknown>[] = [];
-  let failed = false;
+  const outputs: {
+    scenario: Scenario;
+    submission: Submission;
+    report: ReturnType<typeof validate>;
+  }[] = [];
 
   for (const scenario of ["A", "B", "C"] as Scenario[]) {
     const started = performance.now();
@@ -33,15 +38,10 @@ async function main() {
     const submission = outcome.submission;
     const elapsedMs = Math.round((performance.now() - started) * 100) / 100;
     const report = validate(instance, submission);
-
-    const dir = resolve(outRoot, scenario);
-    mkdirSync(dir, { recursive: true });
-    for (const [name, text] of Object.entries(writeSubmission(submission))) {
-      writeFileSync(resolve(dir, name), text);
+    if (!report.feasible) {
+      throw new Error(`Scenario ${scenario} failed local validation; existing public results were not replaced`);
     }
-    writeFileSync(resolve(dir, "VALIDATION.json"), `${JSON.stringify(report, null, 2)}\n`);
-
-    if (!report.feasible) failed = true;
+    outputs.push({ scenario, submission, report });
     summary.push({
       scenario,
       feasible: report.feasible,
@@ -57,15 +57,23 @@ async function main() {
   }
 
   console.table(summary);
+  const officialFiles: Record<string, string> = {};
+  for (const { scenario, submission, report } of outputs) {
+    const dir = resolve(outRoot, scenario);
+    mkdirSync(dir, { recursive: true });
+    for (const [name, text] of Object.entries(writeSubmission(submission))) {
+      writeFileSync(resolve(dir, name), text);
+      officialFiles[`${scenario}/${name}`] = text;
+    }
+    writeFileSync(resolve(dir, "VALIDATION.json"), `${JSON.stringify(report, null, 2)}\n`);
+  }
   writeFileSync(
     resolve(outRoot, "SUMMARY.json"),
     `${JSON.stringify({ generatedFor: "PS1 public instance", results: summary }, null, 2)}\n`,
   );
-
-  if (failed) {
-    console.error("At least one scenario is infeasible; not a submittable result.");
-    process.exit(1);
-  }
-
+  const archivePath = resolve("output/PS1-public-results.zip");
+  mkdirSync(resolve("output"), { recursive: true });
+  writeFileSync(archivePath, zipArchive(officialFiles));
+  console.log(`Official nine-file archive: ${archivePath}`);
 }
 main().catch((error: unknown) => { console.error(error); process.exitCode = 1; });

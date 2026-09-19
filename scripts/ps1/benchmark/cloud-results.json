@@ -2,7 +2,7 @@
   "schema": "ps1-native-comparison-evidence-v1",
   "formulaVersion": "ps1-objective-v2",
   "interpretation": "Lower penalty is better; require complete locally valid workload first. Local checker is not the reference validator. All runs are local M3 Pro/8 workers, not the 32-vCPU cloud target.",
-  "sourceProvenance": "Measured the reconciled working tree during a pending merge. sourceSha256 covers solver, wrapper, canonical model/checker, requirements and inputs; the recorded HEAD revision alone does not identify that working tree.",
+  "sourceProvenance": "Measured the reconciled working tree during a pending merge. sourceSha256 covers solver, wrapper, canonical model/checker, requirements and inputs; the recorded HEAD revision alone does not identify that working tree. This exact source hash was verified against committed snapshot d1e0a8f before integrating 2957345. Later heuristic changes are checked separately in post-merge-hybrid-results.json; do not attribute the recorded native timings to the later source.",
   "retainedFields": "All summary metrics except verbose checker detail and heuristic diagnostics. Local raw directories also contain selected and native schedule witnesses; reproduce them with the recorded config.",
   "cohorts": [
     {
@@ -13191,5 +13191,6 @@
       "cohort": "repeat-seeds",
       "rawOutputDirectory": "output/ps1-cloud-v2-repeat60"
     }
-  ]
+  ],
+  "benchmarkSnapshotRevision": "d1e0a8fc360cb79796351d225173c62e5fec5d0a"
 }

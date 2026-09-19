@@ -9,6 +9,11 @@ comparisons use the corrected per-activity scorer, `ps1-objective-v2`.
 The measured local matrix is in [cloud-results.json](cloud-results.json), with
 interpretation and primary research in
 [PS1_NATIVE_SOLVER_RESEARCH.md](../../../docs/PS1_NATIVE_SOLVER_RESEARCH.md).
+It is pinned to snapshot `d1e0a8f`. The later ECLO-construction merge is checked
+separately in [post-merge-hybrid-results.json](post-merge-hybrid-results.json):
+all 39 baseline and extended cases pass, capacity-pressure C improves to 1105.5,
+and other scores are unchanged. Native models/checker are unchanged; native
+timings were not rerun after that merge.
 At eight workers on an M3 Pro, CP-SAT and SCIP tie all 39 final scores and improve
 the same four hybrid cases. CP-SAT proves 37 optima and SCIP 38; neither proves
 priority-contention C. Extended TypeScript repair improves none. This supports

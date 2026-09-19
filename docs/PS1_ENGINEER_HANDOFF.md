@@ -7,7 +7,9 @@ organiser explicitly permits a service behind a thin UI.
 
 Start with [PS1_NATIVE_DEPLOYMENT.md](PS1_NATIVE_DEPLOYMENT.md) for Compute Engine,
 Python installation, process supervision, nginx, HTTPS and deployment smoke checks.
-No cloud resources or credentials were provisioned by this change. The initial
+The algorithm comparison here provisioned no cloud resources or credentials.
+A separate engineer's temporary GCE experiment is recorded in PROJECT_STATUS;
+it did not establish a durable app deployment. The initial
 runtime is Node plus Python on a VM; a Cloud Functions adapter is not implemented.
 
 The 60-second main comparison has 39/39 locally feasible schedules for both
@@ -22,6 +24,12 @@ seeds, budgets, statuses, bounds, errors and CSV validation. Earlier five-second
 CP-SAT evidence remains in `native-results.json` as a separate experiment.
 
 ## 60-second comparison and cloud worker sweep
+
+The native comparison is pinned to measured snapshot `d1e0a8f`. A subsequent
+ECLO-construction merge improves the hybrid's capacity-pressure C score to
+1105.5, with the other 38 baseline/extended scores unchanged. Native models and
+the checker are unchanged; the paired native timing and repeat cohorts were
+not rerun after that merge. Both sets of evidence are linked in the research.
 
 The extended research compares native CP-SAT with and without heuristic hints,
 its built-in LNS-only mode, an independently formulated SCIP MIP, and extended

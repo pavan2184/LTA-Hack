@@ -4,7 +4,10 @@ Use Google Compute Engine for the first release. A single host runs Next.js and
 native Python OR-Tools, with nginx and a Google Cloud HTTPS load balancer in front.
 No Docker, database, service token or new application environment variable is
 required for `/ps1`. Existing authenticated workflows still need their existing
-configuration. This runbook is prepared; cloud provisioning is not completed.
+configuration. This runbook is prepared; durable cloud deployment is not completed.
+A separate temporary GCE benchmark, including its unresolved results and VM
+termination, is recorded in PROJECT_STATUS. It is not the local algorithm
+comparison or a running judge-facing deployment.
 
 The selected target is **32 vCPUs / 64 GiB RAM**, for example
 `c4-highcpu-32` in a region where it is available. The checked-in service starts

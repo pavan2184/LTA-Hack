@@ -48,18 +48,20 @@ Construction options include `nominalCapacity`, per-line `ecloWindows` start
 weeks and `activityOrder`. The worker protocol and official CSV schemas are
 unchanged. `INFEASIBLE` means search exhaustion, not a mathematical proof.
 
-## Public PS1 client interfaces — 2026-09-18
+## Public PS1 client interfaces — 2026-09-19
 
-No HTTP route or environment variable was added. `solveInstance(instance,
-options)` returns a `SolveOutcome`; options carry scenario, hard pins, capacity
-disruptions and a bounded deterministic optimisation budget. The default runs 24
-construction starts and by default 256 reconstruction neighbours inside
-`horizon_weeks`. An infeasible result may include a diagnostic partial submission,
-but the UI cannot export it.
+`solveInstance(instance, options)` remains the checked TypeScript heuristic and
+returns a `SolveOutcome`. Options carry scenario, hard pins, capacity disruptions,
+optional `initialCandidates` and a bounded deterministic optimisation budget.
+Initial candidates are relabelled and fully revalidated for the target scenario,
+current cuts and exact pins; their source policy's feasibility is never assumed to
+transfer. The default runs 24 construction starts and at most 256 shared shift,
+window and adaptive-repair neighbours inside `horizon_weeks`. An infeasible result
+may include a diagnostic partial submission, but the UI cannot export it.
 
-The worker message contains only the parsed instance and local solve options. It
-emits per-scenario progress followed by three outcomes, or a sanitized error. CSV
-uploads are limited to 5 MB per file and approximately 50,000 total records.
+The public UI sends the parsed instance and bounded solve options to the
+same-origin `POST /api/ps1/solve` route described above. CSV uploads are limited to
+5 MB per file and approximately 50,000 total records.
 Official CSV headers, column order and the A/B/C nine-file ZIP contract are
 unchanged. `PS1_PLANNING_LOG.json` is a separate optional artifact.
 
