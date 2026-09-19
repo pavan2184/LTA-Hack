@@ -371,6 +371,7 @@ function OperationsInspector({
   onCut: (target: { locationId: string; week: number }) => void;
 }) {
   const [tab, setTab] = useState<InspectorTab>("summary");
+  const [detailsOpen, setDetailsOpen] = useState(true);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<QaAnswer | null>(null);
   const activityById = useMemo(() => new Map(instance.activities.map((activity) => [activity.activityId, activity])), [instance.activities]);
@@ -420,107 +421,128 @@ function OperationsInspector({
   return (
     <div className="min-w-0">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-[14px] font-semibold text-ink-900">Operations inspector</h3>
-          <p className="text-[11px] text-ink-500">{heading}</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[14px] font-semibold text-ink-900">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((open) => !open)}
+              aria-expanded={detailsOpen}
+              aria-controls="ps1-inspector-details"
+              className="flex w-full items-center gap-1.5 text-left"
+            >
+              <svg
+                viewBox="0 0 10 10"
+                fill="currentColor"
+                aria-hidden="true"
+                className={`h-2 w-2 shrink-0 text-ink-500 transition-transform ${detailsOpen ? "rotate-90" : ""}`}
+              >
+                <path d="M2 0l6 5-6 5z" />
+              </svg>
+              Operations inspector
+            </button>
+          </h3>
+          <p className="truncate pl-3.5 text-[11px] text-ink-500">{heading}</p>
+          <p className="pl-3.5 text-[11px] text-ink-500">Ask this schedule</p>
         </div>
-        <span className="rounded-full border border-rule px-2 py-0.5 text-[9px] text-ink-700">Local conformance</span>
+        <span className="shrink-0 rounded-full border border-rule px-2 py-0.5 text-[9px] text-ink-700">Local conformance</span>
       </div>
-      <div className="mt-3 flex overflow-x-auto border-b border-rule" role="tablist" aria-label="Inspector views">
-        {INSPECTOR_TABS.map((name) => (
-          <button
-            key={name}
-            id={`ps1-inspector-tab-${name}`}
-            type="button"
-            role="tab"
-            aria-selected={tab === name}
-            aria-controls={`ps1-inspector-panel-${name}`}
-            tabIndex={tab === name ? 0 : -1}
-            onKeyDown={(event) => onTabKey(event, name)}
-            onClick={() => setTab(name)}
-            className={`min-h-9 px-2.5 py-1.5 text-[11px] capitalize ${tab === name ? "border-b-2 border-accent font-semibold text-accent" : "text-ink-700"}`}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
-      <div id={`ps1-inspector-panel-${tab}`} role="tabpanel" aria-labelledby={`ps1-inspector-tab-${tab}`} className="min-h-52 pt-3">
-        {tab === "summary" ? (
-          selectedActivity ? (
-            <div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
-                <Cell label="Contract" value={selectedActivity.contractNumber} />
-                <Cell label="Access type" value={selectedContract?.accessType ?? "—"} />
-                <Cell label="Nature" value={selectedContract?.natureOfActivity ?? "—"} />
-                <Cell label="Required" value={`${selectedActivity.totalAccesses} nights`} />
-                <Cell label="Scheduled" value={selectedRows.map((row) => `wk${row.week}`).join(", ") || "none"} />
-                <Cell label="Predecessor" value={selectedActivity.predecessorActivityId ?? "none"} />
-              </dl>
-              <div className="mt-3 border-t border-rule pt-2">
-                <p className="text-[11px] font-medium text-ink-900">Hard pin</p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {selectedRows.map((row) => {
-                    const key = `${selectedActivity.activityId}|${row.week}`;
-                    return (
-                      <Button key={key} size="sm" variant={pinned.has(key) ? "primary" : "default"} onClick={() => onPin({ activityId: selectedActivity.activityId, week: row.week, eclo: row.eclo })}>
-                        {pinned.has(key) ? `Release wk${row.week}` : `Pin wk${row.week}`}
-                      </Button>
-                    );
-                  })}
+      <div id="ps1-inspector-details" hidden={!detailsOpen}>
+        <div className="mt-3 flex overflow-x-auto border-b border-rule" role="tablist" aria-label="Inspector views">
+          {INSPECTOR_TABS.map((name) => (
+            <button
+              key={name}
+              id={`ps1-inspector-tab-${name}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === name}
+              aria-controls={`ps1-inspector-panel-${name}`}
+              tabIndex={tab === name ? 0 : -1}
+              onKeyDown={(event) => onTabKey(event, name)}
+              onClick={() => setTab(name)}
+              className={`min-h-9 px-2.5 py-1.5 text-[11px] capitalize ${tab === name ? "border-b-2 border-accent font-semibold text-accent" : "text-ink-700"}`}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+        <div id={`ps1-inspector-panel-${tab}`} role="tabpanel" aria-labelledby={`ps1-inspector-tab-${tab}`} className="min-h-52 pt-3">
+          {tab === "summary" ? (
+            selectedActivity ? (
+              <div>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
+                  <Cell label="Contract" value={selectedActivity.contractNumber} />
+                  <Cell label="Access type" value={selectedContract?.accessType ?? "—"} />
+                  <Cell label="Nature" value={selectedContract?.natureOfActivity ?? "—"} />
+                  <Cell label="Required" value={`${selectedActivity.totalAccesses} nights`} />
+                  <Cell label="Scheduled" value={selectedRows.map((row) => `wk${row.week}`).join(", ") || "none"} />
+                  <Cell label="Predecessor" value={selectedActivity.predecessorActivityId ?? "none"} />
+                </dl>
+                <div className="mt-3 border-t border-rule pt-2">
+                  <p className="text-[11px] font-medium text-ink-900">Hard pin</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {selectedRows.map((row) => {
+                      const key = `${selectedActivity.activityId}|${row.week}`;
+                      return (
+                        <Button key={key} size="sm" variant={pinned.has(key) ? "primary" : "default"} onClick={() => onPin({ activityId: selectedActivity.activityId, week: row.week, eclo: row.eclo })}>
+                          {pinned.has(key) ? `Release wk${row.week}` : `Pin wk${row.week}`}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : selection?.kind === "location-week" ? (
-            <div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
-                <Cell label="Location" value={selectedLocation?.locationId ?? selection.locationId} />
-                <Cell label="Week" value={selection.week} />
-                <Cell label="Possessions" value={selectedCell?.possessions ?? 0} />
-                <Cell label="Effective capacity" value={selectedCell?.effectiveCapacity ?? selectedLocation?.capacity ?? 0} />
-                <Cell label="Nominal capacity" value={selectedCell?.nominalCapacity ?? selectedLocation?.capacity ?? 0} />
-                <Cell label="Status" value={selectedCell?.disrupted ? "disrupted" : (selectedCell?.load ?? 0) >= 1 ? "at capacity" : "available"} />
-              </dl>
-              <ul className="mt-3 grid gap-1 border-t border-rule pt-2">
-                {(selectedCell?.activityIds ?? []).map((activityId) => (
-                  <li key={activityId} className="flex items-center justify-between gap-2">
-                    <button type="button" className="text-[11px] font-medium text-accent underline" onClick={() => onSelect({ kind: "activity", activityId })}>{activityId}</button>
-                    <Button size="sm" onClick={() => onPin({ activityId, week: selection.week })}>
-                      {pinned.has(`${activityId}|${selection.week}`) ? "Release" : "Pin"}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-              <Button className="mt-3" size="sm" variant="primary" onClick={() => onCut({ locationId: selection.locationId, week: selection.week })}>
-                Impose urgent maintenance here
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {metrics.slice(0, 4).map((metric) => <Figure key={metric.key} metric={metric} className="rounded-sm" />)}
-            </div>
-          )
-        ) : tab === "why" ? (
-          selectedActivity ? (
-            <div className="text-[12px] text-ink-700">
-              <p>{explanation?.summary ?? "No placement explanation is available."}</p>
-              {explanation?.facts.length ? (
-                <dl className="mt-3 grid gap-1 text-[11px]">
-                  {explanation.facts.map((fact) => <Cell key={fact.label} label={fact.label} value={fact.value} />)}
+            ) : selection?.kind === "location-week" ? (
+              <div>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
+                  <Cell label="Location" value={selectedLocation?.locationId ?? selection.locationId} />
+                  <Cell label="Week" value={selection.week} />
+                  <Cell label="Possessions" value={selectedCell?.possessions ?? 0} />
+                  <Cell label="Effective capacity" value={selectedCell?.effectiveCapacity ?? selectedLocation?.capacity ?? 0} />
+                  <Cell label="Nominal capacity" value={selectedCell?.nominalCapacity ?? selectedLocation?.capacity ?? 0} />
+                  <Cell label="Status" value={selectedCell?.disrupted ? "disrupted" : (selectedCell?.load ?? 0) >= 1 ? "at capacity" : "available"} />
                 </dl>
-              ) : null}
-            </div>
-          ) : selection?.kind === "location-week" ? (
-            <p className="text-[12px] text-ink-700">
-              This location-week holds {selectedCell?.possessions ?? 0} possession{selectedCell?.possessions === 1 ? "" : "s"} against an effective capacity of {selectedCell?.effectiveCapacity ?? selectedLocation?.capacity ?? 0}{selectedCell?.disrupted ? `, reduced from ${selectedCell.nominalCapacity} by urgent maintenance` : ""}.
-            </p>
-          ) : (
-            <p className="text-[12px] text-ink-500">Select an activity or location-week to see computed reasons.</p>
-          )
-        ) : tab === "network" ? (
-          selectedActivity ? <NetworkSchematic instance={instance} activityId={selectedActivity.activityId} network={network} /> : (
-            <p className="text-[12px] text-ink-500">Select an activity to inspect its occupied span, buffers and Live effects.</p>
-          )
-        ) : <ChangeSummary diff={diff} />}
+                <ul className="mt-3 grid gap-1 border-t border-rule pt-2">
+                  {(selectedCell?.activityIds ?? []).map((activityId) => (
+                    <li key={activityId} className="flex items-center justify-between gap-2">
+                      <button type="button" className="text-[11px] font-medium text-accent underline" onClick={() => onSelect({ kind: "activity", activityId })}>{activityId}</button>
+                      <Button size="sm" onClick={() => onPin({ activityId, week: selection.week })}>
+                        {pinned.has(`${activityId}|${selection.week}`) ? "Release" : "Pin"}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                <Button className="mt-3" size="sm" variant="primary" onClick={() => onCut({ locationId: selection.locationId, week: selection.week })}>
+                  Impose urgent maintenance here
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {metrics.slice(0, 4).map((metric) => <Figure key={metric.key} metric={metric} className="rounded-sm" />)}
+              </div>
+            )
+          ) : tab === "why" ? (
+            selectedActivity ? (
+              <div className="text-[12px] text-ink-700">
+                <p>{explanation?.summary ?? "No placement explanation is available."}</p>
+                {explanation?.facts.length ? (
+                  <dl className="mt-3 grid gap-1 text-[11px]">
+                    {explanation.facts.map((fact) => <Cell key={fact.label} label={fact.label} value={fact.value} />)}
+                  </dl>
+                ) : null}
+              </div>
+            ) : selection?.kind === "location-week" ? (
+              <p className="text-[12px] text-ink-700">
+                This location-week holds {selectedCell?.possessions ?? 0} possession{selectedCell?.possessions === 1 ? "" : "s"} against an effective capacity of {selectedCell?.effectiveCapacity ?? selectedLocation?.capacity ?? 0}{selectedCell?.disrupted ? `, reduced from ${selectedCell.nominalCapacity} by urgent maintenance` : ""}.
+              </p>
+            ) : (
+              <p className="text-[12px] text-ink-500">Select an activity or location-week to see computed reasons.</p>
+            )
+          ) : tab === "network" ? (
+            selectedActivity ? <NetworkSchematic instance={instance} activityId={selectedActivity.activityId} network={network} /> : (
+              <p className="text-[12px] text-ink-500">Select an activity to inspect its occupied span, buffers and Live effects.</p>
+            )
+          ) : <ChangeSummary diff={diff} />}
+        </div>
       </div>
 
       <div className="mt-3 border-t border-rule pt-3">
