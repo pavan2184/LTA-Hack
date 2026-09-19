@@ -149,3 +149,10 @@ and CLI smokes retained public A/B/C 25.2/30/25.2 and full-model proofs; the CLI
 exported exactly nine official CSVs. The unchanged Python models already passed
 40 tests in the benchmark snapshot. Earlier counts remain separately scoped above.
 No new deployment or target-VM benchmark is claimed by this reconciliation.
+
+The engineer amended the shared merge as `e3638a4` to give the full-workstation
+mocked solve test a 10-second CI budget after a 5.2-second run exceeded its old
+five-second limit without an assertion failure. That adjustment and its handoff
+notes are preserved; application and native solver code are unchanged from the
+1,079-test verification above.
+The affected workbench suite was rerun after that adjustment: 21/21 tests passed.

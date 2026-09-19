@@ -2,6 +2,12 @@
 
 ## Final shared-branch reconciliation — 2026-09-19
 
+The engineer subsequently amended its merge to `e3638a4`, increasing the
+full-workstation mocked solve test timeout from five to ten seconds after CI
+took 5.2 seconds without an assertion failure. That test-only change and its
+handoff notes were retained; application/native solver code was unchanged.
+The affected workbench suite passed 21/21 tests after that final reconciliation.
+
 Merged benchmark snapshot `d1e0a8f` with the engineer's `2957345`, preserving the
 showcase/submission README, assets, current/history split and heuristic ECLO fixes.
 The README retains versioned native comparison tables plus a separate current

@@ -91,7 +91,7 @@ describe("workspace state and policy comparison", () => {
     expect(screen.getByRole("tab", { name: /Policy C/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: /Policy A/ })).toHaveTextContent("25.2");
     expect(screen.queryByText(/best scenario/i)).not.toBeInTheDocument();
-  });
+  }, 10_000); // Three mocked service responses plus the full workstation render on slower CI runners.
 
   it("supports arrow-key navigation across policy cards", async () => {
     const user = userEvent.setup();
