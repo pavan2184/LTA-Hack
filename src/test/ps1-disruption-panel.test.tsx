@@ -19,7 +19,11 @@ const instance = loadInstance(Object.fromEntries(PS1_FILES.map((name) => [
 ])));
 const network = buildNetwork(instance);
 const initial = solveInstance(instance, { scenario: "C" }, network).submission!;
-const firstLocation = initial.occupancy[0];
+// A028 has room to move without releasing a successor's hard pin. The first
+// output row is not a stable fixture: an improved schedule can put a tightly
+// constrained predecessor there, making the supposed applied setup invalid.
+const firstLocation = initial.occupancy.find((row) =>
+  row.activityId === "A028" && row.locationId === "PLAT:ALP:S03:EB" && row.week === 9)!;
 const firstCut: Disruption = {
   locationId: firstLocation.locationId,
   fromWeek: firstLocation.week,
@@ -27,7 +31,8 @@ const firstCut: Disruption = {
   capacity: Math.max(0, network.supply.get(firstLocation.locationId)!.supplyCapacity - 1),
 };
 const existingDisruptions = [firstCut];
-const applied = replanForDisruption(instance, initial, existingDisruptions, network).submission;
+const firstOutcome = replanForDisruption(instance, initial, existingDisruptions, network);
+const applied = firstOutcome.submission;
 const timeline = buildTimeline(instance, applied, network, existingDisruptions);
 const secondCell = timeline.rows.flatMap((row) => [...row.cells.values()].map((cell) => ({ row, cell })))
   .find(({ row, cell }) => row.locationId !== firstCut.locationId && cell.possessions > Math.max(0, cell.effectiveCapacity - 1))!;
@@ -38,6 +43,14 @@ afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("successive urgent-maintenance constraints", () => {
   it("retains the first cut when adopting a second and invalidates the prior preview after apply", async () => {
+    expect(firstOutcome.impact.displaced.length).toBeGreaterThan(0);
+    expect(validate(instance, applied, network, existingDisruptions).feasible).toBe(true);
+    const firstDisplaced = new Set(firstOutcome.impact.displaced.map((row) => `${row.activityId}|${row.week}`));
+    for (const row of initial.access.filter((entry) => !firstDisplaced.has(`${entry.activityId}|${entry.week}`))) {
+      expect(applied.access).toContainEqual(expect.objectContaining({
+        activityId: row.activityId, week: row.week, eclo: row.eclo,
+      }));
+    }
     const user = userEvent.setup();
     const onApply = vi.fn();
     const props = { instance, submission: applied, network, existingDisruptions, target: secondTarget, open: true, onOpenChange: vi.fn(), onApply };
@@ -54,6 +67,13 @@ describe("successive urgent-maintenance constraints", () => {
       capacity: Math.max(0, secondCell.cell.effectiveCapacity - 1),
     }]);
     expect(validate(instance, outcome.submission, network, cuts).feasible).toBe(true);
+    expect(outcome.impact.displaced.length).toBeGreaterThan(0);
+    const displaced = new Set(outcome.impact.displaced.map((row: { activityId: string; week: number }) => `${row.activityId}|${row.week}`));
+    for (const row of applied.access.filter((entry) => !displaced.has(`${entry.activityId}|${entry.week}`))) {
+      expect(outcome.submission.access).toContainEqual(expect.objectContaining({
+        activityId: row.activityId, week: row.week, eclo: row.eclo,
+      }));
+    }
     expect(capacityAt(network, cuts, firstCut.locationId, firstCut.fromWeek)).toBe(firstCut.capacity);
     expect(capacityAt(network, [...cuts, firstCut], firstCut.locationId, firstCut.fromWeek)).toBe(firstCut.capacity);
 

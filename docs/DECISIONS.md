@@ -29,20 +29,33 @@ limit. [Deployment rationale and runbook](PS1_NATIVE_DEPLOYMENT.md).
 
 Status: **Accepted.** Use cross-scenario incumbents, nominal-capacity starts,
 explicit legal per-line ECLO-window candidates and adaptive large-neighbourhood
-repair in the existing browser worker. Retain the original search as a paired
+repair in the checked TypeScript heuristic. Retain the original search as a paired
 benchmark mode. Preserve full workload, exact pins, disruptions and local
 validation for every accepted candidate. Capacity cuts are physical limits: the
 checker now matches construction by forbidding B/C elasticity at a disrupted
 location-week, including when evaluating a reused candidate.
 
-The weekly CP-SAT model is an offline full/repair comparator. It improved three
-congested cases at one second of native search but returned UNKNOWN for four
-larger cases; browser deployment is not yet justified by those results. Do not
-add a Python service or a large untested WASM dependency to the hidden-upload
-path. CP-SAT proof claims apply only to its encoded local model; repair bounds
-are conditional on frozen work. The earlier minute-resolution core benchmark
-does not decide PS1 solver quality. Detailed measured results and reproduction
-commands are in `scripts/ps1/benchmark/README.md`.
+The weekly CP-SAT model started as an offline full/repair comparator. Its measured
+gains and the owner's server-side-compute authorization promoted it to the primary
+same-origin service described above. CP-SAT proof claims apply only to its encoded
+local model; repair bounds are conditional on frozen work. The earlier
+minute-resolution core benchmark does not decide PS1 solver quality. Detailed
+measured results and reproduction commands are in `scripts/ps1/benchmark/README.md`.
+
+## 2026-09-19 — Reuse checked candidates before buying scenario flexibility
+
+Status: **Accepted, with the execution boundary superseded by the native-service
+decision above.** Reuse earlier scenario
+candidates only after independent target-policy validation, including the
+current capacity cuts and every original pin. Add nominal-supply constructions
+for standalone B/C solves and track legal per-line ECLO windows during C
+construction. Retain deterministic, bounded search and explicit local-checker
+limits. A cheaper incomplete or pin-breaking schedule is never accepted.
+
+Measure quality changes against identical input digests with reproducible
+benchmarks and regenerate the public outputs through the optimiser. Test actual
+downloads and keep submission artifacts separate from validation reports. The
+native service must preserve hidden-instance compatibility and the existing UI.
 
 ## 2026-09-19 — PS1 becomes a schedule-first planning workstation
 
@@ -65,11 +78,11 @@ distinctions. The work and occupancy views share engine identities and the
 applied scenario; view filters do not change what the solver delivers.
 
 This is a scoped presentation decision. Hidden eight-file uploads still run
-entirely in the account-free browser path. Full delivery, independent local
+through the account-free public path. Full delivery, independent local
 checking, all hard constraints, retained A/B/C outcomes, stale-operation
 guards, explicit proposal review, Apply/Discard/Undo and exact official exports
-are unchanged requirements. No backend, solver, schema, worker protocol,
-authentication, dependency or environment-variable change is needed.
+are unchanged requirements. The later native-service decision changes execution,
+dependencies and deployment, but not these UI and data-contract requirements.
 
 The runtime CSS remains the token source. Root [DESIGN.md](../DESIGN.md) records
 the visual direction and token mapping; [UX-CONTRACT.md](../UX-CONTRACT.md)

@@ -11,6 +11,16 @@ built-in image_gen tool; copy reflects the documented local prototype.
 | [Devpost copy](devpost-copy.md) | Markdown | Tagline, project story, stack and links |
 | [Social copy](social-copy.md) | Markdown | Two captions and image alt text |
 | [Generation prompts](generation-prompts.md) | Markdown | Exact prompts for future variants |
+| [PS1 demo script](DEMO_SCRIPT.md) | Markdown | Three-minute narration, actual UI actions and recording checks |
+| [PS1 write-up](PS1_WRITEUP.md) | Markdown | Submission copy for the public eight-file upload and planning workspace |
+| [PS1 submission checklist](../../docs/PS1_SUBMISSION_CHECKLIST.md) | Markdown | Release, result files, judge journey, video, source and sign-in handover |
+
+For the PS1 submission, use the PS1-specific write-up and script. The older
+Devpost copy describes the separate authenticated RailPlan workflow. The new
+documents are preparation artifacts: a recorded video, published YouTube URL,
+GitLab destination and submission receipt still need to be supplied and verified.
+The PNG artwork referenced below is not present in this checkout; recover the
+original local files if needed. It is not required for the screen-recorded demo.
 
 ![RailPlan cover](railplan-devpost-cover.png)
 

@@ -1,0 +1,115 @@
+{
+  "project": "RailPlan",
+  "tagline": "Railway access planning, explained.",
+  "created": "2026-09-19",
+  "application_commit": "fc69249c9a8fdaee85b15dccef7c80b8c2726bde",
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 7755,
+      "sha256": "eb2d410fd7041297c957e8ae84f1ce8ce0e42ad2db9d429dffd08f67805a7efe"
+    },
+    {
+      "file": "copy/captions.md",
+      "bytes": 3442,
+      "sha256": "3a70c697107f5275761ba945468a0406b671f9d6c8a5e430f606d266a61f5daf"
+    },
+    {
+      "file": "copy/devpost-copy.md",
+      "bytes": 4453,
+      "sha256": "b0f24b4bcf8cb9d60945e03beef94650db2e2a0b514aacf817eaa0a5efbd6cf7"
+    },
+    {
+      "file": "images/01-railplan-cover.jpg",
+      "bytes": 709279,
+      "sha256": "737dc06d4d3ea81c10253c586ce5cedd5bfc8e76313cc91346f5a4f383bf4969",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "images/02-work-schedule.png",
+      "bytes": 706376,
+      "sha256": "1f65e1794d2031e5dd2ec34c6eb68975aa2abfb5b8d4afda876f54ef5bbf03bb",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/03-explanations.png",
+      "bytes": 759867,
+      "sha256": "af2232808586ae99b1b11c3fed43bfe92c7836fcd4716f99aae85124524ccf18",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/04-change-review.png",
+      "bytes": 678153,
+      "sha256": "bde624b7b77113407550f5e9de8ba31cfb9ae7853bec1d477eb91a381bc72c16",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/05-policy-comparison.png",
+      "bytes": 686797,
+      "sha256": "9a644faeba0729158aef48d8c45510d987aa713117efcc46e01813125324d8e2",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "file": "images/06-railplan-social-square.png",
+      "bytes": 1929133,
+      "sha256": "965f24aaf39691ccea5c2dfdab293418a38ecac903a0680fe5a3fb2cbd66ec5e",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "file": "index.html",
+      "bytes": 3387,
+      "sha256": "18ae82a23e61c0e085d1b75dbe03395658f7ee93a3aa1b3c1165d65f51e37b3a"
+    },
+    {
+      "file": "screenshots/02-work-schedule.png",
+      "bytes": 521287,
+      "sha256": "070760a700a6feb7f72fe2cc351d2e9757f5cdde0c17596d44edd0c6e337b777",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "screenshots/03-explanations.png",
+      "bytes": 600082,
+      "sha256": "ab0015c8cfe4b11e381451f3458582abab45d6b99483e52ec45843e58036eeb1",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "screenshots/04-change-review.png",
+      "bytes": 493135,
+      "sha256": "1a65eb2e11bb832ba201b38a13c0e92d9dac27340fe1a6aacac477dd1d133741",
+      "width": 1431,
+      "height": 894
+    },
+    {
+      "file": "screenshots/05-policy-comparison.png",
+      "bytes": 539789,
+      "sha256": "331e6ba05d26f96e80d76cf7cf78cf38a1b5c1d37033c562b57c623f5ff83d72",
+      "width": 1431,
+      "height": 894
+    },
+    {
+      "file": "source/gallery.html",
+      "bytes": 5907,
+      "sha256": "97ef70115f2e3f911975f08044edf0d1417b919cf70985dc979239b654ab45c9"
+    },
+    {
+      "file": "source/generation-prompts.json",
+      "bytes": 2380,
+      "sha256": "b3228a1365cf75f713fc8e273ee0c1dc98616b903b524311236c5e78e3df9bff"
+    },
+    {
+      "file": "source/social-prompt.txt",
+      "bytes": 1025,
+      "sha256": "b8981352ae9e218b79b396131bddfd44f660134dbd7095812e7abed4f941426f"
+    }
+  ],
+  "readme_template": "https://github.com/othneildrew/Best-README-Template",
+  "repository_copy": "Cover exported as full-resolution quality-97 JPEG; local sharing pack retains original generated PNG."
+}
