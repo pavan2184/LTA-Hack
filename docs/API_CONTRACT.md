@@ -4,10 +4,15 @@
 
 No HTTP route or environment variable was added. `solveInstance(instance,
 options)` returns a `SolveOutcome`; options carry scenario, hard pins, capacity
-disruptions and a bounded deterministic optimisation budget. The default runs 24
-construction starts and at most 2,500 reconstruction neighbours inside
-`horizon_weeks`. An infeasible result may include a diagnostic partial submission,
-but the UI cannot export it.
+disruptions, optional `initialCandidates` and a bounded deterministic optimisation
+budget. Initial candidates are relabelled and fully revalidated for the target
+scenario, current cuts and exact pins; their source policy's feasibility is never
+assumed to transfer. The default runs 24 construction seeds (one target-policy
+candidate, plus one nominal-supply candidate for B/C, per seed) and bounded
+reconstruction inside `horizon_weeks`. Reconstruction evaluates at most two moves
+for each of 48 access rows, further limited by `maxNeighbourEvaluations` (default
+2,500); zero-score candidates skip reconstruction. An infeasible result may include
+a diagnostic partial submission, but the UI cannot export it.
 
 The worker message contains only the parsed instance and local solve options. It
 emits per-scenario progress followed by three outcomes, or a sanitized error. CSV

@@ -1,5 +1,21 @@
 # Decisions
 
+## 2026-09-19 — Reuse checked candidates before buying scenario flexibility
+
+Status: **Accepted.** The user approved improving solver quality, judge-path
+verification and submission readiness after the workstation merge. Keep the
+browser-only solver and existing hard-rule checker. Reuse earlier scenario
+candidates only after independent target-policy validation, including the
+current capacity cuts and every original pin. Add nominal-supply constructions
+for standalone B/C solves and track legal per-line ECLO windows during C
+construction. Retain deterministic, bounded search and explicit local-checker
+limits. A cheaper incomplete or pin-breaking schedule is never accepted.
+
+Measure quality changes against identical input digests with reproducible
+benchmarks and regenerate the public outputs through the optimiser. Test actual
+browser downloads and keep submission artifacts separate from validation reports.
+Do not trade hidden-instance compatibility for a new solver service or UI rewrite.
+
 ## 2026-09-19 — PS1 becomes a schedule-first planning workstation
 
 Status: **Accepted.** The user approved the Siemens Opcenter Scheduling SMT

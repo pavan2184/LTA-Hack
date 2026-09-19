@@ -89,7 +89,7 @@ describe("deterministic multi-start optimisation", () => {
   it.each([
     ["A", 25.2],
     ["B", 44],
-    ["C", 39.2],
+    ["C", 25.2],
   ] as const)("keeps public Scenario %s at or below %s", (scenario, ceiling) => {
     const outcome = solveInstance(instance, { scenario });
     expect(outcome.status).toBe("FEASIBLE");

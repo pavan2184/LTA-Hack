@@ -7,6 +7,8 @@ Then `PROJECT_BRIEF.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `API_CONTRACT.md`,
 `TESTING.md`, `DECISIONS.md` and `PROJECT_STATUS.md` before code changes.
 
 - `PS1_OFFICIAL_SPEC.md`: **authoritative** PS1 requirements — rules, scenarios, scoring, output schema, validator, judging rubric and the four deliverables. Restated from the organiser's repository at commit `966c976` (2026-09-18). Wins over any other doc on PS1 technical requirements.
+- `PS1_BENCHMARK.md`: repeatable solver quality checks and measured before/after results on identical public and synthetic inputs.
+- `PS1_SUBMISSION_CHECKLIST.md`: release verification, exact public-result archive, video/source handover and remaining submission actions.
 - `PROJECT_BRIEF.md`: canonical product intent, target users, workflow, scope and success criteria.
 - `NEBULAX_PARTICIPANT_CONTEXT.md`: supplied event pack — logistics, deadline, attendance and open questions. Its generic submission list conflicts with PS1's own deliverables; see `PS1_OFFICIAL_SPEC.md`.
 - `PROJECT_STATUS_HISTORY.md`: archived milestone evidence; read only for historical details.

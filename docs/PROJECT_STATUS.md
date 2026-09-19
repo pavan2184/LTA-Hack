@@ -1,5 +1,79 @@
 # Project Status
 
+## PS1 solver quality and submission readiness — 2026-09-19
+
+Implemented on `codex/ps1-solver-readiness`, based on merged main `b6e661e`.
+B/C now consider nominal-supply constructions, while the worker, fallback and
+public-results CLI reuse earlier feasible schedules after full target-policy,
+disruption and exact-pin checks. Scenario C construction keeps ECLO inside a
+separate two-week window per affected line, including Live interchange closures.
+Reconstruction no longer moves original operator pins, and zero-cost outcomes
+skip unnecessary neighbourhood search. Hard rules and browser-only uploads are
+unchanged; the local checker is not the organiser's reference validator.
+
+The repeatable [benchmark](PS1_BENCHMARK.md) compares identical public and
+synthetic input digests. **13 of 39 outcomes improved; none regressed** across
+three measured solves each (**117/117 passed**), with complete workload,
+deterministic exports and local conformance after CSV serialization/reparse.
+Public C improves **39.2 → 25.2**; Mixed 120 and 240 reach **0/0/0**; C on
+separated ECLO demand improves **3640 → 1840**. Independent review also checked
+all 39 outcomes with and without prior-scenario candidates (78 solves), with
+matching final scores. This does not establish performance on hidden instances.
+
+`npm run ps1:solve` now uses the optimiser, validates all outcomes before
+replacing outputs and creates `output/PS1-public-results.zip` containing exactly
+nine official CSVs. Public A/B/C are **25.2 / 44 / 25.2**; regenerated CSVs and
+local reports are tracked under `packages/ps1/data/results/`. Validation JSON
+and summaries stay outside the ZIP. `npm run ps1:benchmark` provides strict
+comparison and export checks; local before/after reports are in
+`output/ps1-benchmark/`.
+
+Verification:
+
+- Final `npm test`: **962 passed, 79 database tests skipped**, 107 passing and
+  13 skipped files. Typecheck, full ESLint and production build passed. The first
+  sandboxed build stalled during compilation; the network-enabled retry fetched
+  configured fonts and passed. No runtime or dependency changes were required.
+- The first full test run exposed a fixture that assumed the first output row
+  was safely movable. Under the improved schedule, that cut conflicts with a
+  pinned successor. The positive fixture now validates its setup and every
+  retained pin; a new negative test preserves the original impossible cut and
+  confirms adoption remains disabled. No constraint was weakened.
+- Isolated Chromium dev-browser checks uploaded all **12 synthetic instances**,
+  solved all **36 scenarios** and downloaded/reparsed **108 CSVs**. Every
+  activity's full workload was retained, every ZIP had valid CRCs and exact
+  paths/headers, and every result passed local checking.
+- Production-mode browser checks at `http://127.0.0.1:3004/ps1` repeated public
+  and Mixed 240 upload → worker solve → actual ZIP. Scores match the CLI and
+  every extracted submission passes local checking. Real downloaded public
+  files also passed the app's external-checker upload flow.
+- Malformed-header recovery, replacing an instance with one file resetting to
+  1/8, review/export gating, Apply and Undo passed. A Mixed 240 cut moved one of
+  480 accesses and held 99.8% unchanged. Desktop 1440×1000 and mobile 390×844
+  screenshots show meaningful content and no document overflow; no JavaScript
+  errors or framework overlays were observed. Browser plugin unavailable;
+  existing bundled Playwright was used in isolated contexts.
+- The [demo script](../assets/submission/DEMO_SCRIPT.md) is rehearsed against the
+  production build: synthetic capacity-pressure A, `SEC:ALP:S02_S03:EB`, week 16,
+  capacity 1 → 0. One of 22 accesses moves, 95.5% stays fixed; score 2184 → 2191
+  and contract `05-C006` completes 2027-05-02 instead of 2027-04-25. Reviewed
+  Apply and the actual resulting ZIP passed. This is a script, not a recording.
+
+Evidence is in `/tmp/railplan-judge-qa/` (screenshots, downloaded ZIPs, extracted
+files and JSON results). Local servers remain available at
+http://127.0.0.1:3003/ps1 (dev) and http://127.0.0.1:3004/ps1 (production build).
+
+**Deployment and submission are outstanding.** The live site was checked and
+still serves the earlier interface/public C 39.2. Vercel Git deployments are
+disabled. The CLI is signed into `ducksss`, which lists only its own team; the
+existing RailPlan project belongs to `pavanmadhup-1254s-projects`, and its browser
+dashboard requires login. No deployment, account switch, source mirror, YouTube
+upload or portal submission occurred. The [submission checklist](PS1_SUBMISSION_CHECKLIST.md)
+and [PS1 write-up](../assets/submission/PS1_WRITEUP.md) are ready; a team-owned
+GitLab destination or organiser-approved alternative, actual video/YouTube URL
+and physical sign-in remain required. Reference-validator access, unseen input
+performance and native screen-reader speech remain unverified.
+
 ## PS1 policy copy removed to recover schedule space — 2026-09-19
 
 Removed the redundant policy-description strip for A/B/C and its unused copy

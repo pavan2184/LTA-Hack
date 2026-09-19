@@ -86,7 +86,13 @@ Run from the repository root:
 
 ```sh
 npx vitest run packages/ps1/src/io/datasets.test.ts
+node --import tsx scripts/ps1/benchmark.ts --runs 3 --output output/ps1-benchmark/current.json
 ```
+
+The benchmark also includes the official public input and can compare objective
+costs against a saved baseline without changing the fixtures. Commands,
+before/after scores, runtime measurements and limitations are recorded in
+[`docs/PS1_BENCHMARK.md`](../../../../docs/PS1_BENCHMARK.md).
 
 The tests load the actual files through the same pure loader used by `/ps1`,
 solve all 36 dataset/scenario combinations with the default optimiser, serialize
@@ -113,35 +119,40 @@ In `09-separated-eclo-windows`, each line has a three-access job starting in
 week 1 with a week-2 deadline and another starting in week 6 with a week-7
 deadline. B meets both using ECLO in weeks 1/2 and 6/7. The tests reclassify that
 same schedule as C and require an `eclo_window` rejection. A and C must accept
-some overrun. The current C heuristic uses no ECLO here; this fixture exposes
-its window-selection quality gap without changing the engine or easing rules.
+some overrun. C now constructs legal per-line ECLO windows and reduces its
+recorded cost from 3640 to 1840. The fixture and rules are unchanged; this
+improvement is not a claim that the remaining cost is optimal.
 
 In `11-priority-contention`, all nine combinations of contract priority 1/2/3
 and activity priority 1/2/3 compete as exclusive PM possessions for one slot per
 week. Each requests three accesses and has a week-9 target. A finishes all
 Priority-1 contracts first and on time, then Priority-2, then Priority-3.
 
-Initial observed penalty scores, useful for comparison rather than optimality
-claims or immutable test expectations:
+Observed penalty scores after the 2026-09-19 candidate-search improvement,
+using standalone `solveInstance()` calls with the default budget. These are
+comparison evidence rather than optimality claims or immutable expectations:
 
 | Dataset | A | B | C |
 | --- | ---: | ---: | ---: |
 | Small demo | 0 | 0 | 0 |
-| Co-sharing | 0 | 84 | 84 |
-| Live interchange | 0 | 49 | 49 |
+| Co-sharing | 0 | 0 | 0 |
+| Live interchange | 0 | 0 | 0 |
 | Dependency chains | 0 | 0 | 0 |
-| Capacity pressure | 2184 | 293 | 1123 |
-| Mixed 120 | 0 | 378 | 308 |
-| Long spans | 0 | 133 | 133 |
+| Capacity pressure | 2184 | 293 | 1108.3 |
+| Mixed 120 | 0 | 0 | 0 |
+| Long spans | 0 | 0 | 0 |
 | Workfront limits | 0 | 0 | 0 |
-| Separated ECLO windows | 3640 | 40 | 3640 |
+| Separated ECLO windows | 3640 | 40 | 1840 |
 | Horizon boundary | 0 | 0 | 0 |
 | Priority contention | 1768.2 | 483 | 340.4 |
-| Mixed 240 | 0 | 826 | 665 |
+| Mixed 240 | 0 | 0 | 0 |
 
-The B/C results in several cases spend extra capacity even though A finishes on
-time. These datasets expose that heuristic quality gap; a feasible result does
-not prove the score is optimal.
+Earlier B/C results spent extra capacity on several inputs where A finished on
+time. The solver now considers nominal-supply constructions under each target
+policy and validates them before choosing a cheaper result. This removes those
+recorded avoidable costs. The browser worker also offers earlier feasible
+scenario results as candidates; the standalone benchmark does not supply them.
+Full workload and hard-rule checks remain gates before scoring.
 
 This is **local conformance**, not the organiser's reference validator. The
 existing `cross_possession_night_alignment` limitation still applies: separate

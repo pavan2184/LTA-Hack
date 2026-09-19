@@ -1,5 +1,6 @@
 import {
   ECLO_YIELD,
+  ECLO_WINDOW_WEEKS,
   STANDARD_YIELD,
   type AccessRow,
   type Activity,
@@ -11,7 +12,7 @@ import {
   type SolveOutcome,
   type Submission,
 } from "../types/ps1";
-import { buildNetwork, expandSpan, type Network } from "./network";
+import { buildNetwork, closureFor, expandSpan, type Network } from "./network";
 import {
   isoDate,
   weekEnd,
@@ -61,6 +62,8 @@ export interface ScheduleOptions {
   disruptions?: Disruption[];
   /** Deterministic construction variant used by the multi-start optimiser. */
   constructionSeed?: number;
+  /** Same-instance schedules to recheck under this policy, pins and disruptions. */
+  initialCandidates?: readonly Submission[];
   optimizationBudget?: {
     starts?: number;
     maxNeighbourEvaluations?: number;
@@ -274,6 +277,21 @@ export function scheduleInstance(
   const placedWeeks = new Map<string, number[]>();
   const sequenceOf = new Map<string, number>();
   const rejectedPins: RejectedPin[] = [];
+  const ecloWeeksByLine = new Map<string, { first: number; last: number }>();
+  const affectedLinesCache = new Map<string, string[]>();
+  const affectedLinesFor = (activity: Activity, contract: Contract, span: string[]): string[] => {
+    const cached = affectedLinesCache.get(activity.activityId);
+    if (cached) return cached;
+    const lines = [...new Set(closureFor(network, span, contract.natureOfActivity)
+      .map((locationId) => network.supply.get(locationId)!.lineCode))];
+    affectedLinesCache.set(activity.activityId, lines);
+    return lines;
+  };
+  const fitsEcloWindow = (lines: string[], week: number): boolean =>
+    lines.every((line) => {
+      const window = ecloWeeksByLine.get(line);
+      return !window || Math.max(window.last, week) - Math.min(window.first, week) < ECLO_WINDOW_WEEKS;
+    });
 
   /**
    * Commit one access-night. Shared by the pin pass and the greedy pass so a
@@ -286,6 +304,10 @@ export function scheduleInstance(
     week: number,
     eclo: boolean,
   ): boolean {
+    const ecloLines = eclo ? affectedLinesFor(activity, contract, span) : [];
+    if (eclo && (scenario === "A" || (scenario === "C" && !fitsEcloWindow(ecloLines, week)))) {
+      return false;
+    }
     const night = nightFor(activity, contract, week);
     if (night === null) return false;
     const labels = placementFor(activity, contract, span, week);
@@ -308,6 +330,13 @@ export function scheduleInstance(
     const load = loadAt(contract, activity.activityType, week);
     load.nights.set(night, new Set([...(load.nights.get(night) ?? []), activity.activityId]));
     placedWeeks.set(activity.activityId, [...(placedWeeks.get(activity.activityId) ?? []), week]);
+    for (const line of ecloLines) {
+      const window = ecloWeeksByLine.get(line);
+      ecloWeeksByLine.set(line, {
+        first: Math.min(window?.first ?? week, week),
+        last: Math.max(window?.last ?? week, week),
+      });
+    }
     return true;
   }
 
@@ -331,7 +360,7 @@ export function scheduleInstance(
     if (!commit(activity, contract, spanFor(activity), pin.week, pin.eclo === 1)) {
       rejectedPins.push({
         ...pin,
-        reason: `wk${pin.week} had no free possession or access-night for ${activity.activityId}`,
+        reason: `wk${pin.week} had no legal possession, access-night or ECLO window for ${activity.activityId}`,
       });
     }
   }
@@ -373,7 +402,8 @@ export function scheduleInstance(
         scenario !== "A" &&
         remaining > STANDARD_YIELD &&
         remaining > weeksLeft &&
-        ecloAllowed(scenario, contract, options.constructionSeed ?? 0);
+        ecloAllowed(scenario, contract, options.constructionSeed ?? 0) &&
+        (scenario !== "C" || fitsEcloWindow(affectedLinesFor(activity, contract, span), week));
 
       if (!commit(activity, contract, span, week, useEclo)) continue;
       taken.add(week);
@@ -397,14 +427,10 @@ export function scheduleInstance(
  * hard failure, so buying 1.5 nights of yield is the only way to compress a
  * contract into its window.
  *
- * Deliberately unused in C. Rule 10 confines every `eclo=1` access affecting a
- * line to one continuous span of at most two calendar weeks, chosen per line,
- * and an activity gets at most one access per week — so C can buy at most two
- * ECLO nights per activity, and only for activities that happen to fall in the
- * same fortnight on both lines. Spreading them earned a hard `eclo_window`
- * violation in testing. The capacity allowance C grants instead, one excess
- * access-night per location-week, is both cheaper per unit (3x against 5x) and
- * free of a continuity constraint, so C leans on that and leaves ECLO alone.
+ * C alternates between no ECLO and cost-sensitive ECLO constructions. Each
+ * construction tracks a separate two-week window per affected line, including
+ * opposite-bound and interchange closures for Live work. Different priority
+ * orderings explore different windows; final validation remains authoritative.
  */
 function ecloAllowed(scenario: Scenario, contract: Contract, seed: number): boolean {
   if (scenario === "B") return true;
@@ -454,6 +480,11 @@ export function solveInstance(
     candidatesEvaluated += 1;
     const report = validate(instance, submission, activeNetwork, options.disruptions ?? []);
     if (!report.feasible || submission.rejectedPins.length > 0) return;
+    // A valid schedule is not necessarily a valid answer to this solve: keep
+    // every original operator pin, including its requested ECLO yield.
+    if ((options.pins ?? []).some((pin) => !submission.access.some((row) =>
+      row.activityId === pin.activityId && row.week === pin.week &&
+      (pin.eclo === undefined || row.eclo === pin.eclo)))) return;
     const score = report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const bestScore = best?.report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const stable = JSON.stringify(submission.access);
@@ -463,14 +494,34 @@ export function solveInstance(
     }
   };
 
+  const considerForPolicy = (candidate: Submission, rejectedPins: RejectedPin[] = []) => {
+    consider({
+      ...candidate,
+      scenario: options.scenario,
+      results: candidate.results.map((row) => ({ ...row, scenario: options.scenario })),
+      rejectedPins,
+    });
+  };
+
+  for (const candidate of options.initialCandidates ?? []) considerForPolicy(candidate);
+
   for (let seed = 0; seed < starts; seed += 1) {
     consider(scheduleInstance(instance, { ...options, constructionSeed: seed }, activeNetwork));
+    // Elastic supply can make a greedy constructor buy capacity unnecessarily.
+    // Nominal-supply candidates give B/C the chance to wait within their dates
+    // instead. Never assume an A plan is legal in B: recheck all target rules.
+    if (options.scenario !== "A") {
+      const nominal = scheduleInstance(instance, {
+        ...options, scenario: "A", constructionSeed: seed,
+      }, activeNetwork);
+      considerForPolicy(nominal, nominal.rejectedPins);
+    }
   }
 
   // Shift selected accesses one week either side and reconstruct around that
   // hard choice. Reconstruction naturally exercises swaps, re-packing, ECLO
   // and excess-possession alternatives without mutating a candidate in place.
-  if (best && neighbourBudget > 0) {
+  if (best && best.report.objectiveScore !== 0 && neighbourBudget > 0) {
     const baseline = best.submission;
     const rows = [...baseline.access]
       .sort((a, b) => b.week - a.week || a.activityId.localeCompare(b.activityId))
@@ -482,7 +533,7 @@ export function solveInstance(
         const week = row.week + delta;
         if (week < 1 || week > instance.parameters.horizonWeeks) continue;
         const originalPins = options.pins ?? [];
-        if (originalPins.some((pin) => pin.activityId === row.activityId && pin.week !== row.week)) {
+        if (originalPins.some((pin) => pin.activityId === row.activityId)) {
           continue;
         }
         consider(

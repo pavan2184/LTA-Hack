@@ -27,6 +27,8 @@ self.onmessage = (event: MessageEvent<Ps1WorkerRequest>) => {
           scenario,
           pins: request.pins,
           disruptions: request.disruptions?.[scenario] ?? [],
+          initialCandidates: outcomes.flatMap((outcome) =>
+            outcome.status === "FEASIBLE" && outcome.submission ? [outcome.submission] : []),
         }),
       );
       self.postMessage({
