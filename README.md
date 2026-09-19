@@ -457,6 +457,12 @@ the encoded local model. See the [research and selection report](docs/PS1_NATIVE
 [cloud deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md) for evidence, limits and
 reproduction details.
 
+**How we checked the evidence:** the [benchmark assurance record](docs/PS1_BENCHMARK_ASSURANCE.md)
+maps claims to source artifacts, documents workload/CSV checks, pinned inputs and
+source, search-mode tests, repeated runs, retained failures and the scoring
+correction. It also records contrary findings and outstanding cloud/reference-
+validator checks, so reviewers can distinguish measured results from assumptions.
+
 
 ### Other workspaces and documentation
 
