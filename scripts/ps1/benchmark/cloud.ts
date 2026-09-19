@@ -9,7 +9,7 @@ import { loadInstance, PS1_FILES } from "@railplan/ps1/io/load";
 import { writeSubmission } from "@railplan/ps1/io/write";
 import { parseSubmission } from "@railplan/ps1/io/submission";
 import { solveInstance } from "@railplan/ps1/engine/schedule";
-import { validate } from "@railplan/ps1/engine/validate";
+import { FORMULA_VERSION, validate } from "@railplan/ps1/engine/validate";
 import type { Ps1Instance, Scenario, Submission } from "@railplan/ps1/types/ps1";
 import manifest from "../../../packages/ps1/data/synthetic/manifest.json";
 import { runNativeSolver } from "./cp-sat";
@@ -45,7 +45,7 @@ if (Math.max(...workers) > os.availableParallelism()) {
 const output = resolve(values.output!);
 mkdirSync(output, { recursive: true });
 const summaryPath = resolve(output, "summary.json");
-const config = { seconds, workers, seeds, variants, scenarios, datasets: values.datasets, holdouts };
+const config = { seconds, workers, seeds, variants, scenarios, datasets: values.datasets, holdouts, formulaVersion: FORMULA_VERSION };
 let revision = "unknown";
 try { revision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); } catch { /* metadata only */ }
 function treeFiles(dir: string): string[] {
@@ -53,26 +53,31 @@ function treeFiles(dir: string): string[] {
     ? treeFiles(`${dir}/${entry.name}`) : [`${dir}/${entry.name}`]);
 }
 const codeFiles = ["scripts/ps1/benchmark/cloud.ts", "scripts/ps1/benchmark/cp-sat.ts", "scripts/ps1/benchmark/cp_sat.py", "scripts/ps1/benchmark/scip.py",
+  "src/lib/ps1/cp-sat-model.ts", "scripts/ps1/requirements.txt",
   ...treeFiles("packages/ps1/src").filter((p) => !p.endsWith(".test.ts")),
   ...treeFiles("packages/ps1/data/public"), ...treeFiles("packages/ps1/data/synthetic")].sort();
 const sourceDigest = createHash("sha256");
 for (const file of codeFiles) if (existsSync(file)) sourceDigest.update(file).update(readFileSync(file));
 const sourceSha256 = sourceDigest.digest("hex");
+const pythonRuntime = JSON.parse(execFileSync(values.python!, ["-c",
+  "import sys,platform,ortools,json; print(json.dumps({'executable':sys.executable,'python':platform.python_version(),'ortools':ortools.__version__}))"], { encoding: "utf8", timeout: 60_000 }));
 const host = { platform: process.platform, arch: process.arch, cpu: os.cpus()[0]?.model,
   availableCpus: os.availableParallelism(), memoryGiB: os.totalmem() / 2 ** 30,
-  node: process.version, revision, sourceSha256 };
+  node: process.version, revision, sourceSha256, pythonRuntime };
 const rows: Record<string, unknown>[] = [];
 if (values.resume && existsSync(summaryPath)) {
   const previous = JSON.parse(readFileSync(summaryPath, "utf8"));
   if (JSON.stringify(previous.config) !== JSON.stringify(config) || previous.host.sourceSha256 !== sourceSha256 ||
-    previous.host.cpu !== host.cpu || previous.host.availableCpus !== host.availableCpus) {
+    previous.host.cpu !== host.cpu || previous.host.availableCpus !== host.availableCpus ||
+    JSON.stringify(previous.host.pythonRuntime) !== JSON.stringify(host.pythonRuntime)) {
     throw new Error("Resume requires identical configuration, solver source and host CPU configuration");
   }
   rows.push(...previous.results);
 } else if (existsSync(summaryPath)) {
   throw new Error("Output already has results; use --resume or a new directory");
 }
-const save = () => writeFileSync(summaryPath, JSON.stringify({ schema: "ps1-cloud-benchmark-v1",
+let complete = false;
+const save = () => writeFileSync(summaryPath, JSON.stringify({ schema: "ps1-cloud-benchmark-v1", complete,
   generatedAt: new Date().toISOString(), config, host,
   timing: `${seconds}s is a per-scenario native solver limit; heuristic, imports, build and validation are additional and reported. Sequential runs. firstSolutionMs is a native-model candidate timestamp; estimatedPipelineMs sums independently timed stages.`,
   conformance: "local checker; not reference validator; cross_possession_night_alignment undecidable",
@@ -192,4 +197,5 @@ for (const { id: dataset, instance } of datasets) {
     }
   }
 }
+complete = true;
 save();

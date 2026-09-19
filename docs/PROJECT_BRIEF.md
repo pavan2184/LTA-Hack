@@ -1,13 +1,21 @@
 # Project Brief
 
-## Native PS1 direction — 2026-09-19
+## Cloud resource decision — 2026-09-19
 
-The owner confirmed that PS1 will use native cloud computation, superseding the
-browser-only execution decision below. Target hardware is 32 vCPUs / 64 GiB RAM;
-the default solver-search allowance is 60 seconds per scenario. The hosted UI
-still accepts uploaded eight-file instances and exposes validated A/B/C results.
-The cloud engineer owns deployment. Native algorithm benchmarking and an
-engineer handoff do not themselves replace the currently wired browser worker.
+The owner selected 32 vCPUs / 64 GiB RAM and a 60-second default search limit. The
+cloud engineer deploys the native server path; research and local benchmarks
+select the initial algorithm, and a target-host 8/16/32-worker sweep determines
+the final parallel setting. Hardware and browser package size do not substitute
+for validated score measurements on the actual scheduling model.
+
+## Native PS1 execution — 2026-09-19
+
+The owner has authorized server-side compute. The PS1 upload UI now sends the
+validated instance to the same-origin native CP-SAT endpoint; browser-only solving
+is no longer a delivery requirement. The official PS1 README permits a service
+behind a thin UI. Keep the hidden eight-file upload, complete workload, local
+conformance disclosure and exact nine-file export. Google Compute Engine is the
+initial deployment target; see [native deployment](PS1_NATIVE_DEPLOYMENT.md).
 
 ## Public challenge workspace update — 2026-09-18
 

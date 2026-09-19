@@ -1,4 +1,4 @@
-"""Hand-calculated SCIP regressions, including exact terminal-tie penalties."""
+"""Hand-calculated SCIP regressions, including every late activity's penalty."""
 import copy
 import unittest
 
@@ -16,7 +16,14 @@ class ScipModelTests(unittest.TestCase):
     test_physical_disruption_cannot_be_bought_back = test_cp_sat.ModelTests.test_physical_disruption_cannot_be_bought_back
     test_deadline_is_a_date_not_just_a_week = test_cp_sat.ModelTests.test_deadline_is_a_date_not_just_a_week
     test_strict_precedence = test_cp_sat.ModelTests.test_strict_precedence
-    test_only_contract_terminal_activities_are_charged = test_cp_sat.ModelTests.test_only_contract_terminal_activities_are_charged
+    test_on_time_activity_is_not_charged_for_contract_delay = test_cp_sat.ModelTests.test_on_time_activity_is_not_charged_for_contract_delay
+    fixed_activity_weeks = test_cp_sat.ModelTests.fixed_activity_weeks
+    test_all_late_activities_are_charged_at_their_own_completion = test_cp_sat.ModelTests.test_all_late_activities_are_charged_at_their_own_completion
+    test_delaying_an_activity_cannot_erase_another_activitys_penalty = test_cp_sat.ModelTests.test_delaying_an_activity_cannot_erase_another_activitys_penalty
+    test_midweek_deadline_uses_each_activitys_own_day_difference = test_cp_sat.ModelTests.test_midweek_deadline_uses_each_activitys_own_day_difference
+    test_unknown_movable_ids_cannot_create_a_false_full_model_proof = test_cp_sat.ModelTests.test_unknown_movable_ids_cannot_create_a_false_full_model_proof
+    test_repair_requires_an_incumbent = test_cp_sat.ModelTests.test_repair_requires_an_incumbent
+    test_all_known_activities_movable_has_a_full_model_bound = test_cp_sat.ModelTests.test_all_known_activities_movable_has_a_full_model_bound
     test_live_window_couples_both_lines = test_cp_sat.ModelTests.test_live_window_couples_both_lines
     test_repair_freezes_unselected_work = test_cp_sat.ModelTests.test_repair_freezes_unselected_work
 
@@ -27,7 +34,7 @@ class ScipModelTests(unittest.TestCase):
     def tearDown(self):
         test_cp_sat.solve = self.original_solve
 
-    def test_all_terminal_ties_charged(self):
+    def test_all_activities_sharing_a_late_finish_are_charged(self):
         p = payload(["C", "C"], horizon=2)
         p["instance"]["activities"][1]["contractNumber"] = "0"
         p["instance"]["activities"][1]["activityPriority"] = 3

@@ -74,11 +74,22 @@ def solve(payload):
     origin = dt.date.fromisoformat(instance["parameters"]["horizonStart"])
     contracts = {c["contractNumber"]: c for c in instance["contracts"]}
     activities = {a["activityId"]: a for a in instance["activities"]}
+    movable = set(activities)
+    if "movableActivityIds" in payload:
+        requested = payload["movableActivityIds"]
+        if not isinstance(requested, list) or any(not isinstance(aid, str) for aid in requested):
+            raise ValueError("movableActivityIds must be a list of known activity IDs")
+        movable = set(requested)
+        if movable - set(activities):
+            raise ValueError("movableActivityIds contains unknown activity IDs")
+        incumbent = payload.get("incumbent")
+        if not isinstance(incumbent, dict) or not isinstance(incumbent.get("access"), list):
+            raise ValueError("Repair requires an incumbent with an access list")
+    has_frozen_work = bool(set(activities) - movable)
     weeks = range(1, horizon + 1)
     model = cp_model.CpModel()
     x, e, first, last = {}, {}, {}, {}
     hints = {(r["activityId"], r["week"]): r for r in payload.get("incumbent", {}).get("access", [])}
-    movable = set(payload.get("movableActivityIds", activities))
     windows = {line["lineCode"]: model.new_int_var(1, max(1, horizon - 1), "window_" + line["lineCode"])
                for line in instance["lines"]} if scenario == "C" else {}
     for aid, activity in activities.items():
@@ -150,27 +161,18 @@ def solve(payload):
             model.add_max_equality(excess, [0, count - supply])
             if scenario != "A":
                 objective.append(70 * excess)
-    for number, contract in contracts.items():
-        ids = [aid for aid, a in activities.items() if a["contractNumber"] == number]
-        if not ids:
-            continue
-        finish = model.new_int_var(1, horizon, "contract_" + number)
-        model.add_max_equality(finish, [last[aid] for aid in ids])
-        if scenario != "B":
+    if scenario != "B":
+        # PS1 §2.7 charges each late activity against its contract's planned
+        # date, including activities that finish before the contract's last one.
+        for aid, activity in activities.items():
+            contract = contracts[activity["contractNumber"]]
             due_days = (dt.date.fromisoformat(contract["plannedCompletionDate"]) - origin).days
             limit = max(0, horizon * 7 - 1 - due_days)
-            late = model.new_int_var(0, limit, "late_" + number)
-            model.add_max_equality(late, [0, 7 * finish - 1 - due_days])
-            for aid in ids:
-                terminal = model.new_bool_var("terminal_" + aid)
-                model.add(last[aid] == finish).only_enforce_if(terminal)
-                model.add(last[aid] != finish).only_enforce_if(terminal.Not())
-                charged = model.new_int_var(0, limit, "charged_" + aid)
-                model.add(charged == late).only_enforce_if(terminal)
-                model.add(charged == 0).only_enforce_if(terminal.Not())
-                weight = {1: 100, 2: 10, 3: 1}[contract["contractPriority"]]
-                nudge = {1: 13, 2: 12, 3: 10}[activities[aid]["activityPriority"]]
-                objective.append(weight * nudge * charged)
+            late = model.new_int_var(0, limit, "late_" + aid)
+            model.add_max_equality(late, [0, 7 * last[aid] - 1 - due_days])
+            weight = {1: 100, 2: 10, 3: 1}[contract["contractPriority"]]
+            nudge = {1: 13, 2: 12, 3: 10}[activity["activityPriority"]]
+            objective.append(weight * nudge * late)
     if scenario != "A":
         objective.extend(50 * var for var in e.values())
     model.minimize(sum(objective))
@@ -207,8 +209,9 @@ def solve(payload):
                         row["accessNight"] = count // contract["numberOfWorkfronts"] + 1
                         kinds[a["activityType"]] = count + 1
     return {"schema": "ps1-cpsat-v1", "digest": payload["digest"], "scenario": scenario,
-            "scope": "repair" if len(movable) < len(activities) else "full",
-            "boundScope": "conditional_on_frozen_activities" if len(movable) < len(activities) else "encoded_full_model",
+            "formulaVersion": "ps1-objective-v2",
+            "scope": "repair" if has_frozen_work else "full",
+            "boundScope": "conditional_on_frozen_activities" if has_frozen_work else "encoded_full_model",
             "status": solver.status_name(status), "ortoolsVersion": ortools.__version__,
             "config": config,
             "objective": solver.objective_value / 10 if found else None,

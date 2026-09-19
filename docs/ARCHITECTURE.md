@@ -1,22 +1,37 @@
 # Architecture
 
-## Native PS1 target — 2026-09-19
+## Native PS1 solver service — 2026-09-19
 
-By explicit owner direction, native cloud computation replaces browser-only
-execution as the target. A 32-vCPU / 64-GiB server runs a bounded native search,
-with a 60-second default per scenario. Keep the TypeScript hybrid as a quick
-validated incumbent and fallback; pass the canonical instance into native
-optimisation, decode its output to the official CSVs and independently recheck
-feasibility and objective before selecting it. Keep the actual best submission,
-not just its score, when a native candidate is worse or absent.
+Supersedes the browser-only execution choice below. `/ps1` sends one scenario at
+a time to `POST /api/ps1/solve`. Next's Node process validates bounded JSON and
+instance references, then `src/lib/ps1/server-solver.ts` creates a checked heuristic
+incumbent and asynchronously spawns native Python OR-Tools. CP-SAT runs the full
+weekly model with a default of 16 CPU workers (capped by available CPUs) and a
+60-second search budget on the target 32-vCPU / 64-GiB VM, including
+when the heuristic finds no schedule. The child has a separate wall timeout and
+is killed on cancellation. Only one solve is admitted per Node process.
 
-The benchmark compares CP-SAT's full portfolio, cold versus hinted search,
-LNS-only search, an independent SCIP MIP formulation and extended TypeScript
-repair. Benchmark workers and seeds are explicit. The service must budget
-workers across concurrent jobs rather than let each request consume all CPUs.
-Solver time excludes input preparation, model construction and result checking;
-record end-to-end latency separately. The current web-worker wiring is historical
-implementation until the native service/UI integration is completed and tested.
+`cp-sat-model.ts` owns payload provenance and independent CSV round-trip checks,
+shared with offline benchmarks. Native and heuristic candidates must satisfy the
+local checker and exact operator pins. An incumbent survives UNKNOWN/timeouts;
+missing Python/OR-Tools is a visible service error. Proof metadata separates the
+full-model status, lower bound, gap and selected candidate. Browser checks repeat
+conformance before rendering, and request cancellation/epochs prevent stale runs.
+The application holds uploads in request/process memory without a database or
+payload logging. The nginx deployment template can temporarily buffer bodies on
+disk; see the deployment runbook.
+
+The scorer is now `ps1-objective-v2`: each late activity pays for its own finish
+against its contract's planned date. Contract-level RESULTS are unchanged.
+Native OPTIMAL still covers the encoded local model, whose CSV format cannot
+establish cross-possession physical-night alignment. No reference-validator
+parity is asserted. [Deployment and limits](PS1_NATIVE_DEPLOYMENT.md).
+
+`scripts/ps1/benchmark/cloud.ts` compares the same shared payload/CSV boundary
+using full CP-SAT cold/hinted search, CP-SAT LNS-only, an independent SCIP MIP
+formulation and extended TypeScript repair. It records raw native candidates
+separately from the actual best validated schedule, including failures. Worker
+scaling is measured on the target host, not inferred from local Mac results.
 
 ## PS1 hybrid optimisation — 2026-09-19
 

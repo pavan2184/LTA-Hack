@@ -57,7 +57,7 @@ describe("request HTTP boundary", () => {
     const { GET } = await import("@/app/api/requests/route");
     expect((await GET(new Request("http://localhost/api/requests?planningNight=2026-08-03"))).status).toBe(200);
     expect(mocks.list).toHaveBeenLastCalledWith({ id: "verified" }, undefined, "2026-08-03");
-    expect((await GET()).status).toBe(200);
+    expect((await GET(new Request("http://localhost/api/requests"))).status).toBe(200);
     expect(mocks.list).toHaveBeenLastCalledWith({ id: "verified" }, undefined, undefined);
     mocks.list.mockClear();
     expect((await GET(new Request("http://localhost/api/requests?planningNight=2026-02-30"))).status).toBe(400);
@@ -109,7 +109,7 @@ describe("request HTTP boundary", () => {
     expect(saved.status).toBe(201);
     expect(await saved.json()).toEqual({ request: { id: "saved" } });
     expect(saved.headers.get("cache-control")).toBe("no-store");
-    expect((await GET()).status).toBe(200);
+    expect((await GET(new Request("http://localhost/api/requests"))).status).toBe(200);
   });
   it("requires a current version and planner confirmation before approval", async () => {
     const { POST } = await import("@/app/api/requests/[id]/actions/route");

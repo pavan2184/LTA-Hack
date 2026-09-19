@@ -1,27 +1,40 @@
 # API Contract
 
-## Native PS1 handoff interfaces — 2026-09-19
+## Cloud search budget and benchmark controls — 2026-09-19
 
-Cloud execution is the owner's accepted target. `runNativeSolver(python, engine,
-instance, scenario, seconds, options)` is a synchronous **Node-only** process
-bridge, not a public HTTP endpoint. Engines are `cpsat` and benchmark-only `scip`.
-Options carry explicit workers, seed, CP-SAT profile, optional validated
-incumbent, disruptions, hard pins and optional frozen-repair activity IDs. Pins
-are checked before hinting and independently checked against returned rows.
-Unsupported statuses, objective mismatches or invalid CSV round-trips are errors.
-UNKNOWN returns no native submission; the caller retains its validated fallback.
+The target is 32 vCPUs / 64 GiB RAM, default 60 seconds of native search per scenario
+and default 16 workers capped by host availability. Public clients cannot override
+these controls. The native process has a separate 75-second wall guard; warm-start,
+input and validation work add to end-to-end latency. Internal benchmark worker
+settings support the 8/16/32-worker comparison without exposing unbounded HTTP work.
 
-`ps1:benchmark:cloud` defaults to 60 seconds, 16 workers and seed 1, with explicit
-dataset/scenario/variant/worker/seed selection and optional seeded perturbations.
-It saves raw native outcomes and actual selected witnesses separately. It does
-not drop failed heuristic cases. Its resume mode requires unchanged configuration,
-source/input digests and host CPU configuration.
+`ps1:benchmark:cloud` accepts explicit seconds, workers, seeds, datasets, scenarios
+and algorithm variants. It shares canonical native payloads and CSV validation
+with the service, saves selected schedules and raw candidates separately and
+includes failed heuristic cases. `ps1:solve:native` is an additional nominal-instance
+CLI for reproducible native selection/export, not a second HTTP implementation.
 
-`ps1:solve:native` is the cloud engineer's local CLI entry point; the handoff
-documents its options and official CSV output. No new environment variables,
-HTTP API, database migration or deployed UI integration are implied. A service
-must execute bounded child jobs outside the HTTP event loop, preserve cancellation
-and stale-operation identity, and apply upload limits and aggregate CPU limits.
+## POST /api/ps1/solve — 2026-09-19
+
+Public, same-origin JSON. Body: `{instance: Ps1Instance, scenario: "A"|"B"|"C",
+pins?: Pin[], disruptions?: Disruption[]}`. Returns `{outcome: SolveOutcome}` with
+`Cache-Control: no-store`. Authentication is not required for judging. Each
+scenario is requested separately so the UI can show progress. Solver parameters,
+Python paths and claimed validation reports are not accepted from clients.
+
+Admission limits: 4 MiB streamed body with a 10-second read deadline, 2,000 activities/contracts, 260 weeks,
+60,000 activity-weeks, 120,000 location-weeks and 200,000 span-weeks. Oversized
+instances fail explicitly; work is never truncated. One active request per Node
+process; overlap receives 429 and Retry-After:5. Other errors use
+`{error:{code,message}}`: 400 invalid JSON/instance, 403 cross-origin, 413 body
+limit, 415 content type, 499 cancellation, 502 native failure, 503 missing native
+runtime. Internal output and uploaded data are not serialized in errors.
+
+A successful HTTP response can contain an unresolved/infeasible outcome.
+`diagnostics.solver.status` distinguishes native OPTIMAL/FEASIBLE/INFEASIBLE/UNKNOWN;
+legacy outer INFEASIBLE alone is not proof. The full local-model bound and gaps
+are separate from feasibility. Native errors never silently change execution to
+the browser. [Deployment](PS1_NATIVE_DEPLOYMENT.md).
 
 ## PS1 search options — 2026-09-19
 

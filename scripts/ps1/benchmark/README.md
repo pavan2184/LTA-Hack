@@ -1,17 +1,22 @@
 # PS1 optimisation benchmark
 
-The owner has selected **native cloud execution**, 32 vCPUs / 64 GiB RAM and a
-60-second default search cap. This supersedes the historical browser deployment
-decision below. The application is still wired to its worker until service
-integration; benchmarks and the native CLI are runnable now. See
-[native research](../../../docs/PS1_NATIVE_SOLVER_RESEARCH.md) and
-[engineer handoff](../../../docs/PS1_ENGINEER_HANDOFF.md). No solver here is the
-organiser's reference validator.
+The application now uses native CP-SAT as its server solver, warm-started by the
+TypeScript hybrid. It is not the organiser's reference solver. All current
+comparisons use the corrected per-activity scorer, `ps1-objective-v2`.
 
-## Native cloud comparison
+## 60-second cloud comparison
+
+The measured local matrix is in [cloud-results.json](cloud-results.json), with
+interpretation and primary research in
+[PS1_NATIVE_SOLVER_RESEARCH.md](../../../docs/PS1_NATIVE_SOLVER_RESEARCH.md).
+At eight workers on an M3 Pro, CP-SAT and SCIP tie all 39 final scores and improve
+the same four hybrid cases. CP-SAT proves 37 optima and SCIP 38; neither proves
+priority-contention C. Extended TypeScript repair improves none. This supports
+deploying the integrated CP-SAT service while retaining SCIP as a serious
+challenger; it does not establish a unique algorithm winner or cloud performance.
 
 ```sh
-# Sequential comparison, 60s search PER scenario/run, default16workers.
+# Sequential comparison, 60s search PER scenario/run, default 16 workers.
 npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-coverage --variants cpsat-warm
 # Focus on the difficult C cases and repeat on the actual 32-vCPU machine.
 npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/cloud-workers --datasets public,05-capacity-pressure,11-priority-contention,12-mixed-240 --scenarios C --variants cpsat-warm --workers 8,16,32 --seeds 1,2,3
@@ -24,7 +29,7 @@ npm run ps1:benchmark:cloud -- --python .venv-cpsat/bin/python --output output/c
 Use a fresh output directory, or `--resume` with unchanged arguments, code, inputs
 and CPU configuration. Fewer CPUs require an explicit smaller `--workers` value;
 do not pretend a local oversubscribed run measures a 32-vCPU server. Worker sweep
-worst-case search time is 36 minutes for 4cases × 3worker settings × 3seeds.
+worst-case search time is 36 minutes for 4 cases × 3 worker settings × 3 seeds.
 Cases proven optimal usually finish much sooner.
 
 Native raw objective/status and fallback-selected scores are distinct. The cold
@@ -40,7 +45,43 @@ process lifetime. Bounds are explicitly scoped to full or frozen-repair models.
 The optional `cpsat-base-lin0` variant only changes the base linearization level;
 named parallel LP subsolvers can override it. It is not an LP-free portfolio.
 
-## Historical browser and one-second measurements
+
+## Earlier five-second native evidence — 2026-09-19
+
+[native-results.json](native-results.json) records all 13 inputs × three scenarios:
+39/39 locally feasible, 37 full-model OPTIMAL, two FEASIBLE, zero errors. Eight
+workers, seed 1, five-second search limit (the current service default is 60 seconds).
+Total native process/check time across these 39 cases was 40.45 seconds on an
+Apple M3 Pro, Node 22.22.0, OR-Tools 9.15.6755. This is not a GCP measurement or an
+equal-wall-time comparison against the iteration-budget heuristic.
+
+| Case | Hybrid | Native | Full-model bound | Status |
+| --- | ---: | ---: | ---: | --- |
+| Public A | 25.2 | 25.2 | 25.2 | OPTIMAL |
+| Public B | 30 | 30 | 30 | OPTIMAL |
+| Public C | 25.2 | 25.2 | 25.2 | OPTIMAL |
+| 05 capacity pressure B | 293 | 230 | 230 | OPTIMAL |
+| 05 capacity pressure C | 1118.8 | 1090.8 | 1015.5 | FEASIBLE |
+| 11 priority contention B | 483 | 279 | 279 | OPTIMAL |
+| 11 priority contention C | 340.4 | 300.7 | 206.5 | FEASIBLE |
+
+Native improves four hybrid cases and ties the remaining 35; no feasibility loss.
+Compared with legacy, the selected portfolio improves 17 cases. The two remaining
+nonzero gaps are unresolved; bounds are not promised achievable scores. OPTIMAL
+is limited to the encoded local model. Cross-possession physical-night alignment
+and reference-validator equivalence remain unverified.
+
+Reproduce the current matrix (includes heuristic failures and records native
+errors rather than filtering them out):
+
+```sh
+npm run ps1:benchmark -- output/ps1-v2-matrix
+node --import tsx scripts/ps1/benchmark/native-matrix.ts .venv-cpsat/bin/python output/ps1-v2-matrix
+```
+
+The harness rejects stale browser scores under the current formula. `results.json`
+is retained as explicitly superseded v1 history, including its old perturbation
+runs. Its A/C scoring and proof claims must not be cited as current evidence.
 
 ## Reproduce
 
@@ -93,7 +134,7 @@ An exhausted search retains the API's `INFEASIBLE` status for compatibility, wit
 an explicit warning that it is **not a proof of infeasibility**. Incomplete or
 pin-rejecting schedules remain non-exportable. All scores below are penalties.
 
-## Observed results — 2026-09-19
+## Historical browser comparison — v1, superseded
 
 Apple M3 Pro, Node 22.22.0, native OR-Tools 9.15.6755. See `results.json` for measured
 rows and input digests. These are quality comparisons at the declared defaults,
@@ -132,12 +173,13 @@ retained A=25.2 / B=30 / C=25.2 for every hybrid run (15/15 feasible). Recorded
 hybrid elapsed times were 548–1,003 ms. The three-millisecond overrun illustrates
 that the timer is checked between candidates, not a hard process deadline.
 
-## Native CP-SAT comparison
+## Historical single-worker CP-SAT comparison — v1, superseded
 
 The weekly model represents access and ECLO booleans, full yield, starts,
 strict predecessor ordering, weekly/workfront budgets, exact date deadlines,
-per-line ECLO windows, disruptions and the local score (including charging only
-activities that finish in their contract's last week). It uses integer-scaled
+per-line ECLO windows and disruptions. This historical version incorrectly charged
+only activities finishing in their contract's last week; the v2 model charges each
+activity's own lateness. It uses integer-scaled
 penalties. At each location-week, minimum legal possession count is:
 
 ```
@@ -165,17 +207,15 @@ included separately in total elapsed time. An initial comparison process timed
 out; the complete rerun recorded no process errors. The harness records future
 process/model errors as failures rather than dropping their rows.
 
-## Historical deployment decision and limitations (superseded)
+## Deployment decision and limitations
 
-The earlier decision was to keep the TypeScript hybrid in the browser and native CP-SAT as an offline
-benchmark/repair tool. No runtime dependency, hosted service, environment variable
-or header change was added. `or-tools-wasm` 0.9.1 was inspected in the npm registry:
-its whole package unpacks to 332,661,165 bytes. That is **not** a measured browser
-transfer size. Browser WASM download/startup/memory/cancellation and header changes
-still require a separate integration experiment before deploying it. IBM CP
-Optimizer and Hexaly were not installed or benchmarked in this change.
+The owner approved native server execution. `/api/ps1/solve` is the primary path;
+see [the deployment runbook](../../../docs/PS1_NATIVE_DEPLOYMENT.md). The former
+browser worker remains an offline comparator, not the UI execution path. Google
+Compute Engine is the initial target. IBM CP Optimizer, Hexaly and custom CP-backed
+LNS remain unbenchmarked challengers, not asserted improvements.
 
 The local checker is not the reference validator. Cross-possession physical-night
 alignment remains undecidable from the official fields, so neither heuristic
-feasibility nor CP-SAT optimality certifies that missing relationship. The model
-and its bounds must always be described with this limitation.
+feasibility nor CP-SAT optimality certifies that missing relationship. Full-model
+bounds and conditional repair bounds must never be conflated.

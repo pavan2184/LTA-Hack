@@ -6,6 +6,7 @@ import { loadInstance, PS1_FILES } from "@railplan/ps1/io/load";
 import { parseSubmission } from "@railplan/ps1/io/submission";
 import { validate } from "@railplan/ps1/engine/validate";
 import { nativePayload, runNativeSolver, type NativeOptions, type NativeResult } from "./cp-sat";
+import { cpSatPayload } from "../../../src/lib/ps1/cp-sat-model";
 
 const { spawnSync } = vi.hoisted(() => ({ spawnSync: vi.fn() }));
 vi.mock("node:child_process", () => ({ spawnSync }));
@@ -30,6 +31,7 @@ function workerReply(overrides: Partial<NativeResult> = {}) {
       stdout: JSON.stringify({
         schema: payload.schema, digest: payload.digest, scenario: payload.scenario,
         scope: "full", status: "FEASIBLE", objective: fixtureScore, bound: 0,
+        ortoolsVersion: "mock-test",
         access: fixture.access, buildMs: 2, solveMs: 3, modelAndSolveMs: 5,
         ...overrides,
       }),
@@ -49,6 +51,13 @@ describe("native payload boundary", () => {
     expect(payload).not.toHaveProperty("movableActivityIds");
     expect(payload).toMatchObject({ scenario: "B", seconds: 60, workers: 8, seed: 17 });
     expect(spawnSync).not.toHaveBeenCalled();
+  });
+
+  it("uses the service's canonical payload and digest for a benchmark profile", () => {
+    const options = { workers: 8, seed: 17, profile: "lns" as const };
+    expect(nativePayload(instance, "B", 60, options)).toEqual(
+      cpSatPayload(instance, { ...options, scenario: "B", seconds: 60 }),
+    );
   });
 
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid seconds %s before spawning", (seconds) => {
@@ -72,6 +81,12 @@ describe("native payload boundary", () => {
     expect(() => nativePayload(instance, "B", 60, { movableActivityIds: [] })).toThrow(/requires an incumbent/i);
   });
 
+  it.each([["unknown"], [fixture.access[0].activityId, fixture.access[0].activityId]])(
+    "rejects unknown or repeated movable IDs so repair scope cannot be mislabelled: %j", (...movableActivityIds) => {
+      expect(() => nativePayload(instance, "B", 60, { incumbent: fixture, movableActivityIds })).toThrow(/movable activity IDs/);
+    },
+  );
+
   it("forwards explicit operator pins alongside a validated incumbent", () => {
     const { activityId, week, eclo } = fixture.access[0];
     const pins = [{ activityId, week, eclo }];
@@ -91,7 +106,7 @@ describe("native payload boundary", () => {
     { activityId: fixture.access[0].activityId, week: 0 },
     { activityId: fixture.access[0].activityId, week: instance.parameters.horizonWeeks + 1 },
   ])("rejects an invalid operator pin %j before spawning", (pin) => {
-    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60, { pins: [pin] })).toThrow(/Invalid native pin/);
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60, { pins: [pin] })).toThrow(/solver pin/);
     expect(spawnSync).not.toHaveBeenCalled();
   });
 });
@@ -120,29 +135,29 @@ describe("native result validation", () => {
     { schema: "another-schema" },
   ])("rejects inconsistent native provenance %j", (overrides) => {
     workerReply(overrides);
-    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/provenance mismatch/i);
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/provenance/i);
   });
 
   it.each([null, fixtureScore + 1])("rejects objective %s when it disagrees with the checked CSVs", (objective) => {
     workerReply({ objective });
-    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/local-checker mismatch/i);
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/objective/i);
   });
 
   it("rejects missing workload even if the native process claims feasibility", () => {
     workerReply({ access: fixture.access.filter((row) => row.activityId !== fixture.access[0].activityId) });
-    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/local-checker mismatch/i);
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/local CSV/i);
   });
 
   it("rejects duplicate activity-week rows rather than counting them as extra work", () => {
     workerReply({ access: [...fixture.access, fixture.access[0]] });
-    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/local-checker mismatch/i);
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/local CSV/i);
   });
 
   it("rejects a feasible native schedule that ignores an explicit operator pin", () => {
     const { activityId, week, eclo } = fixture.access[0];
     expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60, {
       pins: [{ activityId, week, eclo: eclo === 0 ? 1 : 0 }],
-    })).toThrow(/local-checker mismatch/i);
+    })).toThrow(/pin or objective validation/i);
   });
 
   it("returns no candidate for UNKNOWN even when a warm incumbent was supplied", () => {
@@ -155,7 +170,18 @@ describe("native result validation", () => {
 
   it.each(["MODEL_INVALID", "ABNORMAL", "UNBOUNDED"])("surfaces native status %s as a failure", (status) => {
     workerReply({ status, objective: null, access: [] });
-    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(`Native solver failed: ${status}`);
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/invalid result/i);
+  });
+
+  it("rejects a repair result labelled as a full-model proof", () => {
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60, {
+      incumbent: fixture, movableActivityIds: [fixture.access[0].activityId],
+    })).toThrow(/provenance/i);
+  });
+
+  it("rejects a claimed optimum whose lower bound does not meet its score", () => {
+    workerReply({ status: "OPTIMAL", bound: fixtureScore - 1 });
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow(/inconsistent objective bound/i);
   });
 
   it("surfaces a child-process timeout without manufacturing a result", () => {

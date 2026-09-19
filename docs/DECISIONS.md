@@ -1,21 +1,54 @@
 # Decisions
 
-## 2026-09-19 — Native cloud PS1, 60-second search
+## 2026-09-19 — 32-vCPU cloud target and 60-second native comparison
 
-Status: **Accepted owner direction.** Target 32 vCPUs / 64 GiB RAM and native
-server computation with 60 seconds of search per scenario. This supersedes the
-browser-only deployment restrictions in earlier PS1 decisions. The cloud engineer
-deploys; uploaded instances, full-workload/hard-rule validation and the exact
-nine-file export remain required.
+Status: **Accepted owner direction.** Target 32 vCPUs / 64 GiB RAM with 60 seconds of
+search per scenario. Start the existing native CP-SAT service with up to 16 workers;
+repeat 8/16/32-worker settings on the target hardware before making scaling claims.
+Retain the independent local CSV and pin/disruption checks, bounded admission,
+async child isolation and cancellation from the native-service implementation.
 
-Select an algorithm from measured native comparisons rather than browser package
-size. Compare CP-SAT cold/hinted full portfolio and LNS-only search, SCIP MIP and
-extended TypeScript repair. Retain the validated heuristic schedule outside the
-native solver because a hint is not an accepted incumbent. Local Mac screening
-cannot establish the best worker count or speed on the target cloud server;
-repeat the 8/16/32-worker, multi-seed sweep on that host before a performance claim.
-Commercial CP Optimizer and Hexaly require separate ports/licenses and must not
-be described as measured contenders until actually run.
+Compare CP-SAT cold/hinted full portfolio and LNS-only, a real independent SCIP
+MIP formulation, and extended TypeScript repair. Commercial CP Optimizer and
+Hexaly remain unmeasured challengers. Reconcile with per-activity scoring v2 before
+publishing results; pre-reconciliation v1 screening is not current evidence.
+
+The fresh 39-case comparison ties CP-SAT and SCIP on every final score. SCIP
+proves 38 optima versus CP-SAT's 37, while CP-SAT quickly finds the same best
+incumbents and gives a stronger bound on the hardest case. Retain CP-SAT as the
+integrated default and SCIP as a measured challenger, not an alleged inferior
+solver. Cold/LNS variants add no score improvements on the four selected C
+cases. Target-host worker scaling and production latency remain unmeasured.
+Three-seed repeats return priority-contention C 300.7 for CP-SAT in all three
+runs, versus SCIP 300.7/308.4/304.2; SCIP consistently proves capacity-pressure C
+faster. This small repeated sample supports the CP-SAT default while preserving
+SCIP as a credible alternative.
+[Research and evidence](PS1_NATIVE_SOLVER_RESEARCH.md).
+
+## 2026-09-19 — Native CP-SAT is the primary PS1 solver
+
+The owner explicitly removed the browser-only restriction and authorized Google
+Compute/Functions infrastructure. The organiser allows services behind a web UI;
+our previous restriction was an implementation choice. Use a Compute Engine VM
+running Next.js and Python directly, retaining the hosted upload UI. The existing
+no-Docker development preference remains compatible. No cloud resource has been
+provisioned by this change.
+
+Choose native CP-SAT's multiworker portfolio, seeded by our TypeScript hybrid.
+The model is called even without an incumbent. Eight-worker comparisons proved
+capacity-pressure B230 and priority-contention B279 optimal for the full local
+model; single-worker 30-second runs found those scores but left bounds120/180.
+Public A/C25.2 and B30 also have full-model proofs after the scoring correction.
+These results justify this primary solver; they do not establish the best method
+for every hidden instance. Extra custom LNS or commercial solvers need measured
+benefit before adding deployment and maintenance cost.
+
+Correct A/C weighting to each activity's own lateness. Official §2.7 says summed
+per overrunning activity; the former last-contract-week-only gate had no support
+and could reward delaying work. Version the change as ps1-objective-v2 and mark
+old benchmark evidence historical. CSV contract summary reporting stays intact.
+Full-model status/bounds are shown with the existing physical-night conformance
+limit. [Deployment rationale and runbook](PS1_NATIVE_DEPLOYMENT.md).
 
 ## 2026-09-19 — PS1 browser hybrid, native CP-SAT benchmark
 

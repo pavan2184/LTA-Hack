@@ -53,9 +53,20 @@ def solve(payload):
     origin = dt.date.fromisoformat(instance["parameters"]["horizonStart"])
     contracts = {c["contractNumber"]: c for c in instance["contracts"]}
     activities = {a["activityId"]: a for a in instance["activities"]}
+    movable = set(activities)
+    if "movableActivityIds" in payload:
+        requested = payload["movableActivityIds"]
+        if not isinstance(requested, list) or any(not isinstance(aid, str) for aid in requested):
+            raise ValueError("movableActivityIds must be a list of known activity IDs")
+        movable = set(requested)
+        if movable - set(activities):
+            raise ValueError("movableActivityIds contains unknown activity IDs")
+        incumbent = payload.get("incumbent")
+        if not isinstance(incumbent, dict) or not isinstance(incumbent.get("access"), list):
+            raise ValueError("Repair requires an incumbent with an access list")
+    has_frozen_work = bool(set(activities) - movable)
     weeks = range(1, horizon + 1)
     hints = {(r["activityId"], r["week"]): r for r in payload.get("incumbent", {}).get("access", [])}
-    movable = set(payload.get("movableActivityIds", activities))
     x, e, first, last = {}, {}, {}, {}
     hint_vars, hint_values = [], []
     windows = {line["lineCode"]: solver.IntVar(1, max(1, horizon - 1), "window_" + line["lineCode"])
@@ -153,30 +164,17 @@ def solve(payload):
                 excess = positive_part(count - supply, -supply, len(ids) - supply, f"excess_{loc}_{week}")
                 objective.append(70 * excess)
 
-    for number, contract in contracts.items():
-        ids = [aid for aid, a in activities.items() if a["contractNumber"] == number]
-        if not ids or scenario == "B":
-            continue
-        finish = solver.IntVar(1, horizon, "contract_" + number)
-        terminal = {aid: solver.BoolVar("terminal_" + aid) for aid in ids}
-        for aid in ids:
-            solver.Add(finish >= last[aid])
-            solver.Add(finish <= last[aid] + horizon * (1 - terminal[aid]))
-            # Both directions matter: all tied terminal activities must be charged.
-            solver.Add(finish - last[aid] >= 1 - horizon * terminal[aid])
-        solver.Add(solver.Sum(terminal.values()) >= 1)
-        due_days = (dt.date.fromisoformat(contract["plannedCompletionDate"]) - origin).days
-        limit = max(0, horizon * 7 - 1 - due_days)
-        late = positive_part(7 * finish - 1 - due_days, 6 - due_days,
-                             horizon * 7 - 1 - due_days, "late_" + number)
-        for aid in ids:
-            charged = solver.IntVar(0, limit, "charged_" + aid)
-            solver.Add(charged <= late)
-            solver.Add(charged <= limit * terminal[aid])
-            solver.Add(charged >= late - limit * (1 - terminal[aid]))
+    if scenario != "B":
+        # Every late activity is charged at its own last access week, including
+        # activities that complete before their contract's final activity.
+        for aid, activity in activities.items():
+            contract = contracts[activity["contractNumber"]]
+            due_days = (dt.date.fromisoformat(contract["plannedCompletionDate"]) - origin).days
+            late = positive_part(7 * last[aid] - 1 - due_days, 6 - due_days,
+                                 horizon * 7 - 1 - due_days, "late_" + aid)
             weight = {1: 100, 2: 10, 3: 1}[contract["contractPriority"]]
-            nudge = {1: 13, 2: 12, 3: 10}[activities[aid]["activityPriority"]]
-            objective.append(weight * nudge * charged)
+            nudge = {1: 13, 2: 12, 3: 10}[activity["activityPriority"]]
+            objective.append(weight * nudge * late)
     if scenario != "A":
         objective.extend(50 * var for var in e.values())
     solver.Minimize(solver.Sum(objective))
@@ -222,8 +220,9 @@ def solve(payload):
         import resource
         peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024 if sys.platform == "darwin" else 1024)
     return {"schema": "ps1-cpsat-v1", "digest": payload["digest"], "scenario": scenario,
-            "scope": "repair" if len(movable) < len(activities) else "full", "status": status,
-            "boundScope": "conditional_on_frozen_activities" if len(movable) < len(activities) else "encoded_full_model",
+            "formulaVersion": "ps1-objective-v2",
+            "scope": "repair" if has_frozen_work else "full", "status": status,
+            "boundScope": "conditional_on_frozen_activities" if has_frozen_work else "encoded_full_model",
             "solver": "scip", "solverVersion": solver.SolverVersion(), "ortoolsVersion": ortools.__version__,
             "workers": workers, "seed": seed, "seconds": seconds,
             "config": {"seconds": seconds, "workers": workers, "seed": seed, "profile": "default",

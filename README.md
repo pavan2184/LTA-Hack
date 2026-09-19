@@ -34,6 +34,7 @@
     <li><a href="#getting-started">Getting started</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#how-scheduling-works">How scheduling works</a></li>
+    <li><a href="#ps1-native-solver-benchmark-and-selection">PS1 native solver benchmark and selection</a></li>
     <li><a href="#verification">Verification</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#documentation">Documentation</a></li>
@@ -167,8 +168,11 @@ credentials affect delivery, not whether a plan can be saved or published.
 
 ## Usage
 
-The [PS1 scheduler](https://railplan-nine.vercel.app/ps1) is public, browser-only and
-requires no account. Hidden instance files remain on the device. The separate durable
+The PS1 scheduler at `/ps1` is public and requires no account. It sends uploaded
+instances to a native CP-SAT service, with local validation before display/export.
+The [existing hosted demo](https://railplan-nine.vercel.app/ps1) is not assumed to
+contain this change; deploy the Node/Python runtime using the
+[native runbook](docs/PS1_NATIVE_DEPLOYMENT.md). The separate durable
 [RailPlan workspace](https://railplan-nine.vercel.app/login) requires provisioned access.
 See [current status](docs/PROJECT_STATUS.md) for differences between the hosted deployment,
 GitHub and local work.
@@ -246,6 +250,79 @@ implementation reports `FEASIBLE` or `INFEASIBLE`; its limited `OPTIMAL` label i
 used only when all requests take their first-choice candidates with no deferrals.
 It does not establish a general optimality bound. Crews are not reassigned, and
 travel checks cover single-crew teams only. See the [architecture](docs/ARCHITECTURE.md).
+
+### PS1 native solver benchmark and selection
+
+The separate `/ps1` scheduler uses a validated TypeScript warm start followed by
+native OR-Tools CP-SAT. **All PS1 scores are penalties: lower is better.** We
+compared that pipeline with an independently formulated SCIP MIP and an extended
+TypeScript hybrid search on the public instance plus 12 synthetic datasets,
+covering **39 dataset/scenario combinations** under scoring `ps1-objective-v2`.
+
+| Algorithm | Cases tested | Locally valid schedules | Improved over the TypeScript baseline | Full-model optimality proofs |
+| --- | ---: | ---: | ---: | ---: |
+| Warm-started CP-SAT | 39 | 39/39 | 4 | 37/39 |
+| Warm-started SCIP MIP | 39 | 39/39 | 4 | 38/39 |
+| Extended TypeScript hybrid | 39 | 39/39 | 0 | No solver proof |
+
+| Algorithm | Median measured stage time | 95th-percentile stage time |
+| --- | ---: | ---: |
+| Warm-started CP-SAT | 0.489 s | 60.417 s |
+| Warm-started SCIP MIP | 0.283 s | 7.585 s |
+| Extended TypeScript hybrid | 0.017 s | 6.123 s |
+
+Native stage times include process startup, model building, search and CSV
+validation, but exclude the initial heuristic warm start. The hybrid row measures
+its search/check stage. These are not complete API response times; 27 zero-score
+cases strongly influence the medians. SCIP's quicker capacity-pressure proof
+also lowers its 95th-percentile time.
+
+**CP-SAT and SCIP achieved identical scores in all 39 seed-1 cases.** Both improved the
+same four cases; the extended hybrid retained its baseline scores:
+
+| Dataset / scenario | TypeScript baseline and extended hybrid | CP-SAT | SCIP |
+| --- | ---: | ---: | ---: |
+| Capacity pressure / B | 293 | 230 | 230 |
+| Capacity pressure / C | 1118.8 | 1090.8 | 1090.8 |
+| Priority contention / B | 483 | 279 | 279 |
+| Priority contention / C | 340.4 | 300.7 | 300.7 |
+
+We then repeated the two difficult C cases with seeds 2 and 3 under the same
+eight-worker, 60-second settings. Together with the original seed-1 runs:
+
+| Dataset / scenario | CP-SAT scores, seeds 1 / 2 / 3 | SCIP scores, seeds 1 / 2 / 3 | CP-SAT optimality proofs | SCIP optimality proofs |
+| --- | --- | --- | ---: | ---: |
+| Capacity pressure / C | 1090.8 / 1090.8 / 1090.8 | 1090.8 / 1090.8 / 1090.8 | 1/3 | 3/3 |
+| Priority contention / C | 300.7 / 300.7 / 300.7 | 300.7 / 308.4 / 304.2 | 0/3 | 0/3 |
+
+**Why CP-SAT is the default:** it consistently found the best observed
+priority-contention C score across these three seeds, while SCIP's score varied.
+Its Boolean/integer model fits PS1's weekly choices, its parallel search already
+includes neighbourhood improvement, and the integrated service retains a checked
+incumbent when search runs out of time. This is a practical choice supported by a
+**small sample, not a claim of universal superiority**. SCIP remains a strong
+challenger: it proved capacity-pressure C optimal in all three runs. In the
+seed-1 run, CP-SAT found that score after approximately 0.74 seconds but did not
+prove it by its limit; SCIP completed the proof in approximately 7.25 seconds.
+Neither solver proved the priority-contention C score optimal.
+
+These measurements used **Apple M3 Pro, 11 available CPUs, 18 GiB RAM, eight
+requested native workers and a 60-second search cap per scenario**. The main
+39-case comparison uses seed 1; only the two cases above were repeated with
+seeds 2 and 3. These are not measurements from the planned
+**32-vCPU / 64-GiB cloud server**. Native
+startup, model construction, heuristic preparation and validation are additional;
+the TypeScript comparison also has a 2,500-neighbour ceiling. Twenty-seven cases
+already had zero baseline scores, so they cannot show score improvement. The
+cloud service's provisional 16-worker default still needs an 8/16/32-worker test
+on the deployment host, including repeated seeds and harder holdout instances.
+
+Every native candidate passed the local checker after an official-CSV round-trip.
+That checker is **not the organiser's reference validator**; proofs cover only
+the encoded local model. See the [research and selection report](docs/PS1_NATIVE_SOLVER_RESEARCH.md),
+[recorded benchmark results](scripts/ps1/benchmark/cloud-results.json) and
+[cloud deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md) for evidence, limits and
+reproduction details.
 
 ## Verification
 

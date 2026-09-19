@@ -1,5 +1,41 @@
 # Testing Plan
 
+## Native algorithm comparison and cloud controls — 2026-09-19
+
+Run both Python suites (`scripts/ps1/benchmark/test_cp_sat.py` and `test_scip.py`),
+the native bridge/selection tests under `scripts/ps1`, and the existing native
+service/API/client suites. They cover per-activity v2 scoring, independent MIP
+constraints, bounded seconds/workers/seeds, profile and repair scope, digest
+agreement, rejected incumbents, validation, proof consistency and best-result
+retention. The HTTP defaults are now 60 search seconds and up to 16 workers,
+with a separate 75-second process guard. Worker/runtime controls are internal.
+
+Use the commands in `scripts/ps1/benchmark/README.md` to reproduce the full matrix,
+cold/LNS variants, perturbed holdouts and the 8/16/32-worker sweep. Do not overlap
+timing runs with other solver jobs or builds. Keep native status separate from
+fallback feasibility, retain construction failures, and exclude superseded v1
+scores. The CLI exports only CSV-round-tripped complete submissions into a fresh
+directory; auxiliary proof/report JSON stays outside scenario CSV directories.
+Final local verification and skipped cloud checks are in PROJECT_STATUS.md.
+
+## Native PS1 service and scorer v2 — 2026-09-19
+
+Run `npx vitest run src/test/ps1-solve-api.test.ts src/lib/ps1/server-solver.test.ts`
+plus the PS1 engine/UI suites and Python `test_cp_sat.py`. API tests exercise
+cross-origin rejection, streamed body/model limits, cyclic inputs, pins/cuts,
+concurrent admission and missing runtime. Native boundary tests cover CSV/score
+agreement, provenance, unknown/no-incumbent, pins, process timeout/cancellation
+and valid-incumbent retention. UI tests use the HTTP contract and preserve
+review/apply/undo, cuts, uploads and export behavior.
+
+Independent arithmetic regressions distinguish per-activity lateness from the
+superseded terminal-only scoring bug. All new evidence uses ps1-objective-v2;
+legacy results.json is historical and cannot support A/C quality or proof claims.
+The native matrix records every full-model outcome and bound, including failures.
+Browser QA must exercise real native requests, hidden upload, progress, native
+status/proof, cancellation, and the nine-file ZIP. Local proof is not reference
+validator certification. Verification results are in PROJECT_STATUS.md.
+
 ## PS1 hybrid and native benchmark verification — 2026-09-19
 
 `search.test.ts` covers scenario reuse and target scoring, rejection of stale

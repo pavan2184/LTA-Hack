@@ -1,5 +1,115 @@
 # Project Status
 
+## 60-second native comparison and README benchmark — 2026-09-19
+
+The owner selected 32 vCPUs / 64 GiB RAM, removed the browser-only restriction,
+and requested a researched algorithm comparison plus benchmark tables in the
+root README. The integrated native API now defaults to 60 search seconds and up
+to 16 available workers, preserving its 75-second child guard, cancellation,
+bounded admission, validated incumbents and 90/100-second client/proxy limits.
+The engineer's concurrent native-service and per-activity scoring-v2 work was
+reconciled before measurements; initial v1 screening was excluded.
+
+Added a real independent SCIP MIP, cold and LNS-only CP-SAT experiments, native
+telemetry, a reproducible sequential cloud harness and a validated native CSV
+CLI. The wrapper reuses the service's canonical payload/digest/check boundary.
+Unknown repair IDs cannot create a false full-model proof. Worker/seed/runtime
+controls remain internal; no new public API budget override was introduced.
+
+The completed local evidence contains 230 rows across four cohorts, including
+119 native runs: 100 OPTIMAL, 11 FEASIBLE, eight INFEASIBLE and zero errors.
+All 111 returned native schedules passed local CSV/score validation. The main
+39-case matrix ties CP-SAT and SCIP on every final score; they improve four
+hybrid cases, with 37 and 38 full-model optima respectively. Extended TypeScript
+repair improves none. CP-SAT reaches priority-contention C 300.7 in all three
+seeded repeats; SCIP returns 300.7/308.4/304.2. SCIP proves capacity-pressure C
+in all three runs, versus one for CP-SAT. Cold/LNS variants add no score gains
+on the four selected C cases. Twenty-four B perturbations yield 16 optimal
+solutions (ten improvements/six ties) and eight full-model infeasibility proofs.
+
+The root README includes comparison, timing, score and repeated-seed tables and
+the rationale for CP-SAT as the practical default with SCIP retained as a strong
+challenger. `docs/PS1_NATIVE_SOLVER_RESEARCH.md` links primary research and explains
+limits; `scripts/ps1/benchmark/cloud-results.json` retains configurations, source/
+input digests, status, bounds and telemetry. All timing runs were sequential on
+an M3 Pro, 18 GiB RAM, eight native workers and scoring v2. They are not target-VM
+measurements. The 16-worker default is provisional pending the documented
+8/16/32-worker sweep. No universal solver winner or reference-validator parity
+is claimed; the hardest C optimum is still unknown.
+
+Final reconciled verification:
+
+- `npm test -- --reporter=dot`: **1071 passed, 79 database-dependent skipped**;
+  112 test files passed, 13 skipped. Existing React act/Vite configuration
+  warnings were non-failing. Hosted database verification was not run.
+- Python discovery: **40 tests passed** across CP-SAT and SCIP formulations and
+  controls. Lint, standalone TypeScript, `git diff --check`, startup-script syntax
+  and `npm run build -- --webpack` passed; the build used permitted font downloads.
+- Real production `solveNative` function smoke with installed OR-Tools, eight
+  local workers and the default 60-second cap: A 25.2 / B 30 / C 25.2, all OPTIMAL,
+  no warnings, independently CSV-checked. This was not a deployed HTTP timing run.
+- Real `ps1:solve:native` public smoke: same scores/full-model bounds, exactly
+  three CSVs per A/B/C directory, nine total, and a separate auxiliary run report.
+- No new browser/accessibility sweep, Linux systemd/nginx/TLS test, cloud worker
+  scaling or GCP deployment was performed. The earlier native browser checks
+  below retain their own scope. No local server was started for this work.
+
+## Native PS1 solver, corrected scorer and Compute handoff — 2026-09-19
+
+The owner authorized server-side solving and requested an update to PR #47.
+The native CP-SAT service is now the primary `/ps1` solve/replan path. It validates
+bounded typed requests, uses a checked heuristic warm start, runs the full native
+model even when that heuristic fails, and independently checks official CSVs,
+pins and objective values. Eight CPU workers, a 20-second search budget, child
+wall timeout, cancellation and single-process admission bound server work.
+The client repeats conformance checks, shows native status/bound/gap, preserves
+capacity cuts and planner pins, and releases automatic successor retention pins
+when a disruption affects their dependency chain. Equal-score native padding
+cannot replace a shorter incumbent. Pin membership checks are indexed.
+
+Scoring v2 charges each activity's own lateness. The former terminal-only rule
+could reward delaying work; five independent arithmetic regressions distinguish
+the corrected interpretation. Old benchmark evidence is explicitly superseded.
+All 39 v2 public/synthetic full-model native runs are locally feasible: 37 OPTIMAL,
+two FEASIBLE. Native improves four hybrid cases, including B 293 → 230 and B 483 → 279;
+the selected portfolio improves 17 legacy cases without regressions. The matrix
+uses eight workers and five-second search limits, not the service's 20-second
+limit or equal wall time. Public A 25.2 / B 30 / C 25.2 all have full local-model proofs;
+native public CSVs, reports and summary were refreshed. The two open C cases are
+05: 1090.8, bound 1015.5 and 11: 300.7, bound 206.5. These are observed scores, not
+claims that the bounds are achievable. See native-results.json for exact evidence.
+
+The four Next.js entry-point type signatures blocking production builds are
+fixed with their direct-call tests. Google Compute deployment has a pinned Python
+runtime, startup script, systemd/nginx templates and an HTTPS runbook. No GCP
+resources were provisioned and no deployment was performed. Application uploads
+are not persisted or payload-logged; nginx may briefly buffer bodies to disk.
+Replan bounds include automatically retained accesses, explicit pins and cuts.
+Physical-night alignment remains undecidable locally; no reference-validator
+parity or unrestricted replan optimality is claimed.
+
+Verification:
+
+- Full suite: **1008 passed, 79 database-dependent tests skipped**, 110 passed test
+  files. After the final pin-index/proof changes, **101 targeted tests passed across eight
+  files** (scheduler/search, native service/API, client and rendered UI).
+- Python model: **12 tests passed**. Independent native service, API and browser
+  response tests cover timeout/cancellation, missing runtime, no incumbent,
+  contradictory proofs, hard pins/cuts and read/model limits.
+- `npm run build -- --webpack`: passed after existing Google Fonts downloads were
+  allowed. Lint, TypeScript and whitespace checks passed. Startup script syntax
+  passed; Linux systemd/nginx and actual GCP ingress remain untested locally.
+- Real production Chromium at http://127.0.0.1:3001/ps1: public A/B/C all native
+  OPTIMAL, capacity-cut replan → Adopt → Apply → Undo, independent eight-file
+  upload 09 → C 1840, proof metadata and real ZIP download all passed. ZIP contains
+  exactly nine files with exact headers/scenario identities. Desktop 1440×1000
+  and mobile 390×844 showed meaningful content, no framework overlay, no console
+  errors and no mobile horizontal overflow. Browser plugin unavailable; bundled
+  Playwright 1.62.1 used. Native screen-reader/zoom checks were not rerun.
+- Existing PR #47 workstation and handoff commits were preserved when aligning the
+  detached checkout to its latest head. No main-branch merge is authorized here. The task preview on port 3001 is stopped
+  after verification; the pre-existing port 3000 process is untouched.
+
 ## Solver PR reconciliation and engineer handoff — 2026-09-19
 
 Prepared `codex/ps1-hybrid-optimisation` against main at `b6e661e`, retaining

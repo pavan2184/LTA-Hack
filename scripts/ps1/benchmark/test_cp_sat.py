@@ -98,12 +98,75 @@ class ModelTests(unittest.TestCase):
         self.assertGreater(min(r["week"] for r in result["access"] if r["activityId"] == "1"),
                            max(r["week"] for r in result["access"] if r["activityId"] == "0"))
 
-    def test_only_contract_terminal_activities_are_charged(self):
+    def test_on_time_activity_is_not_charged_for_contract_delay(self):
         p = payload(["C", "C"], horizon=2)
         p["instance"]["activities"][0]["totalAccesses"] = 2
         p["instance"]["activities"][1]["contractNumber"] = "0"
         p["instance"]["activities"][1]["activityPriority"] = 3
         self.assertEqual(solve(p)["objective"], 910)
+
+    def fixed_activity_weeks(self, weeks, scenario="A", due="2027-01-10"):
+        p = payload(["C", "C"], scenario, horizon=3)
+        p["instance"]["contracts"][0]["contractPriority"] = 3
+        p["instance"]["contracts"][0]["plannedCompletionDate"] = due
+        p["instance"]["activities"][1]["contractNumber"] = "0"
+        p["instance"]["activities"][1]["activityPriority"] = 3
+        p["movableActivityIds"] = []
+        p["incumbent"] = {"access": [{"activityId": str(i), "week": w, "eclo": 0}
+                                      for i, w in enumerate(weeks)]}
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        return result["objective"]
+
+    def test_all_late_activities_are_charged_at_their_own_completion(self):
+        for scenario in ["A", "C"]:
+            # Jan 17 is seven days late at 1.3/day; Jan 24 is 14 at 1/day.
+            self.assertEqual(self.fixed_activity_weeks([2, 3], scenario), 23.1)
+
+    def test_delaying_an_activity_cannot_erase_another_activitys_penalty(self):
+        self.assertEqual(self.fixed_activity_weeks([2, 2]), 16.1)
+        self.assertEqual(self.fixed_activity_weeks([2, 3]), 23.1)
+
+    def test_midweek_deadline_uses_each_activitys_own_day_difference(self):
+        self.assertEqual(self.fixed_activity_weeks([2, 3], due="2027-01-13"), 16.2)
+
+    def test_worker_count_is_bounded_and_defaults_to_one(self):
+        self.assertEqual(solve(payload(["C"]))["objective"], 0)
+        p = payload(["C"])
+        for workers in [2, 16, 32]:
+            p["workers"] = workers
+            self.assertEqual(solve(p)["objective"], 0)
+        for workers in [0, 257, 1.5, "2", True]:
+            p["workers"] = workers
+            with self.assertRaisesRegex(ValueError, "workers"):
+                solve(p)
+
+    def test_unknown_movable_ids_cannot_create_a_false_full_model_proof(self):
+        for requested in [["missing"], ["0", "missing"], None, "0", [1]]:
+            p = payload(["C"], horizon=2)
+            p["incumbent"] = {"access": [{"activityId": "0", "week": 2, "eclo": 0}]}
+            p["movableActivityIds"] = requested
+            with self.subTest(requested=requested), self.assertRaisesRegex(ValueError, "movableActivityIds"):
+                solve(p)
+
+    def test_repair_requires_an_incumbent(self):
+        for incumbent in [None, {}, {"access": None}]:
+            p = payload(["C"])
+            p["movableActivityIds"] = []
+            if incumbent is not None:
+                p["incumbent"] = incumbent
+            with self.subTest(incumbent=incumbent), self.assertRaisesRegex(ValueError, "incumbent"):
+                solve(p)
+
+    def test_all_known_activities_movable_has_a_full_model_bound(self):
+        p = payload(["C"], horizon=2)
+        p["incumbent"] = {"access": [{"activityId": "0", "week": 2, "eclo": 0}]}
+        p["movableActivityIds"] = ["0"]
+        result = solve(p)
+        self.assertEqual(result["scope"], "full")
+        self.assertEqual(result["boundScope"], "encoded_full_model")
+        self.assertEqual(result["formulaVersion"], "ps1-objective-v2")
+        self.assertEqual(result["objective"], 0)
 
     def test_live_window_couples_both_lines(self):
         p = payload(["C", "C"], "C", horizon=4, work=2)
