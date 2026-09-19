@@ -1,5 +1,6 @@
 import {
   ECLO_YIELD,
+  ECLO_WINDOW_WEEKS,
   STANDARD_YIELD,
   type AccessRow,
   type Activity,
@@ -52,7 +53,7 @@ export interface ScheduleOptions {
   /** Deterministic construction variant used by the multi-start optimiser. */
   constructionSeed?: number;
   /** Validated again under this scenario, its disruptions, and its hard pins. */
-  initialCandidates?: Submission[];
+  initialCandidates?: readonly Submission[];
   /** Retained for reproducible comparisons with the original optimiser. */
   searchMode?: "legacy" | "hybrid";
   /** Construction choices, never relaxations of the validator's hard rules. */
@@ -281,6 +282,21 @@ export function scheduleInstance(
   const placedWeeks = new Map<string, number[]>();
   const sequenceOf = new Map<string, number>();
   const rejectedPins: RejectedPin[] = [];
+  const ecloWeeksByLine = new Map<string, { first: number; last: number }>();
+  const affectedLinesCache = new Map<string, string[]>();
+  const affectedLinesFor = (activity: Activity, contract: Contract, span: string[]): string[] => {
+    const cached = affectedLinesCache.get(activity.activityId);
+    if (cached) return cached;
+    const lines = [...new Set(closureFor(network, span, contract.natureOfActivity)
+      .map((locationId) => network.supply.get(locationId)!.lineCode))];
+    affectedLinesCache.set(activity.activityId, lines);
+    return lines;
+  };
+  const fitsEcloWindow = (lines: string[], week: number): boolean =>
+    lines.every((line) => {
+      const window = ecloWeeksByLine.get(line);
+      return !window || Math.max(window.last, week) - Math.min(window.first, week) < ECLO_WINDOW_WEEKS;
+    });
 
   /**
    * Commit one access-night. Shared by the pin pass and the greedy pass so a
@@ -293,6 +309,10 @@ export function scheduleInstance(
     week: number,
     eclo: boolean,
   ): boolean {
+    const ecloLines = eclo ? affectedLinesFor(activity, contract, span) : [];
+    if (eclo && (scenario === "A" || (scenario === "C" && !fitsEcloWindow(ecloLines, week)))) {
+      return false;
+    }
     const night = nightFor(activity, contract, week);
     if (night === null) return false;
     const labels = placementFor(activity, contract, span, week);
@@ -315,6 +335,13 @@ export function scheduleInstance(
     const load = loadAt(contract, activity.activityType, week);
     load.nights.set(night, new Set([...(load.nights.get(night) ?? []), activity.activityId]));
     placedWeeks.set(activity.activityId, [...(placedWeeks.get(activity.activityId) ?? []), week]);
+    for (const line of ecloLines) {
+      const window = ecloWeeksByLine.get(line);
+      ecloWeeksByLine.set(line, {
+        first: Math.min(window?.first ?? week, week),
+        last: Math.max(window?.last ?? week, week),
+      });
+    }
     return true;
   }
 
@@ -338,7 +365,7 @@ export function scheduleInstance(
     if (!commit(activity, contract, spanFor(activity), pin.week, pin.eclo === 1)) {
       rejectedPins.push({
         ...pin,
-        reason: `wk${pin.week} had no free possession or access-night for ${activity.activityId}`,
+        reason: `wk${pin.week} had no legal possession, access-night or ECLO window for ${activity.activityId}`,
       });
     }
   }
@@ -346,10 +373,7 @@ export function scheduleInstance(
   for (const activity of scheduleOrder(instance, options.constructionSeed ?? 0, options.activityOrder)) {
     const contract = contractByNumber.get(activity.contractNumber)!;
     const span = spanFor(activity);
-    const affectedLines = options.ecloWindows
-      ? [...new Set(closureFor(network, span, contract.natureOfActivity)
-        .map((id) => network.supply.get(id)!.lineCode))]
-      : [];
+    const affectedLines = affectedLinesFor(activity, contract, span);
     let earliest = Math.max(1, weekOf(instance.parameters.horizonStart, activity.plannedStartDate));
 
     // A dependency must finish before its successor starts.
@@ -384,6 +408,7 @@ export function scheduleInstance(
         scenario !== "A" &&
         remaining > STANDARD_YIELD &&
         remaining > weeksLeft &&
+        (scenario !== "C" || fitsEcloWindow(affectedLines, week)) &&
         (options.ecloWindows
           ? scenario === "B" || (scenario === "C" && affectedLines.every((line) => {
             const start = options.ecloWindows![line];
@@ -474,9 +499,11 @@ export function solveInstance(
       results: resultsFor(instance, submission.access, options.scenario),
     };
     const report = validate(instance, submission, activeNetwork, options.disruptions ?? []);
-    const accesses = new Set(submission.access.map((row) => `${row.activityId}|${row.week}|${row.eclo}`));
-    if (!report.feasible || submission.rejectedPins.length > 0 ||
-      (options.pins ?? []).some((pin) => !accesses.has(`${pin.activityId}|${pin.week}|${pin.eclo ?? 0}`))) return;
+    const pinsSatisfied = (options.pins ?? []).every((pin) => submission.access.some((row) =>
+      row.activityId === pin.activityId &&
+      row.week === pin.week &&
+      (pin.eclo === undefined || row.eclo === pin.eclo)));
+    if (!report.feasible || submission.rejectedPins.length > 0 || !pinsSatisfied) return;
     const score = report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const bestScore = best?.report.objectiveScore ?? Number.POSITIVE_INFINITY;
     const stable = JSON.stringify(submission.access);

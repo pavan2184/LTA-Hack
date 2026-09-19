@@ -1,38 +1,63 @@
 # Teammate Handoff
 
-Last updated: 2026-09-18 · RailPlan v0.4.0
+Last updated: 2026-09-19 · RailPlan v0.4.0
+
+Current implementation, recorded checks and remaining work are maintained in
+[PROJECT_STATUS.md](PROJECT_STATUS.md). Historical accounts, network observations
+and shared-demo setup below must be rechecked when used on another machine.
 
 ## Public PS1 operations workspace
 
-`/ps1` is public and independent of Supabase, login and server APIs. From a clean
-checkout, `npm ci && npm run dev`, then open `http://localhost:3000/ps1`. Use
+`/ps1` is public and independent of Supabase and login, but it requires the
+same-origin native solver API. From a clean checkout, install the pinned Python
+requirements, run `npm ci && npm run ps1:start`, then open `http://localhost:3000/ps1`. Use
 “Load the public instance and run”; a fresh result opens Scenario C. The primary
-demo is: choose a bottleneck in the attention queue or grid, impose urgent
-maintenance, re-plan, adopt into the review shelf, inspect churn/completion and
-violations, Apply, then Undo. Proof and export contains local-conformance evidence,
+demo opens on the contract/activity **Work schedule**. Inspect an activity,
+then use **Location occupancy** and **Bottlenecks** to propose urgent maintenance,
+re-plan, adopt into the review shelf, inspect churn/completion and violations,
+Apply, then Undo. Proof and export contains local-conformance evidence,
 worker diagnostics, external submission checking and the exact ZIP manifest.
 
 Important boundaries:
 
-- Hidden files, schedules, revisions, low-glare preference and history stay in
-  the browser session. Refresh clears them.
+- Uploaded files are sent to the same-origin solver without persistence. Schedules,
+  revisions, low-glare preference and history stay in the browser session; refresh
+  clears them.
 - A failed scenario stays visible beside the other policy outcomes.
-- The timeline is the desktop/tablet planning surface; mobile is for triage,
-  inspection, reviewed apply/undo and export.
+- The work schedule is the primary planning surface; location occupancy is a
+  linked secondary view. Mobile supports triage, inspection, reviewed apply/undo
+  and export.
 - Cross-possession physical-night alignment is explicitly undecidable because
   the official output has no global night identity.
 - `PS1_PLANNING_LOG.json` and the copyable handover are never included in the
   official A/B/C ZIP.
-- No PS1 backend, HTTP route, environment variable, database or auth setup is
-  required. Do not add one to “support” this workspace.
+- The PS1 path needs Node, Python and pinned OR-Tools, but no database, auth or
+  cloud credential at request time. Follow [PS1_NATIVE_DEPLOYMENT.md](PS1_NATIVE_DEPLOYMENT.md).
 
 Before release run `npm test`, `npm run typecheck`, `npm run lint` and
-`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 44/C 39.2,
+`npm run build`, then smoke-test direct `/ps1`, scores A 25.2/B 30/C 25.2,
 hotspot review/apply/undo and ZIP download at the target responsive widths.
-The 2026-09-18 release candidate completed those gates: 967 tests across 116
-files, clean typecheck/lint/build, HTTP 200 for `/` and `/ps1`, clean browser
-logs and responsive checks at 390/768/1280/1440/1920px. Automated VoiceOver
-speech was not available; repeat that one check manually on the release host.
+The latest application gate recorded for PR #48 on 2026-09-19 passed 962 tests
+with 79 database tests skipped, plus typecheck/lint/build. Browser checks covered
+all 12 synthetic uploads and their 108 exported CSVs, plus production-preview
+public/Mixed 240 runs. These are local results, not hosted-release verification;
+see current status for dated evidence and limitations. Native screen-reader
+speech remains a manual release check.
+
+For the current release, use the [submission checklist](PS1_SUBMISSION_CHECKLIST.md),
+[measured solver comparison](PS1_BENCHMARK.md),
+[three-minute demo script](../assets/submission/DEMO_SCRIPT.md) and
+[PS1 write-up](../assets/submission/PS1_WRITEUP.md).
+`npm run ps1:solve` regenerates public outputs and the exact nine-CSV archive at
+`output/PS1-public-results.zip`. The archive excludes local validation JSONs.
+`npm run ps1:benchmark:regression` checks all public/synthetic heuristic outcomes
+and can compare an earlier JSON baseline; see its `--help` for options.
+`npm run ps1:benchmark` runs the hybrid/native comparison suite.
+
+Git deployments are intentionally disabled. The native runtime is targeted at
+Google Compute Engine rather than the stale Vercel build. A temporary
+`n2-highcpu-32` benchmark VM was terminated after its run; provision a durable
+instance with the native runbook, then recheck the deployed commit before release.
 
 ## Run the application without Docker
 
@@ -86,7 +111,7 @@ exist, using an explicit DATABASE_URL. It writes and reads back facts in the sam
 transaction and verifies parity before commit. It refuses existing plans, intake,
 private drafts or notification history and never uses CASCADE. After initial
 bootstrap, use `npm run db:seed -- --verify-only` for a rolled-back rehearsal;
-all19 fact-table hashes plus source revision/generation must remain unchanged.
+all 19 fact-table hashes plus source revision/generation must remain unchanged.
 Run either mode only in a coordinated dedicated development test window.
 `db:verify` never skips unavailable, unseeded or mismatched data. Ordinary tests
 explicitly skip only when the database probe cannot connect.
@@ -124,8 +149,11 @@ Run npm test, npm run lint, npm run typecheck and npm run build. Database
 integration is an additional required gate, not replaced by ordinary test skips.
 Read `PROJECT_STATUS.md` for actual results and unresolved failures.
 
-Follow issues #4–#21 in numeric order. #4–#16 are implemented locally; current
-release checks and remaining scope are recorded in PROJECT_STATUS.md.
+Use the remaining-work section of [PROJECT_STATUS.md](PROJECT_STATUS.md).
+The original #4–#21 sequence is historical: the core workflow is implemented,
+CP-SAT benchmarking (#20) is complete, and named-worker evaluation (#21) awaits
+the owner's decision. Audio/import extensions remain deferred. Do not restart
+completed work or infer implementation approval from an evaluation task.
 
 ## Identity setup and operator provisioning (issue #5)
 
