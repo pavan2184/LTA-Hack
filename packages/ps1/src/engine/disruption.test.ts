@@ -103,6 +103,8 @@ describe("impact assessment", () => {
 });
 
 describe("replanning with minimal churn", () => {
+  // Full public construction plus closure-aware repair exceeds Vitest's 5s
+  // default on the CI runner; retain the complete fixture and solver budgets.
   it("moves downstream work when a physical cut delays its predecessor", () => {
     const before = solveInstance(instance, { scenario: "C" }, network).submission!;
     const cut: Disruption = { locationId: "PLAT:BET:H01:EB", fromWeek: 15, toWeek: 15, capacity: 0 };
@@ -112,7 +114,7 @@ describe("replanning with minimal churn", () => {
     const successorFirst = Math.min(...after.submission.access.filter((r) => r.activityId === "A004").map((r) => r.week));
     expect(successorFirst).toBeGreaterThan(predecessorLast);
     expect(after.churn.percentUnchanged).toBeGreaterThan(90);
-  });
+  }, 30_000);
   const target = busiest();
   const disruption: Disruption = {
     locationId: target.locationId,

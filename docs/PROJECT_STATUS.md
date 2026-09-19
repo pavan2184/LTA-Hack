@@ -17,6 +17,9 @@ The regenerated export contains exactly nine CSVs. Verification passed:
 **1,146 application tests** across 131 files (79 database-dependent tests
 skipped), **67 native Python tests**, lint, typecheck and the webpack production
 build. The exact 15-message regression and unchanged organiser sample both pass.
+The first GitHub CI run hit only the five-second test-harness timeout in the
+full-public disruption regression (5.24 seconds on that runner). Its timeout is
+now 30 seconds; the fixture, assertions and solver search budgets are unchanged.
 No organiser-validator attempts or GCP redeployment have been performed here.
 The cloud engineer must deploy the corrected release before another hosted run.
 
