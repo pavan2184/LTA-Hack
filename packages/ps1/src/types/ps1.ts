@@ -191,6 +191,8 @@ export interface ValidationReport {
   /** The local checker cannot infer a physical night across separate possessions. */
   conformance: {
     mode: "local";
+    /** Weekly closures and transitive co-sharing are enforced locally. */
+    closureModelVersion: "ps1-closure-v1";
     undecidableRules: readonly ["cross_possession_night_alignment"];
   };
   /** Present only when feasible, per the brief's output contract. */

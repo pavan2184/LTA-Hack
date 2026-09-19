@@ -1,15 +1,27 @@
 # PS1 benchmark assurance record
 
+> **Superseded evidence — closure conformance correction.** The pre-correction
+> benchmark scores, feasibility counts, proofs and algorithm rankings below are
+> historical results from an incomplete closure model. They are not valid PS1
+> ranking or conformance evidence. A public A export passed our old checker but
+> received 15 closure violations. The corrected regression reproduces all 15
+> reported messages and accepts the published sample with zero closure violations.
+> Consist buffers extend sectors; Live buffers also include outer platforms and
+> expand across the interchange before mirroring. The correction is identified as
+> `ps1-closure-v1`. Corrected public exports are recorded in
+> [current project status](PROJECT_STATUS.md); algorithm comparisons still
+> need fresh runs. No deployed fix or reference-validator parity is claimed.
+
 Recorded 2026-09-19. This is an evidence index for reviewers and the cloud
 engineer, not a new benchmark or a reference-validator certification.
 
-Our solver choice is traceable to versioned measurements. We check complete
-workload and feasibility before comparing scores, test alternative search modes,
-retain unsuccessful outcomes, and distinguish measured results from deployment
-assumptions. The [README comparison](../README.md#ps1-native-solver-benchmark-and-selection)
+The original solver selection was traceable to versioned measurements, but its
+checker and models omitted mandatory closures. CSV round-trips, objective parity
+and passing tests did not catch that shared omission. The measurements remain
+inspectable history; their PS1 feasibility and ranking conclusions are withdrawn. The [README comparison](../README.md#ps1-native-solver-benchmark-and-selection)
 contains the numerical tables; this record explains how to audit them.
 
-## What was measured
+## Historical measurements — incomplete closure model
 
 The [stored comparison](../scripts/ps1/benchmark/cloud-results.json) uses scoring
 `ps1-objective-v2`, source snapshot `d1e0a8f` and source SHA-256
@@ -27,7 +39,7 @@ workers and a 60-second search cap. These are local measurements.
 | Perturbed holdouts | 24 seeded B perturbations plus public B control, CP-SAT only | What happens beyond the original fixtures, including construction failures? |
 
 Together these cohorts contain **119 native runs: 100 OPTIMAL, 11 FEASIBLE and
-eight INFEASIBLE**. All 111 returned native schedules passed local checking.
+eight INFEASIBLE**. All 111 returned native schedules passed the then-incomplete local checker.
 The eight infeasible outcomes remain in the denominator. This is not 119
 independent datasets: cases recur across variants and seeds.
 
@@ -49,11 +61,11 @@ independent datasets: cases recur across variants and seeds.
 
 - **The scoring correction mattered.** Earlier terminal-only lateness scoring
   was replaced by per-activity scoring. Old v1 results remain explicitly
-  superseded; the current ranking uses v2. See the [scoring test plan](TESTING.md#native-ps1-service-and-scorer-v2--2026-09-19).
+  superseded. The later closure defect also supersedes the v2 ranking. See the [scoring test plan](TESTING.md#native-ps1-service-and-scorer-v2--2026-09-19).
 - **CP-SAT did not beat SCIP everywhere.** SCIP tied all 39 main scores and
   proved one more optimum. CP-SAT recovered the best priority-contention C
-  score in all three seeds; SCIP did so in one. This supports a practical
-  default, not universal superiority.
+  score in all three seeds; SCIP did so in one. Those observations concern the
+  incomplete model and no longer support a valid PS1 solver ranking.
 - **Hints were not always faster.** Cold CP-SAT proved capacity-pressure C
   optimal within its cap when the seed-1 warm run did not. Warm starts supply
   useful incumbents but can change the proof search adversely.
@@ -70,10 +82,13 @@ independent datasets: cases recur across variants and seeds.
 
 ## Limits and remaining verification
 
-The local checker is not the organiser's reference validator. Optimality and
-infeasibility proofs apply to the encoded model; cross-possession physical-night
-alignment remains undecidable from the published fields. Synthetic fixtures and
-perturbations are not independent operator data or the judges' hidden instances.
+The local checker is not the organiser's reference validator. Its previous
+omission of mandatory closure checks invalidates the recorded conformance and
+optimality claims for PS1; lack of a physical-night field is not a waiver of those
+rules. The correction uses `ps1-closure-v1`, separate from the objective
+version, and needs fresh exported-schedule checks and benchmarks. Synthetic
+fixtures and perturbations are not independent operator data or the judges' hidden
+instances.
 Twenty-seven main cases already have zero scores, so aggregate medians and win
 counts need that context. The two repeated cases do not establish statistical
 significance. SCIP and LNS-only were not tested on the perturbed holdouts.
@@ -95,8 +110,9 @@ merge itself is not evidence that those checks passed.
 ## Reproduce and extend the record
 
 Use the [benchmark commands](../scripts/ps1/benchmark/README.md#60-second-cloud-comparison)
-from the measured snapshot to audit the original experiment, or record a new
-revision and digest when testing current code. Retain the generated per-run
+from the measured snapshot only to audit the historical experiment. For corrected
+comparisons, record a new revision, source digest and `ps1-closure-v1` model
+identifier, and revalidate or regenerate every schedule certificate. Retain the generated per-run
 schedule witnesses as well as the summary. The tracked comparison is a trimmed
 metrics artifact, not a complete archive of every schedule witness. Repetition
 does not guarantee identical parallel-search results.

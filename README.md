@@ -237,8 +237,11 @@ from [`@railplan/ps1`](packages/ps1/README.md). Every returned candidate is chec
 against the encoded constraints; a local proof does not establish reference-validator
 parity. The timeline shows
 weekly allocations: `access_night` is an accounting index, not a clock time.
-The official schema cannot establish physical-night alignment between separate
-possessions; the local checker exposes that limitation.
+Mandatory activity closures use weekly occupancy and transitive sharing components;
+the absence of a clock-time field does not waive those checks. A discovered
+closure omission invalidated the earlier benchmark conclusions. The correction
+is identified as `ps1-closure-v1`; the regenerated public results below pass
+the corrected local checker.
 
 ### Export and reproduce results
 
@@ -252,7 +255,8 @@ RESULTS.csv
 ```
 
 Pre-computed public outputs are in [packages/ps1/data/results/](packages/ps1/data/results/).
-To regenerate the public fixture outputs with the optimiser:
+They have been regenerated under `ps1-closure-v1`; the old benchmark scores
+below remain historical. To regenerate the public fixture outputs with the optimiser:
 
 ```bash
 npm run ps1:solve
@@ -271,22 +275,53 @@ inputs to check full workload, local conformance and exact CSV round-trips:
 npm run ps1:benchmark:regression
 ```
 
-The [measured solver comparison](docs/PS1_BENCHMARK.md) records the latest local
-public scores: **A 25.2 / B 30 / C 25.2**. The
+The [historical solver comparison](docs/PS1_BENCHMARK.md) recorded public scores
+**A 25.2 / B 30 / C 25.2** under an incomplete closure model. These are not current
+feasible PS1 scores or optimality certificates. The corrected local results are
+**A 32.2 / B 30 / C 26.1**, as detailed below. The
 [submission checklist](docs/PS1_SUBMISSION_CHECKLIST.md),
 [three-minute demo script](assets/submission/DEMO_SCRIPT.md) and
 [PS1 write-up](assets/submission/PS1_WRITEUP.md) cover release evidence and
 remaining publication steps. The script is not a recorded or uploaded video;
 a merge does not establish a fresh hosted deployment.
 
+> **Superseded evidence — closure conformance correction.** The pre-correction
+> benchmark scores, feasibility counts, proofs and algorithm rankings below are
+> historical results from an incomplete closure model. They are not valid PS1
+> ranking or conformance evidence. A public A export passed our old checker but
+> received 15 closure violations. The corrected regression reproduces all 15
+> reported messages and accepts the published sample with zero closure violations.
+> Consist buffers extend sectors; Live buffers also include outer platforms and
+> expand across the interchange before mirroring. The correction is identified as
+> `ps1-closure-v1`. Corrected public exports are recorded in
+> [current project status](docs/PROJECT_STATUS.md); algorithm comparisons still
+> need fresh runs. No deployed fix or reference-validator parity is claimed.
+
+### Corrected public results
+
+The regenerated [public summary](packages/ps1/data/results/SUMMARY.json) reports:
+
+| Scenario | Objective | Local hard violations | Full local-model status | Matching lower bound |
+| --- | ---: | ---: | --- | ---: |
+| A | 32.2 | 0 | OPTIMAL | 32.2 |
+| B | 30 | 0 | OPTIMAL | 30 |
+| C | 26.1 | 0 | OPTIMAL | 26.1 |
+
+These exports schedule every activity in full and include the corrected activity
+closure constraints. The proof scope is the encoded local model, not the
+organiser's reference validator. This was a local service regeneration with 11
+requested workers; concurrent tests make it unsuitable for a fair performance
+comparison. It does not establish GCP performance, deployment or solver ranking.
+
 ### Why we chose CP-SAT
 
 **PS1 combines discrete weekly decisions, strict logical rules and competing
 penalties. We chose the full OR-Tools CP-SAT portfolio because it expresses that
 model directly, improves a checked starting schedule, and reports bounds on how
-much improvement might remain.** Our experiments support this choice: CP-SAT
-tied SCIP on all 39 main-case scores and recovered the best observed score on
-the hardest repeated case in all three runs. SCIP remains a credible challenger.
+much improvement might remain.** The experiments below originally supported
+that choice, but their closure model was incomplete. They no longer establish a
+valid PS1 ranking. CP-SAT remains a suitable modelling candidate and SCIP an
+implemented challenger; corrected comparisons are pending.
 
 #### 1. Model the actual decisions
 
@@ -323,22 +358,27 @@ also hard constraints; this is a summary of the encoded model, not its full spec
 
 At a location $\ell$ in week $w$, let $m_{\ell w}$, $p_{\ell w}$ and
 $c_{\ell w}$ count scheduled PM, PC and C activities whose expanded occupancy
-spans reach that location. Under the encoded local sharing rules, the minimum
-number of possessions is:
+spans reach that location. Local legal mixes alone imply this lower bound on the
+number of possessions:
 
 $$
-n_{\ell w}=m_{\ell w}+
+n^{\min}_{\ell w}=m_{\ell w}+
 \max\left(p_{\ell w},\left\lceil\frac{p_{\ell w}+c_{\ell w}}{4}\right\rceil\right).
 $$
 
 PM requires exclusive possession; each shared possession admits at most one PC
-and four activities total. With effective supply $b_{\ell w}$, excess usage is
+and four activities total. The corrected model explicitly chooses group membership
+and counts the actual groups $n_{\ell w}\ge n^{\min}_{\ell w}$. It also requires
+real paths through shared groups for transitive closure exemptions; identical
+labels at unrelated locations cannot invent a connection.
+
+With effective supply $b_{\ell w}$, excess usage is
 $q_{\ell w}=\max(0,n_{\ell w}-b_{\ell w})$. Scenario A requires zero excess;
 C permits at most one extra possession per location-week; B permits penalised
 excess. A disrupted location-week permits no excess above its reduced supply.
-The native implementation uses integer maximum and division constraints for
-this packing calculation. These are local possession counts, not a certificate
-of physical-night alignment between different possessions.
+Capacity packing alone is insufficient: mandatory activity-closure, buffer and
+sharing-component constraints must also hold under `ps1-closure-v1`.
+The historical benchmarks omitted those constraints.
 
 #### 3. Minimise the specified penalty, not an invented quality score
 
@@ -378,44 +418,53 @@ B\le J^*\le U,\qquad
 B=U\ \Longrightarrow\ \text{optimal for the encoded model}.
 $$
 
-For example, the recorded warm CP-SAT priority-contention C run found
-$U=300.7$ with $B=252.4$: a **16.1% remaining bound gap**, not a claim that
-252.4 is achievable. Pure heuristic search supplies a feasible upper bound but
-does not, by itself, produce a matching optimality certificate. A timed solve
-can therefore return a useful schedule without falsely labelling it optimal.
+For example, the historical warm CP-SAT priority-contention C run reported
+$U=300.7$ with $B=252.4$: a **16.1% bound gap for its incomplete model**. Because
+that candidate was not checked against all mandatory closures, 300.7 is not an
+established feasible upper bound for PS1. In a complete model, a feasible heuristic
+schedule supplies an upper bound but no matching optimality certificate by
+itself. A timed solve can therefore return a useful schedule without falsely
+labelling it optimal.
 The 60-second setting caps native search; startup, model construction and
 validation add to response time. Every returned schedule is checked after a
 CSV round-trip. [OR-Tools solver statuses](https://developers.google.com/optimization/cp/cp_solver#cp-sat-return-values).
 
-#### 5. Choose the full portfolio using measured evidence
+#### 5. Historical portfolio comparison — rerun required
 
 CP-SAT's parallel portfolio combines complementary search methods, relaxations
 and large neighbourhood search (LNS). We retain that combination with a checked
 TypeScript warm start. [OR-Tools portfolio guidance](https://github.com/google/or-tools/blob/v9.15/ortools/sat/docs/troubleshooting.md#improving-performance-with-multiple-workers).
 
-| Selection question | What our experiments showed |
+| Historical selection question | What the incomplete-model experiments reported |
 | --- | --- |
 | Why not stop at the hybrid? | CP-SAT improved four of 39 baseline scores; extended hybrid search improved none in that snapshot. |
 | Why not LNS-only? | It tied full CP-SAT on four shared cases but left both hard-case lower bounds at zero; full CP-SAT already includes LNS. |
 | Why CP-SAT rather than SCIP as the default? | Both tied all 39 main scores. On priority-contention C, CP-SAT reached 300.7 in 3/3 seeds; SCIP did so in 1/3. SCIP proved more main-case optima: 38 versus 37. |
 | Why keep a warm start? | It supplies a checked incumbent and fallback. Cold CP-SAT tied all four ablation scores and sometimes proved more, so hints are not claimed to guarantee faster search. |
 
-The choice is **model fit plus measured quality, consistency and proof
-information**. The equations do not establish that CP-SAT must outperform every
-solver. The following tables document the local hardware, source revisions and
-small sample sizes behind the choice. Proofs cover the encoded local model;
-the local checker is not the organiser's reference validator. The
+The equations explain model fit; they do not establish that CP-SAT outperforms
+another solver. The following tables preserve the source revisions, local
+hardware and historical observations behind the original choice. Their omitted
+closure constraints invalidate the PS1 quality and ranking conclusions. The
+local checker is not the organiser's reference validator. The
 [assurance record](docs/PS1_BENCHMARK_ASSURANCE.md) documents those boundaries.
 
 ### PS1 native solver benchmark and selection
+
+**Historical evidence only:** every numerical result in this section predates
+`ps1-closure-v1`. “Passed”, “feasible” and “optimal” below describe the old
+incomplete model and checker; none establishes current PS1 conformance or a
+valid algorithm ranking. Corrected public exports are reported above; fresh
+algorithm comparisons remain pending.
 
 **Follow-up: can stronger modelling or targeted repair improve the result?**
 We added eight fixed stress cases (60–120 activities) and compared three CP-SAT
 pipelines under a **60-second total deadline**, including warm start and startup.
 On the four reserved C cases plus three controls, all methods tied every final
-score; all 21 schedules passed the local checker without a pipeline error.
+score; all 21 schedules passed the then-incomplete checker without a recorded
+pipeline error.
 
-| Method | Valid results | Lower score than full CP-SAT | Full-model optima |
+| Method | Passed old checker | Lower old-model score than full CP-SAT | Incomplete-model optima |
 | --- | ---: | ---: | ---: |
 | Existing full CP-SAT | 7/7 | Baseline | 5/7 |
 | Tighter equivalent formulation | 7/7 | 0/7 | 6/7 |
@@ -424,10 +473,10 @@ score; all 21 schedules passed the local checker without a pipeline error.
 Tightening proved capacity-pressure C **1090.8** in **1.32 seconds** in this
 seed-1 run; ordinary full search found the same score but had not proved it when
 returning at 58.45 seconds. Priority-contention C remained **300.7**, unproven,
-with no score improvement. Keep the existing production default; tightening is
-an opt-in challenger and custom repair has no demonstrated quality gain here.
-Repeating the two difficult controls with seeds 2 and 3 brings the final protocol
-to **33 valid runs with no errors**. Tightening proves capacity pressure in
+with no score improvement in the incomplete model. This no longer supports a
+production algorithm choice. Repeating the two difficult controls with seeds 2
+and 3 brought the final protocol to **33 runs accepted by the old checker with
+no recorded errors**. Tightening proves capacity pressure in
 **1.28–1.39 seconds in all three seeds**, and improves the best recorded priority-
 contention lower bound to **261.0**, while its schedule remains **300.7**.
 These are local M3 Pro/eight-worker measurements, not cloud timings or reference-
@@ -446,8 +495,8 @@ ECLO constructor; these algorithm comparisons and timings have not been rerun
 on those changes. “Baseline” below means the measured snapshot's baseline.
 
 A separate [post-merge quality check](scripts/ps1/benchmark/post-merge-hybrid-results.json)
-passed all 39 baseline and 39 extended-hybrid outcomes. Capacity-pressure C's
-hybrid score improved from 1118.8 to **1105.5**; the other 38 scores were unchanged.
+passed the old checker on all 39 baseline and 39 extended-hybrid outcomes.
+Capacity-pressure C's hybrid score improved from 1118.8 to **1105.5**; the other 38 scores were unchanged.
 The native models and checker did not change in that merge. The tables retain
 the original paired experiment rather than mixing its timings with the newer
 heuristic run.
@@ -462,7 +511,7 @@ their smaller coverage is shown separately below.
 
 #### Full 39-case comparison
 
-| Algorithm | Cases tested | Locally valid schedules | Improved over the TypeScript baseline | Full-model optimality proofs |
+| Algorithm | Cases tested | Passed old checker | Lower old-model score than TypeScript | Incomplete-model proofs |
 | --- | ---: | ---: | ---: | ---: |
 | Warm-started CP-SAT | 39 | 39/39 | 4 | 37/39 |
 | Warm-started SCIP MIP | 39 | 39/39 | 4 | 38/39 |
@@ -496,13 +545,14 @@ The following comparison uses the **same four inputs, Scenario C, seed 1,
 eight native workers and a 60-second native search cap**. Warm CP-SAT, SCIP and
 hybrid rows come from the main cohort; cold and LNS-only rows come from the
 ablation cohort at the same source snapshot. Every returned schedule passed the
-local checker. Native cells show the solver's own objective, not a fallback score.
+then-incomplete checker. Native cells show the solver's own objective, not a
+fallback score.
 
 | Algorithm / search mode | Public C | Capacity pressure C | Priority contention C | Mixed 240 C |
 | --- | ---: | ---: | ---: | ---: |
 | TypeScript hybrid baseline | 25.2 | 1118.8 | 340.4 | 0 |
 | Extended TypeScript hybrid | 25.2 | 1118.8 | 340.4 | 0 |
-| **Full CP-SAT, warm start (chosen)** | **25.2** | **1090.8** | **300.7** | **0** |
+| **Full CP-SAT, warm start (historical choice)** | **25.2** | **1090.8** | **300.7** | **0** |
 | Full CP-SAT, cold start | 25.2 | 1090.8 | 300.7 | 0 |
 | CP-SAT, LNS-only | 25.2 | 1090.8 | 300.7 | 0 |
 | SCIP MIP, warm start | 25.2 | 1090.8 | 300.7 | 0 |
@@ -526,11 +576,11 @@ reach zero on Mixed 240 C, which reaches the nonnegative objective's lower limit
 custom ALNS implementation.** The chosen full CP-SAT portfolio already includes
 large neighbourhood search alongside other search and bound-producing workers.
 Restricting it to LNS-only gave **no score improvement in 4/4 cases**, while
-leaving both difficult-case bounds at zero. That supports retaining the full
-portfolio. Cold CP-SAT also tied all four scores and produced stronger proofs
-on these hard cases: hints are useful starting schedules, not a guaranteed
-speedup. We retain the checked hybrid warm start as a practical incumbent and
-fallback; these results do not establish that warm search always beats cold.
+leaving both difficult-case bounds at zero. Cold CP-SAT also tied all four scores
+and produced stronger proofs in this historical model. These are observations
+about an incomplete problem, not current evidence for retaining or replacing a
+search mode. Hints and fallback schedules must satisfy the corrected closure
+checks before they can serve as feasible incumbents.
 
 #### Repeated runs and selection rationale
 
@@ -542,18 +592,16 @@ eight-worker, 60-second settings. Together with the original seed-1 runs:
 | Capacity pressure / C | 1090.8 / 1090.8 / 1090.8 | 1090.8 / 1090.8 / 1090.8 | 1/3 | 3/3 |
 | Priority contention / C | 300.7 / 300.7 / 300.7 | 300.7 / 308.4 / 304.2 | 0/3 | 0/3 |
 
-**Why CP-SAT is the default:** it consistently found the best observed
-priority-contention C score across these three seeds, while SCIP's score varied.
-Its Boolean/integer model fits PS1's weekly choices, its parallel search already
-includes neighbourhood improvement, and the integrated service retains a checked
-incumbent when search runs out of time. This is a practical choice supported by a
-**small sample, not a claim of universal superiority**. SCIP remains a strong
-challenger: it proved capacity-pressure C optimal in all three runs. In the
-seed-1 run, CP-SAT found that score after approximately 0.74 seconds but did not
-prove it by its limit; SCIP completed the proof in approximately 7.25 seconds.
-Neither solver proved the priority-contention C score optimal.
+**Historical selection rationale, now superseded:** CP-SAT consistently returned
+the best observed priority-contention C score across these three seeds, while
+SCIP's score varied. SCIP proved capacity-pressure C optimal in all three runs
+for the incomplete model. In seed 1, CP-SAT found that score after approximately
+0.74 seconds without proving it by its limit; SCIP completed its proof in
+approximately 7.25 seconds. Neither proved priority-contention C optimal.
+Missing mandatory closures means these observations cannot establish the best
+solver for PS1; fresh comparisons are required.
 
-| Candidate | Decision supported by the measurements |
+| Candidate | Historical decision, superseded pending corrected comparison |
 | --- | --- |
 | Full CP-SAT with checked hybrid warm start | Default native engine: best observed scores, consistent hard-case quality across three seeds, bounds and integrated fallback |
 | Cold CP-SAT | Keep as a benchmark challenger; tied warm scores on four cases and sometimes improved proofs |
@@ -561,9 +609,9 @@ Neither solver proved the priority-contention C score optimal.
 | SCIP MIP | Keep as an independent challenger; tied all 39 main scores and often proved optima faster, but varied on the hardest repeated case |
 | TypeScript hybrid / extended hybrid | Retain for initial schedules and fallback; additional search improved none of the 39 snapshot baselines |
 
-We chose **CP-SAT as the primary native engine**, with the hybrid still part of
-the pipeline. The evidence supports this default; it does not show that every
-alternative is inferior on every instance.
+The integrated pipeline uses **CP-SAT as the primary native engine**, with the
+hybrid providing initial candidates. Its current implementation choice is not a
+validated algorithm ranking; corrected evidence is pending.
 
 #### Other experiments and evidence boundaries
 
@@ -572,25 +620,27 @@ also compares **legacy construction, the standard hybrid and CP-SAT**, using
 scoring v2 across 39 cases. This is a separate source run, with iteration-budget
 heuristics and a five-second native search cap, not an equal-time race.
 
-| Method in the earlier v2 matrix | Feasible outcomes | Better / tied / worse than legacy | Public A / B / C |
+| Method in the earlier v2 matrix | Passed old checker | Lower / tied / higher than legacy | Historical public A / B / C |
 | --- | ---: | --- | --- |
 | Legacy TypeScript construction/search | 39/39 | 0 / 39 / 0 | 25.2 / 44 / 39.2 |
 | Standard TypeScript hybrid | 39/39 | 14 / 25 / 0 | 25.2 / 30 / 25.2 |
 | Native CP-SAT, five-second cap | 39/39 | 17 / 22 / 0 | 25.2 / 30 / 25.2 |
 
 That native run proved 37 optima and achieved the same 39 scores as the later
-60-second matrix. It supports the hybrid improvement over legacy and additional
-native improvements; the separate runs do not establish a latency comparison.
+60-second matrix. Both used the incomplete closure model, so neither establishes
+feasible PS1 improvements or a current ranking. The separate runs also do not
+establish a latency comparison.
 Earlier scoring-v1 tests of legacy/hybrid search, single-worker full CP-SAT and
 frozen repairs remain in [historical results](scripts/ps1/benchmark/results.json).
 Those scores are superseded, and repair proofs cover only the frozen subproblem;
-neither belongs in the current full-model ranking.
+neither establishes a current full-model ranking.
 
-The current v2 holdout cohort also tested CP-SAT on 24 seeded Scenario B
-perturbations: 16 were feasible and proven optimal (10 improved the heuristic,
-six tied); eight were proven infeasible within the encoded full model. SCIP and
-LNS-only were not run on those holdouts, so this is robustness evidence, not a
-head-to-head win. Public B was an additional control at 30.
+The historical v2 holdout cohort also tested CP-SAT on 24 seeded Scenario B
+perturbations: 16 passed the old checker with incomplete-model optimality proofs
+(10 improved its heuristic score, six tied); eight were reported infeasible in
+that model. SCIP and LNS-only were not run on those holdouts. This cannot serve
+as corrected PS1 robustness or head-to-head evidence. Public B was an additional
+historical control at 30.
 
 IBM CP Optimizer, Hexaly, Gurobi and HiGHS were considered in the research but
 **not benchmarked** here. The optional `cpsat-base-lin0` setting is also outside
@@ -609,9 +659,10 @@ already had zero baseline scores, so they cannot show score improvement. The
 cloud service's provisional 16-worker default still needs an 8/16/32-worker test
 on the deployment host, including repeated seeds and harder holdout instances.
 
-Every native candidate passed the local checker after an official-CSV round-trip.
-That checker is **not the organiser's reference validator**; proofs cover only
-the encoded local model. See the [research and selection report](docs/PS1_NATIVE_SOLVER_RESEARCH.md),
+Every native candidate passed the old checker after an official-CSV round-trip,
+but that checker omitted mandatory closures. Those passes and proofs do not
+establish PS1 feasibility or optimality. The corrected local checker is still
+**not the organiser's reference validator**. See the [research and selection report](docs/PS1_NATIVE_SOLVER_RESEARCH.md),
 [recorded benchmark results](scripts/ps1/benchmark/cloud-results.json) and
 [cloud deployment runbook](docs/PS1_NATIVE_DEPLOYMENT.md) for evidence, limits and
 reproduction details.
@@ -656,7 +707,8 @@ optimiser. See [setup](demos/algorithm-lab/README.md) and the
 - [x] Weekly contract/activity schedule, occupancy view and contextual explanations.
 - [x] Reviewed maintenance replanning, Apply/Discard/Undo and official CSV export.
 - [x] Synthetic datasets for dependencies, capacity pressure and larger workloads.
-- [x] Repeatable PS1 benchmark and measured solver-quality comparison.
+- [x] Repeatable PS1 benchmark harness with retained historical measurements.
+- [ ] Rerun solver-quality comparisons under the corrected closure model.
 - [ ] Continue improving heuristic schedule quality on varied workloads.
 - [ ] Complete remaining manual accessibility checks and evaluate with planning practitioners.
 - [ ] Complete and verify the remaining hackathon submission deliverables.

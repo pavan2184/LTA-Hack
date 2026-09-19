@@ -1,9 +1,9 @@
 """Independent SCIP MIP formulation of the represented PS1 weekly model.
 
-Uses the SCIP backend shipped with OR-Tools, not the CP-SAT search engine.
-As with the local checker, physical alignment between separate possessions is
-not encoded by the CSV format. A bound proves only this model, or its frozen
-repair subproblem. Python model construction is outside the search limit.
+Uses SCIP with explicit local group assignments and a rooted sharing forest,
+so transitive closure exemptions require actual co-sharing connectivity.
+A bound proves only this model, or its frozen repair subproblem. Python model
+construction is outside the search limit.
 """
 import datetime as dt
 import json
@@ -20,6 +20,8 @@ from ortools.linear_solver import pywraplp
 def solve(payload):
     if payload.get("schema") != "ps1-cpsat-v1":
         raise ValueError("Unsupported PS1 payload schema")
+    if payload.get("closureModelVersion") != "ps1-closure-v1":
+        raise ValueError("Unsupported or missing closureModelVersion")
     scenario = payload["scenario"]
     if scenario not in ("A", "B", "C"):
         raise ValueError("Unknown scenario")
@@ -53,6 +55,11 @@ def solve(payload):
     origin = dt.date.fromisoformat(instance["parameters"]["horizonStart"])
     contracts = {c["contractNumber"]: c for c in instance["contracts"]}
     activities = {a["activityId"]: a for a in instance["activities"]}
+    pairs = payload.get("closurePairs")
+    if not isinstance(pairs, list) or any(not isinstance(pair, list) or len(pair) != 2 or
+            any(not isinstance(aid, str) or aid not in activities for aid in pair) or pair[0] == pair[1]
+            for pair in pairs):
+        raise ValueError("closurePairs must contain pairs of distinct known activity IDs")
     movable = set(activities)
     if "movableActivityIds" in payload:
         requested = payload["movableActivityIds"]
@@ -137,32 +144,95 @@ def solve(payload):
                 solver.Add(solver.Sum(x[aid, week] for aid in ids) <=
                            contract["numberOfWorkfronts"] * contract["numberOfMaximumAccessPerWeek"])
 
+    activity_order = {aid: index + 1 for index, aid in enumerate(sorted(activities))}
+    assignment, sharing_assignments = {}, {}
+    incumbent_groups = {}
+    for row in payload.get("incumbent", {}).get("occupancy", []):
+        key = row["locationId"], row["week"], row["coShareGroup"]
+        incumbent_groups.setdefault(key, []).append(row["activityId"])
+    incumbent_anchor = {}
+    for (loc, week, _), members in incumbent_groups.items():
+        hosts = [aid for aid in members if contracts[activities[aid]["contractNumber"]]["accessType"] != "C"]
+        anchor = hosts[0] if hosts else min(members, key=lambda aid: activity_order[aid])
+        for aid in members:
+            incumbent_anchor[loc, week, aid] = anchor
     objective = []
     for location in instance["locationSupply"]:
         loc = location["locationId"]
-        ids = [aid for aid in activities if loc in payload["spans"][aid]]
+        ids = sorted(aid for aid in activities if loc in payload["spans"][aid])
         if not ids:
             continue
         pm = [aid for aid in ids if contracts[activities[aid]["contractNumber"]]["accessType"] == "PM"]
         pc = [aid for aid in ids if contracts[activities[aid]["contractNumber"]]["accessType"] == "PC"]
-        shared = [aid for aid in ids if aid not in pm]
+        co_workers = [aid for aid in ids if aid not in pm and aid not in pc]
         for week in weeks:
-            groups = solver.IntVar(0, len(ids), f"groups_{loc}_{week}")
-            pc_branch = solver.BoolVar(f"pc_branch_{loc}_{week}")
-            pc_count = solver.Sum(x[aid, week] for aid in pc)
-            shared_count = solver.Sum(x[aid, week] for aid in shared)
-            # Exact max(PC, ceil((PC+C)/4)); the selected branch attains equality.
-            solver.Add(groups >= pc_count)
-            solver.Add(4 * groups >= shared_count)
-            solver.Add(groups <= pc_count + len(ids) * (1 - pc_branch))
-            solver.Add(4 * groups <= shared_count + 3 + 4 * len(ids) * pc_branch)
-            count = groups + solver.Sum(x[aid, week] for aid in pm)
+            for aid in ids:
+                assignment[loc, week, aid, aid] = (solver.BoolVar(f"group_{loc}_{week}_{aid}")
+                                                   if aid in co_workers else x[aid, week])
+            members_by_anchor = {aid: [assignment[loc, week, aid, aid]] for aid in ids}
+            for aid in co_workers:
+                choices = [assignment[loc, week, aid, aid]]
+                for anchor in pc + [other for other in co_workers if activity_order[other] < activity_order[aid]]:
+                    variable = solver.BoolVar(f"join_{loc}_{week}_{aid}_{anchor}")
+                    assignment[loc, week, aid, anchor] = variable
+                    members_by_anchor[anchor].append(variable)
+                    solver.Add(variable <= assignment[loc, week, anchor, anchor])
+                    choices.append(variable)
+                    edge = tuple(sorted((aid, anchor))) + (week,)
+                    sharing_assignments.setdefault(edge, []).append(variable)
+                solver.Add(solver.Sum(choices) == x[aid, week])
+            for anchor in pc + co_workers:
+                solver.Add(solver.Sum(members_by_anchor[anchor]) <= 4 * assignment[loc, week, anchor, anchor])
+            count = solver.Sum(assignment[loc, week, aid, aid] for aid in ids)
             supply = payload["capacity"][loc][week - 1]
             allowance = 0 if payload["disrupted"][loc][week - 1] or scenario == "A" else (1 if scenario == "C" else len(ids))
             solver.Add(count <= supply + allowance)
             if scenario != "A":
                 excess = positive_part(count - supply, -supply, len(ids) - supply, f"excess_{loc}_{week}")
                 objective.append(70 * excess)
+
+    if incumbent_groups:
+        for (loc, week, aid, anchor), variable in assignment.items():
+            if contracts[activities[aid]["contractNumber"]]["accessType"] == "C":
+                hint_vars.append(variable)
+                hint_values.append(int(incumbent_anchor.get((loc, week, aid)) == anchor))
+    # A unique root identity and strictly descending parent depth prove real
+    # connectivity; disconnected activities cannot simply claim the same label.
+    size = len(activities)
+    component, depth, root, parents = {}, {}, {}, {}
+    for aid in activities:
+        for week in weeks:
+            key = aid, week
+            component[key] = solver.IntVar(0, activity_order[aid], f"component_{aid}_{week}")
+            depth[key] = solver.IntVar(0, max(0, size - 1), f"depth_{aid}_{week}")
+            root[key] = solver.BoolVar(f"root_{aid}_{week}")
+            parents[key] = []
+            solver.Add(component[key] >= x[key])
+            solver.Add(component[key] <= size * x[key])
+            solver.Add(root[key] <= x[key])
+            solver.Add(component[key] >= activity_order[aid] * root[key])
+            solver.Add(depth[key] <= max(0, size - 1) * (x[key] - root[key]))
+    for (first_id, second_id, week), choices in sharing_assignments.items():
+        shared_edge = solver.BoolVar(f"shared_{first_id}_{second_id}_{week}")
+        for variable in choices:
+            solver.Add(shared_edge >= variable)
+        solver.Add(shared_edge <= solver.Sum(choices))
+        difference = component[first_id, week] - component[second_id, week]
+        solver.Add(difference <= size * (1 - shared_edge))
+        solver.Add(difference >= -size * (1 - shared_edge))
+        for child, parent in ((first_id, second_id), (second_id, first_id)):
+            variable = solver.BoolVar(f"parent_{child}_{parent}_{week}")
+            solver.Add(variable <= shared_edge)
+            solver.Add(depth[child, week] >= depth[parent, week] + 1 - size * (1 - variable))
+            parents[child, week].append(variable)
+    for key in x:
+        solver.Add(root[key] + solver.Sum(parents[key]) == x[key])
+    for source, target in pairs:
+        for week in weeks:
+            difference = component[source, week] - component[target, week]
+            slack = size * (2 - x[source, week] - x[target, week])
+            solver.Add(difference <= slack)
+            solver.Add(difference >= -slack)
 
     if scenario != "B":
         # Every late activity is charged at its own last access week, including
@@ -193,7 +263,7 @@ def solve(payload):
     found = status in ("FEASIBLE", "OPTIMAL")
     if found and not solver.VerifySolution(1e-6, False):
         raise RuntimeError("SCIP returned a solution failing its numerical verification")
-    access = []
+    access, occupancy = [], []
     if found:
         for aid in activities:
             seq = 0
@@ -211,6 +281,8 @@ def solve(payload):
                         count = kinds.get(activity["activityType"], 0)
                         row["accessNight"] = count // contract["numberOfWorkfronts"] + 1
                         kinds[activity["activityType"]] = count + 1
+        occupancy = [{"activityId": aid, "week": week, "locationId": loc, "coShareGroup": "g:" + anchor}
+                     for (loc, week, aid, anchor), variable in assignment.items() if variable.solution_value() > 0.5]
     bound = solver.Objective().BestBound() / 10
     # All penalty terms are nonnegative, so zero remains a valid trivial bound.
     if not math.isfinite(bound) or abs(bound) >= 1e19:
@@ -220,6 +292,7 @@ def solve(payload):
         import resource
         peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024 if sys.platform == "darwin" else 1024)
     return {"schema": "ps1-cpsat-v1", "digest": payload["digest"], "scenario": scenario,
+            "closureModelVersion": payload["closureModelVersion"],
             "formulaVersion": "ps1-objective-v2",
             "scope": "repair" if has_frozen_work else "full", "status": status,
             "boundScope": "conditional_on_frozen_activities" if has_frozen_work else "encoded_full_model",
@@ -236,7 +309,7 @@ def solve(payload):
             "modelStats": {"variables": solver.NumVariables(), "constraints": solver.NumConstraints()},
             "host": {"system": platform.system(), "architecture": platform.machine(),
                      "logicalCpuCount": os.cpu_count(), "pythonVersion": platform.python_version()},
-            "peakRssMiB": peak_rss, "peakRssScope": "process_lifetime", "access": access}
+            "peakRssMiB": peak_rss, "peakRssScope": "process_lifetime", "access": access, "occupancy": occupancy}
 
 
 if __name__ == "__main__":

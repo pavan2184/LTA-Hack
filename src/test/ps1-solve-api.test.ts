@@ -13,6 +13,7 @@ vi.mock("@/lib/ps1/server-solver", () => ({
 }));
 import { POST } from "@/app/api/ps1/solve/route";
 import { NativeSolverUnavailableError } from "@/lib/ps1/server-solver";
+import { NativeModelSizeError } from "@/lib/ps1/cp-sat-model";
 
 const instance = loadInstance(Object.fromEntries(PS1_FILES.map((file) => [file, readFileSync(resolve("packages/ps1/data/public", file), "utf8")])));
 const input = () => ({ instance: structuredClone(instance), scenario: "B", pins: [], disruptions: [] });
@@ -106,5 +107,13 @@ describe("POST /api/ps1/solve", () => {
     const response = await POST(request());
     expect(response.status).toBe(503);
     expect((await response.json()).error.code).toBe("solver_unavailable");
+  });
+  it("reports excessive co-sharing expansion as a size limit and releases admission", async () => {
+    native.solve.mockRejectedValueOnce(new NativeModelSizeError("internal estimate"));
+    const response = await POST(request());
+    expect(response.status).toBe(413);
+    expect((await response.json()).error.code).toBe("model_too_large");
+    native.solve.mockResolvedValueOnce({ status: "FEASIBLE" });
+    expect((await POST(request())).status).toBe(200);
   });
 });

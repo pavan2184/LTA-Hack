@@ -1,10 +1,22 @@
 # PS1 native solver selection
 
+> **Superseded evidence — closure conformance correction.** The pre-correction
+> benchmark scores, feasibility counts, proofs and algorithm rankings below are
+> historical results from an incomplete closure model. They are not valid PS1
+> ranking or conformance evidence. A public A export passed our old checker but
+> received 15 closure violations. The corrected regression reproduces all 15
+> reported messages and accepts the published sample with zero closure violations.
+> Consist buffers extend sectors; Live buffers also include outer platforms and
+> expand across the interchange before mirroring. The correction is identified as
+> `ps1-closure-v1`. Corrected public exports are recorded in
+> [current project status](PROJECT_STATUS.md); algorithm comparisons still
+> need fresh runs. No deployed fix or reference-validator parity is claimed.
+
 A subsequent [tighter-model and targeted-repair experiment](PS1_NATIVE_SEARCH_EXPERIMENTS.md)
 uses eight new fixed stress inputs and an equal total-pipeline deadline. It is
-recorded separately from the native-search-only cohorts below. The production
-default remains unchanged; optional redundant cuts improve one proof without a
-demonstrated final-score gain, and targeted repair remains experimental.
+recorded separately from the native-search-only cohorts below. Both cohorts
+predate closure enforcement. Their performance-based recommendations are
+superseded pending corrected comparisons.
 
 Owner direction, 2026-09-19: **32 vCPUs, 64 GiB RAM, 60-second default search**.
 Cloud computation is explicitly authorised; the earlier browser-only deployment
@@ -20,26 +32,25 @@ not identify the measured source.
 A later shared-branch merge (`2957345`) improved TypeScript ECLO construction but
 did not change either native model or the checker. A separate
 [post-merge quality check](../scripts/ps1/benchmark/post-merge-hybrid-results.json)
-passed all 39 baseline and 39 extended-hybrid outcomes, improving capacity-pressure
+passed the old checker on all 39 baseline and 39 extended-hybrid outcomes, changing capacity-pressure
 C from 1118.8 to 1105.5 with the other 38 scores unchanged. The native timing and
 repeated-seed cohorts below remain the original paired snapshot, not measurements
 of that later heuristic revision. Rerun the complete comparison on the cloud host.
 
-## Recommendation and measured results
+## Historical recommendation and measurements — superseded
 
-Deploy the integrated **native CP-SAT portfolio with a checked heuristic warm
-start**, using the 60-second search cap. Start at 16 workers on the 32-vCPU host,
-then select 8/16/32 from target-host measurements. This is a practical deployment
-choice, not a claim that CP-SAT is the unique winner: **SCIP tied every final
-score in the main comparison and proved one more optimum**. Keep the independent
-SCIP implementation as a challenger for the cloud engineer.
-Across three seeds on the hardest case, CP-SAT also returned the best measured
-score more consistently than SCIP, which strengthens this default choice.
+The integrated engine is **native CP-SAT with a heuristic warm start** and a
+60-second search cap. The historical recommendation used the measurements below;
+its empirical quality and proof-speed rationale is withdrawn because the model
+omitted mandatory closures. CP-SAT remains a suitable modelling candidate and
+SCIP an implemented challenger, but corrected benchmarks are needed to rank them.
+The provisional 16-worker choice still needs an 8/16/32-worker experiment on the
+32-vCPU host. This document does not claim a deployed correction.
 
 The complete main comparison uses 13 inputs × A/B/C, scoring v2, seed 1, eight
 native workers and sequential jobs on the local M3 Pro. Lower scores are better.
 
-| Method | Locally feasible | Better than hybrid baseline | Proven full-model optima |
+| Method | Passed old checker | Lower old-model score than hybrid | Incomplete-model optima |
 | --- | ---: | ---: | ---: |
 | Hinted CP-SAT | 39/39 | 4 | 37 |
 | Hinted SCIP MIP | 39/39 | 4 | 38 |
@@ -53,9 +64,10 @@ native workers and sequential jobs on the local M3 Pro. Lower scores are better.
 | Priority contention C | 340.4 | 300.7 | 300.7 | 11.7% |
 
 Both native engines tie the baseline on the other 35 cases; 27 of the 39 cases
-already have zero scores. Public A/B/C remain 25.2/30/25.2 and are proven optimal
-by both engines within the encoded local model. There were no native errors,
-invalid schedules or selected-score regressions in this comparison.
+already had zero scores. Public A/B/C were reported at 25.2/30/25.2 with proofs
+from both engines, but those incomplete-model proofs do not certify PS1 optima.
+There were no recorded native errors, old-checker rejections or selected-score
+regressions. The omitted closure checks mean that is not a feasibility guarantee.
 
 On capacity-pressure C, CP-SAT reaches 1090.8 after 0.735 seconds of search,
 but finishes its 60-second cap with a 1061.1 lower bound. SCIP proves 1090.8 in
@@ -98,7 +110,8 @@ path adversely for a proof; they are not a guaranteed speedup.
 
 LNS-only proved the public and zero-score mixed cases, but its lower bound
 remained zero on both difficult cases. It offered no measured quality advantage
-here. Keep the full portfolio, which already includes neighbourhood search.
+in the incomplete model. The full portfolio already includes neighbourhood
+search, but its current quality relative to LNS-only needs a corrected comparison.
 
 An additional 24 seeded workload/priority perturbations were evaluated in
 Scenario B without filtering out heuristic failures. Sixteen were feasible and
@@ -126,8 +139,9 @@ seed is held fixed.
 SCIP proves capacity-pressure C in 5.39–8.34 seconds including the bridge,
 while CP-SAT proves it in only one run (49.96 seconds). CP-SAT returns the best
 observed priority-contention score in all three runs; SCIP does so in one.
-This small sample supports the default choice, not a statistical or universal
-guarantee. The priority-contention optimum remains unknown.
+This small historical sample cannot support a current PS1 ranking because the
+closure model was incomplete. The corrected priority-contention optimum remains
+unknown.
 
 ## Candidates and research
 
@@ -203,8 +217,8 @@ can override that setting for named LP workers. It is **not** an LP-free solver.
    corresponding trace, so those fields are explicitly unavailable.
 5. Run variants sequentially to avoid competing solver jobs. Local screening is
    Apple M3 Pro / 11 available CPUs / 18 GiB RAM / eight requested workers. It is
-   not a Google Cloud benchmark. Initial v1 screening was superseded after the
-   engineer's scoring-v2 changes arrived; final evidence is rerun on v2.
+   not a Google Cloud benchmark. Initial v1 screening was superseded by scoring
+   v2; both historical cohorts are now superseded by the closure correction.
 6. Include heuristic failures in native comparisons. Synthetic and perturbed
    fixtures are engineering tests, not independently collected operational data.
 7. Record input/source digests, seed, solver versions, settings, memory and
@@ -212,8 +226,9 @@ can override that setting for named LP workers. It is **not** an LP-free solver.
 
 ## Cloud acceptance experiment
 
-First reproduce the complete 39 public/synthetic cases with the selected native
-algorithm. Then run 8/16/32 workers with seeds 1/2/3 on public C, capacity-pressure
+First confirm closure regressions and regenerate or revalidate fixture
+certificates under `ps1-closure-v1`. Then run a fresh complete 39-case
+public/synthetic comparison with the selected native algorithm. Then run 8/16/32 workers with seeds 1/2/3 on public C, capacity-pressure
 C, priority-contention C and mixed-240 C. Add seeded perturbation cases, including
 those the heuristic cannot solve. The CLI preserves failures and refuses worker
 counts exceeding the host's available CPUs.
@@ -235,6 +250,9 @@ it returns completed scenario responses rather than streaming every incumbent.
 Actual cloud deployment, throughput and end-to-end acceptance remain engineering
 verification tasks.
 
-The local checker is not the organiser's reference validator. Cross-possession
-physical-night alignment is undecidable from the published fields. All proof
-claims in this report apply only to the encoded local model.
+The local checker is not the organiser's reference validator. The previously
+missing closure constraints are mandatory; the absence of a physical-night field
+does not justify omitting them. All numerical proof claims in this historical
+report concern the incomplete pre-correction model. Fresh CSV validation and
+benchmarks under `ps1-closure-v1` are required before claiming PS1 feasibility,
+optimality or algorithm superiority.

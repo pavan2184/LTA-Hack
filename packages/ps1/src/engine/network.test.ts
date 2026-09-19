@@ -114,6 +114,8 @@ describe("closures and buffers", () => {
     expect(closure).toContain("SEC:ALP:S01_S02:EB");
     expect(closure).toContain("SEC:ALP:S03_S04:EB");
     expect(closure).not.toContain("SEC:ALP:S04_H01:EB");
+    expect(closure).not.toContain("PLAT:ALP:S01:EB");
+    expect(closure).not.toContain("PLAT:ALP:S04:EB");
     // The opposite bound is untouched: only Live mirrors.
     expect([...closure].some((id) => id.endsWith(":WB"))).toBe(false);
   });
@@ -145,6 +147,14 @@ describe("closures and buffers", () => {
     expect(live).toContain("SEC:BET:H01_H02:WB");
     expect(live).toContain("PLAT:BET:H01:EB");
     expect(live).toContain("PLAT:BET:H02:WB");
+    // The organiser rejection includes these outer Beta locations for A074.
+    expect(live).toContain("SEC:BET:S13_S14:WB");
+    expect(live).toContain("SEC:BET:S15_S16:EB");
+    expect(live).toContain("PLAT:BET:S13:WB");
+    expect(live).toContain("PLAT:BET:S16:EB");
+    // Crossing must not expand the original Alpha buffer a second time.
+    expect(live).not.toContain("SEC:ALP:S02_S03:EB");
+    expect(live).not.toContain("SEC:BET:S12_S13:WB");
 
     const consist = new Set(
       closureFor(
@@ -155,6 +165,16 @@ describe("closures and buffers", () => {
     );
     // Every other nature stays confined to its own line.
     expect([...consist].some((id) => id.includes(":BET:"))).toBe(false);
+  });
+
+  it("carries Beta Live interchange buffers back to Alpha on both bounds", () => {
+    const closed = new Set(closureFor(network,
+      expandSpan(network, "SEC:BET:H01_H02:WB", "SEC:BET:H01_H02:WB"), "Live"));
+    for (const bound of ["EB", "WB"]) {
+      expect(closed).toContain(`SEC:ALP:S03_S04:${bound}`);
+      expect(closed).toContain(`SEC:ALP:S05_S06:${bound}`);
+      expect(closed).not.toContain(`SEC:ALP:S06_S07:${bound}`);
+    }
   });
 
   it("stops the buffer at the end of the line rather than running off it", () => {

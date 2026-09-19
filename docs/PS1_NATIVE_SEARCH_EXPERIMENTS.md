@@ -1,9 +1,22 @@
 # Stronger CP-SAT formulation and targeted repair
 
-These experiments answer whether the current native pipeline can deliver lower
-PS1 penalties within a practical response deadline. They do not change the
-production solver, scoring or official outputs. The local checker is not the
-organiser's reference validator; all proofs apply to the encoded local model.
+> **Superseded evidence — closure conformance correction.** The pre-correction
+> benchmark scores, feasibility counts, proofs and algorithm rankings below are
+> historical results from an incomplete closure model. They are not valid PS1
+> ranking or conformance evidence. A public A export passed our old checker but
+> received 15 closure violations. The corrected regression reproduces all 15
+> reported messages and accepts the published sample with zero closure violations.
+> Consist buffers extend sectors; Live buffers also include outer platforms and
+> expand across the interchange before mirroring. The correction is identified as
+> `ps1-closure-v1`. Corrected public exports are recorded in
+> [current project status](PROJECT_STATUS.md); algorithm comparisons still
+> need fresh runs. No deployed fix or reference-validator parity is claimed.
+
+These historical experiments compared native pipelines within a practical
+response deadline, using a model that omitted mandatory closures. They do not
+establish lower feasible PS1 penalties or a current deployment recommendation.
+Their recorded proofs apply only to that incomplete model. The local checker is
+not the organiser's reference validator.
 Full cohort metadata, stage traces and retained failures are in
 [stress-results.json](../scripts/ps1/benchmark/stress-results.json).
 
@@ -70,10 +83,11 @@ interchange coupling. They reuse the public topology. Constant supply is derived
 from the peak possession count of an independently constructed full schedule;
 tightened due dates create objective pressure.
 
-The resulting A/C certificates pass exact CSV round-trip and local validation.
-They establish local feasibility and are saved separately for audit, **never
-supplied to search as hints**. Scenario B is deliberately not certified, and any
-B run must retain failures. No instance was rejected based on solver performance.
+The resulting A/C certificates passed CSV round-trip and the old incomplete
+checker. They must be revalidated or regenerated under `ps1-closure-v1`
+before they can establish current local feasibility. They were saved separately
+for audit and **never supplied to search as hints**. Scenario B is deliberately
+not certified, and any B run must retain failures. No instance was rejected based on solver performance.
 
 These are related synthetic families, not independent railway operating data or
 the judges' hidden inputs. All four holdouts ultimately proved easy enough for
@@ -83,8 +97,8 @@ establish superiority on difficult hidden cases.
 ## Reserved cases: 60 seconds, seed 1
 
 All three methods returned the same final score on all seven cases. Every
-returned schedule passed the local CSV checker; all 21 pipelines finished within
-the deadline without a recorded error. Lower penalties are better; scores across
+returned schedule passed the then-incomplete CSV checker; all 21 pipelines
+finished within the deadline without a recorded error. Lower penalties are better; scores across
 different instances are not directly comparable.
 
 | Scenario C instance | Heuristic warm start | Full CP-SAT | Tight formulation | Targeted repair |
@@ -125,22 +139,24 @@ pressure and 300.7 on priority contention for every seed.
 | Tight formulation | 3/3 | **1.32 / 1.28 / 1.39** | 248.9 / 250.5 / **261.0** |
 | Targeted repair | 0/3 | 58.37 / 58.37 / 58.57 | 242.2 / 247.5 / 248.3 |
 
-No method proves priority contention optimal. Tightening improves the best
-recorded full-model bound from the earlier 258.3 to 261.0, leaving the optimum
-somewhere in **[261.0, 300.7]**. Its weaker bounds in the other two seeds show
-that the improvement is not uniform. This is a small local sample, not a
+No method proved priority contention optimal in the historical model. Tightening
+improved its recorded bound from 258.3 to 261.0, leaving that incomplete model's
+optimum in **[261.0, 300.7]**. The upper endpoint is not an established feasible
+PS1 score, so this is not an interval for the corrected problem's optimum. Its
+weaker bounds in the other two seeds show that the improvement is not uniform. This is a small local sample, not a
 statistical generalisation or target-cloud result.
 
-Across the two final-protocol cohorts there are **33 valid pipelines, 19 full-model
-proofs, zero recorded errors and zero deadline overruns**. Maximum measured
-pipeline time is 58.69 seconds. Full, tight and targeted produce 6/11, 8/11 and
+Across the two final-protocol cohorts there were **33 pipelines accepted by the
+old checker, 19 incomplete-model proofs, zero recorded errors and zero deadline
+overruns**. Maximum measured pipeline time is 58.69 seconds. Full, tight and targeted produce 6/11, 8/11 and
 5/11 proofs respectively; every matched final score ties.
 
 ## Short-budget development calibration
 
 Before the holdout evaluation, 21 ten-second runs covered the three controls and
 four development cases. The initial 750-ms startup allowance caused five child
-timeouts across four pipelines. Every pipeline retained a valid incumbent.
+timeouts across four pipelines. Every pipeline retained an incumbent accepted
+by the old checker.
 Those runs remain recorded, not filtered. The final protocol reserves two
 seconds per stage and skips stages shorter than 2.5 seconds; it was frozen before
 optimising the reserved cases.
@@ -160,14 +176,17 @@ hash was verified after resolution, tests reran, and the whole batch was restart
 in a fresh output directory. This was orchestration interference, not an
 algorithmic result.
 
-## Deployment decision
+## Historical deployment decision — superseded
 
-Keep the current full CP-SAT portfolio as the production default. Retain tightening
-as an opt-in challenger: it can dramatically shorten one proof, but does not
-improve the measured final scores and does not uniformly improve bounds or time.
-Targeted repair currently adds complexity without a demonstrated quality gain.
+These results originally motivated retaining full CP-SAT and keeping tightening
+and targeted repair experimental. That performance rationale is superseded by
+the closure defect: a fast proof for an incomplete model does not determine the
+best algorithm for PS1. Corrected feasibility checks and repeated comparisons
+must precede a new quality or proof-speed recommendation. No deployment change
+is established by this document.
 
-The cloud engineer can reproduce the comparisons using the commands in the
+After regenerating valid certificates and confirming the corrected model, the
+cloud engineer can run new comparisons using the commands in the
 [benchmark README](../scripts/ps1/benchmark/README.md#stress-experiments-with-one-total-deadline),
 then compare 8/16/32 workers on the actual 32-vCPU / 64-GiB host. Preserve the
 same total budget and repeat seeds before changing the deployed formulation.
@@ -177,9 +196,10 @@ The eight new cases and existing difficult controls are included in that handoff
 
 The experiment source passed 1,111 application tests (79 database-dependent
 tests skipped), 45 native Python tests, lint, typecheck and a production build.
-A fresh public native CLI run preserved A 25.2 / B 30 / C 25.2 with three
-full-model proofs and exactly nine CSVs. Integration with the later main branch
-left the measured solver source unchanged and passed 95 focused tests, lint,
+At that historical revision, a public native CLI run reported A 25.2 / B 30 /
+C 25.2 with three incomplete-model proofs and exactly nine CSVs. Those scores are
+not current feasible PS1 results; the test suite missed the closure omission.
+Integration with the later main branch left the measured solver source unchanged and passed 95 focused tests, lint,
 typecheck and a fresh build. Its first restricted build could not fetch the
 existing Google Fonts; the network-enabled retry passed. No browser, database,
 reference-validator or target-cloud verification is claimed for this change.

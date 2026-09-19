@@ -1,0 +1,1474 @@
+{
+  "schema": "ps1-observed-closure-regression-v1",
+  "sourceCommit": "70e58dd56f8f2627a2631d3b0b3b3d5da2aa455b",
+  "sourceDirectory": "packages/ps1/data/results/A",
+  "sourceHashes": {
+    "access": "fef860a3e24ea0b6a90997a25c2be930c69971139f3ad0aa094e136c756d82b8",
+    "occupancy": "684fa0903af8445d744b39b54203ede48d0ca3cfe7a5531fba710d86245196a8",
+    "results": "e21314c63eabe0060aa4aa7029126241ef006ad8aa7302a50f17f7ed6bb8d7c9"
+  },
+  "instanceSha256": "2542c2e7ddc6829c529c8c7e63a96f03c0ea2ba9ad4dfd5ec8490eb0facd4a5f",
+  "targetWeeks": [
+    9,
+    10,
+    19,
+    24
+  ],
+  "note": "Partial submission preserves every original access and occupancy in the four reported weeks, including all co-sharing intermediaries. It is for closure-rule regression only and is not a complete workload submission. Expected locations for the Consist pairs are copied from the user-reported rejection; Live hit sets are reconstructed locally with their first four locations matching the reported messages. This is not an external-validator run.",
+  "semantics": {
+    "originators": "Nature-based closures from every activity; buffer-free when both non-Live and access types are C/C or PC/C in either order. Live protection applies to C too; C Consist buffers can exclude PM.",
+    "sharing": "Transitive components of activities sharing (week, location_id, co_share_group)",
+    "live": "Crossover tunnel sectors become seeds before applying the full buffer and opposite-bound mirror on both lines",
+    "intersection": "Originator closure against external activity direct occupancy, not buffer-buffer-only overlap",
+    "consist": "Buffer expands tunnel sectors; only the original occupied platforms close, as observed in the A025/A028 rejection."
+  },
+  "partialSubmission": {
+    "scenario": "A",
+    "access": [
+      {
+        "activityId": "A007",
+        "accessSeq": 5,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A008",
+        "accessSeq": 4,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A013",
+        "accessSeq": 4,
+        "week": 24,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A014",
+        "accessSeq": 7,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A017",
+        "accessSeq": 3,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 2
+      },
+      {
+        "activityId": "A023",
+        "accessSeq": 4,
+        "week": 24,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A025",
+        "accessSeq": 2,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A025",
+        "accessSeq": 3,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A028",
+        "accessSeq": 1,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A028",
+        "accessSeq": 2,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A036",
+        "accessSeq": 3,
+        "week": 24,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A037",
+        "accessSeq": 2,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A038",
+        "accessSeq": 1,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A039",
+        "accessSeq": 2,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 2
+      },
+      {
+        "activityId": "A039",
+        "accessSeq": 3,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 2
+      },
+      {
+        "activityId": "A040",
+        "accessSeq": 7,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A042",
+        "accessSeq": 2,
+        "week": 24,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A046",
+        "accessSeq": 1,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A046",
+        "accessSeq": 2,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A049",
+        "accessSeq": 2,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A049",
+        "accessSeq": 3,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A056",
+        "accessSeq": 2,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A057",
+        "accessSeq": 3,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 2
+      },
+      {
+        "activityId": "A059",
+        "accessSeq": 6,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A061",
+        "accessSeq": 6,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A061",
+        "accessSeq": 7,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A065",
+        "accessSeq": 1,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A069",
+        "accessSeq": 1,
+        "week": 9,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A069",
+        "accessSeq": 2,
+        "week": 10,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A074",
+        "accessSeq": 1,
+        "week": 19,
+        "eclo": 0,
+        "accessNight": 1
+      },
+      {
+        "activityId": "A075",
+        "accessSeq": 1,
+        "week": 24,
+        "eclo": 0,
+        "accessNight": 1
+      }
+    ],
+    "occupancy": [
+      {
+        "activityId": "A007",
+        "week": 19,
+        "locationId": "PLAT:BET:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A007",
+        "week": 19,
+        "locationId": "PLAT:BET:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A007",
+        "week": 19,
+        "locationId": "SEC:BET:H01_H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A008",
+        "week": 19,
+        "locationId": "PLAT:BET:S17:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A008",
+        "week": 19,
+        "locationId": "PLAT:BET:S18:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A008",
+        "week": 19,
+        "locationId": "SEC:BET:S17_S18:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A013",
+        "week": 24,
+        "locationId": "PLAT:ALP:S05:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A013",
+        "week": 24,
+        "locationId": "PLAT:ALP:S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A013",
+        "week": 24,
+        "locationId": "SEC:ALP:S05_S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A014",
+        "week": 19,
+        "locationId": "PLAT:ALP:S07:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A014",
+        "week": 19,
+        "locationId": "PLAT:ALP:S08:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A014",
+        "week": 19,
+        "locationId": "SEC:ALP:S07_S08:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "PLAT:BET:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "PLAT:BET:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "PLAT:BET:S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "SEC:BET:H01_H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "SEC:BET:H02_S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A017",
+        "week": 19,
+        "locationId": "SEC:BET:S15_S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A023",
+        "week": 24,
+        "locationId": "PLAT:ALP:S03:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A023",
+        "week": 24,
+        "locationId": "PLAT:ALP:S04:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A023",
+        "week": 24,
+        "locationId": "SEC:ALP:S03_S04:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 9,
+        "locationId": "PLAT:ALP:S01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 9,
+        "locationId": "PLAT:ALP:S02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 9,
+        "locationId": "PLAT:ALP:S03:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 9,
+        "locationId": "SEC:ALP:S01_S02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 9,
+        "locationId": "SEC:ALP:S02_S03:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 10,
+        "locationId": "PLAT:ALP:S01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 10,
+        "locationId": "PLAT:ALP:S02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 10,
+        "locationId": "PLAT:ALP:S03:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 10,
+        "locationId": "SEC:ALP:S01_S02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A025",
+        "week": 10,
+        "locationId": "SEC:ALP:S02_S03:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 9,
+        "locationId": "PLAT:ALP:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 9,
+        "locationId": "PLAT:ALP:S03:EB",
+        "coShareGroup": "b2"
+      },
+      {
+        "activityId": "A028",
+        "week": 9,
+        "locationId": "PLAT:ALP:S04:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 9,
+        "locationId": "SEC:ALP:S03_S04:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 9,
+        "locationId": "SEC:ALP:S04_H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 10,
+        "locationId": "PLAT:ALP:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 10,
+        "locationId": "PLAT:ALP:S03:EB",
+        "coShareGroup": "b2"
+      },
+      {
+        "activityId": "A028",
+        "week": 10,
+        "locationId": "PLAT:ALP:S04:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 10,
+        "locationId": "SEC:ALP:S03_S04:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A028",
+        "week": 10,
+        "locationId": "SEC:ALP:S04_H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A036",
+        "week": 24,
+        "locationId": "PLAT:BET:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A036",
+        "week": 24,
+        "locationId": "PLAT:BET:S14:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A036",
+        "week": 24,
+        "locationId": "SEC:BET:S14_H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A037",
+        "week": 9,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A037",
+        "week": 9,
+        "locationId": "PLAT:BET:S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A037",
+        "week": 9,
+        "locationId": "PLAT:BET:S17:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A037",
+        "week": 9,
+        "locationId": "SEC:BET:S15_S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A037",
+        "week": 9,
+        "locationId": "SEC:BET:S16_S17:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A038",
+        "week": 10,
+        "locationId": "PLAT:BET:S17:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A038",
+        "week": 10,
+        "locationId": "PLAT:BET:S18:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A038",
+        "week": 10,
+        "locationId": "SEC:BET:S17_S18:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "PLAT:BET:S11:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "PLAT:BET:S12:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "PLAT:BET:S13:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "PLAT:BET:S14:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "SEC:BET:S11_S12:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "SEC:BET:S12_S13:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 9,
+        "locationId": "SEC:BET:S13_S14:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "PLAT:BET:S11:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "PLAT:BET:S12:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "PLAT:BET:S13:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "PLAT:BET:S14:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "SEC:BET:S11_S12:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "SEC:BET:S12_S13:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A039",
+        "week": 10,
+        "locationId": "SEC:BET:S13_S14:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "PLAT:BET:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "PLAT:BET:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "PLAT:BET:S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "SEC:BET:H01_H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "SEC:BET:H02_S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A040",
+        "week": 19,
+        "locationId": "SEC:BET:S15_S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "PLAT:BET:S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "PLAT:BET:S17:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "PLAT:BET:S18:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "SEC:BET:S15_S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "SEC:BET:S16_S17:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A042",
+        "week": 24,
+        "locationId": "SEC:BET:S17_S18:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A046",
+        "week": 9,
+        "locationId": "PLAT:ALP:S05:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A046",
+        "week": 9,
+        "locationId": "PLAT:ALP:S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A046",
+        "week": 9,
+        "locationId": "SEC:ALP:S05_S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A046",
+        "week": 10,
+        "locationId": "PLAT:ALP:S05:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A046",
+        "week": 10,
+        "locationId": "PLAT:ALP:S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A046",
+        "week": 10,
+        "locationId": "SEC:ALP:S05_S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 9,
+        "locationId": "PLAT:BET:H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 9,
+        "locationId": "PLAT:BET:S15:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 9,
+        "locationId": "PLAT:BET:S16:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 9,
+        "locationId": "SEC:BET:H02_S15:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 9,
+        "locationId": "SEC:BET:S15_S16:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 10,
+        "locationId": "PLAT:BET:H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 10,
+        "locationId": "PLAT:BET:S15:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 10,
+        "locationId": "PLAT:BET:S16:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 10,
+        "locationId": "SEC:BET:H02_S15:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A049",
+        "week": 10,
+        "locationId": "SEC:BET:S15_S16:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "PLAT:ALP:H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "PLAT:ALP:S05:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "PLAT:ALP:S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "PLAT:ALP:S07:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "SEC:ALP:H02_S05:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "SEC:ALP:S05_S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A056",
+        "week": 19,
+        "locationId": "SEC:ALP:S06_S07:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A057",
+        "week": 19,
+        "locationId": "PLAT:BET:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A057",
+        "week": 19,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A057",
+        "week": 19,
+        "locationId": "PLAT:BET:S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A057",
+        "week": 19,
+        "locationId": "SEC:BET:H02_S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A057",
+        "week": 19,
+        "locationId": "SEC:BET:S15_S16:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A059",
+        "week": 19,
+        "locationId": "PLAT:ALP:S06:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A059",
+        "week": 19,
+        "locationId": "PLAT:ALP:S07:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A059",
+        "week": 19,
+        "locationId": "PLAT:ALP:S08:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A059",
+        "week": 19,
+        "locationId": "SEC:ALP:S06_S07:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A059",
+        "week": 19,
+        "locationId": "SEC:ALP:S07_S08:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 9,
+        "locationId": "PLAT:BET:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 9,
+        "locationId": "PLAT:BET:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 9,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 9,
+        "locationId": "SEC:BET:H01_H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 9,
+        "locationId": "SEC:BET:H02_S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 10,
+        "locationId": "PLAT:BET:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 10,
+        "locationId": "PLAT:BET:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 10,
+        "locationId": "PLAT:BET:S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 10,
+        "locationId": "SEC:BET:H01_H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A061",
+        "week": 10,
+        "locationId": "SEC:BET:H02_S15:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A065",
+        "week": 19,
+        "locationId": "PLAT:BET:S12:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A065",
+        "week": 19,
+        "locationId": "PLAT:BET:S13:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A065",
+        "week": 19,
+        "locationId": "SEC:BET:S12_S13:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "PLAT:ALP:H01:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "PLAT:ALP:H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "PLAT:ALP:S03:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "PLAT:ALP:S04:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "SEC:ALP:H01_H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "SEC:ALP:S03_S04:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 9,
+        "locationId": "SEC:ALP:S04_H01:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "PLAT:ALP:H01:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "PLAT:ALP:H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "PLAT:ALP:S03:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "PLAT:ALP:S04:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "SEC:ALP:H01_H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "SEC:ALP:S03_S04:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A069",
+        "week": 10,
+        "locationId": "SEC:ALP:S04_H01:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A074",
+        "week": 19,
+        "locationId": "PLAT:ALP:H01:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A074",
+        "week": 19,
+        "locationId": "PLAT:ALP:H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A074",
+        "week": 19,
+        "locationId": "SEC:ALP:H01_H02:EB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A075",
+        "week": 24,
+        "locationId": "PLAT:BET:H01:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A075",
+        "week": 24,
+        "locationId": "PLAT:BET:H02:WB",
+        "coShareGroup": "b1"
+      },
+      {
+        "activityId": "A075",
+        "week": 24,
+        "locationId": "SEC:BET:H01_H02:WB",
+        "coShareGroup": "b1"
+      }
+    ],
+    "results": [
+      {
+        "scenario": "A",
+        "contractNumber": "C001",
+        "simulatedCompletionDate": "2027-06-06",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C002",
+        "simulatedCompletionDate": "2027-06-27",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C003",
+        "simulatedCompletionDate": "2027-06-13",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C004",
+        "simulatedCompletionDate": "2027-07-11",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C005",
+        "simulatedCompletionDate": "2027-03-14",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C006",
+        "simulatedCompletionDate": "2027-07-18",
+        "overrunDays": 14
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C007",
+        "simulatedCompletionDate": "2027-06-27",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C008",
+        "simulatedCompletionDate": "2027-07-11",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C009",
+        "simulatedCompletionDate": "2027-06-13",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C010",
+        "simulatedCompletionDate": "2027-05-23",
+        "overrunDays": 7
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C011",
+        "simulatedCompletionDate": "2027-06-27",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C012",
+        "simulatedCompletionDate": "2027-06-13",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C013",
+        "simulatedCompletionDate": "2027-05-16",
+        "overrunDays": 0
+      },
+      {
+        "scenario": "A",
+        "contractNumber": "C014",
+        "simulatedCompletionDate": "2027-06-20",
+        "overrunDays": 0
+      }
+    ]
+  },
+  "expectedViolations": [
+    {
+      "week": 9,
+      "sourceActivityId": "A025",
+      "targetActivityId": "A028",
+      "locations": [
+        "PLAT:ALP:S03:EB",
+        "SEC:ALP:S03_S04:EB"
+      ]
+    },
+    {
+      "week": 10,
+      "sourceActivityId": "A025",
+      "targetActivityId": "A028",
+      "locations": [
+        "PLAT:ALP:S03:EB",
+        "SEC:ALP:S03_S04:EB"
+      ]
+    },
+    {
+      "week": 9,
+      "sourceActivityId": "A028",
+      "targetActivityId": "A025",
+      "locations": [
+        "PLAT:ALP:S03:EB",
+        "SEC:ALP:S02_S03:EB"
+      ]
+    },
+    {
+      "week": 10,
+      "sourceActivityId": "A028",
+      "targetActivityId": "A025",
+      "locations": [
+        "PLAT:ALP:S03:EB",
+        "SEC:ALP:S02_S03:EB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A007",
+      "locations": [
+        "PLAT:BET:H01:EB",
+        "PLAT:BET:H02:EB",
+        "SEC:BET:H01_H02:EB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A017",
+      "locations": [
+        "PLAT:BET:H01:EB",
+        "PLAT:BET:H02:EB",
+        "PLAT:BET:S15:EB",
+        "PLAT:BET:S16:EB",
+        "SEC:BET:H01_H02:EB",
+        "SEC:BET:H02_S15:EB",
+        "SEC:BET:S15_S16:EB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A040",
+      "locations": [
+        "PLAT:BET:H01:EB",
+        "PLAT:BET:H02:EB",
+        "PLAT:BET:S15:EB",
+        "PLAT:BET:S16:EB",
+        "SEC:BET:H01_H02:EB",
+        "SEC:BET:H02_S15:EB",
+        "SEC:BET:S15_S16:EB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A056",
+      "locations": [
+        "PLAT:ALP:H02:WB",
+        "PLAT:ALP:S05:WB",
+        "PLAT:ALP:S06:WB",
+        "SEC:ALP:H02_S05:WB",
+        "SEC:ALP:S05_S06:WB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A057",
+      "locations": [
+        "PLAT:BET:H02:EB",
+        "PLAT:BET:S15:EB",
+        "PLAT:BET:S16:EB",
+        "SEC:BET:H02_S15:EB",
+        "SEC:BET:S15_S16:EB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A059",
+      "locations": [
+        "PLAT:ALP:S06:WB"
+      ]
+    },
+    {
+      "week": 19,
+      "sourceActivityId": "A074",
+      "targetActivityId": "A065",
+      "locations": [
+        "PLAT:BET:S13:WB"
+      ]
+    },
+    {
+      "week": 24,
+      "sourceActivityId": "A075",
+      "targetActivityId": "A013",
+      "locations": [
+        "PLAT:ALP:S05:WB",
+        "PLAT:ALP:S06:WB",
+        "SEC:ALP:S05_S06:WB"
+      ]
+    },
+    {
+      "week": 24,
+      "sourceActivityId": "A075",
+      "targetActivityId": "A023",
+      "locations": [
+        "PLAT:ALP:S03:WB",
+        "PLAT:ALP:S04:WB",
+        "SEC:ALP:S03_S04:WB"
+      ]
+    },
+    {
+      "week": 24,
+      "sourceActivityId": "A075",
+      "targetActivityId": "A036",
+      "locations": [
+        "PLAT:BET:H01:EB",
+        "PLAT:BET:S14:EB",
+        "SEC:BET:S14_H01:EB"
+      ]
+    },
+    {
+      "week": 24,
+      "sourceActivityId": "A075",
+      "targetActivityId": "A042",
+      "locations": [
+        "PLAT:BET:S15:EB",
+        "PLAT:BET:S16:EB",
+        "SEC:BET:S15_S16:EB"
+      ]
+    }
+  ],
+  "officialSample": {
+    "sourceDirectory": "packages/ps1/data/sample-submission",
+    "sourceHashes": {
+      "access": "fef1f07f28819804c82c8051d282fc332bb1094f24d5ebeb799c23bcbf22c843",
+      "occupancy": "efd33d33573d722db3f87e8d2bbc9af6fe7b6deaab504e8d97f2d7ac58116cf3",
+      "results": "b815b93c64cd429c1cd000da71e364f3bd5198356ad88b2abaf58d00ffa422cc"
+    },
+    "expectedClosureViolationCount": 0,
+    "transitiveExemption": {
+      "week": 21,
+      "chain": [
+        "A074",
+        "A004",
+        "A025"
+      ],
+      "occupancy": [
+        {
+          "activityId": "A004",
+          "week": 21,
+          "locationId": "PLAT:ALP:H01:EB",
+          "coShareGroup": "b1"
+        },
+        {
+          "activityId": "A004",
+          "week": 21,
+          "locationId": "PLAT:ALP:S03:EB",
+          "coShareGroup": "b2"
+        },
+        {
+          "activityId": "A004",
+          "week": 21,
+          "locationId": "PLAT:ALP:S04:EB",
+          "coShareGroup": "b2"
+        },
+        {
+          "activityId": "A004",
+          "week": 21,
+          "locationId": "SEC:ALP:S03_S04:EB",
+          "coShareGroup": "b1"
+        },
+        {
+          "activityId": "A004",
+          "week": 21,
+          "locationId": "SEC:ALP:S04_H01:EB",
+          "coShareGroup": "b1"
+        },
+        {
+          "activityId": "A025",
+          "week": 21,
+          "locationId": "PLAT:ALP:S01:EB",
+          "coShareGroup": "b2"
+        },
+        {
+          "activityId": "A025",
+          "week": 21,
+          "locationId": "PLAT:ALP:S02:EB",
+          "coShareGroup": "b2"
+        },
+        {
+          "activityId": "A025",
+          "week": 21,
+          "locationId": "PLAT:ALP:S03:EB",
+          "coShareGroup": "b2"
+        },
+        {
+          "activityId": "A025",
+          "week": 21,
+          "locationId": "SEC:ALP:S01_S02:EB",
+          "coShareGroup": "b4"
+        },
+        {
+          "activityId": "A025",
+          "week": 21,
+          "locationId": "SEC:ALP:S02_S03:EB",
+          "coShareGroup": "b4"
+        },
+        {
+          "activityId": "A074",
+          "week": 21,
+          "locationId": "PLAT:ALP:H01:EB",
+          "coShareGroup": "b1"
+        },
+        {
+          "activityId": "A074",
+          "week": 21,
+          "locationId": "PLAT:ALP:H02:EB",
+          "coShareGroup": "b1"
+        },
+        {
+          "activityId": "A074",
+          "week": 21,
+          "locationId": "SEC:ALP:H01_H02:EB",
+          "coShareGroup": "b1"
+        }
+      ]
+    }
+  },
+  "hostHostBufferOnlyOverlaps": {
+    "public": [],
+    "sample": []
+  }
+}

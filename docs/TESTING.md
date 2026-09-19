@@ -1,5 +1,17 @@
 # Testing Plan
 
+## Closure rejection regression — 2026-09-19
+
+`packages/ps1/src/engine/closure.test.ts` replays the preserved public Scenario A
+rejection and requires all 15 exact messages, while the unchanged organiser
+sample must remain feasible. Geometry tests check crossover buffers on both
+lines without double-expanding the original radius. Component tests distinguish
+real direct/transitive co-sharing from reused labels and separate weeks/groups.
+Native tests must cover explicit groups, connectivity, local mixes and full
+workload; selected native CSVs are checked independently before export. Original
+score ceilings and certificates from the omitted-closure model cannot certify
+this correction. See [evidence scope](PS1_CLOSURE_CORRECTION.md).
+
 ## Targeted native repair and stress experiments — 2026-09-19
 
 Run `npx vitest run scripts/ps1/benchmark` for the native boundary, shared-deadline

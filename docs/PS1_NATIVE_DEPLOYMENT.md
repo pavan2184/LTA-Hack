@@ -1,10 +1,27 @@
 # Native PS1 deployment
 
+## Required closure correction — 2026-09-19
+
+The owner reported 15 closure violations from the existing GCP deployment.
+Deploy the corrected Node application, browser build and Python models together
+from the same revision, then restart the service using the existing deployment
+procedure below. Updating only precomputed CSVs does not fix uploaded instances.
+Old native binaries are rejected by the new transport rather than silently used.
+
+Before spending another organiser-validator run, verify the deployed solve
+response contains `outcome.validation.conformance.closureModelVersion` equal to
+`ps1-closure-v1`, check that all three public schedules are complete and locally
+feasible, and inspect the downloaded ZIP for exactly nine CSVs. Fresh local
+objectives are A **32.2**, B **30**, C **26.1**, with matching local-model bounds;
+this is not evidence that the GCP deployment has been updated. Preserve the
+owner's remaining validator quota. See [correction evidence](PS1_CLOSURE_CORRECTION.md).
+
 Use Google Compute Engine for the first release. A single host runs Next.js and
 native Python OR-Tools, with nginx and a Google Cloud HTTPS load balancer in front.
 No Docker, database, service token or new application environment variable is
 required for `/ps1`. Existing authenticated workflows still need their existing
-configuration. This runbook is prepared; durable cloud deployment is not completed.
+configuration. The owner reports a GCP deployment; its current release has not
+been independently inspected here.
 A separate temporary GCE benchmark, including its unresolved results and VM
 termination, is recorded in PROJECT_STATUS. It is not the local algorithm
 comparison or a running judge-facing deployment.

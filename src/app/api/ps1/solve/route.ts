@@ -2,6 +2,7 @@ import { BodyError, readBoundedJson } from "@/lib/http/body";
 import { assertSameOrigin } from "@/lib/plans/http";
 import { parseSolveRequest, PS1_MAX_BODY_BYTES } from "@/lib/ps1/request";
 import { NativeSolverUnavailableError, solveNative } from "@/lib/ps1/server-solver";
+import { NativeModelSizeError } from "@/lib/ps1/cp-sat-model";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     const outcome = await solveNative(input.instance, { scenario: input.scenario, pins: input.pins, disruptions: input.disruptions, signal: request.signal });
     return Response.json({ outcome }, { headers });
   } catch (cause) {
+    if (cause instanceof NativeModelSizeError) return error(413, "model_too_large", "This instance's co-sharing model exceeds the server's construction limit. No activities were removed; use a larger offline solver configuration.");
     if (cause instanceof NativeSolverUnavailableError) return error(503, "solver_unavailable", "Native CP-SAT is unavailable. The host needs Python with the pinned OR-Tools dependency installed.");
     if (request.signal.aborted || (cause instanceof Error && cause.name === "AbortError")) return error(499, "cancelled", "The solve was cancelled.");
     return error(502, "solver_failed", "The native solver could not return a validated schedule. Retry or check the server setup.");

@@ -1,5 +1,14 @@
 # Architecture
 
+## Closure conformance correction — 2026-09-19
+
+The weekly checker now enforces nature-based closures with compatible non-Live PC/C and C/C exemptions and buffered Live crossover
+on both lines. Actual co-sharing rows connect activities transitively; component
+exemptions never replace per-location capacity and legal-mix checks. Native
+models preserve their selected occupancy groups, because greedy repacking can
+break connectivity. This supersedes the earlier omission of closure exclusions.
+See [constraint semantics and regression evidence](PS1_CLOSURE_CORRECTION.md).
+
 ## Native search experiments — 2026-09-19
 
 The offline stress harness compares a full CP-SAT solve, an opt-in equivalent

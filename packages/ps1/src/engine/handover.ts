@@ -20,6 +20,7 @@ export function buildHandoverSummary(input: {
     `Recent change: ${recentAction ?? "none"}`,
     `Schedule stability: ${diff ? `${diff.unchangedAccessPercent}% unchanged; ${diff.movedAccesses} moved accesses` : "no applied comparison"}`,
     `Unresolved violations: ${report.hardViolations.length}`,
+    `Closure checking: weekly exclusions and transitive co-sharing (${report.conformance.closureModelVersion}).`,
     "Undecidable locally: cross-possession physical-night alignment (official output has no global night identifier).",
     "Official ZIP: A/B/C × RESULTS.csv, SCHEDULE_ACCESS.csv and SCHEDULE_OCCUPANCY.csv only.",
   ].join("\n");

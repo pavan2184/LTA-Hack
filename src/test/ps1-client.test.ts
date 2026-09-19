@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { solveInstance } from "@railplan/ps1/engine/schedule";
+import { resultsFor, solveInstance } from "@railplan/ps1/engine/schedule";
+import { validate } from "@railplan/ps1/engine/validate";
 import { loadInstance, PS1_FILES } from "@railplan/ps1/io/load";
 import { requestPs1Solve } from "@/lib/ps1/client";
 
@@ -82,6 +83,18 @@ describe("PS1 service response boundary", () => {
   it("rejects an incomplete plan even if the service calls it feasible", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
       outcome: { ...outcome, submission: { ...outcome.submission, access: [] } },
+    })));
+    await expect(requestPs1Solve(request)).rejects.toThrow("failed local checks");
+  });
+
+  it("blocks a service result with the reported Live closure failure", async () => {
+    const submission = structuredClone(outcome.submission!);
+    for (const row of submission.access) if (row.activityId === "A074") row.week = 19;
+    for (const row of submission.occupancy) if (row.activityId === "A074") row.week = 19;
+    submission.results = resultsFor(instance, submission.access, "A");
+    expect(validate(instance, submission).hardViolations.some((item) => item.rule === "closure")).toBe(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      outcome: { ...outcome, submission, validation: { feasible: true, objectiveScore: 0 } },
     })));
     await expect(requestPs1Solve(request)).rejects.toThrow("failed local checks");
   });

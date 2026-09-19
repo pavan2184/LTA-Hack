@@ -1,5 +1,14 @@
 # Data Model
 
+## Closure constraint provenance — 2026-09-19
+
+`ValidationReport.conformance.closureModelVersion` is `ps1-closure-v1`.
+The score formula remains `ps1-objective-v2`; official CSV schemas are unchanged.
+Native payloads carry directed closure conflicts under their digest, and native
+solutions preserve explicit local occupancy groups for transitive co-sharing.
+Historical benchmark scores lacking the corrected constraints are not current
+evidence. See [closure correction](PS1_CLOSURE_CORRECTION.md).
+
 ## Native benchmark evidence — 2026-09-19
 
 Comparisons retain the canonical `Ps1Instance` and official `Submission` schemas.

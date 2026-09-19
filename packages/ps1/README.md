@@ -1,5 +1,17 @@
 # PS1 — Railway track access optimisation
 
+> **Superseded evidence — closure conformance correction.** The pre-correction
+> benchmark scores, feasibility counts, proofs and algorithm rankings below are
+> historical results from an incomplete closure model. They are not valid PS1
+> ranking or conformance evidence. A public A export passed our old checker but
+> received 15 closure violations. The corrected regression reproduces all 15
+> reported messages and accepts the published sample with zero closure violations.
+> Consist buffers extend sectors; Live buffers also include outer platforms and
+> expand across the interchange before mirroring. The correction is identified as
+> `ps1-closure-v1`. Corrected public exports are recorded in
+> [current project status](../../docs/PROJECT_STATUS.md); algorithm comparisons still
+> need fresh runs. No deployed fix or reference-validator parity is claimed.
+
 NebulaX Problem Statement 1. Decides which contracted activities get the track,
 in which weeks, across Line Alpha and Line Beta, then validates its own answer
 and scores it.
@@ -27,11 +39,12 @@ between the two would have meant bending both.
 
 ## How the ambiguities were settled
 
-The brief leaves several rules open to more than one reading. Rather than pick
-by argument, each was pinned against the reference submission in
-`data/sample-submission/`, which the brief states is feasible with zero hard
-violations. Any interpretation that flags it is provably stricter than the
-validator the judges run.
+The published feasible submission in `data/sample-submission/` is a useful
+compatibility regression, not a complete specification of the reference
+validator. Rejecting it can reveal incorrect geometry, access-type handling or
+sharing groups; it does not justify omitting a mandatory rule. Earlier reasoning
+that any sample-rejecting rule was necessarily stricter than the official checker
+was incorrect.
 
 - **Span expansion.** An activity books every tunnel sector between its endpoints
   and every platform it passes. Verified by reproducing the reference's occupancy
@@ -45,11 +58,18 @@ validator the judges run.
 - **Completion dates.** The Sunday of a contract's last scheduled week. All
   fourteen of the reference's `simulated_completion_date` values match, and none
   match the Monday.
-- **Buffers between separate possessions** are deliberately *not* enforced — see
-  the long note in `validate.ts`. The submission format records a week and a
-  per-location label, not a physical night, and the brief says different labels
-  at one location-week are separate possessions on separate nights. Enforcing
-  buffers across them rejects the reference in 118 places.
+- **Closures and buffers.** The `ps1-closure-v1` correction derives closures
+  from every activity's nature of work and resolves sharing through transitive
+  components of `(week, location_id, co_share_group)`. Both activities must be
+  non-Live for the C/C or PC/C buffer exemption to apply. Live protection applies
+  to every access type, including C; a Consist C activity can exclude PM work.
+  Consist buffers extend sectors without adding their outer platforms; Live
+  buffers include those platforms. Live interchange work seeds the other line's
+  tunnel before buffer expansion and opposite-bound mirroring. Buffer-only
+  overlaps between incompatible buffered activities remain prohibited. The
+  reported failures and sample do not independently identify every distinction
+  in these rules, so the explicit specification remains necessary. In particular,
+  their exact match does not justify restricting closure origins to PC/PM.
 
 ## Working with a schedule
 
@@ -95,18 +115,35 @@ Each folder contains the eight CSVs accepted by `/ps1`.
 Run `npx vitest run packages/ps1/src/io/datasets.test.ts` to verify all A/B/C
 outcomes. The official public instance and public-result files stay separate.
 
-## Results on the public instance
+## Corrected public results
 
-| Scenario | Feasible | Overrun days | Excess nights | ECLO nights | Objective |
+The regenerated [public summary](data/results/SUMMARY.json), using
+`ps1-closure-v1`, records:
+
+| Scenario | Objective | Local hard violations | Full local-model status | Matching lower bound |
+| --- | ---: | ---: | --- | ---: |
+| A | 32.2 | 0 | OPTIMAL | 32.2 |
+| B | 30 | 0 | OPTIMAL | 30 |
+| C | 26.1 | 0 | OPTIMAL | 26.1 |
+
+All activities receive their full workload. These are local conformance and
+model-optimality results, not reference-validator certification or a GCP timing
+benchmark. The regeneration used 11 requested workers while tests also ran; no
+fair algorithm-performance comparison or deployed fix is claimed.
+
+## Historical public results — closure model incomplete
+
+| Scenario | Passed old checker | Overrun days | Excess nights | ECLO nights | Historical objective |
 | --- | --- | --- | --- | --- | --- |
 | A | yes | 21 | 0 | 0 | 25.2 |
 | B | yes | 0 | 0 | 6 | 30 |
 | C | yes | 21 | 0 | 0 | 25.2 |
 
-Scenario A places all 192 access-nights of work with two contracts overrunning;
-the reference submission overruns three. Every scenario schedules 100% of
-activities, which is the mandatory gate before any quality metric counts.
+These historical outputs scheduled the full workload; A contained 192 accesses
+and two overrunning contracts, versus three in the sample. Full delivery alone
+does not establish feasibility: the public A export violated mandatory closures.
+These figures therefore cannot establish an improvement over the sample.
 
-All three scores have full local-model optimality proofs under the corrected
-per-activity scorer `ps1-objective-v2`. Reference-validator equivalence and
-cross-possession physical-night alignment remain unverified.
+All three reported proofs used scorer `ps1-objective-v2` but omitted required
+closure constraints. They do not certify PS1 optimality. The regenerated public
+outputs above supersede them; algorithm comparisons still need fresh runs.

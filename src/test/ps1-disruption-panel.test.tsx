@@ -28,7 +28,9 @@ const firstCut: Disruption = {
   locationId: firstLocation.locationId,
   fromWeek: firstLocation.week,
   toWeek: firstLocation.week,
-  capacity: Math.max(0, network.supply.get(firstLocation.locationId)!.supplyCapacity - 1),
+  capacity: Math.max(0, new Set(initial.occupancy.filter((row) =>
+    row.locationId === firstLocation.locationId && row.week === firstLocation.week)
+    .map((row) => row.coShareGroup)).size - 1),
 };
 const existingDisruptions = [firstCut];
 const firstOutcome = replanForDisruption(instance, initial, existingDisruptions, network);

@@ -1,5 +1,15 @@
 # API Contract
 
+## Closure correction — 2026-09-19
+
+The public solve request and official CSV schemas remain unchanged. Local
+validation now enforces weekly closures and transitive co-sharing, including
+Live interchange buffers on both lines. Native output must retain its selected
+occupancy groups and pass the same independent CSV checks. Validation reports
+identify `conformance.closureModelVersion: "ps1-closure-v1"`; old validation
+reports are not sufficient evidence for export. See
+[closure correction](PS1_CLOSURE_CORRECTION.md).
+
 ## Standalone Algorithm Lab API — 2026-09-19
 
 On Vercel, `GET /api/algorithm-lab` maps to the model description and `POST`
@@ -47,7 +57,11 @@ Python paths and claimed validation reports are not accepted from clients.
 
 Admission limits: 4 MiB streamed body with a 10-second read deadline, 2,000 activities/contracts, 260 weeks,
 60,000 activity-weeks, 120,000 location-weeks and 200,000 span-weeks. Oversized
-instances fail explicitly; work is never truncated. One active request per Node
+instances fail explicitly; work is never truncated. A conservative preflight
+also caps the explicit closure/sharing model at 100,000 potential directed
+conflicts, one million variables and four million constraints before expensive
+geometry or native construction. Exceeding it returns 413 `model_too_large`.
+One active request per Node
 process; overlap receives 429 and Retry-After:5. Other errors use
 `{error:{code,message}}`: 400 invalid JSON/instance, 403 cross-origin, 413 body
 limit, 415 content type, 499 cancellation, 502 native failure, 503 missing native

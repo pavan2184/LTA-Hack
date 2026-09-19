@@ -30,9 +30,10 @@ function workerReply(overrides: Partial<NativeResult> = {}) {
       stderr: "",
       stdout: JSON.stringify({
         schema: payload.schema, digest: payload.digest, scenario: payload.scenario,
+        closureModelVersion: payload.closureModelVersion,
         scope: "full", status: "FEASIBLE", objective: fixtureScore, bound: 0,
         ortoolsVersion: "mock-test",
-        access: fixture.access, buildMs: 2, solveMs: 3, modelAndSolveMs: 5,
+        access: fixture.access, occupancy: fixture.occupancy, buildMs: 2, solveMs: 3, modelAndSolveMs: 5,
         ...overrides,
       }),
     };

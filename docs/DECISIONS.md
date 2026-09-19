@@ -1,5 +1,18 @@
 # Decisions
 
+## 2026-09-19 — Enforce possession closures and transitive co-sharing
+
+The organiser rejection of 15 public Scenario A violations supersedes the earlier
+decision to omit cross-possession closure checks. Use nature-based closures with compatible non-Live PC/C and C/C exemptions, full
+Live interchange buffers on both lines, and connected components formed only by
+actual shared location/week/group rows. Preserve local legal mixes, complete
+workload, pins and capacity constraints. Both native models must preserve their
+chosen occupancy groups through decoding; arbitrary repacking can destroy a
+required co-sharing connection. Constraint provenance is `ps1-closure-v1`,
+separate from the unchanged score formula. Earlier model proofs and rankings are
+historical. See [correction and evidence](PS1_CLOSURE_CORRECTION.md) for source
+reconciliation, remaining interpretation limits and exact regression evidence.
+
 ## 2026-09-19 — Evaluate stronger formulations and targeted native repair separately
 
 Status: **Experimental, offline only.** Compare the deployed model with redundant

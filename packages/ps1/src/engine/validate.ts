@@ -18,6 +18,7 @@ import {
 } from "../types/ps1";
 import { buildNetwork, closureFor, expandSpan, type Network } from "./network";
 import { appliesTo, capacityAt, type Disruption } from "./disruption";
+import { CLOSURE_MODEL_VERSION, closureConflicts, findClosureViolations } from "./closure";
 
 /** One PM alone, or one PC plus three co-workers, or four co-workers. */
 export const MAX_ACTIVITIES_PER_POSSESSION = 4;
@@ -82,10 +83,10 @@ function groupBy<T, K>(items: T[], key: (item: T) => K): Map<K, T[]> {
 /**
  * Validate a submission against the ten hard rules and score it.
  *
- * This mirrors the reference validator the judges run; it is not that program.
- * Where the brief is ambiguous, behaviour is pinned to the published reference
- * submission, which the brief states is feasible with zero hard violations — so
- * any rule that flags it is, by construction, stricter than the real one.
+ * This is an independent local checker, not the organiser's reference validator.
+ * Closure semantics are checked against both the published sample and the
+ * organiser rejection reported on 2026-09-19. Sample acceptance alone cannot
+ * establish completeness or reference-validator parity.
  */
 export function validate(
   instance: Ps1Instance,
@@ -263,7 +264,7 @@ export function validate(
       const got = new Set(inWeek.map((row) => row.locationId));
       const rowKeys = new Set<string>();
       for (const row of inWeek) {
-        const key = `${row.locationId}|${row.coShareGroup}`;
+        const key = row.locationId;
         if (rowKeys.has(key)) {
           fail("schema", `${activity.activityId}: duplicate occupancy ${row.locationId} in wk${week}`);
         }
@@ -348,23 +349,7 @@ export function validate(
   }
 
   // --- rule 4: closures and buffers ----------------------------------------
-  // Deliberately not enforced across separate possessions, and this is a real
-  // limit of the submission format rather than an omission.
-  //
-  // The published files carry a week and a per-location `co_share_group`, not a
-  // physical night. The brief states that different `co_share_group` values at
-  // the same location-week are "separate possessions on separate nights", so
-  // whether two possessions at neighbouring locations ever share a night is not
-  // derivable from a submission. Enforcing buffers across them would reject the
-  // reference submission -- which the brief states is feasible with zero hard
-  // violations -- in 118 places, so any such rule is strictly stricter than the
-  // validator the judges run, and would push the scheduler away from schedules
-  // that would in fact have scored.
-  //
-  // The scheduler takes the same position, and for the same evidence: the
-  // organisers' own reference submission packs possessions whose buffers
-  // overlap, so treating that as illegal would produce strictly worse schedules
-  // than the published answer while gaining no safety the validator rewards.
+  violations.push(...findClosureViolations(occupations, closureConflicts(instance, network)));
 
   // --- rules 7 and 8: weekly allocation and workfronts ----------------------
   const accessWithContract = submission.access.map((row) => {
@@ -573,6 +558,7 @@ function report(
     detail: { capacityHotspots, nightsScheduled, ecloNights },
     conformance: {
       mode: "local",
+      closureModelVersion: CLOSURE_MODEL_VERSION,
       undecidableRules: ["cross_possession_night_alignment"],
     },
     ...(feasible

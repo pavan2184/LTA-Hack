@@ -1,8 +1,21 @@
 # PS1 optimisation benchmark
 
+> **Superseded evidence — closure conformance correction.** The pre-correction
+> benchmark scores, feasibility counts, proofs and algorithm rankings below are
+> historical results from an incomplete closure model. They are not valid PS1
+> ranking or conformance evidence. A public A export passed our old checker but
+> received 15 closure violations. The corrected regression reproduces all 15
+> reported messages and accepts the published sample with zero closure violations.
+> Consist buffers extend sectors; Live buffers also include outer platforms and
+> expand across the interchange before mirroring. The correction is identified as
+> `ps1-closure-v1`. Corrected public exports are recorded in
+> [current project status](../../../docs/PROJECT_STATUS.md); algorithm comparisons still
+> need fresh runs. No deployed fix or reference-validator parity is claimed.
+
 The application now uses native CP-SAT as its server solver, warm-started by the
-TypeScript hybrid. It is not the organiser's reference solver. All current
-comparisons use the corrected per-activity scorer, `ps1-objective-v2`.
+TypeScript hybrid. It is not the organiser's reference solver. The stored v2
+comparisons use per-activity scorer `ps1-objective-v2`, but predate mandatory
+closure enforcement; a scorer version alone does not identify conformance.
 
 ## 60-second cloud comparison
 
@@ -11,14 +24,14 @@ interpretation and primary research in
 [PS1_NATIVE_SOLVER_RESEARCH.md](../../../docs/PS1_NATIVE_SOLVER_RESEARCH.md).
 It is pinned to snapshot `d1e0a8f`. The later ECLO-construction merge is checked
 separately in [post-merge-hybrid-results.json](post-merge-hybrid-results.json):
-all 39 baseline and extended cases pass, capacity-pressure C improves to 1105.5,
-and other scores are unchanged. Native models/checker are unchanged; native
+all 39 baseline and extended cases passed the old checker, capacity-pressure C
+changed to 1105.5, and other scores were unchanged. Native models/checker are unchanged; native
 timings were not rerun after that merge.
 At eight workers on an M3 Pro, CP-SAT and SCIP tie all 39 final scores and improve
 the same four hybrid cases. CP-SAT proves 37 optima and SCIP 38; neither proves
-priority-contention C. Extended TypeScript repair improves none. This supports
-deploying the integrated CP-SAT service while retaining SCIP as a serious
-challenger; it does not establish a unique algorithm winner or cloud performance.
+priority-contention C. Extended TypeScript repair improves none in that historical
+model. These figures cannot support a PS1 ranking or deployment-readiness claim;
+corrected comparisons are pending.
 
 ```sh
 # Sequential comparison, 60s search PER scenario/run, default 16 workers.
@@ -53,11 +66,11 @@ named parallel LP subsolvers can override it. It is not an LP-free portfolio.
 ## Stress experiments with one total deadline
 
 [Measured results](../../../docs/PS1_NATIVE_SEARCH_EXPERIMENTS.md) and
-[raw evidence](stress-results.json) record 33 final-protocol runs: all locally
-valid, no errors, and no paired final-score improvements. Tightening consistently
-shortens one proof and improves the best hard-case bound to 261; production
-remains unchanged. Calibration and an excluded merge-interference batch are
-retained separately, not pooled into that comparison.
+[raw evidence](stress-results.json) record 33 historical final-protocol runs:
+all passed the old checker, with no recorded errors or paired final-score
+improvements. Tightening shortened one incomplete-model proof and raised its best
+hard-case bound to 261. Those results are superseded for current PS1 ranking.
+Calibration and an excluded merge-interference batch are retained separately, not pooled into that comparison.
 
 `stress.ts` compares three opt-in CP-SAT pipelines under a **60-second total
 wall-time target per scenario/run**. Warm-start construction, native startup,
@@ -90,9 +103,10 @@ The immutable `ps1-stress-v1` manifest fixes these cases before comparisons:
 
 Selectors are `development`, `holdout`, `control`, `all`, or explicit case IDs
 from [stress-instances.ts](stress-instances.ts). Controls are public,
-05-capacity-pressure and 11-priority-contention. Synthetic A/C schedules certify
-local feasibility and are saved for audit; **they are never solver hints**.
-Scenario B has no such feasibility certificate. Tune only on development cases,
+05-capacity-pressure and 11-priority-contention. Historical synthetic A/C
+certificates passed the incomplete checker and must be revalidated or regenerated
+under `ps1-closure-v1` before new comparisons. They are saved for audit and
+**never supplied as solver hints**. Scenario B has no such feasibility certificate. Tune only on development cases,
 freeze settings, then evaluate holdout; related synthetic families are not
 independent operational data.
 
@@ -113,15 +127,16 @@ stage errors, including when a valid fallback survives. Report those errors
 separately from selected-schedule feasibility. Every accepted candidate passes
 CSV round-trip checks. `fullBound` uses only full-model bounds (or the universal
 zero penalty bound); an optimal repair proves only its frozen subproblem.
-All proofs remain local-model claims, with cross-possession physical-night
-alignment and reference-validator equivalence unverified. Local measurements
-do not establish 32-vCPU cloud performance.
+All proofs remain scoped to the exact model version. Historical proofs below
+omitted mandatory closure constraints and cannot certify PS1 optimality.
+Reference-validator parity and 32-vCPU cloud performance need separate evidence.
 
 
 ## Earlier five-second native evidence — 2026-09-19
 
 [native-results.json](native-results.json) records all 13 inputs × three scenarios:
-39/39 locally feasible, 37 full-model OPTIMAL, two FEASIBLE, zero errors. Eight
+39/39 accepted by the old checker, 37 incomplete-model OPTIMAL, two FEASIBLE,
+zero recorded errors. Eight
 workers, seed 1, five-second search limit (the current service default is 60 seconds).
 Total native process/check time across these 39 cases was 40.45 seconds on an
 Apple M3 Pro, Node 22.22.0, OR-Tools 9.15.6755. This is not a GCP measurement or an
@@ -137,13 +152,13 @@ equal-wall-time comparison against the iteration-budget heuristic.
 | 11 priority contention B | 483 | 279 | 279 | OPTIMAL |
 | 11 priority contention C | 340.4 | 300.7 | 206.5 | FEASIBLE |
 
-Native improves four hybrid cases and ties the remaining 35; no feasibility loss.
-Compared with legacy, the selected portfolio improves 17 cases. The two remaining
-nonzero gaps are unresolved; bounds are not promised achievable scores. OPTIMAL
-is limited to the encoded local model. Cross-possession physical-night alignment
-and reference-validator equivalence remain unverified.
+Under the historical incomplete model, native improved four hybrid cases and
+tied the remaining 35; the checker reported no feasibility loss. Compared with
+legacy, the selected portfolio improved 17 cases. The two remaining nonzero gaps
+were unresolved. OPTIMAL described only that incomplete model and cannot be
+cited as PS1 conformance or optimality evidence.
 
-Reproduce the current matrix (includes heuristic failures and records native
+Run a new matrix after closure validation (includes heuristic failures and records native
 errors rather than filtering them out):
 
 ```sh
@@ -260,8 +275,8 @@ PM count + max(PC count, ceil((PC count + C count) / 4))
 
 The decoder independently packs PC hosts and C workers, puts PM alone, and assigns
 contract-local access-night indices. This relies on the published per-location
-sharing identities; it does not invent a physical-night relationship between
-separate possessions.
+sharing identities, but omitted mandatory closure constraints. That omission is
+why these model results cannot establish PS1 conformance.
 
 At a one-second **search** limit with one native worker and a hybrid incumbent,
 39 full models plus 12 nonzero-score repairs yielded 37 `OPTIMAL`, 10 `FEASIBLE`
@@ -287,7 +302,9 @@ browser worker remains an offline comparator, not the UI execution path. Google
 Compute Engine is the initial target. IBM CP Optimizer, Hexaly and custom CP-backed
 LNS remain unbenchmarked challengers, not asserted improvements.
 
-The local checker is not the reference validator. Cross-possession physical-night
-alignment remains undecidable from the official fields, so neither heuristic
-feasibility nor CP-SAT optimality certifies that missing relationship. Full-model
+The local checker is not the reference validator. The closure correction is
+identified as `ps1-closure-v1`; new runs must retain that model identifier
+alongside the objective version, source digest and exported schedules. Mandatory
+closure checks cannot be waived because the schema lacks physical-night times.
+Historical incomplete-model proofs are not PS1 optimality certificates. Full-model
 bounds and conditional repair bounds must never be conflated.

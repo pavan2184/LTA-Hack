@@ -89,7 +89,7 @@ describe("workspace state and policy comparison", () => {
     expect(screen.getByRole("button", { name: "Work schedule" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getAllByRole("tab", { name: /Policy [ABC]/ })).toHaveLength(3);
     expect(screen.getByRole("tab", { name: /Policy C/ })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: /Policy A/ })).toHaveTextContent("25.2");
+    expect(screen.getByRole("tab", { name: /Policy A/ })).toHaveTextContent("32.2");
     expect(screen.queryByText(/best scenario/i)).not.toBeInTheDocument();
   }, 10_000); // Three mocked service responses plus the full workstation render on slower CI runners.
 

@@ -13,7 +13,7 @@ const base = loadInstance(Object.fromEntries(PS1_FILES.map((name) => [name,
 const north = "SEC:ALP:S02_S03:EB";
 const south = "SEC:BET:S12_S13:WB";
 type Job = {
-  id: string; week: number; predecessor?: string; location?: string; contract?: string;
+  id: string; week: number; predecessor?: string; location?: string; end?: string; contract?: string;
   due?: string; priority?: Activity["activityPriority"]; tier?: Contract["contractPriority"];
   accessType?: Contract["accessType"]; eclo?: boolean;
 };
@@ -28,7 +28,7 @@ function fixture(jobs: Job[], scenario: Scenario = "A") {
   })).values()];
   instance.activities = jobs.map((job) => ({ ...base.activities[0], activityId: job.id,
     contractNumber: job.contract ?? `contract-${job.id}`, activityPriority: job.priority ?? 3,
-    startLocationId: job.location ?? north, endLocationId: job.location ?? north,
+    startLocationId: job.location ?? north, endLocationId: job.end ?? job.location ?? north,
     totalAccesses: job.eclo ? 3 : 1, plannedStartDate: "2027-01-04",
     predecessorActivityId: job.predecessor ?? null }));
   const access = jobs.flatMap((job) => (job.eclo ? [job.week - 1, job.week] : [job.week])
@@ -134,13 +134,14 @@ describe("targeted native repair neighborhoods", () => {
   it("targets ECLO and excess-cost participants when feasible scenario B has no lateness", () => {
     const { instance, incumbent } = fixture([
       { id: "eclo", week: 2, eclo: true, location: south },
-      { id: "excess-1", week: 4 },
-      { id: "excess-2", week: 4 },
+      ...Array.from({ length: 5 }, (_, index) => ({ id: `excess-${index + 1}`, week: 4,
+        accessType: "C" as const, end: "SEC:ALP:H01_H02:EB" })),
       { id: "free", week: 5, location: south },
     ], "B");
-    const result = selectRepairNeighborhoods(instance, incumbent, { maxActivities: 2 });
-    // The shared sector/platform span has three excess location-weeks, so
-    // each PM's allocated 10.5 penalty slightly exceeds the two ECLOs' 10.
+    const result = selectRepairNeighborhoods(instance, incumbent, { maxActivities: 2, maxNeighborhoods: 16 });
+    // Five C activities need two legal groups at each of nine locations.
+    // Each receives 9 * 7 / 5 = 12.6 excess points, above two ECLOs' 10.
+    // Unlike the former two-PM fixture, this creates no forbidden host closure.
     expect(result[0].targetActivityId).toBe("excess-1");
     expect(result.some((entry) => entry.movableActivityIds.includes("excess-1") &&
       entry.movableActivityIds.includes("excess-2"))).toBe(true);

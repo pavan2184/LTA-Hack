@@ -135,6 +135,10 @@ export async function solveNative(instance: Ps1Instance, options: NativeSolveOpt
     !Number.isFinite(warmStartMs) || warmStartMs < 0 || warmStartMs > 5_000) {
     throw new Error("Invalid internal native solver budget.");
   }
+  // Reject dense sharing graphs before constructing even the heuristic. The
+  // request's activity-week limit alone does not bound possession assignments.
+  cpSatPayload(instance, { scenario: options.scenario, seconds, workers,
+    pins: options.pins, disruptions: options.disruptions });
   const heuristic = solveInstance(instance, { scenario: options.scenario,
     pins: options.pins, disruptions: options.disruptions,
     optimizationBudget: { maxTimeMs: warmStartMs, seed: 1 } });

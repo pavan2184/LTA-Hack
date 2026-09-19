@@ -12,6 +12,7 @@ import { writeSubmission } from "@railplan/ps1/io/write";
 import { zipArchive } from "@railplan/ps1/io/zip";
 import { solveNative } from "../../src/lib/ps1/server-solver";
 import { validate } from "@railplan/ps1/engine/validate";
+import { CLOSURE_MODEL_VERSION } from "@railplan/ps1/engine/closure";
 import type { Scenario, Submission } from "@railplan/ps1/types/ps1";
 
 async function main() {
@@ -69,7 +70,7 @@ async function main() {
   }
   writeFileSync(
     resolve(outRoot, "SUMMARY.json"),
-    `${JSON.stringify({ generatedFor: "PS1 public instance", results: summary }, null, 2)}\n`,
+    `${JSON.stringify({ generatedFor: "PS1 public instance", closureModelVersion: CLOSURE_MODEL_VERSION, results: summary }, null, 2)}\n`,
   );
   const archivePath = resolve("output/PS1-public-results.zip");
   mkdirSync(resolve("output"), { recursive: true });

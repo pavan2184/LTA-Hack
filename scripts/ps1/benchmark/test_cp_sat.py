@@ -5,7 +5,8 @@ from cp_sat import solve
 
 
 def payload(types, scenario="A", horizon=1, capacity=1, work=1):
-    return {"schema": "ps1-cpsat-v1", "digest": "test", "scenario": scenario, "seconds": 2,
+    return {"schema": "ps1-cpsat-v1", "closureModelVersion": "ps1-closure-v1", "closurePairs": [],
+            "digest": "test", "scenario": scenario, "seconds": 2,
             "instance": {"parameters": {"horizonWeeks": horizon, "horizonStart": "2027-01-04"},
                          "lines": [{"lineCode": "ALP"}, {"lineCode": "BET"}],
                          "contracts": [{"contractNumber": str(i), "numberOfWorkfronts": 1,
@@ -188,6 +189,135 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(result["config"]["hinted"])
         self.assertEqual(result["objective"], 910)
         self.assertEqual([r["week"] for r in result["access"]], [2])
+
+
+class ClosureModelTests(unittest.TestCase):
+    """Actual sharing connectivity, independently inspected from occupancy."""
+
+    def spatial_payload(self, kinds, spans, pairs, scenario="A", horizon=1, capacity=1):
+        p = payload(kinds, scenario, horizon=horizon, capacity=capacity)
+        p["spans"] = {str(i): locations for i, locations in enumerate(spans)}
+        locations = sorted({loc for span in spans for loc in span})
+        p["instance"]["locationSupply"] = [{"locationId": loc} for loc in locations]
+        p["capacity"] = {loc: [capacity] * horizon for loc in locations}
+        p["disrupted"] = {loc: [False] * horizon for loc in locations}
+        p["closurePairs"] = pairs
+        return p
+
+    def assert_actual_connectivity(self, p, result):
+        self.assertEqual(result["closureModelVersion"], "ps1-closure-v1")
+        occupancy = result["occupancy"]
+        for week in range(1, p["instance"]["parameters"]["horizonWeeks"] + 1):
+            active = {row["activityId"] for row in result["access"] if row["week"] == week}
+            connected = {aid: {aid} for aid in active}
+            groups = {}
+            for row in occupancy:
+                if row["week"] == week:
+                    groups.setdefault((row["locationId"], row["coShareGroup"]), []).append(row["activityId"])
+            for members in groups.values():
+                for first in members:
+                    connected[first].update(members)
+            for _ in active:
+                for aid in active:
+                    connected[aid] = set().union(*(connected[other] for other in connected[aid]))
+            for source, target in p["closurePairs"]:
+                if source in active and target in active:
+                    self.assertIn(target, connected[source])
+            for aid in active:
+                actual = [row["locationId"] for row in occupancy if row["week"] == week and row["activityId"] == aid]
+                self.assertEqual(sorted(actual), sorted(p["spans"][aid]))
+
+    def test_missing_or_invalid_closure_payload_cannot_run_the_legacy_model(self):
+        for field, value in (("closureModelVersion", None), ("closureModelVersion", "old"),
+                             ("closurePairs", None), ("closurePairs", [["0", "unknown"]]),
+                             ("closurePairs", [["0", "0"]]), ("closurePairs", [[0, "1"]])):
+            p = payload(["C", "C"])
+            p[field] = value
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, "closure"):
+                solve(p)
+
+    def test_external_pm_closure_cannot_be_bought_off_with_extra_supply(self):
+        for scenario in ("A", "B", "C"):
+            p = self.spatial_payload(["PM", "C"], [["L"], ["R"]], [["0", "1"]], scenario, capacity=10)
+            result = solve(p)
+            self.assertEqual(result["status"], "INFEASIBLE")
+            self.assertEqual(result["occupancy"], [])
+
+    def test_c_originated_live_or_consist_closures_are_not_silently_ignored(self):
+        # The trusted geometry layer supplies a Live C -> C relation, or a
+        # buffered C -> PM relation. Both matter even with ample local supply.
+        for kinds in (["C", "C"], ["C", "PM"]):
+            p = self.spatial_payload(kinds, [["L"], ["R"]], [["0", "1"]], capacity=10)
+            self.assertEqual(solve(p)["status"], "INFEASIBLE")
+
+    def test_live_c_origin_can_use_an_actual_transitive_sharing_exemption(self):
+        p = self.spatial_payload(["C", "C", "C"], [["L"], ["L", "R"], ["R"]], [["0", "2"]])
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        self.assertEqual(result["objective"], 0)
+        self.assert_actual_connectivity(p, result)
+
+    def test_closure_moves_work_to_another_week_with_exact_lateness(self):
+        p = self.spatial_payload(["PM", "C"], [["L"], ["R"]], [["0", "1"]], horizon=2)
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        self.assertEqual(result["objective"], 910)
+        self.assertEqual(sorted(row["week"] for row in result["access"]), [1, 2])
+        self.assert_actual_connectivity(p, result)
+
+    def test_direct_legal_co_sharing_preserves_the_closure_exemption(self):
+        p = self.spatial_payload(["PC", "C"], [["L"], ["L"]], [["0", "1"]])
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        self.assertEqual(result["objective"], 0)
+        self.assertEqual(len({row["coShareGroup"] for row in result["occupancy"]}), 1)
+        self.assert_actual_connectivity(p, result)
+
+    def test_transitive_sharing_exempts_hosts_without_a_direct_shared_location(self):
+        p = self.spatial_payload(["PC", "C", "PC"], [["L"], ["L", "R"], ["R"]], [["0", "2"]])
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        self.assertEqual(result["objective"], 0)
+        self.assert_actual_connectivity(p, result)
+        # The bridge joins distinct host-anchored groups at its two locations.
+        groups = {row["coShareGroup"] for row in result["occupancy"] if row["activityId"] == "1"}
+        self.assertEqual(len(groups), 2)
+
+    def test_connected_hosts_may_still_use_different_groups_at_one_location(self):
+        p = self.spatial_payload(["PC", "C", "PC"], [["L"], ["L", "R"], ["L", "R"]],
+                                 [["0", "2"]], scenario="B")
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        self.assertEqual(result["objective"], 7)
+        self.assertEqual(len({row["coShareGroup"] for row in result["occupancy"] if row["locationId"] == "L"}), 2)
+        self.assert_actual_connectivity(p, result)
+
+    def test_disconnected_hosts_cannot_invent_a_common_component_label(self):
+        p = self.spatial_payload(["PC", "PC"], [["L"], ["L"]], [["0", "1"]], capacity=2)
+        self.assertEqual(solve(p)["status"], "INFEASIBLE")
+
+    def test_a_frozen_bridge_in_a_different_week_does_not_grant_an_exemption(self):
+        p = self.spatial_payload(["PC", "C", "PC"], [["L"], ["L", "R"], ["R"]],
+                                 [["0", "2"]], horizon=2)
+        p["pins"] = [{"activityId": aid, "week": 1} for aid in ("0", "2")]
+        p["incumbent"] = {"access": [{"activityId": aid, "week": week, "eclo": 0}
+                                      for aid, week in (("0", 1), ("1", 2), ("2", 1))]}
+        p["movableActivityIds"] = ["0", "2"]
+        self.assertEqual(solve(p)["status"], "INFEASIBLE")
+
+    def test_full_workload_remains_a_lower_bound_when_an_extra_bridge_is_useful(self):
+        p = self.spatial_payload(["PC", "C", "PC"], [["L"], ["L", "R"], ["R"]],
+                                 [["0", "2"]], horizon=2)
+        for index in (0, 2):
+            p["instance"]["activities"][index]["totalAccesses"] = 2
+        p["instance"]["contracts"][1]["plannedCompletionDate"] = "2027-01-17"
+        result = solve(p)
+        self.assertEqual(result["status"], "OPTIMAL")
+        self.assertEqual(result["objective"], 1820)
+        # Both hosts must run twice. Their shared C must connect them in both
+        # weeks, although its declared minimum workload is only one access.
+        self.assertEqual([row["week"] for row in result["access"] if row["activityId"] == "1"], [1, 2])
+        self.assert_actual_connectivity(p, result)
 
 
 class TightFormulationTests(unittest.TestCase):
