@@ -55,6 +55,12 @@ next steps, test counts or local server URLs as current instructions.
 
 ## Latest recorded verification
 
+The [benchmark assurance record](PS1_BENCHMARK_ASSURANCE.md) now maps solver
+selection claims to their artifacts and documents experiment controls, scoring
+corrections, contrary findings and unresolved validation/deployment limits.
+Documentation verification checked the native cohort totals, linked files and
+anchors, and whitespace; no new solver, application or cloud run was performed.
+
 README benchmark coverage now includes the four-case warm/cold/LNS-only CP-SAT
 comparison alongside SCIP and both TypeScript hybrid modes, with explicit
 scores, bounds, proof counts and selection rationale. Figures were checked
