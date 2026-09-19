@@ -50,6 +50,73 @@ process lifetime. Bounds are explicitly scoped to full or frozen-repair models.
 The optional `cpsat-base-lin0` variant only changes the base linearization level;
 named parallel LP subsolvers can override it. It is not an LP-free portfolio.
 
+## Stress experiments with one total deadline
+
+[Measured results](../../../docs/PS1_NATIVE_SEARCH_EXPERIMENTS.md) and
+[raw evidence](stress-results.json) record 33 final-protocol runs: all locally
+valid, no errors, and no paired final-score improvements. Tightening consistently
+shortens one proof and improves the best hard-case bound to 261; production
+remains unchanged. Calibration and an excluded merge-interference batch are
+retained separately, not pooled into that comparison.
+
+`stress.ts` compares three opt-in CP-SAT pipelines under a **60-second total
+wall-time target per scenario/run**. Warm-start construction, native startup,
+model building, search, repair selection and CSV validation all consume that
+budget. Child processes have a wall-time guard; synchronous orchestration remains
+cooperative and can overrun. Inspect `elapsedMs` and `deadlineOverrunMs`. This
+budget differs from `cloud.ts`'s 60-second **native search** allowance plus overhead.
+These experiments do not change the production solver or its default budget.
+
+| Variant | Search within the shared budget |
+| --- | --- |
+| `full` | One full baseline model after the warm start |
+| `tight` | One full model with redundant workload, ECLO, timing and linear capacity constraints; exact scoring and packing stay unchanged |
+| `targeted` | Initial full search, up to four repairs targeting late chains, spatial blockers, locations and random subsets, then full search with the remaining time |
+
+Each run constructs its own checked incumbent with a one-second cooperative
+warm-start limit. Runs execute sequentially, and variant order rotates by case
+and seed. Compare `baselineScore` as well as final scores across repeated seeds:
+time-limited warm starts can differ. Tightening is CP-SAT-only; the native bridge
+rejects `formulation: "tight"` for SCIP.
+
+The immutable `ps1-stress-v1` manifest fixes these cases before comparisons:
+
+| Family | Activities | Development seed | Holdout seed |
+| --- | ---: | ---: | ---: |
+| Shared hubs | 60 | 730101 | 830111 |
+| Chain bottlenecks | 72 | 730103 | 830113 |
+| Live interchange | 96 | 730107 | 830117 |
+| Mixed spans | 120 | 730109 | 830119 |
+
+Selectors are `development`, `holdout`, `control`, `all`, or explicit case IDs
+from [stress-instances.ts](stress-instances.ts). Controls are public,
+05-capacity-pressure and 11-priority-contention. Synthetic A/C schedules certify
+local feasibility and are saved for audit; **they are never solver hints**.
+Scenario B has no such feasibility certificate. Tune only on development cases,
+freeze settings, then evaluate holdout; related synthetic families are not
+independent operational data.
+
+```sh
+# Local example: use only workers available on this host.
+npm run ps1:benchmark:stress -- --python .venv-cpsat/bin/python --output output/stress-development --datasets development,control --scenarios C --seconds 60 --workers 8 --seeds 1,2,3 --variants full,tight,targeted
+# Evaluate once after freezing the compared methods and settings.
+npm run ps1:benchmark:stress -- --python .venv-cpsat/bin/python --output output/stress-holdout --datasets holdout --scenarios C --seconds 60 --workers 8 --seeds 1,2,3 --variants full,tight,targeted
+# Cloud engineer: execute sequentially on the actual 32-vCPU / 64-GiB host.
+for stress_workers in 8 16 32; do
+  npm run ps1:benchmark:stress -- --python .venv-cpsat/bin/python --output "output/gce-stress-w${stress_workers}" --datasets development,control --scenarios C --seconds 60 --workers "$stress_workers" --seeds 1,2,3 --variants full,tight,targeted
+done
+```
+
+Use separate output directories for each setting; `--resume` requires matching
+inputs, source, runtime, host and configuration. Summaries retain failures and
+stage errors, including when a valid fallback survives. Report those errors
+separately from selected-schedule feasibility. Every accepted candidate passes
+CSV round-trip checks. `fullBound` uses only full-model bounds (or the universal
+zero penalty bound); an optimal repair proves only its frozen subproblem.
+All proofs remain local-model claims, with cross-possession physical-night
+alignment and reference-validator equivalence unverified. Local measurements
+do not establish 32-vCPU cloud performance.
+
 
 ## Earlier five-second native evidence — 2026-09-19
 

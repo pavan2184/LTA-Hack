@@ -34,8 +34,14 @@ def search_config(payload):
     profile = payload.get("profile", "default")
     if profile not in ("default", "no_lp", "lns"):
         raise ValueError("profile must be default, no_lp, or lns")
-    return {"seconds": seconds, "workers": workers, "seed": seed, "profile": profile,
-            "hinted": "incumbent" in payload}
+    formulation = payload.get("formulation", "baseline")
+    if formulation not in ("baseline", "tight"):
+        raise ValueError("formulation must be baseline or tight")
+    config = {"seconds": seconds, "workers": workers, "seed": seed, "profile": profile,
+              "hinted": "incumbent" in payload}
+    if "formulation" in payload:
+        config["formulation"] = formulation
+    return config
 
 
 class ImprovementTrace(cp_model.CpSolverSolutionCallback):
@@ -67,6 +73,7 @@ def solve(payload):
         raise ValueError("Unsupported PS1 payload schema")
     started = time.perf_counter()
     config = search_config(payload)
+    tight = config.get("formulation", "baseline") == "tight"
     instance, scenario = payload["instance"], payload["scenario"]
     if scenario not in ("A", "B", "C"):
         raise ValueError("Unknown scenario")
@@ -124,6 +131,16 @@ def solve(payload):
         last[aid] = model.new_int_var(1, horizon, "last_" + aid)
         model.add_min_equality(first[aid], starts)
         model.add_max_equality(last[aid], ends)
+        if tight:
+            # Implied by full yield, at most one access per activity/week, and
+            # C's two-week ECLO window. Keep the original exact constraints.
+            workload = activity["totalAccesses"]
+            minimum_accesses = workload if scenario == "A" else (2 * workload + 2) // 3
+            if scenario == "C":
+                model.add(sum(e[aid, w] for w in weeks) <= 2)
+                minimum_accesses = max(minimum_accesses, workload - 1)
+            model.add(sum(x[aid, w] for w in weeks) >= minimum_accesses)
+            model.add(last[aid] - first[aid] >= minimum_accesses - 1)
     for aid, activity in activities.items():
         predecessor = activity["predecessorActivityId"]
         if predecessor:
@@ -157,6 +174,14 @@ def solve(payload):
             supply = payload["capacity"][loc][week - 1]
             allowance = 0 if payload["disrupted"][loc][week - 1] or scenario == "A" else (1 if scenario == "C" else len(ids))
             model.add(count <= supply + allowance)
+            if tight:
+                # Redundant linear consequences of the exact possession count:
+                # every PM needs its own group; a shared group hosts <=1 PC
+                # and <=4 total PC/C members.
+                limit = supply + allowance
+                pm_count = sum(x[aid, week] for aid in pm)
+                model.add(pm_count + sum(x[aid, week] for aid in pc) <= limit)
+                model.add(4 * pm_count + sum(x[aid, week] for aid in shared) <= 4 * limit)
             excess = model.new_int_var(0, len(ids), f"excess_{loc}_{week}")
             model.add_max_equality(excess, [0, count - supply])
             if scenario != "A":

@@ -13,6 +13,7 @@ export interface CpSatOptions {
   workers?: number;
   seed?: number;
   profile?: "default" | "no_lp" | "lns";
+  formulation?: "baseline" | "tight";
   incumbent?: Submission;
   pins?: Pin[];
   disruptions?: Disruption[];
@@ -46,6 +47,7 @@ export function cpSatPayload(instance: Ps1Instance, options: CpSatOptions) {
     instance, scenario: options.scenario, seconds: options.seconds,
     workers: options.workers ?? 1, seed: options.seed ?? 1,
     ...(options.profile !== undefined ? { profile: options.profile } : {}),
+    ...(options.formulation !== undefined ? { formulation: options.formulation } : {}),
     ...(options.incumbent ? { incumbent: options.incumbent } : {}),
     ...(options.movableActivityIds ? { movableActivityIds: options.movableActivityIds } : {}),
     pins, spans,

@@ -409,6 +409,36 @@ the local checker is not the organiser's reference validator. The
 
 ### PS1 native solver benchmark and selection
 
+**Follow-up: can stronger modelling or targeted repair improve the result?**
+We added eight fixed stress cases (60–120 activities) and compared three CP-SAT
+pipelines under a **60-second total deadline**, including warm start and startup.
+On the four reserved C cases plus three controls, all methods tied every final
+score; all 21 schedules passed the local checker without a pipeline error.
+
+| Method | Valid results | Lower score than full CP-SAT | Full-model optima |
+| --- | ---: | ---: | ---: |
+| Existing full CP-SAT | 7/7 | Baseline | 5/7 |
+| Tighter equivalent formulation | 7/7 | 0/7 | 6/7 |
+| Targeted native repair | 7/7 | 0/7 | 5/7 |
+
+Tightening proved capacity-pressure C **1090.8** in **1.32 seconds** in this
+seed-1 run; ordinary full search found the same score but had not proved it when
+returning at 58.45 seconds. Priority-contention C remained **300.7**, unproven,
+with no score improvement. Keep the existing production default; tightening is
+an opt-in challenger and custom repair has no demonstrated quality gain here.
+Repeating the two difficult controls with seeds 2 and 3 brings the final protocol
+to **33 valid runs with no errors**. Tightening proves capacity pressure in
+**1.28–1.39 seconds in all three seeds**, and improves the best recorded priority-
+contention lower bound to **261.0**, while its schedule remains **300.7**.
+These are local M3 Pro/eight-worker measurements, not cloud timings or reference-
+validator certification. The larger holdouts all solved quickly, so they provide
+coverage rather than evidence of superiority on difficult hidden cases.
+See [full experiment details and reproduction](docs/PS1_NATIVE_SEARCH_EXPERIMENTS.md)
+and [raw evidence](scripts/ps1/benchmark/stress-results.json).
+
+**Earlier CP-SAT/SCIP comparison (different timing protocol):**
+
+
 **Measured snapshot:** [d1e0a8f](https://github.com/pavan2184/LTA-Hack/tree/d1e0a8f),
 with solver-source SHA-256 `a10cbe7bb8bbd252c27726aa8b222d67b20abcec785829496c61970d1ca1768e`.
 The tables describe that snapshot. Later merged changes improve the TypeScript

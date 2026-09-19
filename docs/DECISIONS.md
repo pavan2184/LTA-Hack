@@ -1,5 +1,25 @@
 # Decisions
 
+## 2026-09-19 — Evaluate stronger formulations and targeted native repair separately
+
+Status: **Experimental, offline only.** Compare the deployed model with redundant
+valid inequalities and with bounded CP-SAT repairs around late chains and shared
+locations. Keep scoring, full workload, pins and represented hard rules identical.
+Only full-model lower bounds contribute to the global gap; optimal repairs prove
+their frozen subproblem only. Retain the best checked incumbent after failures.
+
+Fix four development and four related synthetic holdout inputs before running
+comparisons. Complete A/C witnesses certify local feasibility but are withheld
+from search. Time the entire pipeline under one deadline, including the warm
+start and repeated Python startup; retain short-run calibration failures as
+evidence. This protocol is distinct from the earlier native-search-only budget.
+The final protocol yielded 33 valid runs, no errors and no paired final-score
+improvements. Tightening proves capacity pressure in 1.28–1.39 seconds across
+three seeds and raises the strongest priority-contention bound to 261, but
+is not uniformly better. Keep the accepted full native portfolio in production;
+retain both alternatives as offline experiments. Target-machine worker scaling
+remains the cloud engineer's check. [Evidence](PS1_NATIVE_SEARCH_EXPERIMENTS.md).
+
 ## 2026-09-19 — Publish the explanation on the existing Vercel site
 
 The user expected the CP-SAT explanation at `railplan-theta.vercel.app` after

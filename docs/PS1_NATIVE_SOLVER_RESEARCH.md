@@ -1,5 +1,11 @@
 # PS1 native solver selection
 
+A subsequent [tighter-model and targeted-repair experiment](PS1_NATIVE_SEARCH_EXPERIMENTS.md)
+uses eight new fixed stress inputs and an equal total-pipeline deadline. It is
+recorded separately from the native-search-only cohorts below. The production
+default remains unchanged; optional redundant cuts improve one proof without a
+demonstrated final-score gain, and targeted repair remains experimental.
+
 Owner direction, 2026-09-19: **32 vCPUs, 64 GiB RAM, 60-second default search**.
 Cloud computation is explicitly authorised; the earlier browser-only deployment
 choice is superseded. The cloud engineer deploys. The engineer's concurrent native

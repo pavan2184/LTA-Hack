@@ -60,6 +60,14 @@ describe("native payload boundary", () => {
     );
   });
 
+  it("keeps tightening opt-in and rejects applying its label to SCIP", () => {
+    expect(nativePayload(instance, "B", 60)).not.toHaveProperty("formulation");
+    expect(nativePayload(instance, "B", 60, { formulation: "tight" })).toHaveProperty("formulation", "tight");
+    expect(() => runNativeSolver("mock-python", "scip", instance, "B", 60, { formulation: "tight" }))
+      .toThrow(/requires CP-SAT/);
+    expect(spawnSync).not.toHaveBeenCalled();
+  });
+
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid seconds %s before spawning", (seconds) => {
     expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", seconds)).toThrow(/Invalid native/);
     expect(spawnSync).not.toHaveBeenCalled();
@@ -187,5 +195,19 @@ describe("native result validation", () => {
   it("surfaces a child-process timeout without manufacturing a result", () => {
     spawnSync.mockReturnValue({ status: null, error: new Error("native timeout"), stdout: "", stderr: "" });
     expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 60)).toThrow("native timeout");
+  });
+
+  it("uses an optional wall guard without changing the serialized solver budget", () => {
+    runNativeSolver("mock-python", "cpsat", instance, "B", 5, {}, 7000);
+    const options = spawnSync.mock.calls[0][2];
+    expect(options.timeout).toBeGreaterThan(0);
+    expect(options.timeout).toBeLessThanOrEqual(7000);
+    expect(options.killSignal).toBe("SIGKILL");
+    expect(JSON.parse(options.input).seconds).toBe(5);
+  });
+
+  it.each([0, -1, Number.NaN, Infinity])("rejects invalid process wall limits %s", (limit) => {
+    expect(() => runNativeSolver("mock-python", "cpsat", instance, "B", 5, {}, limit)).toThrow(/wall limit/);
+    expect(spawnSync).not.toHaveBeenCalled();
   });
 });

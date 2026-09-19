@@ -1,5 +1,22 @@
 # Architecture
 
+## Native search experiments — 2026-09-19
+
+The offline stress harness compares a full CP-SAT solve, an opt-in equivalent
+formulation with redundant workload/span/capacity inequalities, and targeted
+native repair. Repair selects late dependency chains, spatial blockers, congested
+locations and seeded subsets; activities outside the selected set remain fixed.
+The pipeline retains the best independently checked schedule and accumulates
+only full-model bounds. Conditional repair optima cannot certify the full model.
+
+All stages share one end-to-end deadline. Native processes have a hard wall guard;
+synchronous preparation/checking is cooperative and any overrun is recorded.
+The generator fixes development and holdout seeds before tuning and supplies
+separate feasibility certificates that are never passed as solver hints.
+These are offline experiments. The HTTP service keeps its existing 60-second
+search budget and default formulation until target-host evidence warrants change.
+
+
 ## Standalone algorithm teaching service — 2026-09-19
 
 `demos/algorithm-lab` is an independently deployable Flask/Gunicorn service with

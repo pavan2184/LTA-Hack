@@ -1,4 +1,5 @@
 """Small, independently calculated conformance cases for the PS1 model."""
+import copy
 import unittest
 from cp_sat import solve
 
@@ -25,7 +26,8 @@ class ModelTests(unittest.TestCase):
         invalid = {"seconds": [0, -1, float("inf"), float("nan"), 10**1000, "60", None, True],
                    "workers": [0, -1, 257, 1.5, "8", None, True],
                    "seed": [-1, 2**31, 1.5, "1", None, True],
-                   "profile": ["", "unknown", None, []]}
+                   "profile": ["", "unknown", None, []],
+                   "formulation": ["", "unknown", None, [], True]}
         for field, values in invalid.items():
             for value in values:
                 with self.subTest(field=field, value=value):
@@ -186,6 +188,99 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(result["config"]["hinted"])
         self.assertEqual(result["objective"], 910)
         self.assertEqual([r["week"] for r in result["access"]], [2])
+
+
+class TightFormulationTests(unittest.TestCase):
+    """Both formulations must retain the hand-calculated feasible set/optimum."""
+
+    def assert_formulations(self, p, objective, scope="full"):
+        results = []
+        for formulation in ("baseline", "tight"):
+            with self.subTest(formulation=formulation):
+                candidate = copy.deepcopy(p)
+                candidate["formulation"] = formulation
+                result = solve(candidate)
+                self.assertEqual(result["config"]["formulation"], formulation)
+                self.assertEqual(result["scope"], scope)
+                self.assertEqual(result["boundScope"], "encoded_full_model" if scope == "full"
+                                 else "conditional_on_frozen_activities")
+                self.assertEqual(result["status"], "INFEASIBLE" if objective is None else "OPTIMAL")
+                self.assertEqual(result["objective"], objective)
+                if objective is not None:
+                    self.assertEqual(result["bound"], objective)
+                    for activity in p["instance"]["activities"]:
+                        rows = [r for r in result["access"] if r["activityId"] == activity["activityId"]]
+                        self.assertGreaterEqual(sum(1 + r["eclo"] / 2 for r in rows), activity["totalAccesses"])
+                        self.assertEqual(len({r["week"] for r in rows}), len(rows))
+                    for pin in p.get("pins", []):
+                        self.assertTrue(any(r["activityId"] == pin["activityId"] and r["week"] == pin["week"]
+                                            and r["eclo"] == pin.get("eclo", 0) for r in result["access"]))
+                results.append(result)
+        return results
+
+    def test_formulation_is_opt_in_and_preserves_default_config(self):
+        default = solve(payload(["C"]))
+        self.assertNotIn("formulation", default["config"])
+        baseline, tight = self.assert_formulations(payload(["C"]), 0)
+        self.assertEqual(default["modelStats"], baseline["modelStats"])
+        self.assertGreater(tight["modelStats"]["constraints"], baseline["modelStats"]["constraints"])
+
+    def test_workload_and_eclo_window_bounds_preserve_independent_optima(self):
+        # Three standard nights finish two weeks late: 14 days * 100 * 1.3.
+        self.assert_formulations(payload(["C"], "A", horizon=3, work=3), 1820)
+        # Two ECLO nights deliver three accesses a week earlier: 910 + 2*5.
+        self.assert_formulations(payload(["C"], "C", horizon=3, work=3), 920)
+        # B can use four ECLO nights to deliver six accesses in four weeks;
+        # C's two ECLO nights can deliver only five in that same horizon.
+        for scenario, expected in (("B", 20), ("C", None)):
+            p = payload(["C"], scenario, horizon=4, work=6)
+            p["instance"]["contracts"][0]["plannedCompletionDate"] = "2027-01-31"
+            self.assert_formulations(p, expected)
+        # No relaxation can create a second distinct activity-week in a
+        # one-week horizon, even when its yield would exceed a standard night.
+        self.assert_formulations(payload(["C"], "C", horizon=1, work=2), None)
+
+    def test_capacity_cuts_preserve_each_legal_mix_and_excess_cost(self):
+        # The required counts follow by explicitly packing the listed members.
+        # PM+C needs two groups; two PCs need two; PC+3C fits one; five Cs need two.
+        for kinds, groups in ((["PM", "C"], 2), (["PC", "PC"], 2),
+                              (["PC", "C", "C", "C"], 1), (["C"] * 5, 2),
+                              (["PM", "PM", "PC", "C"], 3)):
+            for scenario in ("A", "B", "C"):
+                with self.subTest(kinds=kinds, scenario=scenario):
+                    excess = groups - 1
+                    expected = None if (scenario == "A" and excess > 0) or (scenario == "C" and excess > 1) else 7 * excess
+                    self.assert_formulations(payload(kinds, scenario), expected)
+        p = payload(["PM", "C"], "B")
+        p["disrupted"]["L"] = [True]
+        self.assert_formulations(p, None)
+
+    def test_precedence_and_exact_pins_survive_tightening(self):
+        p = payload(["C", "C"], horizon=4, work=2)
+        p["instance"]["activities"][1]["predecessorActivityId"] = "0"
+        # Earliest completions are weeks 2 and 4: (7+21)*130.
+        self.assert_formulations(p, 3640)
+        p = payload(["C"], "C", horizon=3, work=3)
+        p["pins"] = [{"activityId": "0", "week": w, "eclo": 0} for w in (1, 2, 3)]
+        self.assert_formulations(p, 1820)
+        p["pins"] = [{"activityId": "0", "week": w, "eclo": 1} for w in (1, 3)]
+        self.assert_formulations(p, None)
+
+    def test_frozen_repair_preserves_accesses_and_conditional_proof_scope(self):
+        p = payload(["C", "C"], horizon=3)
+        p["instance"]["activities"][1]["predecessorActivityId"] = "0"
+        p["incumbent"] = {"access": [{"activityId": "0", "week": 2, "eclo": 0},
+                                      {"activityId": "1", "week": 3, "eclo": 0}]}
+        p["movableActivityIds"] = ["1"]
+        for result in self.assert_formulations(p, 2730, "repair"):
+            self.assertEqual([(r["week"], r["eclo"]) for r in result["access"] if r["activityId"] == "0"], [(2, 0)])
+        # Full delivery is a lower bound, not an exact count: frozen surplus
+        # standard nights must remain legal under the redundant constraints.
+        p = payload(["C"], horizon=3)
+        p["incumbent"] = {"access": [{"activityId": "0", "week": w, "eclo": 0} for w in (1, 2, 3)]}
+        p["movableActivityIds"] = []
+        for result in self.assert_formulations(p, 1820, "repair"):
+            self.assertEqual([r["week"] for r in result["access"]], [1, 2, 3])
 
 
 if __name__ == "__main__":

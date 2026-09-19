@@ -1,5 +1,21 @@
 # Testing Plan
 
+## Targeted native repair and stress experiments — 2026-09-19
+
+Run `npx vitest run scripts/ps1/benchmark` for the native boundary, shared-deadline
+selection, neighborhood ranking, certificate validation and deterministic split
+tests. Python `test_cp_sat.py` covers the optional tightening against independently
+calculated objectives, full workloads, pins, dependencies and frozen repairs;
+`test_scip.py` remains a regression gate for the independent MIP.
+
+Use `npm run ps1:benchmark:stress` with explicit host-appropriate workers. Tune on
+`--datasets development`; freeze code before `--datasets holdout`. Keep every
+result and error, never supply planted certificates as hints, and record runtime,
+source and input digests. A 60-second total-pipeline experiment is separate from
+the older 60-second native-search experiment. Tests and builds must not overlap
+timed solver runs. See the benchmark README for reproducible cloud worker sweeps.
+
+
 ## Standalone Algorithm Lab — 2026-09-19
 
 Run `python -m unittest discover -s demos/algorithm-lab -p 'test_*.py'` with its
