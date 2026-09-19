@@ -1,0 +1,7 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+03-C001,Synthetic Alpha traction isolation,2026-09-01,Renewal,Live,1,2027-08-01,2027-03-28,1,PM,2
+03-C002,Synthetic Beta traction isolation,2026-09-01,Renewal,Live,1,2027-08-01,2027-03-28,1,PC,2
+03-C003,Synthetic Alpha engineering consist,2026-09-01,Renewal,Non-live (Consist),2,2027-08-01,2027-03-28,1,PM,3
+03-C004,Synthetic Beta engineering consist,2026-09-01,Renewal,Non-live (Consist),2,2027-08-01,2027-03-28,1,C,3
+03-C005,Synthetic interchange platform works,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-03-28,1,PC,3
+03-C006,Synthetic interchange cabling,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-03-28,1,C,3

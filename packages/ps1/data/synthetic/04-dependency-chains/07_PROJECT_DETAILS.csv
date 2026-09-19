@@ -1,0 +1,6 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+04-C001,Synthetic commissioning stage 1,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-04-25,2,C,3
+04-C002,Synthetic commissioning stage 2,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-04-25,2,C,3
+04-C003,Synthetic commissioning stage 3,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-04-25,2,C,3
+04-C004,Synthetic commissioning stage 4,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-04-25,2,C,3
+04-C005,Synthetic commissioning stage 5,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-04-25,2,C,3

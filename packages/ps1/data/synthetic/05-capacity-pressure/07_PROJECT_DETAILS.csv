@@ -1,0 +1,10 @@
+contract_number,contract_description,contract_award_date,activity_type,nature_of_activity,contract_priority,contract_completion_date,planned_completion_date,number_of_workfronts,access_type,number_of_maximum_access_per_week
+05-C001,Synthetic congested exclusive work 1,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-02-14,1,PM,3
+05-C002,Synthetic congested exclusive work 2,2026-09-01,Construction,Non-live (Others),1,2027-08-01,2027-02-14,1,PM,3
+05-C003,Synthetic congested exclusive work 3,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-02-14,1,PM,3
+05-C004,Synthetic congested exclusive work 4,2026-09-01,Construction,Non-live (Others),2,2027-08-01,2027-02-14,1,PM,3
+05-C005,Synthetic congested exclusive work 5,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-02-14,1,PM,3
+05-C006,Synthetic congested exclusive work 6,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-02-14,1,PM,3
+05-C007,Synthetic congested exclusive work 7,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-02-14,1,PM,3
+05-C008,Synthetic congested exclusive work 8,2026-09-01,Construction,Non-live (Others),3,2027-08-01,2027-02-14,1,PM,3
+05-C009,Synthetic deadline-driven renewal,2026-09-01,Renewal,Non-live (Consist),1,2027-08-01,2027-01-31,1,PM,3

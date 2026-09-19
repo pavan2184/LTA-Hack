@@ -1,5 +1,38 @@
 # Project Status
 
+## Synthetic PS1 upload datasets — 2026-09-19
+
+Added six complete eight-file input instances under
+`packages/ps1/data/synthetic/`: small demo, co-sharing, Live interchange,
+cross-contract dependency chains, capacity pressure and a 120-activity mixed
+workload. Together they contain 48 CSVs, 178 activities and 420 requested
+accesses. The README documents upload steps, construction, provenance, counts,
+observed scores and expected scenario differences. The manifest records source
+SHA-256 digests and expected A/B/C feasibility. All data is explicitly synthetic.
+
+The published topology, buffer rules, horizon and 2/3 weekly contract caps are
+preserved. Only the co-sharing and capacity-pressure cases alter location supply.
+The official public instance, sample submission and public results are unchanged.
+No solver, browser, API, database, dependency or architecture change was needed.
+
+Verification: all **18 dataset/scenario combinations** deliver full workload and
+pass local validation after CSV serialization/reparse. The new 26-test suite
+also checks strict later-week dependencies, file counts/schema, source hashes,
+span validity, four-way co-sharing, Live interchange crossover and the intended
+congestion trade-offs. Full `packages/ps1/` suite: **151 tests across 15 files
+passed**. `npm run typecheck`, targeted ESLint and `git diff --check` passed.
+An initial authoring check exposed unsupported platform endpoints; the fixtures
+were corrected to tunnel-sector endpoints before the passing verification.
+
+Known limits: this is the existing local checker, not the organiser's reference
+validator, and cross-possession physical-night alignment remains undecidable.
+Some B/C runs use extra capacity even when A can finish on time; the README
+records this heuristic quality gap without claiming optimal scores. The browser
+upload UI, full application/DB suites and production build were not rerun for
+this fixture-only change. No local server was started. A local sharing archive
+is available at `output/lta-ps1-datasets.zip` (ignored by Git); source CSVs and
+documentation are the tracked deliverables.
+
 ## Official PS1 specification captured as repo context — 2026-09-19
 
 The spec sync below verified the engine against the organiser's statement but
