@@ -1,0 +1,19 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["src/components/ps1", "src/app/ps1"],
+  "locale": "en-SG",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Table Selection", "Select/Listbox", "Form", "Scrollbar", "CRUD"],
+  "ownership": {"Select/Listbox": "native"},
+  "requiredCommands": ["unit", "typecheck", "lint", "build"],
+  "commands": {
+    "unit": "npm test",
+    "typecheck": "npm run typecheck",
+    "lint": "npm run lint",
+    "build": "npm run build"
+  },
+  "evidence": {
+    "crudFullFlow": "src/test/ps1-workbench.test.tsx",
+    "failurePaths": "src/test/ps1-workbench.test.tsx"
+  }
+}

@@ -1,5 +1,40 @@
 # Decisions
 
+## 2026-09-19 — PS1 becomes a schedule-first planning workstation
+
+Status: **Accepted.** The user approved the Siemens Opcenter Scheduling SMT
+reference and authorized restructuring the workflow, navigation and frontend.
+The public PS1 surface now follows a compact industrial-workstation direction:
+teal application chrome, grouped commands, policy selection, a dominant
+expandable contract/activity schedule and a navigable horizon overview.
+Location occupancy remains a complementary projection. Attention and the
+selection inspector appear when useful instead of permanently taking most of
+the schedule width. This supersedes the fixed queue/timeline/inspector layout
+choice in the 2026-09-18 exception-first decision below; its state and safety
+boundaries remain in force.
+
+The visual reference is a composition guide, not a data-model template. PS1's
+week is the scheduling unit, and `access_night` is a local accounting index.
+Render actual sparse access weeks without connecting gaps into continuous
+occupation. Retain visible workload, deadlines, ECLO, capacity and proposal
+distinctions. The work and occupancy views share engine identities and the
+applied scenario; view filters do not change what the solver delivers.
+
+This is a scoped presentation decision. Hidden eight-file uploads still run
+entirely in the account-free browser path. Full delivery, independent local
+checking, all hard constraints, retained A/B/C outcomes, stale-operation
+guards, explicit proposal review, Apply/Discard/Undo and exact official exports
+are unchanged requirements. No backend, solver, schema, worker protocol,
+authentication, dependency or environment-variable change is needed.
+
+The runtime CSS remains the token source. Root [DESIGN.md](../DESIGN.md) records
+the visual direction and token mapping; [UX-CONTRACT.md](../UX-CONTRACT.md)
+records observable behavior. The shared IBM Plex typography and semantic status
+palette remain; PS1's teal chrome is route-scoped. The rest of RailPlan is not
+implicitly rebranded. Browser and regression evidence belongs in
+`PROJECT_STATUS.md` and `design-qa.md`, rather than being inferred from this
+decision.
+
 ## 2026-09-18 — PS1 is an exception-first linked workspace
 
 Status: **Accepted.** Replace the solved page's stacked report sections and

@@ -1,0 +1,446 @@
+{
+  "findings": [
+    {
+      "category": "unresolved",
+      "file": "src/components/coordination/CoordinationWorkspace.tsx",
+      "line": 560,
+      "message": "Native date/time input is used without an explicit ownership decision.",
+      "remediation": "Record Date as native or reuse the typed/authored canonical owner.",
+      "ruleId": "ownership.native-date-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/coordination/OrganisationConfirmations.tsx",
+      "line": 199,
+      "message": "Native date/time input is used without an explicit ownership decision.",
+      "remediation": "Record Date as native or reuse the typed/authored canonical owner.",
+      "ruleId": "ownership.native-date-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/deferred-work/DeferredWorkWorkspace.tsx",
+      "line": 202,
+      "message": "Native date/time input is used without an explicit ownership decision.",
+      "remediation": "Record Date as native or reuse the typed/authored canonical owner.",
+      "ruleId": "ownership.native-date-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/requests/ClockTimeField.tsx",
+      "line": 28,
+      "message": "Native date/time input is used without an explicit ownership decision.",
+      "remediation": "Record Date as native or reuse the typed/authored canonical owner.",
+      "ruleId": "ownership.native-date-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/controls/PlanToolbar.tsx",
+      "line": 133,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/coordination/CoordinationWorkspace.tsx",
+      "line": 564,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/deferred-work/CarryForwardPreparation.tsx",
+      "line": 57,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/deferred-work/DeferredWorkWorkspace.tsx",
+      "line": 174,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/plans/PlannerDialogs.tsx",
+      "line": 97,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/plans/PlannerQueue.tsx",
+      "line": 50,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/plans/SavedPlansWorkspace.tsx",
+      "line": 693,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/ps1/DisruptionPanel.tsx",
+      "line": 126,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/ps1/ExplainPanel.tsx",
+      "line": 168,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/ps1/OperationsOverview.tsx",
+      "line": 284,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/ps1/PossessionTimeline.tsx",
+      "line": 238,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/requests/ClockTimeField.tsx",
+      "line": 34,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/requests/PrivateDraftEditor.tsx",
+      "line": 297,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/requests/RequestIntakeWorkspace.tsx",
+      "line": 459,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "unresolved",
+      "file": "src/components/schedule/WorkforceChart.tsx",
+      "line": 311,
+      "message": "Native select is used without an explicit ownership decision.",
+      "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
+      "ruleId": "ownership.native-select-undecided",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/ui/button.tsx",
+      "line": 32,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/test/deferred-work-navigation.test.tsx",
+      "line": 14,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/test/public-landing.test.tsx",
+      "line": 6,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/test/request-pages.test.tsx",
+      "line": 11,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/test/workspace-navigation.test.tsx",
+      "line": 17,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/app/login/page.tsx",
+      "line": 16,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/assistant/PlannerAssistant.tsx",
+      "line": 176,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/auth/SignOut.tsx",
+      "line": 4,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/coordination/CoordinationWorkspace.tsx",
+      "line": 549,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/coordination/CoordinationWorkspace.tsx",
+      "line": 720,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/coordination/OrganisationConfirmations.tsx",
+      "line": 182,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/CarryForwardPreparation.tsx",
+      "line": 56,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/DeferredWorkSummary.tsx",
+      "line": 50,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/DeferredWorkWorkspace.tsx",
+      "line": 171,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/DeferredWorkWorkspace.tsx",
+      "line": 198,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/DeferredWorkWorkspace.tsx",
+      "line": 219,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/plans/PlannerDialogs.tsx",
+      "line": 95,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/ps1/OperationsOverview.tsx",
+      "line": 560,
+      "message": "Application-owned form does not declare its validation owner.",
+      "remediation": "Add noValidate/novalidate and implement the canonical validation contract.",
+      "ruleId": "form.novalidate-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/coordination/CoordinationWorkspace.tsx",
+      "line": 721,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/coordination/OrganisationConfirmations.tsx",
+      "line": 215,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/DeferredWorkSummary.tsx",
+      "line": 51,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/deferred-work/DeferredWorkWorkspace.tsx",
+      "line": 221,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/plans/PlannerDialogs.tsx",
+      "line": 98,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/requests/PrivateDraftEditor.tsx",
+      "line": 219,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/requests/PrivateDraftEditor.tsx",
+      "line": 555,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/requests/RequestIntakeWorkspace.tsx",
+      "line": 581,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/requests/RequestIntakeWorkspace.tsx",
+      "line": 953,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/requests/TranscriptDraftWorkspace.tsx",
+      "line": 170,
+      "message": "Literal product textarea does not show evidence of the canonical resize-none rule.",
+      "remediation": "Use the shared Textarea owner or apply resize-none/resize: none with adequate height or auto-grow behavior.",
+      "ruleId": "form.textarea-resize-missing",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/app/globals.css",
+      "line": 264,
+      "message": "Scrollbar theme does not provide both standards-based scrollbar properties.",
+      "remediation": "Add global scrollbar-color and scrollbar-width standards properties plus fallbacks.",
+      "ruleId": "scrollbar.webkit-only",
+      "severity": "error"
+    }
+  ],
+  "mode": "strict",
+  "projectRoot": ".",
+  "schemaVersion": 1,
+  "summary": {
+    "errors": 48,
+    "total": 48,
+    "unresolved": 19,
+    "violations": 29,
+    "warnings": 0
+  }
+}
